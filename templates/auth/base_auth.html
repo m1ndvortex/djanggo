@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}ورود به سیستم - زرگر{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8
+            {% if is_dark_mode %}
+            bg-gradient-to-br from-cyber-bg-primary via-cyber-bg-secondary to-cyber-bg-surface
+            {% else %}
+            bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50
+            {% endif %}">
+    
+    <!-- Background Pattern (Cybersecurity Theme) -->
+    {% if is_dark_mode %}
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-40 -right-40 w-80 h-80 rounded-full 
+                    bg-gradient-to-r from-cyber-neon-primary/10 to-cyber-neon-secondary/10 
+                    blur-3xl animate-pulse"></div>
+        <div class="absolute -bottom-40 -left-40 w-80 h-80 rounded-full 
+                    bg-gradient-to-r from-cyber-neon-tertiary/10 to-cyber-neon-purple/10 
+                    blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
+        
+        <!-- Grid Pattern -->
+        <div class="absolute inset-0 opacity-5">
+            <div class="h-full w-full" 
+                 style="background-image: linear-gradient(rgba(0,212,255,0.1) 1px, transparent 1px), 
+                                        linear-gradient(90deg, rgba(0,212,255,0.1) 1px, transparent 1px);
+                        background-size: 50px 50px;"></div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="max-w-md w-full space-y-8 relative z-10">
+        <!-- Logo and Header -->
+        <div class="text-center">
+            <div class="mx-auto h-20 w-20 flex items-center justify-center rounded-full
+                        {% if is_dark_mode %}
+                        bg-gradient-to-r from-cyber-neon-primary/20 to-cyber-neon-secondary/20
+                        border border-cyber-neon-primary/30
+                        shadow-lg shadow-cyber-neon-primary/20
+                        {% else %}
+                        bg-gradient-to-r from-blue-500 to-indigo-600
+                        shadow-lg shadow-blue-500/25
+                        {% endif %}">
+                <svg class="h-10 w-10 {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-white{% endif %}" 
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            
+            <h2 class="mt-6 text-3xl font-bold 
+                       {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                {% block auth_title %}ورود به سیستم{% endblock %}
+            </h2>
+            
+            <p class="mt-2 text-sm 
+                      {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                {% block auth_subtitle %}سیستم مدیریت طلا و جواهرات زرگر{% endblock %}
+            </p>
+        </div>
+
+        <!-- Auth Form Container -->
+        <div class="{% if is_dark_mode %}cyber-glass-card{% else %}bg-white shadow-xl border border-gray-200{% endif %} 
+                    rounded-xl p-8 space-y-6">
+            
+            <!-- Form Errors -->
+            <div class="form-errors" style="display: none;">
+                <!-- Errors will be populated by JavaScript -->
+            </div>
+            
+            {% block auth_form %}{% endblock %}
+        </div>
+
+        <!-- Additional Links -->
+        <div class="text-center space-y-2">
+            {% block auth_links %}{% endblock %}
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center">
+            <p class="text-xs {% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">
+                © ۱۴۰۳ سیستم زرگر. تمامی حقوق محفوظ است.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Persian Date Display -->
+<div class="fixed bottom-4 right-4 text-xs 
+            {% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">
+    <span class="persian-numbers">{{ shamsi_today|date:"Y/m/d" }}</span>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Persian form validation
+    const authForm = document.querySelector('form[data-persian-validation]');
+    if (authForm) {
+        // Auto-focus first input
+        const firstInput = authForm.querySelector('input:not([type="hidden"])');
+        if (firstInput) {
+            firstInput.focus();
+        }
+        
+        // Handle form submission with loading state
+        authForm.addEventListener('submit', function(e) {
+            const submitButton = authForm.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mx-auto"></div>';
+            }
+        });
+    }
+    
+    // Initialize cybersecurity theme animations
+    if (window.currentTheme === 'dark' && window.Motion) {
+        const cards = document.querySelectorAll('.cyber-glass-card');
+        cards.forEach((card, index) => {
+            window.Motion.animate(card, {
+                opacity: [0, 1],
+                y: [20, 0],
+                scale: [0.95, 1]
+            }, {
+                duration: 0.6,
+                delay: index * 0.1,
+                ease: [0.4, 0, 0.2, 1]
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

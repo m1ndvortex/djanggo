@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}داشبورد مدیریت - زرگر{% endblock %}
+
+{% block content %}
+<div class="min-h-screen {% if is_dark_mode %}bg-gradient-to-br from-cyber-bg-primary via-cyber-bg-secondary to-cyber-bg-surface{% else %}bg-gray-50{% endif %}">
+    
+    <!-- Header -->
+    <header class="{% if is_dark_mode %}bg-cyber-bg-surface/50 border-b border-cyber-neon-primary/20{% else %}bg-white border-b border-gray-200{% endif %} backdrop-blur-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        داشبورد مدیریت سیستم
+                    </h1>
+                </div>
+                
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <span class="text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                        خوش آمدید، {{ user.full_persian_name }}
+                    </span>
+                    <a href="{% url 'core:admin_logout' %}" 
+                       class="{% if is_dark_mode %}text-cyber-neon-primary hover:text-cyber-neon-secondary{% else %}text-blue-600 hover:text-blue-500{% endif %} 
+                              transition-colors duration-200">
+                        خروج
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="px-4 py-6 sm:px-0">
+            
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Total Tenants -->
+                <div class="{% if is_dark_mode %}cyber-glass-card{% else %}bg-white shadow rounded-lg{% endif %} p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="h-8 w-8 {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}" 
+                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h4M9 7h6m-6 4h6m-6 4h6"></path>
+                            </svg>
+                        </div>
+                        <div class="mr-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} truncate">
+                                    کل فروشگاه‌ها
+                                </dt>
+                                <dd class="text-lg font-medium {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-gray-900{% endif %} persian-numbers">
+                                    {{ total_tenants|default:0 }}
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Tenants -->
+                <div class="{% if is_dark_mode %}cyber-glass-card{% else %}bg-white shadow rounded-lg{% endif %} p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="h-8 w-8 {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}" 
+                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="mr-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} truncate">
+                                    فروشگاه‌های فعال
+                                </dt>
+                                <dd class="text-lg font-medium {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-gray-900{% endif %} persian-numbers">
+                                    {{ active_tenants|default:0 }}
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Users -->
+                <div class="{% if is_dark_mode %}cyber-glass-card{% else %}bg-white shadow rounded-lg{% endif %} p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="h-8 w-8 {% if is_dark_mode %}text-cyber-neon-tertiary{% else %}text-purple-600{% endif %}" 
+                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="mr-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} truncate">
+                                    کل کاربران
+                                </dt>
+                                <dd class="text-lg font-medium {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-gray-900{% endif %} persian-numbers">
+                                    {{ total_users|default:0 }}
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Health -->
+                <div class="{% if is_dark_mode %}cyber-glass-card{% else %}bg-white shadow rounded-lg{% endif %} p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="h-8 w-8 {% if system_health.database == 'healthy' %}{% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}{% else %}{% if is_dark_mode %}text-cyber-neon-danger{% else %}text-red-600{% endif %}{% endif %}" 
+                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                            </svg>
+                        </div>
+                        <div class="mr-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} truncate">
+                                    وضعیت سیستم
+                                </dt>
+                                <dd class="text-lg font-medium {% if system_health.database == 'healthy' %}{% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}{% else %}{% if is_dark_mode %}text-cyber-neon-danger{% else %}text-red-600{% endif %}{% endif %}">
+                                    {% if system_health.database == 'healthy' %}سالم{% else %}خطا{% endif %}
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="{% if is_dark_mode %}cyber-glass-card{% else %}bg-white shadow rounded-lg{% endif %}">
+                <div class="px-4 py-5 sm:p-6">
+                    <h3 class="text-lg leading-6 font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        فعالیت‌های اخیر
+                    </h3>
+                    <div class="mt-5">
+                        {% if recent_logs %}
+                        <div class="flow-root">
+                            <ul class="-mb-8">
+                                {% for log in recent_logs %}
+                                <li>
+                                    <div class="relative pb-8">
+                                        <div class="relative flex space-x-3 space-x-reverse">
+                                            <div>
+                                                <span class="h-8 w-8 rounded-full flex items-center justify-center
+                                                             {% if is_dark_mode %}bg-cyber-neon-primary/20 text-cyber-neon-primary{% else %}bg-blue-500 text-white{% endif %}">
+                                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                    </svg>
+                                                </span>
+                                            </div>
+                                            <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+                                                <div>
+                                                    <p class="text-sm {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                                        {{ log.action }} - {{ log.user.full_persian_name|default:"سیستم" }}
+                                                    </p>
+                                                </div>
+                                                <div class="text-right text-sm whitespace-nowrap {% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">
+                                                    <time datetime="{{ log.timestamp|date:'c' }}">{{ log.timestamp|timesince }} پیش</time>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% else %}
+                        <p class="text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                            هیچ فعالیت اخیری وجود ندارد.
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

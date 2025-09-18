@@ -1,23 +1,35 @@
 """
-URLs for tenant-specific functionality.
+URL configuration for tenant-specific functionality.
 """
-from django.urls import path
-from . import tenant_views
+from django.urls import path, include
+from django.contrib.auth import views as auth_views
+from .tenant_views import (
+    TenantDashboardView,
+    TenantLoginView,
+    TenantLogoutView,
+    ThemeToggleView,
+    TenantPasswordResetView,
+    TenantPasswordResetDoneView,
+    TenantPasswordResetConfirmView,
+    TenantPasswordResetCompleteView
+)
 
 app_name = 'tenant'
 
 urlpatterns = [
     # Tenant dashboard
-    path('', tenant_views.TenantDashboardView.as_view(), name='dashboard'),
+    path('', TenantDashboardView.as_view(), name='dashboard'),
     
-    # User profile
-    path('profile/', tenant_views.UserProfileView.as_view(), name='profile'),
-    path('profile/edit/', tenant_views.UserProfileEditView.as_view(), name='profile_edit'),
+    # Authentication URLs
+    path('login/', TenantLoginView.as_view(), name='login'),
+    path('logout/', TenantLogoutView.as_view(), name='logout'),
     
-    # Theme switching
-    path('theme/toggle/', tenant_views.ThemeToggleView.as_view(), name='theme_toggle'),
+    # Password reset URLs
+    path('password-reset/', TenantPasswordResetView.as_view(), name='password_reset'),
+    path('password-reset/done/', TenantPasswordResetDoneView.as_view(), name='password_reset_done'),
+    path('password-reset/confirm/<uidb64>/<token>/', TenantPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    path('password-reset/complete/', TenantPasswordResetCompleteView.as_view(), name='password_reset_complete'),
     
-    # 2FA management
-    path('2fa/setup/', tenant_views.TwoFactorSetupView.as_view(), name='2fa_setup'),
-    path('2fa/disable/', tenant_views.TwoFactorDisableView.as_view(), name='2fa_disable'),
+    # Theme toggle
+    path('theme/toggle/', ThemeToggleView.as_view(), name='theme_toggle'),
 ]

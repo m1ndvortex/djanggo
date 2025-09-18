@@ -40,7 +40,11 @@
     - Write unit tests for tenant isolation and schema management
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-  - [ ] 2.2 Create base authentication templates and login system (Frontend)
+  - [x] 2.2 Create base authentication templates and login system (Frontend)
+
+
+
+
 
     - Build RTL-first base templates with Persian fonts and dark/light theme support
     - Create admin login page with 2FA support and Persian UI
@@ -50,6 +54,7 @@
     - _Requirements: 1.5, 3.1, 4.1, 4.3_
 
   - [ ] 2.3 Implement tenant-aware base models and middleware (Backend)
+
     - Create TenantAwareModel abstract base class with audit fields
     - Implement tenant context middleware for automatic tenant resolution
     - Create tenant-aware managers and querysets for data isolation

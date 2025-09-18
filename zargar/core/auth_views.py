@@ -1,10 +1,11 @@
 """
-Views for tenant-specific functionality.
+Authentication views for super-panel (admin) functionality.
 """
-from django.shortcuts import render, redirect
-from django.views.generic import TemplateView, UpdateView, View
 from django.contrib.auth import views as auth_views
+from django.contrib.auth import authenticate, login
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.shortcuts import render, redirect
+from django.views.generic import TemplateView, View
 from django.contrib import messages
 from django.http import JsonResponse
 from django.utils.translation import gettext_lazy as _
@@ -16,79 +17,19 @@ import json
 from .models import User, AuditLog
 
 
-class TenantContextMixin:
+class AdminLoginView(auth_views.LoginView):
     """
-    Mixin to add tenant context to views.
+    Custom login view for super-panel administrators.
     """
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        
-        # Add tenant-specific context
-        if hasattr(self.request, 'tenant_context') and self.request.tenant_context:
-            context.update({
-                'tenant': self.request.tenant_context['tenant'],
-                'tenant_name': self.request.tenant_context['name'],
-                'tenant_domain': self.request.tenant_context['domain_url'],
-                'tenant_schema': self.request.tenant_context['schema_name'],
-            })
-        
-        return context
-
-
-class TenantDashboardView(LoginRequiredMixin, TenantContextMixin, TemplateView):
-    """
-    Main dashboard for tenant portal.
-    """
-    template_name = 'tenant/dashboard.html'
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context.update({
-            'page_title': 'داشبورد فروشگاه',
-            'is_tenant_dashboard': True,
-        })
-        
-        # Add dashboard metrics
-        context['dashboard_metrics'] = self.get_dashboard_metrics()
-        
-        # Add recent activities
-        context['recent_activities'] = self.get_recent_activities()
-        
-        return context
-    
-    def get_dashboard_metrics(self):
-        """
-        Get basic dashboard metrics for the tenant.
-        """
-        # TODO: Implement actual metrics from business modules
-        return {
-            'total_sales_today': 0,
-            'total_customers': 0,
-            'inventory_items': 0,
-            'pending_installments': 0,
-        }
-    
-    def get_recent_activities(self):
-        """
-        Get recent activities for the tenant.
-        """
-        # TODO: Implement actual activities from audit logs
-        return []
-
-
-class TenantLoginView(TenantContextMixin, auth_views.LoginView):
-    """
-    Custom login view for tenant users.
-    """
-    template_name = 'auth/tenant_login.html'
+    template_name = 'auth/admin_login.html'
     redirect_authenticated_user = True
-    success_url = reverse_lazy('tenant:dashboard')
+    success_url = reverse_lazy('core:dashboard')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update({
-            'page_title': 'ورود به فروشگاه',
-            'is_tenant_login': True,
+            'page_title': 'ورود مدیر سیستم',
+            'is_admin_login': True,
         })
         return context
     
@@ -96,10 +37,9 @@ class TenantLoginView(TenantContextMixin, auth_views.LoginView):
         """Handle successful login with audit logging."""
         user = form.get_user()
         
-        # Check if user belongs to current tenant
-        tenant_schema = getattr(self.request, 'tenant_context', {}).get('schema_name')
-        if tenant_schema and user.tenant_schema and user.tenant_schema != tenant_schema:
-            messages.error(self.request, _('شما مجوز دسترسی به این فروشگاه را ندارید.'))
+        # Check if user is super admin
+        if not user.is_super_admin:
+            messages.error(self.request, _('شما مجوز دسترسی به پنل مدیریت را ندارید.'))
             return self.form_invalid(form)
         
         # Log successful login
@@ -107,14 +47,12 @@ class TenantLoginView(TenantContextMixin, auth_views.LoginView):
             user=user,
             action='login',
             details={
-                'login_type': 'tenant_portal',
-                'tenant_schema': tenant_schema,
+                'login_type': 'admin_panel',
                 'ip_address': self.get_client_ip(),
                 'user_agent': self.request.META.get('HTTP_USER_AGENT', ''),
             },
             ip_address=self.get_client_ip(),
             user_agent=self.request.META.get('HTTP_USER_AGENT', ''),
-            tenant_schema=tenant_schema,
         )
         
         messages.success(self.request, _(f'خوش آمدید، {user.full_persian_name}'))
@@ -123,7 +61,6 @@ class TenantLoginView(TenantContextMixin, auth_views.LoginView):
     def form_invalid(self, form):
         """Handle failed login attempts."""
         username = form.cleaned_data.get('username', '')
-        tenant_schema = getattr(self.request, 'tenant_context', {}).get('schema_name')
         
         # Log failed login attempt
         AuditLog.objects.create(
@@ -131,15 +68,13 @@ class TenantLoginView(TenantContextMixin, auth_views.LoginView):
             action='login_failed',
             details={
                 'username': username,
-                'login_type': 'tenant_portal',
-                'tenant_schema': tenant_schema,
+                'login_type': 'admin_panel',
                 'ip_address': self.get_client_ip(),
                 'user_agent': self.request.META.get('HTTP_USER_AGENT', ''),
                 'errors': form.errors.as_json(),
             },
             ip_address=self.get_client_ip(),
             user_agent=self.request.META.get('HTTP_USER_AGENT', ''),
-            tenant_schema=tenant_schema,
         )
         
         return super().form_invalid(form)
@@ -154,29 +89,25 @@ class TenantLoginView(TenantContextMixin, auth_views.LoginView):
         return ip
 
 
-class TenantLogoutView(auth_views.LogoutView):
+class AdminLogoutView(auth_views.LogoutView):
     """
-    Custom logout view for tenant users.
+    Custom logout view for super-panel administrators.
     """
-    next_page = reverse_lazy('tenant:login')
+    next_page = reverse_lazy('core:admin_login')
     
     def dispatch(self, request, *args, **kwargs):
         """Log logout action before processing."""
         if request.user.is_authenticated:
-            tenant_schema = getattr(request, 'tenant_context', {}).get('schema_name')
-            
             AuditLog.objects.create(
                 user=request.user,
                 action='logout',
                 details={
-                    'logout_type': 'tenant_portal',
-                    'tenant_schema': tenant_schema,
+                    'logout_type': 'admin_panel',
                     'ip_address': self.get_client_ip(request),
                     'user_agent': request.META.get('HTTP_USER_AGENT', ''),
                 },
                 ip_address=self.get_client_ip(request),
                 user_agent=request.META.get('HTTP_USER_AGENT', ''),
-                tenant_schema=tenant_schema,
             )
             
             messages.success(request, _('با موفقیت از سیستم خارج شدید.'))
@@ -193,79 +124,50 @@ class TenantLogoutView(auth_views.LogoutView):
         return ip
 
 
-class TenantPasswordResetView(TenantContextMixin, auth_views.PasswordResetView):
+class AdminPasswordResetView(auth_views.PasswordResetView):
     """
-    Password reset view for tenant users.
+    Password reset view for admin users.
     """
-    template_name = 'auth/tenant_password_reset.html'
-    email_template_name = 'auth/tenant_password_reset_email.html'
-    subject_template_name = 'auth/tenant_password_reset_subject.txt'
-    success_url = reverse_lazy('tenant:password_reset_done')
+    template_name = 'auth/admin_password_reset.html'
+    email_template_name = 'auth/admin_password_reset_email.html'
+    subject_template_name = 'auth/admin_password_reset_subject.txt'
+    success_url = reverse_lazy('core:admin_password_reset_done')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update({
-            'page_title': 'بازیابی رمز عبور',
-            'is_tenant_reset': True,
+            'page_title': 'بازیابی رمز عبور مدیر',
+            'is_admin_reset': True,
         })
         return context
 
 
-class TenantPasswordResetDoneView(TenantContextMixin, auth_views.PasswordResetDoneView):
+class AdminPasswordResetDoneView(auth_views.PasswordResetDoneView):
     """
-    Password reset done view for tenant users.
+    Password reset done view for admin users.
     """
-    template_name = 'auth/tenant_password_reset_done.html'
+    template_name = 'auth/admin_password_reset_done.html'
 
 
-class TenantPasswordResetConfirmView(TenantContextMixin, auth_views.PasswordResetConfirmView):
+class AdminPasswordResetConfirmView(auth_views.PasswordResetConfirmView):
     """
-    Password reset confirm view for tenant users.
+    Password reset confirm view for admin users.
     """
-    template_name = 'auth/tenant_password_reset_confirm.html'
-    success_url = reverse_lazy('tenant:password_reset_complete')
+    template_name = 'auth/admin_password_reset_confirm.html'
+    success_url = reverse_lazy('core:admin_password_reset_complete')
 
 
-class TenantPasswordResetCompleteView(TenantContextMixin, auth_views.PasswordResetCompleteView):
+class AdminPasswordResetCompleteView(auth_views.PasswordResetCompleteView):
     """
-    Password reset complete view for tenant users.
+    Password reset complete view for admin users.
     """
-    template_name = 'auth/tenant_password_reset_complete.html'
-
-
-class UserProfileView(LoginRequiredMixin, TenantContextMixin, TemplateView):
-    """
-    User profile view.
-    """
-    template_name = 'core/tenant/profile.html'
-
-
-class UserProfileEditView(LoginRequiredMixin, TenantContextMixin, UpdateView):
-    """
-    Edit user profile.
-    """
-    model = User
-    template_name = 'core/tenant/profile_edit.html'
-    fields = [
-        'first_name', 'last_name', 'persian_first_name', 'persian_last_name',
-        'email', 'phone_number', 'theme_preference'
-    ]
-    
-    def get_object(self):
-        return self.request.user
-    
-    def form_valid(self, form):
-        messages.success(self.request, _('Profile updated successfully.'))
-        return super().form_valid(form)
-    
-    def get_success_url(self):
-        return '/profile/'
+    template_name = 'auth/admin_password_reset_complete.html'
 
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ThemeToggleView(View):
     """
-    Handle theme toggle requests via AJAX for tenant users.
+    Handle theme toggle requests via AJAX.
     """
     
     def post(self, request, *args, **kwargs):
@@ -302,7 +204,6 @@ class ThemeToggleView(View):
             )
             
             # Log theme change
-            tenant_schema = getattr(request, 'tenant_context', {}).get('schema_name')
             AuditLog.objects.create(
                 user=request.user,
                 action='theme_changed',
@@ -313,7 +214,6 @@ class ThemeToggleView(View):
                 },
                 ip_address=self.get_client_ip(request),
                 user_agent=request.META.get('HTTP_USER_AGENT', ''),
-                tenant_schema=tenant_schema,
             )
             
             return response
@@ -333,32 +233,33 @@ class ThemeToggleView(View):
         return ip
 
 
-class TwoFactorSetupView(LoginRequiredMixin, TenantContextMixin, TemplateView):
+class Admin2FASetupView(LoginRequiredMixin, TemplateView):
     """
-    2FA setup view.
+    2FA setup view for admin users.
+    This will be implemented in a later task.
     """
-    template_name = 'core/tenant/2fa_setup.html'
+    template_name = 'auth/admin_2fa_setup.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        
-        # TODO: Implement 2FA setup logic with django-otp
-        context['qr_code_url'] = None
-        context['secret_key'] = None
-        
+        context.update({
+            'page_title': 'تنظیم احراز هویت دو مرحله‌ای',
+            'is_2fa_setup': True,
+        })
         return context
 
 
-class TwoFactorDisableView(LoginRequiredMixin, View):
+class Admin2FAVerifyView(TemplateView):
     """
-    Disable 2FA for user.
+    2FA verification view for admin users.
+    This will be implemented in a later task.
     """
-    def post(self, request):
-        user = request.user
-        user.is_2fa_enabled = False
-        user.save(update_fields=['is_2fa_enabled'])
-        
-        # TODO: Remove 2FA devices with django-otp
-        
-        messages.success(request, _('Two-factor authentication disabled.'))
-        return redirect('/profile/')
+    template_name = 'auth/admin_2fa_verify.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'page_title': 'تأیید کد دو مرحله‌ای',
+            'is_2fa_verify': True,
+        })
+        return context

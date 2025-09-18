@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}داشبورد فروشگاه - زرگر{% endblock %}
+
+{% block content %}
+<div class="min-h-screen {% if is_dark_mode %}bg-gradient-to-br from-cyber-bg-primary via-cyber-bg-secondary to-cyber-bg-surface{% else %}bg-gray-50{% endif %}">
+    
+    <!-- Header -->
+    <header class="{% if is_dark_mode %}bg-cyber-bg-surface/50 border-b border-cyber-neon-primary/20{% else %}bg-white border-b border-gray-200{% endif %} backdrop-blur-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        داشبورد فروشگاه
+                        {% if tenant_name %}
+                        <span class="text-lg font-normal {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}">
+                            - {{ tenant_name }}
+                        </span>
+                        {% endif %}
+                    </h1>
+                </div>
+                
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <span class="text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                        خوش آمدید، {{ user.full_persian_name }}
+                    </span>
+                    <a href="{% url 'tenant:logout' %}" 
+                       class="{% if is_dark_mode %}text-cyber-neon-primary hover:text-cyber-neon-secondary{% else %}text-blue-600 hover:text-blue-500{% endif %} 
+                              transition-colors duration-200">
+                        خروج
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="px-4 py-6 sm:px-0">
+            
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Today's Sales -->
+                <div class="{% if is_dark_mode %}cyber-glass-card{% else %}bg-white shadow rounded-lg{% endif %} p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="h-8 w-8 {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}" 
+                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="mr-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} truncate">
+                                    فروش امروز
+                                </dt>
+                                <dd class="text-lg font-medium {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-gray-900{% endif %} persian-numbers">
+                                    {{ dashboard_metrics.total_sales_today|default:0 }} تومان
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Customers -->
+                <div class="{% if is_dark_mode %}cyber-glass-card{% else %}bg-white shadow rounded-lg{% endif %} p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="h-8 w-8 {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}" 
+                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="mr-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} truncate">
+                                    کل مشتریان
+                                </dt>
+                                <dd class="text-lg font-medium {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-gray-900{% endif %} persian-numbers">
+                                    {{ dashboard_metrics.total_customers|default:0 }}
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inventory Items -->
+                <div class="{% if is_dark_mode %}cyber-glass-card{% else %}bg-white shadow rounded-lg{% endif %} p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="h-8 w-8 {% if is_dark_mode %}text-cyber-neon-tertiary{% else %}text-purple-600{% endif %}" 
+                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                            </svg>
+                        </div>
+                        <div class="mr-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} truncate">
+                                    کالاهای موجود
+                                </dt>
+                                <dd class="text-lg font-medium {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-gray-900{% endif %} persian-numbers">
+                                    {{ dashboard_metrics.inventory_items|default:0 }}
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pending Installments -->
+                <div class="{% if is_dark_mode %}cyber-glass-card{% else %}bg-white shadow rounded-lg{% endif %} p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="h-8 w-8 {% if is_dark_mode %}text-cyber-neon-warning{% else %}text-yellow-600{% endif %}" 
+                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="mr-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} truncate">
+                                    اقساط معوق
+                                </dt>
+                                <dd class="text-lg font-medium {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-gray-900{% endif %} persian-numbers">
+                                    {{ dashboard_metrics.pending_installments|default:0 }}
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Welcome Message -->
+            <div class="{% if is_dark_mode %}cyber-glass-card{% else %}bg-white shadow rounded-lg{% endif %} mb-8">
+                <div class="px-4 py-5 sm:p-6">
+                    <h3 class="text-lg leading-6 font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        به سیستم مدیریت فروشگاه خوش آمدید
+                    </h3>
+                    <div class="mt-2 max-w-xl text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                        <p>
+                            از این داشبورد می‌توانید تمامی عملیات فروشگاه خود را مدیریت کنید. 
+                            برای شروع، از منوی بالا استفاده کنید.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
