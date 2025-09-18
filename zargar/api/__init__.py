@@ -1,0 +1,1 @@
+# API app for DRF endpoints

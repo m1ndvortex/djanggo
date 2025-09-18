@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=zargar_test
+      - POSTGRES_USER=zargar
+      - POSTGRES_PASSWORD=zargar_test_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zargar -d zargar_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  web:
+    build: .
+    environment:
+      - DJANGO_SETTINGS_MODULE=zargar.settings.test
+      - DATABASE_URL=postgresql://zargar:zargar_test_password@db:5432/zargar_test
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      # Storage credentials for testing
+      - CLOUDFLARE_R2_ACCESS_KEY=test_key
+      - CLOUDFLARE_R2_SECRET_KEY=test_secret
+      - CLOUDFLARE_R2_BUCKET=test_bucket
+      - CLOUDFLARE_R2_ENDPOINT=https://test.endpoint.com
+      - CLOUDFLARE_R2_ACCOUNT_ID=test_account
+      - BACKBLAZE_B2_ACCESS_KEY=test_key
+      - BACKBLAZE_B2_SECRET_KEY=test_secret
+      - BACKBLAZE_B2_BUCKET=test_bucket
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+
+  celery:
+    build: .
+    command: celery -A zargar worker -l info
+    environment:
+      - DJANGO_SETTINGS_MODULE=zargar.settings.test
+      - DATABASE_URL=postgresql://zargar:zargar_test_password@db:5432/zargar_test
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app

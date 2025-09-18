@@ -1,0 +1,129 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=zargar_dev
+      - POSTGRES_USER=zargar
+      - POSTGRES_PASSWORD=zargar_password_2024
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zargar -d zargar_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=1
+      - DATABASE_URL=postgresql://zargar:zargar_password_2024@db:5432/zargar_dev
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      # Cloudflare R2 Configuration
+      - CLOUDFLARE_R2_ACCESS_KEY=3f3dfdd35d139a687d4d00d75da96c76
+      - CLOUDFLARE_R2_SECRET_KEY=2999aa7307448cadfebe63cce0e55f6f74726edfcc32e5de8881015a31c4c897
+      - CLOUDFLARE_R2_BUCKET=securesyntax
+      - CLOUDFLARE_R2_ENDPOINT=https://b7900eeee7c415345d86ea859c9dad47.r2.cloudflarestorage.com
+      - CLOUDFLARE_R2_ACCOUNT_ID=b7900eeee7c415345d86ea859c9dad47
+      # Backblaze B2 Configuration
+      - BACKBLAZE_B2_ACCESS_KEY=005acba9882c2b80000000001
+      - BACKBLAZE_B2_SECRET_KEY=K005LzPhrovqG5Eq37oYWxIQiIKIHh8
+      - BACKBLAZE_B2_BUCKET=securesyntax
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  celery:
+    build: .
+    command: celery -A zargar worker -l info
+    volumes:
+      - .:/app
+    environment:
+      - DEBUG=1
+      - DATABASE_URL=postgresql://zargar:zargar_password_2024@db:5432/zargar_dev
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      # Storage credentials
+      - CLOUDFLARE_R2_ACCESS_KEY=3f3dfdd35d139a687d4d00d75da96c76
+      - CLOUDFLARE_R2_SECRET_KEY=2999aa7307448cadfebe63cce0e55f6f74726edfcc32e5de8881015a31c4c897
+      - CLOUDFLARE_R2_BUCKET=securesyntax
+      - CLOUDFLARE_R2_ENDPOINT=https://b7900eeee7c415345d86ea859c9dad47.r2.cloudflarestorage.com
+      - CLOUDFLARE_R2_ACCOUNT_ID=b7900eeee7c415345d86ea859c9dad47
+      - BACKBLAZE_B2_ACCESS_KEY=005acba9882c2b80000000001
+      - BACKBLAZE_B2_SECRET_KEY=K005LzPhrovqG5Eq37oYWxIQiIKIHh8
+      - BACKBLAZE_B2_BUCKET=securesyntax
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "celery", "-A", "zargar", "inspect", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  celery-beat:
+    build: .
+    command: celery -A zargar beat -l info
+    volumes:
+      - .:/app
+    environment:
+      - DEBUG=1
+      - DATABASE_URL=postgresql://zargar:zargar_password_2024@db:5432/zargar_dev
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./staticfiles:/app/staticfiles
+    depends_on:
+      - web
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
