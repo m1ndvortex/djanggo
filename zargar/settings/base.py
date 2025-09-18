@@ -41,9 +41,9 @@ SHARED_APPS = [
     'django_jalali',
     
     # Local apps (shared across tenants)
-    'zargar.core',
-    'zargar.tenants',
-    'zargar.api',
+    'zargar.core',     # User model and core functionality
+    'zargar.tenants',  # Tenant and Domain models must be in shared
+    'zargar.api',      # API endpoints can be shared
 ]
 
 TENANT_APPS = [
@@ -52,7 +52,7 @@ TENANT_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     
-    # Tenant-specific apps
+    # Tenant-specific business apps
     'zargar.jewelry',
     'zargar.accounting',
     'zargar.customers',

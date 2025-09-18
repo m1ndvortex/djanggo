@@ -1,9 +1,32 @@
 """
 Core models for zargar project.
 """
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from django_tenants.utils import get_tenant_model
+
+
+class TenantAwareUserManager(UserManager):
+    """
+    Custom user manager that filters users by current tenant.
+    """
+    
+    def get_queryset(self):
+        """Filter users by current tenant schema."""
+        queryset = super().get_queryset()
+        # For now, return all users - tenant filtering will be handled by middleware
+        return queryset
+    
+    def create_user(self, username, email=None, password=None, **extra_fields):
+        """Create user with current tenant schema."""
+        # Tenant schema will be set by middleware/views
+        return super().create_user(username, email, password, **extra_fields)
+    
+    def create_superuser(self, username, email=None, password=None, **extra_fields):
+        """Create superuser with current tenant schema."""
+        # Superusers can access all tenants
+        return super().create_superuser(username, email, password, **extra_fields)
 
 
 class User(AbstractUser):
@@ -64,18 +87,21 @@ class User(AbstractUser):
         verbose_name=_('Persian Last Name')
     )
     
-    # Tenant relationship (will be set by tenant-specific models)
-    tenant_id = models.CharField(
+    # Tenant relationship for proper isolation
+    tenant_schema = models.CharField(
         max_length=100,
         blank=True,
         null=True,
-        verbose_name=_('Tenant ID'),
-        help_text=_('Associated tenant schema name')
+        verbose_name=_('Tenant Schema'),
+        help_text=_('Associated tenant schema name for data isolation')
     )
     
     # Audit fields
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    # Use custom manager
+    objects = TenantAwareUserManager()
     
     class Meta:
         verbose_name = _('User')

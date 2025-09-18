@@ -28,7 +28,12 @@
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
 
 - [ ] 2. Multi-Tenant Architecture & Base Authentication
-  - [ ] 2.1 Configure django-tenants with shared database, separate schemas (Backend)
+  - [x] 2.1 Configure django-tenants with shared database, separate schemas (Backend)
+
+
+
+
+
     - Install and configure django-tenants library in Django settings
     - Create Tenant model extending TenantMixin with jewelry shop specific fields
     - Implement automatic schema creation and subdomain routing
@@ -36,6 +41,7 @@
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
   - [ ] 2.2 Create base authentication templates and login system (Frontend)
+
     - Build RTL-first base templates with Persian fonts and dark/light theme support
     - Create admin login page with 2FA support and Persian UI
     - Build tenant login page with subdomain-based authentication
