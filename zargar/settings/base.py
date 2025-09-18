@@ -32,6 +32,13 @@ SHARED_APPS = [
     'corsheaders',
     'django_otp',
     'storages',
+    'compressor',
+    'sass_processor',
+    'health_check',
+    'health_check.db',
+    'health_check.cache',
+    'health_check.storage',
+    'django_jalali',
     
     # Local apps (shared across tenants)
     'zargar.core',
@@ -68,6 +75,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.locale.LocaleMiddleware',
+    'zargar.core.middleware.TenantContextMiddleware',
+    'zargar.core.middleware.PersianLocalizationMiddleware',
 ]
 
 ROOT_URLCONF = 'zargar.urls'
@@ -84,6 +93,11 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'django.template.context_processors.i18n',
+                'django.template.context_processors.media',
+                'django.template.context_processors.static',
+                'zargar.core.context_processors.tenant_context',
+                'zargar.core.context_processors.persian_context',
+                'zargar.core.context_processors.theme_context',
             ],
         },
     },
@@ -167,6 +181,29 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
 
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+    'compressor.finders.CompressorFinder',
+    'sass_processor.finders.CssFinder',
+]
+
+# Django Compressor settings
+COMPRESS_ENABLED = not DEBUG
+COMPRESS_CSS_FILTERS = [
+    'compressor.filters.css_default.CssAbsoluteFilter',
+    'compressor.filters.cssmin.rCSSMinFilter',
+]
+COMPRESS_JS_FILTERS = [
+    'compressor.filters.jsmin.JSMinFilter',
+]
+
+# Sass processor settings
+SASS_PROCESSOR_ROOT = BASE_DIR / 'static'
+SASS_PROCESSOR_INCLUDE_DIRS = [
+    BASE_DIR / 'static' / 'scss',
+]
+
 # Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -230,6 +267,50 @@ BACKBLAZE_B2_BUCKET = config('BACKBLAZE_B2_BUCKET', default='')
 # Django Tenants Configuration
 TENANT_MODEL = "tenants.Tenant"
 TENANT_DOMAIN_MODEL = "tenants.Domain"
+PUBLIC_SCHEMA_URLCONF = 'zargar.urls_public'
+ROOT_URLCONF = 'zargar.urls_tenants'
+
+# Custom User Model
+AUTH_USER_MODEL = 'core.User'
+
+# Password Hashing
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.Argon2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+]
+
+# Persian/RTL Configuration
+USE_THOUSAND_SEPARATOR = True
+THOUSAND_SEPARATOR = '٬'  # Persian thousand separator
+DECIMAL_SEPARATOR = '٫'   # Persian decimal separator
+
+# Persian Calendar Configuration
+USE_JALALI = True
+JALALI_DATE_DEFAULTS = {
+    'Strftime': '%Y/%m/%d',
+    'Static_url': '/static/admin/js/',
+    'Date_field': 'date',
+    'Datetime_field': 'datetime',
+}
+
+# Theme Configuration
+THEME_SETTINGS = {
+    'DEFAULT_THEME': 'light',
+    'AVAILABLE_THEMES': ['light', 'dark'],
+    'THEME_COOKIE_NAME': 'zargar_theme',
+    'THEME_COOKIE_AGE': 365 * 24 * 60 * 60,  # 1 year
+}
+
+# Frontend Integration Settings
+FRONTEND_SETTINGS = {
+    'TAILWIND_CSS_VERSION': '3.3.0',
+    'FLOWBITE_VERSION': '1.8.1',
+    'ALPINE_JS_VERSION': '3.13.0',
+    'HTMX_VERSION': '1.9.6',
+    'FRAMER_MOTION_VERSION': '10.16.4',
+}
 
 # Security Settings
 SECURE_BROWSER_XSS_FILTER = True

@@ -1,0 +1,220 @@
+// Base SCSS file for ZARGAR jewelry SaaS platform
+// Persian RTL-first design with dual theme support
+
+// Import Tailwind CSS
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+// Persian fonts
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+// Cybersecurity theme colors
+:root {
+  // Light mode colors
+  --light-bg-primary: #f9fafb;
+  --light-bg-secondary: #ffffff;
+  --light-text-primary: #111827;
+  --light-text-secondary: #6b7280;
+  --light-border: #e5e7eb;
+  --light-accent: #3b82f6;
+
+  // Dark mode - Cybersecurity theme colors
+  --cyber-bg-primary: #0B0E1A;
+  --cyber-bg-secondary: #1A1D29;
+  --cyber-bg-surface: #252A3A;
+  --cyber-bg-elevated: #2D3348;
+  --cyber-neon-primary: #00D4FF;
+  --cyber-neon-secondary: #00FF88;
+  --cyber-neon-tertiary: #FF6B35;
+  --cyber-neon-warning: #FFB800;
+  --cyber-neon-danger: #FF4757;
+  --cyber-neon-purple: #A55EEA;
+  --cyber-text-primary: #FFFFFF;
+  --cyber-text-secondary: #B8BCC8;
+  --cyber-text-muted: #6B7280;
+  --cyber-glass-bg: rgba(255, 255, 255, 0.03);
+  --cyber-glass-border: rgba(255, 255, 255, 0.06);
+}
+
+// Base styles
+* {
+  box-sizing: border-box;
+}
+
+html {
+  direction: rtl;
+  font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  transition: all 0.3s ease;
+}
+
+// Light theme styles
+.light {
+  background-color: var(--light-bg-primary);
+  color: var(--light-text-primary);
+
+  .card {
+    background-color: var(--light-bg-secondary);
+    border: 1px solid var(--light-border);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .btn-primary {
+    background-color: var(--light-accent);
+    color: white;
+    border: none;
+    
+    &:hover {
+      background-color: #2563eb;
+    }
+  }
+}
+
+// Dark theme - Cybersecurity styles
+.dark {
+  background: linear-gradient(135deg, var(--cyber-bg-primary) 0%, var(--cyber-bg-secondary) 50%, var(--cyber-bg-surface) 100%);
+  color: var(--cyber-text-primary);
+  min-height: 100vh;
+
+  .cyber-glass-card {
+    backdrop-filter: blur(16px) saturate(150%);
+    background: linear-gradient(145deg, 
+      rgba(37, 42, 58, 0.8) 0%, 
+      rgba(26, 29, 41, 0.9) 50%,
+      rgba(11, 14, 26, 0.95) 100%);
+    border: 1px solid var(--cyber-glass-border);
+    box-shadow: 
+      0 12px 40px rgba(0, 0, 0, 0.6), 
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 
+        0 16px 50px rgba(0, 0, 0, 0.7), 
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+  }
+
+  .cyber-neon-button {
+    background: linear-gradient(145deg, 
+      rgba(0, 212, 255, 0.08) 0%, 
+      rgba(0, 255, 136, 0.04) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    box-shadow: 
+      0 8px 32px rgba(0, 212, 255, 0.15), 
+      0 0 20px rgba(0, 212, 255, 0.1);
+    color: var(--cyber-text-primary);
+    padding: 12px 24px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+
+    &:hover {
+      transform: scale(1.05);
+      box-shadow: 
+        0 12px 40px rgba(0, 212, 255, 0.25), 
+        0 0 30px rgba(0, 212, 255, 0.2);
+      border-color: rgba(0, 212, 255, 0.4);
+    }
+
+    &:active {
+      transform: scale(0.98);
+    }
+  }
+
+  .cyber-neon-border {
+    border: 1px solid;
+    border-image: linear-gradient(90deg, 
+      var(--cyber-neon-primary), 
+      var(--cyber-neon-secondary), 
+      var(--cyber-neon-tertiary)) 1;
+    animation: neon-pulse 2s ease-in-out infinite alternate;
+  }
+
+  .cyber-text-glow {
+    text-shadow: 0 0 10px var(--cyber-neon-primary);
+  }
+
+  .cyber-number-display {
+    color: var(--cyber-neon-secondary);
+    font-weight: 600;
+    text-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
+  }
+}
+
+// Animations
+@keyframes neon-pulse {
+  from { 
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.1); 
+  }
+  to { 
+    box-shadow: 
+      0 0 30px rgba(0, 212, 255, 0.3), 
+      0 0 60px rgba(0, 255, 136, 0.1); 
+  }
+}
+
+@keyframes cyber-glow {
+  0%, 100% {
+    text-shadow: 0 0 5px var(--cyber-neon-primary);
+  }
+  50% {
+    text-shadow: 
+      0 0 10px var(--cyber-neon-primary),
+      0 0 20px var(--cyber-neon-primary),
+      0 0 30px var(--cyber-neon-primary);
+  }
+}
+
+// Persian number utilities
+.persian-numbers {
+  font-feature-settings: 'lnum' 1;
+  
+  &.cyber-style {
+    color: var(--cyber-neon-secondary);
+    font-weight: 600;
+  }
+}
+
+// RTL utilities
+.rtl-flip {
+  transform: scaleX(-1);
+}
+
+.ltr-content {
+  direction: ltr;
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .cyber-glass-card {
+    margin: 8px;
+    padding: 16px;
+  }
+  
+  .cyber-neon-button {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+}
+
+// Print styles
+@media print {
+  .dark {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .cyber-glass-card {
+    background: white !important;
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+  }
+}
