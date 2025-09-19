@@ -1,15 +1,48 @@
 {% load persian_tags %}
-<div class="persian-number-input-container" dir="rtl">
+<div class="persian-number-input-container relative" dir="rtl">
     <input 
         type="text" 
         name="{{ field_name }}" 
         id="{{ field_id }}"
         value="{{ field_value|default:'' }}"
         placeholder="{{ placeholder }}"
-        class="persian-number-input w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-right"
-        data-persian-number-input
+        class="persian-number-input form-input w-full transition-all duration-300
+               {% if is_dark_mode %}
+               bg-cyber-bg-surface/60 border-cyber-border-glass text-cyber-text-primary
+               focus:border-cyber-neon-primary focus:shadow-neon
+               {% else %}
+               bg-white border-gray-300 text-gray-900
+               focus:border-blue-500 focus:ring-blue-500
+               {% endif %}"
+        data-persian-number
+        data-currency="{{ currency|default:'false' }}"
         autocomplete="off"
+        {% if required %}required{% endif %}
+        {% if readonly %}readonly{% endif %}
     >
+    
+    <!-- Currency suffix for currency inputs -->
+    {% if currency %}
+    <div class="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+        <span class="text-sm
+                     {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+            {{ currency|default:"تومان" }}
+        </span>
+    </div>
+    {% endif %}
+    
+    <!-- Validation icon -->
+    <div class="absolute left-2 top-1/2 transform -translate-y-1/2 opacity-0 transition-opacity duration-200"
+         data-validation-icon>
+        <!-- Success icon -->
+        <svg class="w-4 h-4 text-green-500 hidden" data-success-icon fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <!-- Error icon -->
+        <svg class="w-4 h-4 text-red-500 hidden" data-error-icon fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+    </div>
 </div>
 
 <style>

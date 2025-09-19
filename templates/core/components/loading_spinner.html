@@ -1,0 +1,65 @@
+<!-- Loading Spinner Component -->
+<div class="text-center">
+    <!-- Cybersecurity-themed spinner for dark mode -->
+    <div class="relative" :class="{ 'hidden': !darkMode }">
+        <!-- Outer ring with neon effect -->
+        <div class="animate-spin rounded-full h-12 w-12 border-2 border-transparent 
+                    bg-gradient-to-r from-cyber-neon-primary via-cyber-neon-secondary to-cyber-neon-tertiary 
+                    bg-clip-border mx-auto mb-4 relative">
+            <div class="absolute inset-1 bg-cyber-bg-primary rounded-full"></div>
+        </div>
+        
+        <!-- Inner pulsing dot -->
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 -mt-2">
+            <div class="w-2 h-2 bg-cyber-neon-primary rounded-full animate-ping"></div>
+        </div>
+        
+        <!-- Neon glow effect -->
+        <div class="absolute inset-0 rounded-full animate-pulse"
+             style="box-shadow: 0 0 20px rgba(0, 212, 255, 0.3), 0 0 40px rgba(0, 255, 136, 0.2);"></div>
+    </div>
+    
+    <!-- Simple spinner for light mode -->
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"
+         :class="{ 'hidden': darkMode, 'block': !darkMode }"></div>
+    
+    <!-- Loading text -->
+    <p class="text-sm font-medium animate-pulse"
+       :class="{ 
+           'text-cyber-text-secondary': darkMode, 
+           'text-gray-600': !darkMode 
+       }">
+        در حال بارگذاری...
+    </p>
+    
+    <!-- Progress dots -->
+    <div class="flex justify-center space-x-1 mt-2" dir="ltr">
+        <div class="w-2 h-2 rounded-full animate-bounce"
+             :class="{ 'bg-cyber-neon-primary': darkMode, 'bg-blue-600': !darkMode }"
+             style="animation-delay: 0ms;"></div>
+        <div class="w-2 h-2 rounded-full animate-bounce"
+             :class="{ 'bg-cyber-neon-secondary': darkMode, 'bg-blue-600': !darkMode }"
+             style="animation-delay: 150ms;"></div>
+        <div class="w-2 h-2 rounded-full animate-bounce"
+             :class="{ 'bg-cyber-neon-tertiary': darkMode, 'bg-blue-600': !darkMode }"
+             style="animation-delay: 300ms;"></div>
+    </div>
+</div>
+
+<style>
+/* Custom loading animations */
+@keyframes cyber-spin {
+    0% {
+        transform: rotate(0deg);
+        filter: hue-rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+        filter: hue-rotate(360deg);
+    }
+}
+
+.dark .animate-spin {
+    animation: cyber-spin 1s linear infinite;
+}
+</style>

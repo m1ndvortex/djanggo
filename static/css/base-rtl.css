@@ -1,0 +1,623 @@
+/**
+ * Enhanced RTL-first base CSS for ZARGAR jewelry SaaS platform
+ * Supports dual theme system with modern light and cybersecurity dark modes
+ */
+
+/* Import Tailwind CSS */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Persian fonts with fallbacks */
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;200;300;400;500;600;700;800;900&family=Yekan+Bakh:wght@300;400;500;600;700;800&display=swap');
+
+/* CSS Custom Properties for theme system */
+:root {
+  /* Light theme colors */
+  --light-bg-primary: #f9fafb;
+  --light-bg-secondary: #ffffff;
+  --light-bg-surface: #f3f4f6;
+  --light-text-primary: #111827;
+  --light-text-secondary: #6b7280;
+  --light-text-muted: #9ca3af;
+  --light-border: #e5e7eb;
+  --light-accent: #3b82f6;
+  --light-accent-hover: #2563eb;
+  --light-shadow: rgba(0, 0, 0, 0.1);
+
+  /* Cybersecurity theme colors */
+  --cyber-bg-primary: #0B0E1A;
+  --cyber-bg-secondary: #1A1D29;
+  --cyber-bg-surface: #252A3A;
+  --cyber-bg-elevated: #2D3348;
+  --cyber-bg-glass: rgba(255, 255, 255, 0.03);
+  --cyber-neon-primary: #00D4FF;
+  --cyber-neon-secondary: #00FF88;
+  --cyber-neon-tertiary: #FF6B35;
+  --cyber-neon-warning: #FFB800;
+  --cyber-neon-danger: #FF4757;
+  --cyber-neon-success: #00FF88;
+  --cyber-neon-purple: #A55EEA;
+  --cyber-text-primary: #FFFFFF;
+  --cyber-text-secondary: #B8BCC8;
+  --cyber-text-muted: #6B7280;
+  --cyber-text-neon: #00D4FF;
+  --cyber-text-numbers: #00FF88;
+  --cyber-border-glass: rgba(255, 255, 255, 0.06);
+  --cyber-border-neon: rgba(0, 212, 255, 0.2);
+  --cyber-shadow: rgba(0, 0, 0, 0.6);
+
+  /* Animation durations */
+  --transition-fast: 0.15s;
+  --transition-normal: 0.3s;
+  --transition-slow: 0.5s;
+}
+
+/* Base styles with RTL support */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  direction: rtl;
+  font-family: 'Vazirmatn', 'Yekan Bakh', 'Tahoma', 'Arial', sans-serif;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  transition: all var(--transition-normal) ease;
+  font-feature-settings: 'kern' 1, 'liga' 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Light theme styles */
+.light {
+  background-color: var(--light-bg-primary);
+  color: var(--light-text-primary);
+
+  /* Cards and surfaces */
+  .card {
+    background-color: var(--light-bg-secondary);
+    border: 1px solid var(--light-border);
+    box-shadow: 0 1px 3px var(--light-shadow);
+    border-radius: 8px;
+    transition: all var(--transition-normal) ease;
+  }
+
+  .card:hover {
+    box-shadow: 0 4px 12px var(--light-shadow);
+    transform: translateY(-2px);
+  }
+
+  .surface {
+    background-color: var(--light-bg-surface);
+    border: 1px solid var(--light-border);
+  }
+
+  /* Buttons */
+  .btn-primary {
+    background-color: var(--light-accent);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all var(--transition-normal) ease;
+    cursor: pointer;
+  }
+
+  .btn-primary:hover {
+    background-color: var(--light-accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  }
+
+  .btn-secondary {
+    background-color: transparent;
+    color: var(--light-text-primary);
+    border: 1px solid var(--light-border);
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all var(--transition-normal) ease;
+    cursor: pointer;
+  }
+
+  .btn-secondary:hover {
+    background-color: var(--light-bg-surface);
+    border-color: var(--light-accent);
+  }
+
+  /* Form elements */
+  .form-input {
+    background-color: var(--light-bg-secondary);
+    border: 1px solid var(--light-border);
+    color: var(--light-text-primary);
+    padding: 12px 16px;
+    border-radius: 8px;
+    transition: all var(--transition-normal) ease;
+    direction: rtl;
+    text-align: right;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--light-accent);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .form-label {
+    color: var(--light-text-secondary);
+    font-weight: 500;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  /* Navigation */
+  .nav-item {
+    color: var(--light-text-secondary);
+    padding: 12px 16px;
+    border-radius: 8px;
+    transition: all var(--transition-normal) ease;
+    text-decoration: none;
+  }
+
+  .nav-item:hover,
+  .nav-item.active {
+    background-color: var(--light-bg-surface);
+    color: var(--light-accent);
+  }
+}
+
+/* Dark theme - Cybersecurity styles */
+.dark {
+  background: linear-gradient(135deg, 
+    var(--cyber-bg-primary) 0%, 
+    var(--cyber-bg-secondary) 50%, 
+    var(--cyber-bg-surface) 100%);
+  color: var(--cyber-text-primary);
+  min-height: 100vh;
+
+  /* Glassmorphism cards */
+  .cyber-glass-card {
+    backdrop-filter: blur(16px) saturate(150%);
+    background: linear-gradient(145deg, 
+      rgba(37, 42, 58, 0.8) 0%, 
+      rgba(26, 29, 41, 0.9) 50%,
+      rgba(11, 14, 26, 0.95) 100%);
+    border: 1px solid var(--cyber-border-glass);
+    box-shadow: 
+      0 12px 40px var(--cyber-shadow), 
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    transition: all var(--transition-normal) ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cyber-glass-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, 
+      transparent, 
+      var(--cyber-neon-primary), 
+      transparent);
+    opacity: 0.3;
+  }
+
+  .cyber-glass-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 
+      0 20px 60px var(--cyber-shadow), 
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      0 0 30px rgba(0, 212, 255, 0.1);
+    border-color: rgba(0, 212, 255, 0.3);
+  }
+
+  /* Neon buttons */
+  .cyber-neon-button {
+    background: linear-gradient(145deg, 
+      rgba(0, 212, 255, 0.08) 0%, 
+      rgba(0, 255, 136, 0.04) 100%);
+    border: 1px solid var(--cyber-border-neon);
+    box-shadow: 
+      0 8px 32px rgba(0, 212, 255, 0.15), 
+      0 0 20px rgba(0, 212, 255, 0.1);
+    color: var(--cyber-text-primary);
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all var(--transition-normal) ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cyber-neon-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+      transparent, 
+      rgba(0, 212, 255, 0.2), 
+      transparent);
+    transition: left var(--transition-slow) ease;
+  }
+
+  .cyber-neon-button:hover::before {
+    left: 100%;
+  }
+
+  .cyber-neon-button:hover {
+    transform: scale(1.05);
+    box-shadow: 
+      0 12px 40px rgba(0, 212, 255, 0.25), 
+      0 0 30px rgba(0, 212, 255, 0.2);
+    border-color: rgba(0, 212, 255, 0.4);
+  }
+
+  .cyber-neon-button:active {
+    transform: scale(0.98);
+  }
+
+  /* Secondary cyber button */
+  .cyber-secondary-button {
+    background: rgba(0, 255, 136, 0.05);
+    border: 1px solid rgba(0, 255, 136, 0.2);
+    color: var(--cyber-neon-secondary);
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all var(--transition-normal) ease;
+    cursor: pointer;
+  }
+
+  .cyber-secondary-button:hover {
+    background: rgba(0, 255, 136, 0.1);
+    border-color: rgba(0, 255, 136, 0.4);
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+  }
+
+  /* Neon borders and effects */
+  .cyber-neon-border {
+    border: 1px solid;
+    border-image: linear-gradient(90deg, 
+      var(--cyber-neon-primary), 
+      var(--cyber-neon-secondary), 
+      var(--cyber-neon-tertiary)) 1;
+    animation: neon-pulse 2s ease-in-out infinite alternate;
+  }
+
+  .cyber-text-glow {
+    text-shadow: 0 0 10px var(--cyber-neon-primary);
+    animation: cyber-glow 3s ease-in-out infinite;
+  }
+
+  .cyber-number-display {
+    color: var(--cyber-neon-secondary);
+    font-weight: 600;
+    text-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
+    font-feature-settings: 'tnum' 1;
+  }
+
+  /* Form elements in dark mode */
+  .form-input {
+    background: rgba(37, 42, 58, 0.6);
+    border: 1px solid var(--cyber-border-glass);
+    color: var(--cyber-text-primary);
+    padding: 12px 16px;
+    border-radius: 8px;
+    transition: all var(--transition-normal) ease;
+    direction: rtl;
+    text-align: right;
+    backdrop-filter: blur(8px);
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--cyber-neon-primary);
+    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+    background: rgba(37, 42, 58, 0.8);
+  }
+
+  .form-input::placeholder {
+    color: var(--cyber-text-muted);
+  }
+
+  .form-label {
+    color: var(--cyber-text-secondary);
+    font-weight: 500;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  /* Navigation in dark mode */
+  .nav-item {
+    color: var(--cyber-text-secondary);
+    padding: 12px 16px;
+    border-radius: 8px;
+    transition: all var(--transition-normal) ease;
+    text-decoration: none;
+    position: relative;
+  }
+
+  .nav-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 0;
+    background: var(--cyber-neon-primary);
+    transition: height var(--transition-normal) ease;
+    border-radius: 0 2px 2px 0;
+  }
+
+  .nav-item:hover,
+  .nav-item.active {
+    background: rgba(0, 212, 255, 0.05);
+    color: var(--cyber-neon-primary);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+  }
+
+  .nav-item:hover::before,
+  .nav-item.active::before {
+    height: 60%;
+  }
+}
+
+/* Animations */
+@keyframes neon-pulse {
+  from { 
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.1); 
+  }
+  to { 
+    box-shadow: 
+      0 0 30px rgba(0, 212, 255, 0.3), 
+      0 0 60px rgba(0, 255, 136, 0.1); 
+  }
+}
+
+@keyframes cyber-glow {
+  0%, 100% {
+    text-shadow: 0 0 5px var(--cyber-neon-primary);
+  }
+  50% {
+    text-shadow: 
+      0 0 10px var(--cyber-neon-primary),
+      0 0 20px var(--cyber-neon-primary),
+      0 0 30px var(--cyber-neon-primary);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Persian typography and RTL utilities */
+.persian-text {
+  font-family: 'Vazirmatn', 'Yekan Bakh', 'Tahoma', sans-serif;
+  direction: rtl;
+  text-align: right;
+}
+
+.persian-numbers {
+  font-feature-settings: 'lnum' 1;
+  direction: ltr;
+  display: inline-block;
+  text-align: right;
+}
+
+.persian-numbers.cyber-style {
+  color: var(--cyber-neon-secondary);
+  font-weight: 600;
+  text-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
+}
+
+.persian-currency {
+  font-weight: 600;
+}
+
+.dark .persian-currency {
+  color: var(--cyber-neon-secondary);
+}
+
+/* RTL-specific utilities */
+.rtl-flip {
+  transform: scaleX(-1);
+}
+
+.ltr-content {
+  direction: ltr;
+  text-align: left;
+}
+
+.rtl-content {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Component-specific styles */
+.theme-toggle {
+  position: relative;
+  z-index: 1000;
+}
+
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .cyber-glass-card {
+    margin: 8px;
+    padding: 16px;
+  }
+  
+  .cyber-neon-button {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+  
+  .form-input {
+    padding: 10px 14px;
+  }
+  
+  .nav-item {
+    padding: 10px 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .cyber-glass-card {
+    margin: 4px;
+    padding: 12px;
+  }
+  
+  .cyber-neon-button {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .dark {
+    --cyber-border-glass: rgba(255, 255, 255, 0.2);
+    --cyber-border-neon: rgba(0, 212, 255, 0.5);
+  }
+  
+  .light {
+    --light-border: #000000;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Print styles */
+@media print {
+  .dark {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .cyber-glass-card {
+    background: white !important;
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+  }
+  
+  .cyber-neon-button {
+    background: white !important;
+    border: 1px solid #ccc !important;
+    color: black !important;
+    box-shadow: none !important;
+  }
+  
+  .theme-toggle {
+    display: none !important;
+  }
+}
+
+/* Focus styles for accessibility */
+.focus-visible:focus {
+  outline: 2px solid var(--cyber-neon-primary);
+  outline-offset: 2px;
+}
+
+.light .focus-visible:focus {
+  outline-color: var(--light-accent);
+}
+
+/* Selection styles */
+::selection {
+  background: var(--cyber-neon-primary);
+  color: var(--cyber-bg-primary);
+}
+
+.light ::selection {
+  background: var(--light-accent);
+  color: white;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--light-bg-surface);
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: var(--cyber-bg-surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--light-border);
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--cyber-border-glass);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--light-accent);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--cyber-neon-primary);
+}

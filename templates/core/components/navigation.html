@@ -1,0 +1,280 @@
+<!-- Navigation Component -->
+<nav class="relative z-40" x-data="{ mobileMenuOpen: false }">
+    <!-- Desktop Navigation -->
+    <div class="hidden lg:block">
+        <div class="px-6 py-4">
+            <div class="flex items-center justify-between">
+                <!-- Logo -->
+                <div class="flex items-center">
+                    <a href="{% url 'core:dashboard' %}" class="flex items-center space-x-3 rtl:space-x-reverse">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center
+                                    {% if is_dark_mode %}
+                                    bg-gradient-to-br from-cyber-neon-primary to-cyber-neon-secondary
+                                    {% else %}
+                                    bg-gradient-to-br from-blue-600 to-blue-700
+                                    {% endif %}">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="text-right">
+                            <h1 class="text-xl font-bold
+                                       {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                زرگر
+                            </h1>
+                            <p class="text-sm
+                                     {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                                سیستم مدیریت طلا و جواهرات
+                            </p>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Navigation Links -->
+                <div class="flex items-center space-x-8 rtl:space-x-reverse">
+                    {% if user.is_authenticated %}
+                        <!-- Dashboard -->
+                        <a href="{% url 'core:dashboard' %}" 
+                           class="nav-item flex items-center space-x-2 rtl:space-x-reverse
+                                  {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z"></path>
+                            </svg>
+                            <span>داشبورد</span>
+                        </a>
+
+                        <!-- Inventory -->
+                        <a href="{% url 'core:inventory' %}" 
+                           class="nav-item flex items-center space-x-2 rtl:space-x-reverse
+                                  {% if 'inventory' in request.resolver_match.url_name %}active{% endif %}">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                            </svg>
+                            <span>موجودی</span>
+                        </a>
+
+                        <!-- Sales -->
+                        <a href="{% url 'core:sales' %}" 
+                           class="nav-item flex items-center space-x-2 rtl:space-x-reverse
+                                  {% if 'sales' in request.resolver_match.url_name %}active{% endif %}">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span>فروش</span>
+                        </a>
+
+                        <!-- Customers -->
+                        <a href="{% url 'core:customers' %}" 
+                           class="nav-item flex items-center space-x-2 rtl:space-x-reverse
+                                  {% if 'customers' in request.resolver_match.url_name %}active{% endif %}">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                            </svg>
+                            <span>مشتریان</span>
+                        </a>
+
+                        <!-- Reports -->
+                        <a href="{% url 'core:reports' %}" 
+                           class="nav-item flex items-center space-x-2 rtl:space-x-reverse
+                                  {% if 'reports' in request.resolver_match.url_name %}active{% endif %}">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                            <span>گزارشات</span>
+                        </a>
+                    {% endif %}
+                </div>
+
+                <!-- User Menu -->
+                {% if user.is_authenticated %}
+                <div class="relative" x-data="{ userMenuOpen: false }">
+                    <button @click="userMenuOpen = !userMenuOpen" 
+                            class="flex items-center space-x-3 rtl:space-x-reverse p-2 rounded-lg transition-all duration-200
+                                   {% if is_dark_mode %}
+                                   hover:bg-cyber-bg-surface/50 border border-transparent hover:border-cyber-border-glass
+                                   {% else %}
+                                   hover:bg-gray-100 border border-transparent hover:border-gray-200
+                                   {% endif %}">
+                        <div class="text-right">
+                            <p class="text-sm font-medium
+                                     {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                {{ user.get_full_name|default:user.username }}
+                            </p>
+                            <p class="text-xs
+                                     {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                                {{ user.role|default:"کاربر" }}
+                            </p>
+                        </div>
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center
+                                    {% if is_dark_mode %}
+                                    bg-gradient-to-br from-cyber-neon-primary to-cyber-neon-secondary
+                                    {% else %}
+                                    bg-gradient-to-br from-blue-600 to-blue-700
+                                    {% endif %}">
+                            <span class="text-white text-sm font-medium">
+                                {{ user.first_name.0|default:user.username.0|upper }}
+                            </span>
+                        </div>
+                        <svg class="w-4 h-4 transition-transform duration-200
+                                   {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}"
+                             :class="{ 'rotate-180': userMenuOpen }"
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+
+                    <!-- User Dropdown Menu -->
+                    <div x-show="userMenuOpen" 
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 transform scale-95"
+                         x-transition:enter-end="opacity-100 transform scale-100"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100 transform scale-100"
+                         x-transition:leave-end="opacity-0 transform scale-95"
+                         @click.away="userMenuOpen = false"
+                         class="absolute left-0 mt-2 w-48 rounded-lg shadow-lg backdrop-blur-sm z-50
+                                {% if is_dark_mode %}
+                                bg-cyber-bg-surface/90 border border-cyber-border-glass
+                                {% else %}
+                                bg-white border border-gray-200
+                                {% endif %}">
+                        <div class="py-2">
+                            <a href="{% url 'core:profile' %}" 
+                               class="block px-4 py-2 text-sm transition-colors duration-200
+                                      {% if is_dark_mode %}
+                                      text-cyber-text-primary hover:bg-cyber-bg-elevated/50
+                                      {% else %}
+                                      text-gray-700 hover:bg-gray-100
+                                      {% endif %}">
+                                پروفایل کاربری
+                            </a>
+                            <a href="{% url 'core:settings' %}" 
+                               class="block px-4 py-2 text-sm transition-colors duration-200
+                                      {% if is_dark_mode %}
+                                      text-cyber-text-primary hover:bg-cyber-bg-elevated/50
+                                      {% else %}
+                                      text-gray-700 hover:bg-gray-100
+                                      {% endif %}">
+                                تنظیمات
+                            </a>
+                            <hr class="my-2 {% if is_dark_mode %}border-cyber-border-glass{% else %}border-gray-200{% endif %}">
+                            <a href="{% url 'auth:logout' %}" 
+                               class="block px-4 py-2 text-sm transition-colors duration-200
+                                      {% if is_dark_mode %}
+                                      text-cyber-neon-danger hover:bg-red-900/20
+                                      {% else %}
+                                      text-red-600 hover:bg-red-50
+                                      {% endif %}">
+                                خروج از سیستم
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <!-- Login/Register buttons for unauthenticated users -->
+                <div class="flex items-center space-x-4 rtl:space-x-reverse">
+                    <a href="{% url 'auth:login' %}" 
+                       class="{% if is_dark_mode %}cyber-secondary-button{% else %}btn-secondary{% endif %}">
+                        ورود
+                    </a>
+                    <a href="{% url 'auth:register' %}" 
+                       class="{% if is_dark_mode %}cyber-neon-button{% else %}btn-primary{% endif %}">
+                        ثبت نام
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Navigation -->
+    <div class="lg:hidden">
+        <div class="px-4 py-3 flex items-center justify-between">
+            <!-- Mobile Logo -->
+            <a href="{% url 'core:dashboard' %}" class="flex items-center space-x-2 rtl:space-x-reverse">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center
+                            {% if is_dark_mode %}
+                            bg-gradient-to-br from-cyber-neon-primary to-cyber-neon-secondary
+                            {% else %}
+                            bg-gradient-to-br from-blue-600 to-blue-700
+                            {% endif %}">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <span class="text-lg font-bold
+                           {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                    زرگر
+                </span>
+            </a>
+
+            <!-- Mobile Menu Button -->
+            <button @click="mobileMenuOpen = !mobileMenuOpen" 
+                    class="p-2 rounded-lg transition-colors duration-200
+                           {% if is_dark_mode %}
+                           text-cyber-text-primary hover:bg-cyber-bg-surface/50
+                           {% else %}
+                           text-gray-600 hover:bg-gray-100
+                           {% endif %}">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          x-show="!mobileMenuOpen" d="M4 6h16M4 12h16M4 18h16"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          x-show="mobileMenuOpen" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div x-show="mobileMenuOpen" 
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 transform -translate-y-2"
+             x-transition:enter-end="opacity-100 transform translate-y-0"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 transform translate-y-0"
+             x-transition:leave-end="opacity-0 transform -translate-y-2"
+             class="px-4 py-2 space-y-2
+                    {% if is_dark_mode %}
+                    bg-cyber-bg-surface/50 backdrop-blur-sm border-t border-cyber-border-glass
+                    {% else %}
+                    bg-gray-50 border-t border-gray-200
+                    {% endif %}">
+            
+            {% if user.is_authenticated %}
+                <a href="{% url 'core:dashboard' %}" 
+                   class="nav-item block w-full text-right">داشبورد</a>
+                <a href="{% url 'core:inventory' %}" 
+                   class="nav-item block w-full text-right">موجودی</a>
+                <a href="{% url 'core:sales' %}" 
+                   class="nav-item block w-full text-right">فروش</a>
+                <a href="{% url 'core:customers' %}" 
+                   class="nav-item block w-full text-right">مشتریان</a>
+                <a href="{% url 'core:reports' %}" 
+                   class="nav-item block w-full text-right">گزارشات</a>
+                
+                <hr class="my-2 {% if is_dark_mode %}border-cyber-border-glass{% else %}border-gray-200{% endif %}">
+                
+                <a href="{% url 'core:profile' %}" 
+                   class="nav-item block w-full text-right">پروفایل کاربری</a>
+                <a href="{% url 'core:settings' %}" 
+                   class="nav-item block w-full text-right">تنظیمات</a>
+                <a href="{% url 'auth:logout' %}" 
+                   class="nav-item block w-full text-right text-red-600">خروج از سیستم</a>
+            {% else %}
+                <a href="{% url 'auth:login' %}" 
+                   class="nav-item block w-full text-right">ورود</a>
+                <a href="{% url 'auth:register' %}" 
+                   class="nav-item block w-full text-right">ثبت نام</a>
+            {% endif %}
+        </div>
+    </div>
+</nav>
