@@ -1,0 +1,125 @@
+{% load persian_tags %}
+{# Persian Currency Display Component #}
+{# Usage: {% include 'core/components/persian_currency_display.html' with amount=1000000 size='large' show_symbol=True %} #}
+
+<div class="persian-currency-display persian-number-display {% if size %}{{ size }}{% endif %} 
+            {% if positive %}currency-positive{% elif negative %}currency-negative{% else %}currency-neutral{% endif %}"
+     data-persian-currency
+     data-amount="{{ amount|default:0 }}"
+     data-include-symbol="{{ show_symbol|default:'true' }}"
+     data-use-persian-digits="{{ use_persian_digits|default:'true' }}"
+     data-show-decimals="{{ show_decimals|default:'false' }}"
+     data-decimal-places="{{ decimal_places|default:0 }}"
+     data-symbol="{{ symbol|default:'تومان' }}"
+     {% if animate %}data-animate="true"{% endif %}
+     title="مبلغ: {{ amount|default:0 }}">
+    
+    {% if amount or amount == 0 %}
+        {% persian_currency amount show_symbol|default:True use_persian_digits|default:True %}
+    {% else %}
+        <span class="placeholder-text">
+            {% if use_persian_digits|default:True %}۰ تومان{% else %}0 تومان{% endif %}
+        </span>
+    {% endif %}
+    
+    {% if icon %}
+        <span class="currency-icon">
+            {% if icon == 'toman' %}
+                <svg class="w-4 h-4 inline-block mr-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+            {% elif icon == 'gold' %}
+                <svg class="w-4 h-4 inline-block mr-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+            {% endif %}
+        </span>
+    {% endif %}
+</div>
+
+<style>
+.persian-currency-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-family: 'Vazir', 'Tahoma', sans-serif;
+    direction: rtl;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.persian-currency-display.large {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.persian-currency-display.medium {
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.persian-currency-display.small {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.persian-currency-display.extra-large {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.currency-icon {
+    opacity: 0.7;
+    margin-left: 0.25rem;
+}
+
+.placeholder-text {
+    opacity: 0.6;
+    font-style: italic;
+}
+
+/* Theme-specific styles */
+.light-mode .persian-currency-display {
+    color: #111827;
+}
+
+.dark-mode .persian-currency-display {
+    color: #f9fafb;
+}
+
+.cyber-theme .persian-currency-display {
+    color: #ffffff;
+}
+
+.cyber-theme .persian-currency-display.large,
+.cyber-theme .persian-currency-display.extra-large {
+    text-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
+}
+
+.cyber-theme .persian-currency-display[data-animate="true"] {
+    animation: neon-pulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes neon-pulse {
+    from {
+        text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+    }
+    to {
+        text-shadow: 0 0 20px rgba(0, 212, 255, 0.6), 0 0 30px rgba(0, 255, 136, 0.2);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .persian-currency-display.extra-large {
+        font-size: 1.5rem;
+    }
+    
+    .persian-currency-display.large {
+        font-size: 1.25rem;
+    }
+}
+</style>

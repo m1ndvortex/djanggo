@@ -1,0 +1,363 @@
+{% extends 'base_rtl.html' %}
+{% load persian_tags %}
+
+{% block title %}نمایش اعداد فارسی - دمو{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/persian-number-display.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold mb-4">
+                سیستم نمایش اعداد فارسی
+            </h1>
+            <p class="text-lg opacity-80 mb-6">
+                نمایش جامع اعداد، ارز، وزن و اطلاعات مالی با ارقام فارسی
+            </p>
+            
+            <!-- Theme Toggle -->
+            <div class="flex justify-center mb-8">
+                {% include 'core/components/theme_toggle.html' %}
+            </div>
+        </div>
+
+        <!-- Currency Display Section -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold mb-6 border-b-2 border-blue-500 pb-2">
+                نمایش ارز و مبالغ مالی
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Basic Currency -->
+                <div class="p-6 rounded-lg border">
+                    <h3 class="text-lg font-semibold mb-4">مبلغ ساده</h3>
+                    {% include 'core/components/persian_currency_display.html' with amount=1500000 size='medium' %}
+                </div>
+                
+                <!-- Large Currency -->
+                <div class="p-6 rounded-lg border">
+                    <h3 class="text-lg font-semibold mb-4">مبلغ بزرگ</h3>
+                    {% include 'core/components/persian_currency_display.html' with amount=125000000 size='large' animate=True %}
+                </div>
+                
+                <!-- Currency with Decimals -->
+                <div class="p-6 rounded-lg border">
+                    <h3 class="text-lg font-semibold mb-4">مبلغ با اعشار</h3>
+                    {% include 'core/components/persian_currency_display.html' with amount=1234567.89 show_decimals=True decimal_places=2 %}
+                </div>
+            </div>
+            
+            <!-- Financial Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {% include 'core/components/persian_financial_card.html' with title='فروش امروز' value=15000000 type='currency' icon='sales' trend='+12%' trend_type='positive' card_type='sales' %}
+                
+                {% include 'core/components/persian_financial_card.html' with title='موجودی انبار' value=250 type='number' icon='inventory' subtitle='قطعه جواهرات' card_type='inventory' %}
+                
+                {% include 'core/components/persian_financial_card.html' with title='مشتریان فعال' value=1250 type='number' icon='customers' trend='+5%' trend_type='positive' card_type='customers' %}
+                
+                {% include 'core/components/persian_financial_card.html' with title='سود خالص' value=3500000 type='currency' icon='profit' trend='+8%' trend_type='positive' card_type='profit' badge='ماهانه' badge_type='success' %}
+            </div>
+        </section>
+
+        <!-- Weight Display Section -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold mb-6 border-b-2 border-green-500 pb-2">
+                نمایش وزن و واحدهای سنتی
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Basic Weight -->
+                <div class="p-6 rounded-lg border">
+                    <h3 class="text-lg font-semibold mb-4">وزن به گرم</h3>
+                    {% include 'core/components/persian_weight_display.html' with weight=125.5 unit='gram' %}
+                </div>
+                
+                <!-- Weight with Conversions -->
+                <div class="p-6 rounded-lg border">
+                    <h3 class="text-lg font-semibold mb-4">وزن با تبدیل واحد</h3>
+                    {% include 'core/components/persian_weight_display.html' with weight=23.04 unit='gram' show_conversions=True %}
+                </div>
+                
+                <!-- Traditional Units -->
+                <div class="p-6 rounded-lg border">
+                    <h3 class="text-lg font-semibold mb-4">واحدهای سنتی</h3>
+                    <div class="space-y-3">
+                        {% include 'core/components/persian_weight_display.html' with weight=5 unit='mesghal' %}
+                        <br>
+                        {% include 'core/components/persian_weight_display.html' with weight=100 unit='soot' %}
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Gold Price Display Section -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold mb-6 border-b-2 border-yellow-500 pb-2">
+                محاسبه قیمت طلا
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Gold Price Calculation -->
+                <div class="p-6 rounded-lg border">
+                    <h3 class="text-lg font-semibold mb-4">محاسبه قیمت طلا</h3>
+                    {% include 'core/components/persian_gold_price_display.html' with price_per_gram=1200000 weight_grams=18.4 show_karat=True karat=18 animate=True %}
+                </div>
+                
+                <!-- Gold Price with Profit -->
+                <div class="p-6 rounded-lg border">
+                    <h3 class="text-lg font-semibold mb-4">قیمت طلا با سود</h3>
+                    {% include 'core/components/persian_gold_price_display.html' with price_per_gram=1200000 weight_grams=9.216 show_profit_margin=True profit_percentage=15 show_last_updated=True last_updated='2025-01-20 14:30:00' %}
+                </div>
+            </div>
+        </section>
+
+        <!-- Number Formatting Section -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold mb-6 border-b-2 border-purple-500 pb-2">
+                قالب‌بندی اعداد و درصدها
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Large Numbers -->
+                <div class="p-6 rounded-lg border">
+                    <h3 class="text-lg font-semibold mb-4">اعداد بزرگ</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <span class="text-sm opacity-70">عدد معمولی:</span>
+                            <div class="persian-number-display large-number" data-persian-number data-number="1234567890">
+                                {% persian_large_number 1234567890 %}
+                            </div>
+                        </div>
+                        <div>
+                            <span class="text-sm opacity-70">فرمت کلمه‌ای:</span>
+                            <div class="persian-number-display word-format" data-persian-number data-number="1500000000" data-use-word-format="true">
+                                {% persian_large_number 1500000000 True True %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Percentages -->
+                <div class="p-6 rounded-lg border">
+                    <h3 class="text-lg font-semibold mb-4">درصدها</h3>
+                    <div class="space-y-3">
+                        <div class="persian-percentage-display positive" data-persian-percentage data-percentage="25.5">
+                            {% persian_percentage 25.5 %}
+                        </div>
+                        <div class="persian-percentage-display negative" data-persian-percentage data-percentage="-12.3">
+                            {% persian_percentage -12.3 %}
+                        </div>
+                        <div class="persian-percentage-display neutral" data-persian-percentage data-percentage="0">
+                            {% persian_percentage 0 %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Mixed Display -->
+                <div class="p-6 rounded-lg border">
+                    <h3 class="text-lg font-semibold mb-4">نمایش ترکیبی</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <span class="text-sm opacity-70">تعداد مشتریان:</span>
+                            <div class="persian-number-display" data-persian-number data-number="1847">
+                                {% persian_large_number 1847 %} نفر
+                            </div>
+                        </div>
+                        <div>
+                            <span class="text-sm opacity-70">رشد فروش:</span>
+                            <div class="persian-percentage-display positive" data-persian-percentage data-percentage="18.7">
+                                {% persian_percentage 18.7 %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interactive Demo Section -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold mb-6 border-b-2 border-red-500 pb-2">
+                دمو تعاملی
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Currency Input Demo -->
+                <div class="p-6 rounded-lg border">
+                    <h3 class="text-lg font-semibold mb-4">ورودی مبلغ</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">مبلغ (تومان):</label>
+                            {% include 'core/tags/persian_number_input.html' with field_name='demo_currency' field_id='demo_currency' placeholder='مبلغ را وارد کنید' currency='true' %}
+                        </div>
+                        <div>
+                            <span class="text-sm opacity-70">نمایش:</span>
+                            <div id="currency_display" class="persian-currency-display large">
+                                ۰ تومان
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Weight Input Demo -->
+                <div class="p-6 rounded-lg border">
+                    <h3 class="text-lg font-semibold mb-4">ورودی وزن</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">وزن (گرم):</label>
+                            {% include 'core/tags/persian_number_input.html' with field_name='demo_weight' field_id='demo_weight' placeholder='وزن را وارد کنید' %}
+                        </div>
+                        <div>
+                            <span class="text-sm opacity-70">تبدیل واحد:</span>
+                            <div id="weight_conversions" class="weight-conversions">
+                                <span class="weight-conversion-item">۰ گرم</span>
+                                <span class="weight-conversion-item">۰ مثقال</span>
+                                <span class="weight-conversion-item">۰ سوت</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- API Examples Section -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold mb-6 border-b-2 border-indigo-500 pb-2">
+                نمونه‌های استفاده از API
+            </h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- JavaScript API -->
+                <div class="p-6 rounded-lg border">
+                    <h3 class="text-lg font-semibold mb-4">JavaScript API</h3>
+                    <pre class="bg-gray-100 dark:bg-gray-800 p-4 rounded text-sm overflow-x-auto"><code>// Format currency
+persianNumberDisplay.formatCurrency(1500000);
+// Result: "۱،۵۰۰،۰۰۰ تومان"
+
+// Format weight
+persianNumberDisplay.formatWeight(23.04, {unit: 'gram'});
+// Result: "۲۳.۰۴ گرم"
+
+// Convert weight
+persianNumberDisplay.convertWeight(4.608, 'gram', 'mesghal');
+// Result: 1
+
+// Format gold price
+persianNumberDisplay.formatGoldPrice(1200000, 5.5);
+// Result: {pricePerGram: "۱،۲۰۰،۰۰۰ تومان", ...}</code></pre>
+                </div>
+                
+                <!-- Template Tags -->
+                <div class="p-6 rounded-lg border">
+                    <h3 class="text-lg font-semibold mb-4">Template Tags</h3>
+                    <pre class="bg-gray-100 dark:bg-gray-800 p-4 rounded text-sm overflow-x-auto"><code>{% templatetag openblock %} persian_currency 1500000 {% templatetag closeblock %}
+{% templatetag openblock %} persian_weight 23.04 'gram' {% templatetag closeblock %}
+{% templatetag openblock %} persian_percentage 25.5 {% templatetag closeblock %}
+{% templatetag openblock %} weight_conversions 4.608 {% templatetag closeblock %}
+{% templatetag openblock %} gold_price_calculation 1200000 5.5 {% templatetag closeblock %}</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- Performance Info -->
+        <section class="mb-8">
+            <div class="bg-blue-50 dark:bg-blue-900/20 cyber-theme:bg-gradient-to-r cyber-theme:from-blue-900/20 cyber-theme:to-cyan-900/20 p-6 rounded-lg">
+                <h3 class="text-lg font-semibold mb-3">اطلاعات عملکرد</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                        <strong>تعداد عناصر فعال:</strong>
+                        <span id="active_elements_count">در حال محاسبه...</span>
+                    </div>
+                    <div>
+                        <strong>زمان بارگذاری:</strong>
+                        <span id="load_time">در حال محاسبه...</span>
+                    </div>
+                    <div>
+                        <strong>حافظه استفاده شده:</strong>
+                        <span id="memory_usage">در حال محاسبه...</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/persian-number-display.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const startTime = performance.now();
+            
+            // Interactive demo functionality
+            const currencyInput = document.getElementById('demo_currency');
+            const currencyDisplay = document.getElementById('currency_display');
+            const weightInput = document.getElementById('demo_weight');
+            const weightConversions = document.getElementById('weight_conversions');
+            
+            if (currencyInput && currencyDisplay) {
+                currencyInput.addEventListener('input', function() {
+                    const value = window.persianNumberDisplay.parsePersianNumber(this.value);
+                    if (value !== null) {
+                        const formatted = window.persianNumberDisplay.formatCurrency(value);
+                        currencyDisplay.textContent = formatted;
+                    } else {
+                        currencyDisplay.textContent = '۰ تومان';
+                    }
+                });
+            }
+            
+            if (weightInput && weightConversions) {
+                weightInput.addEventListener('input', function() {
+                    const value = window.persianNumberDisplay.parsePersianNumber(this.value);
+                    if (value !== null && value > 0) {
+                        const conversions = window.persianNumberDisplay.formatWeightWithConversions(value);
+                        let html = '';
+                        for (const [unit, formatted] of Object.entries(conversions)) {
+                            html += `<span class="weight-conversion-item" data-unit="${unit}">${formatted}</span>`;
+                        }
+                        weightConversions.innerHTML = html;
+                    } else {
+                        weightConversions.innerHTML = `
+                            <span class="weight-conversion-item">۰ گرم</span>
+                            <span class="weight-conversion-item">۰ مثقال</span>
+                            <span class="weight-conversion-item">۰ سوت</span>
+                        `;
+                    }
+                });
+            }
+            
+            // Performance monitoring
+            setTimeout(() => {
+                const endTime = performance.now();
+                const loadTime = Math.round(endTime - startTime);
+                
+                // Count active elements
+                const activeElements = document.querySelectorAll('[data-persian-currency], [data-persian-weight], [data-persian-number], [data-gold-price], [data-persian-percentage]').length;
+                
+                // Update performance info
+                document.getElementById('active_elements_count').textContent = activeElements;
+                document.getElementById('load_time').textContent = `${loadTime} میلی‌ثانیه`;
+                
+                // Estimate memory usage (rough approximation)
+                const memoryUsage = Math.round((activeElements * 0.5) + (loadTime * 0.01));
+                document.getElementById('memory_usage').textContent = `~${memoryUsage} کیلوبایت`;
+            }, 100);
+            
+            // Add some dynamic updates for demo
+            setInterval(() => {
+                const randomPrice = Math.floor(Math.random() * 500000) + 1000000;
+                const priceElements = document.querySelectorAll('[data-animate="true"]');
+                priceElements.forEach(element => {
+                    if (element.dataset.amount) {
+                        element.dataset.amount = randomPrice;
+                        window.persianNumberDisplay.updateElement(element, randomPrice);
+                    }
+                });
+            }, 5000);
+        });
+    </script>
+{% endblock %}

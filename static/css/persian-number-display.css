@@ -1,0 +1,510 @@
+/**
+ * Persian Number Display Components CSS
+ * Styles for Persian number formatting, currency, weights, and financial displays
+ * Supports both light mode and cybersecurity dark theme
+ */
+
+/* Base Persian Number Display Styles */
+.persian-number-display {
+    font-family: 'Vazir', 'Tahoma', sans-serif;
+    direction: rtl;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.5;
+}
+
+/* Currency Display Components */
+.persian-currency-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-weight: 500;
+}
+
+.persian-currency-display.large {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.persian-currency-display.small {
+    font-size: 0.875rem;
+    font-weight: 400;
+}
+
+.currency-symbol {
+    font-size: 0.9em;
+    opacity: 0.8;
+    margin-right: 0.25rem;
+}
+
+/* Weight Display Components */
+.persian-weight-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-weight: 500;
+}
+
+.weight-conversions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.weight-conversion-item {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.weight-conversion-item:hover {
+    transform: translateY(-1px);
+}
+
+/* Number Display Components */
+.persian-number-display.large-number {
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+}
+
+.persian-number-display.word-format {
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.6;
+}
+
+/* Percentage Display */
+.persian-percentage-display {
+    display: inline-flex;
+    align-items: center;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.persian-percentage-display.positive {
+    color: #10b981;
+}
+
+.persian-percentage-display.negative {
+    color: #ef4444;
+}
+
+.persian-percentage-display.neutral {
+    color: #6b7280;
+}
+
+/* Gold Price Display Components */
+.gold-price-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+    background-color: #f9fafb;
+}
+
+.gold-price-info .price-per-gram {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+}
+
+.gold-price-info .total-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.gold-price-info .weight-display {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.gold-price-info .weight-conversions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.gold-price-info .weight-conversions span {
+    font-size: 0.75rem;
+    padding: 0.125rem 0.375rem;
+    background-color: #e5e7eb;
+    border-radius: 0.25rem;
+    color: #4b5563;
+}
+
+/* Financial Display Cards */
+.financial-display-card {
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid #e5e7eb;
+    background-color: #ffffff;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.financial-display-card:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.financial-display-card .title {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+}
+
+.financial-display-card .value {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1.2;
+}
+
+.financial-display-card .subtitle {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin-top: 0.25rem;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+    .weight-conversions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .gold-price-info .weight-conversions {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    
+    .financial-display-card {
+        padding: 1rem;
+    }
+    
+    .financial-display-card .value {
+        font-size: 1.5rem;
+    }
+}
+
+/* Light Mode Styles */
+.light-mode .persian-currency-display {
+    color: #111827;
+}
+
+.light-mode .persian-weight-display {
+    color: #374151;
+}
+
+.light-mode .weight-conversion-item {
+    background-color: #f3f4f6;
+    color: #4b5563;
+    border: 1px solid #e5e7eb;
+}
+
+.light-mode .weight-conversion-item:hover {
+    background-color: #e5e7eb;
+    border-color: #d1d5db;
+}
+
+.light-mode .persian-number-display {
+    color: #111827;
+}
+
+/* Dark Mode Base Styles */
+.dark-mode .persian-currency-display {
+    color: #f9fafb;
+}
+
+.dark-mode .persian-weight-display {
+    color: #e5e7eb;
+}
+
+.dark-mode .weight-conversion-item {
+    background-color: #374151;
+    color: #d1d5db;
+    border: 1px solid #4b5563;
+}
+
+.dark-mode .weight-conversion-item:hover {
+    background-color: #4b5563;
+    border-color: #6b7280;
+}
+
+.dark-mode .persian-number-display {
+    color: #f9fafb;
+}
+
+.dark-mode .gold-price-info {
+    background-color: #1f2937;
+    border-color: #374151;
+}
+
+.dark-mode .gold-price-info .price-per-gram {
+    color: #9ca3af;
+}
+
+.dark-mode .gold-price-info .total-value {
+    color: #f9fafb;
+}
+
+.dark-mode .gold-price-info .weight-display {
+    color: #d1d5db;
+}
+
+.dark-mode .gold-price-info .weight-conversions span {
+    background-color: #374151;
+    color: #9ca3af;
+}
+
+.dark-mode .financial-display-card {
+    background-color: #1f2937;
+    border-color: #374151;
+}
+
+.dark-mode .financial-display-card .title {
+    color: #9ca3af;
+}
+
+.dark-mode .financial-display-card .value {
+    color: #f9fafb;
+}
+
+.dark-mode .financial-display-card .subtitle {
+    color: #6b7280;
+}
+
+/* Cybersecurity Theme (Dark Mode Enhanced) */
+.cyber-theme .persian-currency-display {
+    color: #ffffff;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+.cyber-theme .persian-weight-display {
+    color: #ffffff;
+}
+
+.cyber-theme .weight-conversion-item {
+    background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    color: #ffffff;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.cyber-theme .weight-conversion-item:hover {
+    border-color: #00D4FF;
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+    transform: translateY(-2px);
+}
+
+.cyber-theme .persian-number-display {
+    color: #ffffff;
+}
+
+.cyber-theme .persian-number-display.large-number {
+    text-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
+}
+
+.cyber-theme .persian-percentage-display.positive {
+    color: #00FF88;
+    text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+}
+
+.cyber-theme .persian-percentage-display.negative {
+    color: #FF4757;
+    text-shadow: 0 0 10px rgba(255, 71, 87, 0.5);
+}
+
+.cyber-theme .gold-price-info {
+    background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.cyber-theme .gold-price-info .price-per-gram {
+    color: #B8BCC8;
+}
+
+.cyber-theme .gold-price-info .total-value {
+    color: #00FF88;
+    text-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
+}
+
+.cyber-theme .gold-price-info .weight-display {
+    color: #00D4FF;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+.cyber-theme .gold-price-info .weight-conversions span {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 255, 136, 0.05) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    color: #ffffff;
+}
+
+.cyber-theme .financial-display-card {
+    background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.cyber-theme .financial-display-card:hover {
+    border-color: #00D4FF;
+    box-shadow: 0 12px 40px rgba(0, 212, 255, 0.2);
+    transform: translateY(-4px);
+}
+
+.cyber-theme .financial-display-card .title {
+    color: #B8BCC8;
+}
+
+.cyber-theme .financial-display-card .value {
+    color: #00FF88;
+    text-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+}
+
+.cyber-theme .financial-display-card .subtitle {
+    color: #6B7280;
+}
+
+/* Animation Effects for Cybersecurity Theme */
+.cyber-theme .persian-currency-display.animate {
+    animation: neon-pulse 2s ease-in-out infinite alternate;
+}
+
+.cyber-theme .gold-price-info.animate {
+    animation: cyber-glow 3s ease-in-out infinite alternate;
+}
+
+@keyframes neon-pulse {
+    from {
+        text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+    }
+    to {
+        text-shadow: 0 0 20px rgba(0, 212, 255, 0.6), 0 0 30px rgba(0, 255, 136, 0.2);
+    }
+}
+
+@keyframes cyber-glow {
+    from {
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+    to {
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 40px rgba(0, 212, 255, 0.1);
+    }
+}
+
+/* Utility Classes */
+.persian-digits {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+}
+
+.rtl-text {
+    direction: rtl;
+    text-align: right;
+}
+
+.ltr-text {
+    direction: ltr;
+    text-align: left;
+}
+
+.currency-positive {
+    color: #10b981;
+}
+
+.currency-negative {
+    color: #ef4444;
+}
+
+.currency-neutral {
+    color: #6b7280;
+}
+
+.weight-primary {
+    color: #3b82f6;
+}
+
+.weight-secondary {
+    color: #6b7280;
+}
+
+/* Accessibility */
+.persian-number-display:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+.cyber-theme .persian-number-display:focus {
+    outline: 2px solid #00D4FF;
+    outline-offset: 2px;
+}
+
+/* Print Styles */
+@media print {
+    .persian-number-display,
+    .persian-currency-display,
+    .persian-weight-display,
+    .gold-price-info,
+    .financial-display-card {
+        color: #000 !important;
+        background: #fff !important;
+        border-color: #000 !important;
+        box-shadow: none !important;
+        text-shadow: none !important;
+    }
+    
+    .weight-conversion-item {
+        border: 1px solid #000 !important;
+        background: #fff !important;
+    }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    .persian-number-display,
+    .persian-currency-display,
+    .persian-weight-display {
+        font-weight: 600;
+    }
+    
+    .weight-conversion-item {
+        border-width: 2px;
+    }
+    
+    .financial-display-card {
+        border-width: 2px;
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    .weight-conversion-item,
+    .financial-display-card {
+        transition: none;
+    }
+    
+    .cyber-theme .persian-currency-display.animate,
+    .cyber-theme .gold-price-info.animate {
+        animation: none;
+    }
+    
+    .weight-conversion-item:hover,
+    .financial-display-card:hover {
+        transform: none;
+    }
+}
