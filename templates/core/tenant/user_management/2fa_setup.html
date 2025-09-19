@@ -3,8 +3,42 @@
 
 {% block title %}{{ page_title }} - زرگر{% endblock %}
 
+{% block extra_head %}
+<style>
+    .step-indicator {
+        transition: all 0.3s ease;
+    }
+    .step-indicator.active {
+        transform: scale(1.1);
+    }
+    .step-indicator.completed {
+        background: linear-gradient(135deg, #10B981, #059669);
+    }
+    .qr-code-container {
+        animation: fadeIn 0.5s ease-in-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .token-input {
+        letter-spacing: 0.5em;
+        text-align: center;
+        font-family: 'Courier New', monospace;
+    }
+    .error-shake {
+        animation: shake 0.5s ease-in-out;
+    }
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="min-h-screen {% if is_dark_mode %}bg-cyber-bg-primary{% else %}bg-gray-50{% endif %}">
+<div class="min-h-screen {% if is_dark_mode %}bg-cyber-bg-primary{% else %}bg-gray-50{% endif %}" x-data="twoFASetup()">
     <!-- Header -->
     <div class="{% if is_dark_mode %}bg-cyber-bg-secondary border-b border-cyber-neon-primary/20{% else %}bg-white border-b border-gray-200{% endif %} shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -22,7 +56,7 @@
                             {{ page_title }}
                         </h1>
                         <p class="text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
-                            لایه امنیتی اضافی برای حساب کاربری شما
+                            راه‌اندازی احراز هویت دو مرحله‌ای برای امنیت بیشتر حساب شما
                         </p>
                     </div>
                 </div>
@@ -40,164 +74,462 @@
         </div>
     </div>
 
+    <!-- Progress Indicator -->
+    <div class="{% if is_dark_mode %}bg-cyber-bg-secondary{% else %}bg-white{% endif %} border-b {% if is_dark_mode %}border-cyber-neon-primary/10{% else %}border-gray-200{% endif %}">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-center space-x-reverse space-x-8">
+                <!-- Step 1 -->
+                <div class="flex items-center">
+                    <div class="step-indicator w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300"
+                         :class="currentStep >= 1 ? '{% if is_dark_mode %}bg-cyber-neon-primary text-cyber-bg-primary{% else %}bg-blue-600 text-white{% endif %}' : '{% if is_dark_mode %}bg-cyber-bg-surface text-cyber-text-secondary border border-cyber-neon-primary/30{% else %}bg-gray-200 text-gray-600{% endif %}'">
+                        <span x-show="currentStep > 1">✓</span>
+                        <span x-show="currentStep <= 1">۱</span>
+                    </div>
+                    <span class="mr-2 text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">نصب اپلیکیشن</span>
+                </div>
+                
+                <!-- Connector -->
+                <div class="w-16 h-0.5 {% if is_dark_mode %}bg-cyber-neon-primary/20{% else %}bg-gray-300{% endif %}"
+                     :class="currentStep >= 2 ? '{% if is_dark_mode %}bg-cyber-neon-primary{% else %}bg-blue-600{% endif %}' : ''"></div>
+                
+                <!-- Step 2 -->
+                <div class="flex items-center">
+                    <div class="step-indicator w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300"
+                         :class="currentStep >= 2 ? '{% if is_dark_mode %}bg-cyber-neon-primary text-cyber-bg-primary{% else %}bg-blue-600 text-white{% endif %}' : '{% if is_dark_mode %}bg-cyber-bg-surface text-cyber-text-secondary border border-cyber-neon-primary/30{% else %}bg-gray-200 text-gray-600{% endif %}'">
+                        <span x-show="currentStep > 2">✓</span>
+                        <span x-show="currentStep <= 2">۲</span>
+                    </div>
+                    <span class="mr-2 text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">اسکن کد QR</span>
+                </div>
+                
+                <!-- Connector -->
+                <div class="w-16 h-0.5 {% if is_dark_mode %}bg-cyber-neon-primary/20{% else %}bg-gray-300{% endif %}"
+                     :class="currentStep >= 3 ? '{% if is_dark_mode %}bg-cyber-neon-primary{% else %}bg-blue-600{% endif %}' : ''"></div>
+                
+                <!-- Step 3 -->
+                <div class="flex items-center">
+                    <div class="step-indicator w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300"
+                         :class="currentStep >= 3 ? '{% if is_dark_mode %}bg-cyber-neon-primary text-cyber-bg-primary{% else %}bg-blue-600 text-white{% endif %}' : '{% if is_dark_mode %}bg-cyber-bg-surface text-cyber-text-secondary border border-cyber-neon-primary/30{% else %}bg-gray-200 text-gray-600{% endif %}'">
+                        <span x-show="currentStep > 3">✓</span>
+                        <span x-show="currentStep <= 3">۳</span>
+                    </div>
+                    <span class="mr-2 text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">تأیید کد</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+            {% for message in messages %}
+                <div class="mb-4 rounded-md p-4 {% if message.tags == 'error' %}{% if is_dark_mode %}bg-red-900/20 border border-red-500/30 text-red-300{% else %}bg-red-50 border border-red-200 text-red-800{% endif %}{% elif message.tags == 'success' %}{% if is_dark_mode %}bg-green-900/20 border border-green-500/30 text-green-300{% else %}bg-green-50 border border-green-200 text-green-800{% endif %}{% elif message.tags == 'warning' %}{% if is_dark_mode %}bg-yellow-900/20 border border-yellow-500/30 text-yellow-300{% else %}bg-yellow-50 border border-yellow-200 text-yellow-800{% endif %}{% else %}{% if is_dark_mode %}bg-blue-900/20 border border-blue-500/30 text-blue-300{% else %}bg-blue-50 border border-blue-200 text-blue-800{% endif %}{% endif %}"
+                     x-data="{ show: true }" x-show="show" x-transition>
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            {% if message.tags == 'error' %}
+                                <svg class="h-5 w-5 {% if is_dark_mode %}text-red-400{% else %}text-red-400{% endif %}" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                                </svg>
+                            {% elif message.tags == 'success' %}
+                                <svg class="h-5 w-5 {% if is_dark_mode %}text-green-400{% else %}text-green-400{% endif %}" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                </svg>
+                            {% else %}
+                                <svg class="h-5 w-5 {% if is_dark_mode %}text-blue-400{% else %}text-blue-400{% endif %}" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                </svg>
+                            {% endif %}
+                        </div>
+                        <div class="mr-3 flex-1">
+                            <p class="text-sm">{{ message }}</p>
+                        </div>
+                        <div class="mr-auto pl-3">
+                            <button @click="show = false" class="inline-flex {% if is_dark_mode %}text-gray-400 hover:text-gray-300{% else %}text-gray-400 hover:text-gray-500{% endif %}">
+                                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
     <!-- Setup Steps -->
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <!-- Instructions -->
             <div class="space-y-8">
-                <!-- Step 1 -->
-                <div class="{% if is_dark_mode %}bg-gradient-to-br from-cyber-bg-surface to-cyber-bg-elevated border border-cyber-neon-primary/20{% else %}bg-white border border-gray-200{% endif %} shadow-sm rounded-lg">
+                <!-- Step 1: Install App -->
+                <div class="{% if is_dark_mode %}bg-gradient-to-br from-cyber-bg-surface to-cyber-bg-elevated border border-cyber-neon-primary/20{% else %}bg-white border border-gray-200{% endif %} shadow-sm rounded-lg"
+                     x-show="currentStep >= 1" x-transition>
                     <div class="px-6 py-4 border-b {% if is_dark_mode %}border-cyber-neon-primary/20{% else %}border-gray-200{% endif %}">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0">
-                                <div class="w-8 h-8 {% if is_dark_mode %}bg-cyber-neon-primary/20 text-cyber-neon-primary{% else %}bg-blue-100 text-blue-600{% endif %} rounded-full flex items-center justify-center">
-                                    <span class="text-sm font-bold">۱</span>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-8 h-8 {% if is_dark_mode %}bg-cyber-neon-primary/20 text-cyber-neon-primary{% else %}bg-blue-100 text-blue-600{% endif %} rounded-full flex items-center justify-center">
+                                        <span class="text-sm font-bold">۱</span>
+                                    </div>
                                 </div>
+                                <h3 class="mr-3 text-lg font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">نصب اپلیکیشن احراز هویت</h3>
                             </div>
-                            <h3 class="mr-3 text-lg font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">نصب اپلیکیشن احراز هویت</h3>
+                            <button @click="currentStep = 2" 
+                                    class="text-sm {% if is_dark_mode %}text-cyber-neon-primary hover:text-cyber-neon-primary/80{% else %}text-blue-600 hover:text-blue-800{% endif %} transition-colors duration-150">
+                                مرحله بعد ←
+                            </button>
                         </div>
                     </div>
                     <div class="px-6 py-6">
-                        <p class="text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %} mb-4">
-                            یکی از اپلیکیشن‌های زیر را روی گوشی خود نصب کنید:
+                        <p class="text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %} mb-6">
+                            برای راه‌اندازی احراز هویت دو مرحله‌ای، ابتدا یکی از اپلیکیشن‌های زیر را روی گوشی هوشمند خود نصب کنید:
                         </p>
-                        <div class="space-y-3">
-                            <div class="flex items-center p-3 {% if is_dark_mode %}bg-cyber-bg-secondary border border-cyber-neon-primary/10{% else %}bg-gray-50 border border-gray-200{% endif %} rounded-lg">
+                        <div class="space-y-4">
+                            <div class="flex items-center p-4 {% if is_dark_mode %}bg-cyber-bg-secondary border border-cyber-neon-primary/10 hover:border-cyber-neon-primary/20{% else %}bg-gray-50 border border-gray-200 hover:border-gray-300{% endif %} rounded-lg transition-all duration-200 cursor-pointer"
+                                 onclick="window.open('https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2', '_blank')">
                                 <div class="flex-shrink-0">
-                                    <div class="w-8 h-8 bg-green-100 text-green-600 rounded-lg flex items-center justify-center">
-                                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <div class="w-10 h-10 bg-green-100 text-green-600 rounded-lg flex items-center justify-center">
+                                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                                             <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V8zm8 0a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V8z" clip-rule="evenodd" />
                                         </svg>
                                     </div>
                                 </div>
-                                <div class="mr-3">
+                                <div class="mr-4 flex-1">
                                     <p class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">Google Authenticator</p>
-                                    <p class="text-xs {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">رایگان برای Android و iOS</p>
+                                    <p class="text-xs {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">رایگان برای Android و iOS - پیشنهاد شده</p>
+                                </div>
+                                <div class="flex-shrink-0">
+                                    <svg class="w-5 h-5 {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                    </svg>
                                 </div>
                             </div>
-                            <div class="flex items-center p-3 {% if is_dark_mode %}bg-cyber-bg-secondary border border-cyber-neon-primary/10{% else %}bg-gray-50 border border-gray-200{% endif %} rounded-lg">
+                            
+                            <div class="flex items-center p-4 {% if is_dark_mode %}bg-cyber-bg-secondary border border-cyber-neon-primary/10 hover:border-cyber-neon-primary/20{% else %}bg-gray-50 border border-gray-200 hover:border-gray-300{% endif %} rounded-lg transition-all duration-200 cursor-pointer"
+                                 onclick="window.open('https://authy.com/download/', '_blank')">
                                 <div class="flex-shrink-0">
-                                    <div class="w-8 h-8 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center">
-                                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <div class="w-10 h-10 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center">
+                                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                                             <path fill-rule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clip-rule="evenodd" />
                                         </svg>
                                     </div>
                                 </div>
-                                <div class="mr-3">
+                                <div class="mr-4 flex-1">
                                     <p class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">Authy</p>
+                                    <p class="text-xs {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">رایگان برای Android و iOS - با پشتیبان‌گیری ابری</p>
+                                </div>
+                                <div class="flex-shrink-0">
+                                    <svg class="w-5 h-5 {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center p-4 {% if is_dark_mode %}bg-cyber-bg-secondary border border-cyber-neon-primary/10 hover:border-cyber-neon-primary/20{% else %}bg-gray-50 border border-gray-200 hover:border-gray-300{% endif %} rounded-lg transition-all duration-200 cursor-pointer"
+                                 onclick="window.open('https://www.microsoft.com/en-us/security/mobile-authenticator-app', '_blank')">
+                                <div class="flex-shrink-0">
+                                    <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center">
+                                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm1 2a1 1 0 000 2h6a1 1 0 100-2H7zm6 7a1 1 0 011 1v3a1 1 0 11-2 0v-3a1 1 0 011-1zm-3 3a1 1 0 100 2h.01a1 1 0 100-2H10zm-4 1a1 1 0 011-1h.01a1 1 0 110 2H7a1 1 0 01-1-1z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="mr-4 flex-1">
+                                    <p class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">Microsoft Authenticator</p>
                                     <p class="text-xs {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">رایگان برای Android و iOS</p>
+                                </div>
+                                <div class="flex-shrink-0">
+                                    <svg class="w-5 h-5 {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 p-4 {% if is_dark_mode %}bg-cyber-bg-primary border border-cyber-neon-secondary/20{% else %}bg-blue-50 border border-blue-200{% endif %} rounded-lg">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-blue-400{% endif %}" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div class="mr-3">
+                                    <h4 class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-blue-800{% endif %}">
+                                        راهنمای نصب
+                                    </h4>
+                                    <div class="mt-2 text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-blue-700{% endif %}">
+                                        <ol class="list-decimal list-inside space-y-1">
+                                            <li>روی یکی از اپلیکیشن‌های بالا کلیک کنید</li>
+                                            <li>اپلیکیشن را از فروشگاه اپ دانلود و نصب کنید</li>
+                                            <li>اپلیکیشن را باز کرده و آماده اسکن QR کنید</li>
+                                            <li>سپس روی "مرحله بعد" کلیک کنید</li>
+                                        </ol>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Step 2 -->
-                <div class="{% if is_dark_mode %}bg-gradient-to-br from-cyber-bg-surface to-cyber-bg-elevated border border-cyber-neon-secondary/20{% else %}bg-white border border-gray-200{% endif %} shadow-sm rounded-lg">
+                <!-- Step 2: Scan QR Code -->
+                <div class="{% if is_dark_mode %}bg-gradient-to-br from-cyber-bg-surface to-cyber-bg-elevated border border-cyber-neon-secondary/20{% else %}bg-white border border-gray-200{% endif %} shadow-sm rounded-lg"
+                     x-show="currentStep >= 2" x-transition>
                     <div class="px-6 py-4 border-b {% if is_dark_mode %}border-cyber-neon-secondary/20{% else %}border-gray-200{% endif %}">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0">
-                                <div class="w-8 h-8 {% if is_dark_mode %}bg-cyber-neon-secondary/20 text-cyber-neon-secondary{% else %}bg-green-100 text-green-600{% endif %} rounded-full flex items-center justify-center">
-                                    <span class="text-sm font-bold">۲</span>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-8 h-8 {% if is_dark_mode %}bg-cyber-neon-secondary/20 text-cyber-neon-secondary{% else %}bg-green-100 text-green-600{% endif %} rounded-full flex items-center justify-center">
+                                        <span class="text-sm font-bold">۲</span>
+                                    </div>
                                 </div>
+                                <h3 class="mr-3 text-lg font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">اسکن کد QR</h3>
                             </div>
-                            <h3 class="mr-3 text-lg font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">اسکن کد QR</h3>
-                        </div>
-                    </div>
-                    <div class="px-6 py-6">
-                        <p class="text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %} mb-4">
-                            کد QR موجود در سمت راست را با اپلیکیشن احراز هویت خود اسکن کنید.
-                        </p>
-                        <div class="{% if is_dark_mode %}bg-cyber-bg-secondary border border-cyber-neon-secondary/20{% else %}bg-gray-50 border border-gray-200{% endif %} rounded-lg p-4">
-                            <p class="text-xs {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} mb-2">
-                                در صورت عدم امکان اسکن، کلید زیر را به صورت دستی وارد کنید:
-                            </p>
-                            <div class="flex items-center justify-between p-2 {% if is_dark_mode %}bg-cyber-bg-primary border border-cyber-neon-primary/20{% else %}bg-white border border-gray-200{% endif %} rounded">
-                                <code class="text-sm font-mono {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}">{{ secret_key }}</code>
-                                <button onclick="copyToClipboard('{{ secret_key }}')" 
-                                        class="text-xs {% if is_dark_mode %}text-cyber-neon-primary hover:text-cyber-neon-primary/80{% else %}text-blue-600 hover:text-blue-800{% endif %} transition-colors duration-150">
-                                    کپی
+                            <div class="flex space-x-reverse space-x-2">
+                                <button @click="currentStep = 1" 
+                                        class="text-sm {% if is_dark_mode %}text-cyber-text-secondary hover:text-cyber-text-primary{% else %}text-gray-500 hover:text-gray-700{% endif %} transition-colors duration-150">
+                                    → مرحله قبل
+                                </button>
+                                <button @click="currentStep = 3" 
+                                        class="text-sm {% if is_dark_mode %}text-cyber-neon-secondary hover:text-cyber-neon-secondary/80{% else %}text-green-600 hover:text-green-800{% endif %} transition-colors duration-150">
+                                    مرحله بعد ←
                                 </button>
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Step 3 -->
-                <div class="{% if is_dark_mode %}bg-gradient-to-br from-cyber-bg-surface to-cyber-bg-elevated border border-cyber-neon-tertiary/20{% else %}bg-white border border-gray-200{% endif %} shadow-sm rounded-lg">
-                    <div class="px-6 py-4 border-b {% if is_dark_mode %}border-cyber-neon-tertiary/20{% else %}border-gray-200{% endif %}">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0">
-                                <div class="w-8 h-8 {% if is_dark_mode %}bg-cyber-neon-tertiary/20 text-cyber-neon-tertiary{% else %}bg-orange-100 text-orange-600{% endif %} rounded-full flex items-center justify-center">
-                                    <span class="text-sm font-bold">۳</span>
+                    <div class="px-6 py-6">
+                        <p class="text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %} mb-6">
+                            کد QR موجود در سمت راست را با اپلیکیشن احراز هویت خود اسکن کنید. پس از اسکن، اپلیکیشن شما شروع به تولید کدهای ۶ رقمی خواهد کرد.
+                        </p>
+                        
+                        <!-- Manual Entry Option -->
+                        <div class="{% if is_dark_mode %}bg-cyber-bg-secondary border border-cyber-neon-secondary/20{% else %}bg-gray-50 border border-gray-200{% endif %} rounded-lg p-4 mb-6">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-500{% endif %} mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div class="mr-3 flex-1">
+                                    <h4 class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %} mb-2">
+                                        در صورت عدم امکان اسکن کد QR
+                                    </h4>
+                                    <p class="text-xs {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %} mb-3">
+                                        کلید مخفی زیر را به صورت دستی در اپلیکیشن احراز هویت خود وارد کنید:
+                                    </p>
+                                    <div class="flex items-center justify-between p-3 {% if is_dark_mode %}bg-cyber-bg-primary border border-cyber-neon-primary/20{% else %}bg-white border border-gray-200{% endif %} rounded">
+                                        <code class="text-sm font-mono {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %} select-all">{{ secret_key }}</code>
+                                        <button onclick="copySecretKey('{{ secret_key }}')" 
+                                                class="inline-flex items-center px-2 py-1 text-xs {% if is_dark_mode %}text-cyber-neon-primary hover:text-cyber-neon-primary/80 border border-cyber-neon-primary/30 hover:border-cyber-neon-primary/50{% else %}text-blue-600 hover:text-blue-800 border border-blue-200 hover:border-blue-300{% endif %} rounded transition-all duration-150">
+                                            <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                            </svg>
+                                            کپی
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                            <h3 class="mr-3 text-lg font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">تأیید کد</h3>
+                        </div>
+                        
+                        <!-- Instructions -->
+                        <div class="{% if is_dark_mode %}bg-cyber-bg-primary border border-cyber-neon-secondary/20{% else %}bg-green-50 border border-green-200{% endif %} rounded-lg p-4">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-400{% endif %}" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div class="mr-3">
+                                    <h4 class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-green-800{% endif %}">
+                                        مراحل اسکن کد QR
+                                    </h4>
+                                    <div class="mt-2 text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-green-700{% endif %}">
+                                        <ol class="list-decimal list-inside space-y-1">
+                                            <li>اپلیکیشن احراز هویت را باز کنید</li>
+                                            <li>روی "+" یا "Add Account" کلیک کنید</li>
+                                            <li>گزینه "Scan QR Code" را انتخاب کنید</li>
+                                            <li>دوربین گوشی را روی کد QR نگه دارید</li>
+                                            <li>منتظر بمانید تا حساب اضافه شود</li>
+                                        </ol>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Verify Code -->
+                <div class="{% if is_dark_mode %}bg-gradient-to-br from-cyber-bg-surface to-cyber-bg-elevated border border-cyber-neon-tertiary/20{% else %}bg-white border border-gray-200{% endif %} shadow-sm rounded-lg"
+                     x-show="currentStep >= 3" x-transition>
+                    <div class="px-6 py-4 border-b {% if is_dark_mode %}border-cyber-neon-tertiary/20{% else %}border-gray-200{% endif %}">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-8 h-8 {% if is_dark_mode %}bg-cyber-neon-tertiary/20 text-cyber-neon-tertiary{% else %}bg-orange-100 text-orange-600{% endif %} rounded-full flex items-center justify-center">
+                                        <span class="text-sm font-bold">۳</span>
+                                    </div>
+                                </div>
+                                <h3 class="mr-3 text-lg font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">تأیید کد و فعال‌سازی</h3>
+                            </div>
+                            <button @click="currentStep = 2" 
+                                    class="text-sm {% if is_dark_mode %}text-cyber-text-secondary hover:text-cyber-text-primary{% else %}text-gray-500 hover:text-gray-700{% endif %} transition-colors duration-150">
+                                → مرحله قبل
+                            </button>
                         </div>
                     </div>
                     <div class="px-6 py-6">
-                        <p class="text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %} mb-4">
-                            کد ۶ رقمی که در اپلیکیشن احراز هویت نمایش داده می‌شود را در فرم زیر وارد کنید.
+                        <p class="text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %} mb-6">
+                            اکنون کد ۶ رقمی که در اپلیکیشن احراز هویت نمایش داده می‌شود را در فرم زیر وارد کنید تا احراز هویت دو مرحله‌ای فعال شود.
                         </p>
+                        
+                        <div class="{% if is_dark_mode %}bg-cyber-bg-primary border border-cyber-neon-tertiary/20{% else %}bg-orange-50 border border-orange-200{% endif %} rounded-lg p-4">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 {% if is_dark_mode %}text-cyber-neon-tertiary{% else %}text-orange-400{% endif %}" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div class="mr-3">
+                                    <h4 class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-orange-800{% endif %}">
+                                        نکته مهم
+                                    </h4>
+                                    <div class="mt-2 text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-orange-700{% endif %}">
+                                        <p>کدهای احراز هویت هر ۳۰ ثانیه تغییر می‌کنند. اگر کد شما در حال تغییر است، منتظر کد جدید بمانید و سپس آن را وارد کنید.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- QR Code and Form -->
             <div class="space-y-8">
-                <!-- QR Code -->
-                <div class="{% if is_dark_mode %}bg-gradient-to-br from-cyber-bg-surface to-cyber-bg-elevated border border-cyber-neon-primary/20{% else %}bg-white border border-gray-200{% endif %} shadow-sm rounded-lg">
+                <!-- QR Code Display -->
+                <div class="{% if is_dark_mode %}bg-gradient-to-br from-cyber-bg-surface to-cyber-bg-elevated border border-cyber-neon-primary/20{% else %}bg-white border border-gray-200{% endif %} shadow-sm rounded-lg qr-code-container"
+                     x-show="currentStep >= 2" x-transition>
                     <div class="px-6 py-4 border-b {% if is_dark_mode %}border-cyber-neon-primary/20{% else %}border-gray-200{% endif %}">
-                        <h3 class="text-lg font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">کد QR</h3>
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">کد QR برای اسکن</h3>
+                            <div class="flex items-center space-x-reverse space-x-2">
+                                <div class="w-2 h-2 {% if is_dark_mode %}bg-cyber-neon-primary{% else %}bg-green-500{% endif %} rounded-full animate-pulse"></div>
+                                <span class="text-xs {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">آماده اسکن</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="px-6 py-6 text-center">
+                    <div class="px-6 py-8 text-center">
                         {% if qr_code_data %}
-                        <div class="inline-block p-4 {% if is_dark_mode %}bg-white{% else %}bg-white{% endif %} rounded-lg shadow-sm">
-                            <img src="data:image/png;base64,{{ qr_code_data }}" 
+                        <div class="inline-block p-6 bg-white rounded-xl shadow-lg border-4 {% if is_dark_mode %}border-cyber-neon-primary/20{% else %}border-gray-100{% endif %} transition-transform duration-300 hover:scale-105">
+                            <img src="{{ qr_code_data }}" 
                                  alt="QR Code for 2FA Setup" 
                                  class="w-48 h-48 mx-auto">
                         </div>
-                        <p class="mt-4 text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
-                            این کد را با اپلیکیشن احراز هویت خود اسکن کنید
-                        </p>
+                        <div class="mt-6 space-y-2">
+                            <p class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                این کد را با اپلیکیشن احراز هویت خود اسکن کنید
+                            </p>
+                            <p class="text-xs {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                                حساب: {{ user.username }} | سرویس: زرگر
+                            </p>
+                        </div>
                         {% else %}
                         <div class="w-48 h-48 mx-auto {% if is_dark_mode %}bg-cyber-bg-secondary border border-cyber-neon-primary/20{% else %}bg-gray-100 border border-gray-200{% endif %} rounded-lg flex items-center justify-center">
-                            <svg class="w-12 h-12 {% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                            </svg>
+                            <div class="text-center">
+                                <svg class="w-12 h-12 {% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-400{% endif %} mx-auto animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                <p class="mt-2 text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                                    در حال تولید کد QR...
+                                </p>
+                            </div>
                         </div>
-                        <p class="mt-4 text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
-                            در حال تولید کد QR...
-                        </p>
                         {% endif %}
+                        
+                        <!-- QR Code Actions -->
+                        <div class="mt-6 flex justify-center space-x-reverse space-x-4">
+                            <button onclick="refreshQRCode()" 
+                                    class="inline-flex items-center px-3 py-2 border {% if is_dark_mode %}border-cyber-neon-primary/30 text-cyber-neon-primary hover:bg-cyber-bg-surface{% else %}border-gray-300 text-gray-700 hover:bg-gray-50{% endif %} rounded-md text-sm font-medium transition-all duration-200">
+                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                تازه‌سازی کد
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Verification Form -->
-                <div class="{% if is_dark_mode %}bg-gradient-to-br from-cyber-bg-surface to-cyber-bg-elevated border border-cyber-neon-secondary/20{% else %}bg-white border border-gray-200{% endif %} shadow-sm rounded-lg">
+                <div class="{% if is_dark_mode %}bg-gradient-to-br from-cyber-bg-surface to-cyber-bg-elevated border border-cyber-neon-secondary/20{% else %}bg-white border border-gray-200{% endif %} shadow-sm rounded-lg"
+                     x-show="currentStep >= 3" x-transition>
                     <div class="px-6 py-4 border-b {% if is_dark_mode %}border-cyber-neon-secondary/20{% else %}border-gray-200{% endif %}">
-                        <h3 class="text-lg font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">تأیید راه‌اندازی</h3>
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">تأیید و فعال‌سازی</h3>
+                            <div class="flex items-center space-x-reverse space-x-2" x-data="{ timeLeft: 30 }" x-init="
+                                setInterval(() => {
+                                    timeLeft = timeLeft > 0 ? timeLeft - 1 : 30;
+                                }, 1000)
+                            ">
+                                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                <span class="text-xs {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                                    کد جدید در <span x-text="timeLeft"></span> ثانیه
+                                </span>
+                            </div>
+                        </div>
                     </div>
                     <div class="px-6 py-6">
-                        <form method="post" class="space-y-6">
+                        <form method="post" class="space-y-6" x-data="verificationForm()" @submit="handleSubmit">
                             {% csrf_token %}
                             <input type="hidden" name="secret" value="{{ secret_key }}">
                             
                             <div>
-                                <label for="token" class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-700{% endif %} mb-2">
+                                <label for="token" class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-700{% endif %} mb-3">
                                     کد تأیید ۶ رقمی *
                                 </label>
-                                <input type="text" 
-                                       name="token" 
-                                       id="token"
-                                       maxlength="6"
-                                       pattern="[0-9]{6}"
-                                       class="block w-full px-3 py-2 border {% if is_dark_mode %}border-cyber-neon-primary/30 bg-cyber-bg-surface text-cyber-text-primary{% else %}border-gray-300{% endif %} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-center text-lg font-mono"
-                                       placeholder="123456"
-                                       required>
-                                <p class="mt-1 text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
-                                    کد ۶ رقمی نمایش داده شده در اپلیکیشن احراز هویت را وارد کنید
-                                </p>
+                                <div class="relative">
+                                    <input type="text" 
+                                           name="token" 
+                                           id="token"
+                                           maxlength="6"
+                                           pattern="[0-9]{6}"
+                                           x-model="token"
+                                           @input="validateToken"
+                                           :class="tokenError ? 'error-shake border-red-500' : ''"
+                                           class="token-input block w-full px-4 py-3 border {% if is_dark_mode %}border-cyber-neon-primary/30 bg-cyber-bg-surface text-cyber-text-primary focus:border-cyber-neon-primary focus:ring-cyber-neon-primary/20{% else %}border-gray-300 focus:border-blue-500 focus:ring-blue-500{% endif %} rounded-lg shadow-sm focus:outline-none focus:ring-2 text-2xl font-mono tracking-widest"
+                                           placeholder="۱۲۳۴۵۶"
+                                           autocomplete="one-time-code"
+                                           inputmode="numeric"
+                                           required>
+                                    <div class="absolute left-3 top-1/2 transform -translate-y-1/2">
+                                        <div x-show="isValidating" class="animate-spin">
+                                            <svg class="w-5 h-5 {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                            </svg>
+                                        </div>
+                                        <div x-show="tokenValid && !isValidating">
+                                            <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-2 space-y-1">
+                                    <p class="text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                                        کد ۶ رقمی نمایش داده شده در اپلیکیشن احراز هویت را وارد کنید
+                                    </p>
+                                    <div x-show="tokenError" class="text-sm text-red-600" x-text="tokenError"></div>
+                                    <div x-show="token.length === 6 && !tokenError" class="text-sm text-green-600">
+                                        ✓ کد معتبر است
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Token Input Helper -->
+                            <div class="flex justify-center space-x-reverse space-x-2">
+                                <template x-for="i in 6" :key="i">
+                                    <div class="w-8 h-1 rounded-full transition-all duration-200"
+                                         :class="token.length >= i ? '{% if is_dark_mode %}bg-cyber-neon-primary{% else %}bg-blue-500{% endif %}' : '{% if is_dark_mode %}bg-cyber-bg-surface{% else %}bg-gray-200{% endif %}'">
+                                    </div>
+                                </template>
                             </div>
 
                             <div class="flex justify-end space-x-reverse space-x-3">
@@ -206,11 +538,18 @@
                                     انصراف
                                 </a>
                                 <button type="submit" 
-                                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white {% if is_dark_mode %}bg-gradient-to-r from-cyber-neon-primary to-cyber-neon-secondary hover:from-cyber-neon-primary/80 hover:to-cyber-neon-secondary/80{% else %}bg-blue-600 hover:bg-blue-700{% endif %} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
-                                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        :disabled="!tokenValid || isSubmitting"
+                                        :class="tokenValid && !isSubmitting ? '' : 'opacity-50 cursor-not-allowed'"
+                                        class="inline-flex items-center px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white {% if is_dark_mode %}bg-gradient-to-r from-cyber-neon-primary to-cyber-neon-secondary hover:from-cyber-neon-primary/80 hover:to-cyber-neon-secondary/80{% else %}bg-blue-600 hover:bg-blue-700{% endif %} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+                                    <div x-show="isSubmitting" class="animate-spin ml-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                        </svg>
+                                    </div>
+                                    <svg x-show="!isSubmitting" class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                     </svg>
-                                    فعال‌سازی 2FA
+                                    <span x-text="isSubmitting ? 'در حال فعال‌سازی...' : 'فعال‌سازی 2FA'"></span>
                                 </button>
                             </div>
                         </form>
@@ -235,11 +574,43 @@
                                     <li>از اپلیکیشن‌های معتبر احراز هویت استفاده کنید</li>
                                     <li>گوشی خود را همیشه قفل نگه دارید</li>
                                     <li>در صورت از دست دادن گوشی، فوراً با پشتیبانی تماس بگیرید</li>
+                                    <li>کدهای پشتیبان را پس از فعال‌سازی دریافت کنید</li>
                                 </ul>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- Success State -->
+                {% if setup_complete %}
+                <div class="{% if is_dark_mode %}bg-gradient-to-br from-green-900/20 to-green-800/20 border border-green-500/30{% else %}bg-green-50 border border-green-200{% endif %} rounded-lg p-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-6 w-6 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="mr-3">
+                            <h3 class="text-sm font-medium {% if is_dark_mode %}text-green-300{% else %}text-green-800{% endif %}">
+                                احراز هویت دو مرحله‌ای فعال است!
+                            </h3>
+                            <div class="mt-2 text-sm {% if is_dark_mode %}text-green-400{% else %}text-green-700{% endif %}">
+                                <p>حساب شما اکنون با احراز هویت دو مرحله‌ای محافظت می‌شود.</p>
+                                <div class="mt-4 flex space-x-reverse space-x-3">
+                                    <a href="{% url 'tenant:2fa_backup_tokens' %}" 
+                                       class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                        دریافت کدهای پشتیبان
+                                    </a>
+                                    <a href="{% url 'tenant:profile' %}" 
+                                       class="inline-flex items-center px-3 py-2 border border-green-300 text-sm leading-4 font-medium rounded-md {% if is_dark_mode %}text-green-300 hover:bg-green-900/20{% else %}text-green-700 hover:bg-green-50{% endif %} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                        بازگشت به پروفایل
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -248,66 +619,202 @@
 
 {% block extra_scripts %}
 <script>
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(function() {
-        // Show success message
-        const notification = document.createElement('div');
-        notification.className = 'fixed top-4 right-4 z-50 p-3 rounded-lg shadow-lg {% if is_dark_mode %}bg-cyber-bg-surface border border-cyber-neon-secondary/30 text-cyber-neon-secondary{% else %}bg-green-50 border border-green-200 text-green-800{% endif %}';
-        notification.textContent = 'کلید مخفی کپی شد';
-        document.body.appendChild(notification);
+// Alpine.js components
+function twoFASetup() {
+    return {
+        currentStep: 1,
+        init() {
+            // Auto-advance to step 2 if QR code is available
+            if (document.querySelector('img[alt="QR Code for 2FA Setup"]')) {
+                setTimeout(() => {
+                    this.currentStep = 2;
+                }, 1000);
+            }
+        }
+    }
+}
+
+function verificationForm() {
+    return {
+        token: '',
+        tokenError: '',
+        tokenValid: false,
+        isValidating: false,
+        isSubmitting: false,
         
-        setTimeout(() => {
-            notification.remove();
-        }, 3000);
+        validateToken() {
+            this.tokenError = '';
+            this.tokenValid = false;
+            
+            // Remove non-digits and convert Persian numerals
+            let value = this.token.replace(/[۰-۹]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+                                  .replace(/\D/g, '');
+            
+            // Limit to 6 digits
+            if (value.length > 6) {
+                value = value.slice(0, 6);
+            }
+            
+            this.token = value;
+            
+            if (value.length === 0) {
+                return;
+            }
+            
+            if (value.length < 6) {
+                this.tokenError = 'کد باید ۶ رقم باشد';
+                return;
+            }
+            
+            if (!/^\d{6}$/.test(value)) {
+                this.tokenError = 'کد باید فقط شامل اعداد باشد';
+                return;
+            }
+            
+            this.tokenValid = true;
+        },
+        
+        handleSubmit(event) {
+            if (!this.tokenValid) {
+                event.preventDefault();
+                this.tokenError = 'لطفاً کد معتبر ۶ رقمی وارد کنید';
+                return false;
+            }
+            
+            this.isSubmitting = true;
+            // Form will submit normally
+        }
+    }
+}
+
+// Utility functions
+function copySecretKey(text) {
+    navigator.clipboard.writeText(text).then(function() {
+        showNotification('کلید مخفی کپی شد', 'success');
     }).catch(function(err) {
         console.error('Failed to copy: ', err);
-        alert('خطا در کپی کردن کلید مخفی');
+        showNotification('خطا در کپی کردن کلید مخفی', 'error');
     });
 }
 
+function refreshQRCode() {
+    // Show loading state
+    const qrContainer = document.querySelector('.qr-code-container img');
+    if (qrContainer) {
+        qrContainer.style.opacity = '0.5';
+    }
+    
+    // Reload the page to get a fresh QR code
+    setTimeout(() => {
+        window.location.reload();
+    }, 500);
+}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    const bgClass = type === 'success' ? 
+        '{% if is_dark_mode %}bg-green-900/20 border-green-500/30 text-green-300{% else %}bg-green-50 border-green-200 text-green-800{% endif %}' :
+        type === 'error' ?
+        '{% if is_dark_mode %}bg-red-900/20 border-red-500/30 text-red-300{% else %}bg-red-50 border-red-200 text-red-800{% endif %}' :
+        '{% if is_dark_mode %}bg-blue-900/20 border-blue-500/30 text-blue-300{% else %}bg-blue-50 border-blue-200 text-blue-800{% endif %}';
+    
+    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg border ${bgClass} transition-all duration-300 transform translate-x-full`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                ${type === 'success' ? 
+                    '<svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>' :
+                    type === 'error' ?
+                    '<svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>' :
+                    '<svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>'
+                }
+            </div>
+            <div class="mr-3 flex-1">
+                <p class="text-sm font-medium">${message}</p>
+            </div>
+            <div class="mr-auto pl-3">
+                <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+    }, 100);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 300);
+    }, 5000);
+}
+
+// Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
+    // Auto-focus on token input when step 3 is reached
     const tokenInput = document.getElementById('token');
-    
-    // Auto-format token input
-    tokenInput.addEventListener('input', function(e) {
-        // Remove non-digits
-        let value = e.target.value.replace(/\D/g, '');
+    if (tokenInput) {
+        // Focus when input becomes visible
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                    const target = mutation.target;
+                    if (target.contains(tokenInput) && !target.style.display.includes('none')) {
+                        setTimeout(() => tokenInput.focus(), 100);
+                    }
+                }
+            });
+        });
         
-        // Limit to 6 digits
-        if (value.length > 6) {
-            value = value.slice(0, 6);
-        }
-        
-        e.target.value = value;
-    });
+        observer.observe(document.body, {
+            attributes: true,
+            subtree: true
+        });
+    }
     
-    // Auto-focus on token input
-    tokenInput.focus();
-    
-    // Form validation
-    document.querySelector('form').addEventListener('submit', function(e) {
-        const token = tokenInput.value;
-        
-        if (token.length !== 6) {
+    // Handle paste events for token input
+    if (tokenInput) {
+        tokenInput.addEventListener('paste', function(e) {
             e.preventDefault();
-            alert('لطفاً کد ۶ رقمی را کامل وارد کنید.');
-            tokenInput.focus();
-            return false;
+            const paste = (e.clipboardData || window.clipboardData).getData('text');
+            const cleanPaste = paste.replace(/[۰-۹]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+                                   .replace(/\D/g, '').substring(0, 6);
+            
+            // Trigger Alpine.js update
+            this.value = cleanPaste;
+            this.dispatchEvent(new Event('input'));
+        });
+    }
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // ESC to go back
+        if (e.key === 'Escape') {
+            const backButton = document.querySelector('a[href*="profile"]');
+            if (backButton) {
+                window.location.href = backButton.href;
+            }
         }
         
-        if (!/^\d{6}$/.test(token)) {
-            e.preventDefault();
-            alert('کد تأیید باید شامل ۶ رقم باشد.');
-            tokenInput.focus();
-            return false;
+        // Enter to proceed to next step (when not in form)
+        if (e.key === 'Enter' && !e.target.closest('form')) {
+            const nextButton = document.querySelector('button[\\@click*="currentStep"]');
+            if (nextButton) {
+                nextButton.click();
+            }
         }
     });
-    
-    // Refresh QR code every 30 seconds (in case of expiration)
-    setInterval(function() {
-        // In a real implementation, you might want to refresh the QR code
-        // if the secret key has an expiration time
-    }, 30000);
 });
 </script>
 {% endblock %}

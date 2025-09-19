@@ -91,7 +91,10 @@
     - Write frontend tests for user management workflows
     - _Requirements: 10.1, 10.2, 10.3, 10.6_
 
-  - [-] 3.3 Implement Two-Factor Authentication (2FA) system (Backend)
+  - [x] 3.3 Implement Two-Factor Authentication (2FA) system (Backend)
+
+
+
 
 
 
@@ -100,8 +103,13 @@
     - Build 2FA verification views and backend logic
     - Write tests for 2FA enrollment and verification workflows
     - _Requirements: 4.3, 4.4_
+-
 
-  - [ ] 3.4 Build 2FA frontend interface (Frontend)
+  - [x] 3.4 Build 2FA frontend interface (Frontend)
+
+
+
+
     - Create 2FA setup wizard with step-by-step Persian instructions
     - Build 2FA verification forms with Persian UI and error handling
     - Implement 2FA status display and management interface

@@ -1,7 +1,8 @@
 """
-Tests for user management frontend interfaces.
+Tests for user management frontend interfaces including 2FA UI workflows.
 """
 import pytest
+import json
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
@@ -9,6 +10,7 @@ from django.contrib.messages import get_messages
 from django_tenants.test.cases import TenantTestCase
 from django_tenants.test.client import TenantClient
 from zargar.tenants.models import Tenant
+from zargar.core.models import TOTPDevice
 
 User = get_user_model()
 
@@ -459,3 +461,428 @@ class UserManagementPermissionTests(TenantTestCase):
         # Test fallback to username
         user_no_persian = User.objects.create_user(username='nopersian')
         self.assertEqual(user_no_persian.full_persian_name, 'nopersian')
+
+class Tw
+oFAFrontendTestCase(TenantTestCase):
+    """
+    Test case for 2FA frontend interface workflows.
+    """
+    
+    def setUp(self):
+        """Set up test data."""
+        super().setUp()
+        
+        # Create test user
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='testpass123',
+            persian_first_name='علی',
+            persian_last_name='احمدی'
+        )
+        
+        self.client = TenantClient(self.tenant)
+    
+    def test_2fa_setup_wizard_display(self):
+        """Test 2FA setup wizard displays correctly with Persian instructions."""
+        self.client.login(username='testuser', password='testpass123')
+        
+        response = self.client.get(reverse('tenant:2fa_setup'))
+        self.assertEqual(response.status_code, 200)
+        
+        # Check Persian content
+        self.assertContains(response, 'تنظیم احراز هویت دو مرحله‌ای')
+        self.assertContains(response, 'نصب اپلیکیشن احراز هویت')
+        self.assertContains(response, 'اسکن کد QR')
+        self.assertContains(response, 'تأیید کد')
+        
+        # Check step-by-step instructions
+        self.assertContains(response, 'Google Authenticator')
+        self.assertContains(response, 'Authy')
+        self.assertContains(response, 'Microsoft Authenticator')
+        
+        # Check QR code context
+        self.assertIn('qr_code_data', response.context)
+        self.assertIn('secret_key', response.context)
+        
+        # Check Persian UI elements
+        self.assertContains(response, 'کد تأیید ۶ رقمی')
+        self.assertContains(response, 'فعال‌سازی 2FA')
+    
+    def test_2fa_setup_wizard_steps_navigation(self):
+        """Test 2FA setup wizard step navigation works correctly."""
+        self.client.login(username='testuser', password='testpass123')
+        
+        response = self.client.get(reverse('tenant:2fa_setup'))
+        
+        # Check progress indicator elements
+        self.assertContains(response, 'currentStep')
+        self.assertContains(response, 'مرحله بعد')
+        self.assertContains(response, 'مرحله قبل')
+        
+        # Check Alpine.js components
+        self.assertContains(response, 'x-data="twoFASetup()"')
+        self.assertContains(response, 'x-show="currentStep')
+        self.assertContains(response, 'x-transition')
+    
+    def test_2fa_setup_form_validation(self):
+        """Test 2FA setup form validation with Persian error messages."""
+        self.client.login(username='testuser', password='testpass123')
+        
+        # Test empty token
+        response = self.client.post(reverse('tenant:2fa_setup'), {
+            'token': ''
+        })
+        self.assertEqual(response.status_code, 200)
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(any('وارد کنید' in str(m) for m in messages))
+        
+        # Test invalid token
+        response = self.client.post(reverse('tenant:2fa_setup'), {
+            'token': '000000'
+        })
+        self.assertEqual(response.status_code, 200)
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(any('نامعتبر' in str(m) for m in messages))
+    
+    def test_2fa_setup_success_flow(self):
+        """Test successful 2FA setup flow with Persian success messages."""
+        self.client.login(username='testuser', password='testpass123')
+        
+        # Create TOTP device
+        device = TOTPDevice.objects.create(user=self.user)
+        totp = device.get_totp()
+        valid_token = totp.now()
+        
+        response = self.client.post(reverse('tenant:2fa_setup'), {
+            'token': valid_token
+        })
+        
+        # Should redirect on success
+        self.assertEqual(response.status_code, 302)
+        
+        # Check success message
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(any('فعال شد' in str(m) for m in messages))
+        
+        # Check device is confirmed
+        device.refresh_from_db()
+        self.assertTrue(device.is_confirmed)
+        
+        # Check user has 2FA enabled
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_2fa_enabled)
+    
+    def test_2fa_verification_form_display(self):
+        """Test 2FA verification form displays correctly with Persian UI."""
+        # Setup 2FA for user
+        device = TOTPDevice.objects.create(user=self.user, is_confirmed=True)
+        self.user.is_2fa_enabled = True
+        self.user.save()
+        
+        # Simulate login attempt
+        session = self.client.session
+        session['2fa_user_id'] = self.user.id
+        session.save()
+        
+        response = self.client.get(reverse('tenant:2fa_verify'))
+        self.assertEqual(response.status_code, 200)
+        
+        # Check Persian content
+        self.assertContains(response, 'تأیید کد دو مرحله‌ای')
+        self.assertContains(response, 'کد ۶ رقمی')
+        self.assertContains(response, 'اپلیکیشن احراز هویت')
+        
+        # Check form elements
+        self.assertContains(response, 'name="token"')
+        self.assertContains(response, 'maxlength="8"')  # Supports backup tokens
+        self.assertContains(response, 'inputmode="numeric"')
+        
+        # Check Alpine.js components
+        self.assertContains(response, 'x-data="twoFAVerify()"')
+        self.assertContains(response, 'x-model="token"')
+        self.assertContains(response, '@input="validateToken"')
+        
+        # Check help text
+        self.assertContains(response, 'کدهای پشتیبان')
+        self.assertContains(response, '۸ رقم')
+    
+    def test_2fa_verification_form_validation(self):
+        """Test 2FA verification form validation with Persian error handling."""
+        # Setup 2FA
+        device = TOTPDevice.objects.create(user=self.user, is_confirmed=True)
+        self.user.is_2fa_enabled = True
+        self.user.save()
+        
+        # Simulate login attempt
+        session = self.client.session
+        session['2fa_user_id'] = self.user.id
+        session.save()
+        
+        # Test invalid token
+        response = self.client.post(reverse('tenant:2fa_verify'), {
+            'token': '000000'
+        })
+        self.assertEqual(response.status_code, 200)
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(any('نامعتبر' in str(m) for m in messages))
+    
+    def test_2fa_verification_success_flow(self):
+        """Test successful 2FA verification flow."""
+        # Setup 2FA
+        device = TOTPDevice.objects.create(user=self.user, is_confirmed=True)
+        self.user.is_2fa_enabled = True
+        self.user.save()
+        
+        # Simulate login attempt
+        session = self.client.session
+        session['2fa_user_id'] = self.user.id
+        session['2fa_next_url'] = '/dashboard/'
+        session.save()
+        
+        # Verify with valid token
+        totp = device.get_totp()
+        valid_token = totp.now()
+        
+        response = self.client.post(reverse('tenant:2fa_verify'), {
+            'token': valid_token
+        })
+        
+        # Should redirect and complete login
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(self.client.session.get('_auth_user_id'))
+    
+    def test_2fa_backup_tokens_display(self):
+        """Test 2FA backup tokens page displays correctly with Persian UI."""
+        self.client.login(username='testuser', password='testpass123')
+        
+        # Setup 2FA
+        device = TOTPDevice.objects.create(user=self.user, is_confirmed=True)
+        self.user.is_2fa_enabled = True
+        self.user.save()
+        
+        response = self.client.get(reverse('tenant:2fa_backup_tokens'))
+        self.assertEqual(response.status_code, 200)
+        
+        # Check Persian content
+        self.assertContains(response, 'کدهای پشتیبان احراز هویت دو مرحله‌ای')
+        self.assertContains(response, 'کدهای یکبار مصرف')
+        self.assertContains(response, 'تولید کدهای جدید')
+        
+        # Check backup tokens display
+        self.assertContains(response, 'کد باقی‌مانده')
+        for token in device.backup_tokens:
+            self.assertContains(response, token)
+        
+        # Check instructions
+        self.assertContains(response, 'نحوه استفاده')
+        self.assertContains(response, 'چه زمانی از کدهای پشتیبان استفاده کنم؟')
+        self.assertContains(response, 'نکات امنیتی مهم')
+        
+        # Check form elements
+        self.assertContains(response, 'name="password"')
+        self.assertContains(response, 'تولید کدهای جدید')
+    
+    def test_2fa_backup_tokens_regeneration(self):
+        """Test 2FA backup tokens regeneration with Persian validation."""
+        self.client.login(username='testuser', password='testpass123')
+        
+        # Setup 2FA
+        device = TOTPDevice.objects.create(user=self.user, is_confirmed=True)
+        self.user.is_2fa_enabled = True
+        self.user.save()
+        
+        old_tokens = device.backup_tokens.copy()
+        
+        # Test regeneration with correct password
+        response = self.client.post(reverse('tenant:2fa_backup_tokens'), {
+            'password': 'testpass123'
+        })
+        self.assertEqual(response.status_code, 200)
+        
+        # Check success message
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(any('تولید شدند' in str(m) for m in messages))
+        
+        # Check tokens were regenerated
+        device.refresh_from_db()
+        self.assertNotEqual(old_tokens, device.backup_tokens)
+        
+        # Test with wrong password
+        response = self.client.post(reverse('tenant:2fa_backup_tokens'), {
+            'password': 'wrongpassword'
+        })
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(any('نادرست' in str(m) for m in messages))
+    
+    def test_2fa_status_display_in_profile(self):
+        """Test 2FA status display in user profile with Persian UI."""
+        self.client.login(username='testuser', password='testpass123')
+        
+        # Test without 2FA
+        response = self.client.get(reverse('tenant:profile'))
+        self.assertEqual(response.status_code, 200)
+        
+        self.assertContains(response, 'احراز هویت دو مرحله‌ای')
+        self.assertContains(response, 'غیرفعال')
+        self.assertContains(response, 'راه‌اندازی 2FA')
+        
+        # Setup 2FA
+        device = TOTPDevice.objects.create(user=self.user, is_confirmed=True)
+        self.user.is_2fa_enabled = True
+        self.user.save()
+        
+        # Test with 2FA enabled
+        response = self.client.get(reverse('tenant:profile'))
+        self.assertContains(response, 'فعال')
+        self.assertContains(response, 'کدهای پشتیبان')
+        self.assertContains(response, 'تنظیم مجدد')
+        self.assertContains(response, 'غیرفعال کردن')
+        
+        # Check Alpine.js components
+        self.assertContains(response, 'x-data="twoFAStatus()"')
+        self.assertContains(response, 'showDetails')
+        self.assertContains(response, 'showDisableForm')
+    
+    def test_2fa_status_api_endpoint(self):
+        """Test 2FA status API endpoint returns correct data."""
+        self.client.login(username='testuser', password='testpass123')
+        
+        # Test without 2FA
+        response = self.client.get(reverse('tenant:2fa_status_api'))
+        self.assertEqual(response.status_code, 200)
+        
+        data = json.loads(response.content)
+        self.assertFalse(data['is_2fa_enabled'])
+        self.assertFalse(data['is_confirmed'])
+        self.assertEqual(data['backup_tokens_count'], 0)
+        
+        # Setup 2FA
+        device = TOTPDevice.objects.create(user=self.user, is_confirmed=True)
+        self.user.is_2fa_enabled = True
+        self.user.save()
+        
+        # Test with 2FA enabled
+        response = self.client.get(reverse('tenant:2fa_status_api'))
+        data = json.loads(response.content)
+        
+        self.assertTrue(data['is_2fa_enabled'])
+        self.assertTrue(data['is_confirmed'])
+        self.assertEqual(data['backup_tokens_count'], 10)
+        self.assertIn('setup_url', data)
+    
+    def test_2fa_disable_form_in_profile(self):
+        """Test 2FA disable form in profile with Persian validation."""
+        self.client.login(username='testuser', password='testpass123')
+        
+        # Setup 2FA
+        device = TOTPDevice.objects.create(user=self.user, is_confirmed=True)
+        self.user.is_2fa_enabled = True
+        self.user.save()
+        
+        # Test disable with correct password
+        response = self.client.post(reverse('tenant:2fa_disable'), {
+            'password': 'testpass123'
+        })
+        self.assertEqual(response.status_code, 302)
+        
+        # Check 2FA is disabled
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_2fa_enabled)
+        self.assertFalse(TOTPDevice.objects.filter(user=self.user).exists())
+    
+    def test_2fa_ui_accessibility_features(self):
+        """Test 2FA UI includes accessibility features."""
+        self.client.login(username='testuser', password='testpass123')
+        
+        # Test setup page accessibility
+        response = self.client.get(reverse('tenant:2fa_setup'))
+        
+        # Check form labels
+        self.assertContains(response, 'for="token"')
+        self.assertContains(response, 'aria-')
+        
+        # Check semantic HTML
+        self.assertContains(response, '<label')
+        self.assertContains(response, 'required')
+        
+        # Test verification page accessibility
+        session = self.client.session
+        session['2fa_user_id'] = self.user.id
+        session.save()
+        
+        response = self.client.get(reverse('tenant:2fa_verify'))
+        
+        # Check accessibility attributes
+        self.assertContains(response, 'autocomplete="one-time-code"')
+        self.assertContains(response, 'inputmode="numeric"')
+        self.assertContains(response, 'pattern="[0-9A-Z]{6,8}"')
+    
+    def test_2fa_ui_responsive_design(self):
+        """Test 2FA UI includes responsive design classes."""
+        self.client.login(username='testuser', password='testpass123')
+        
+        response = self.client.get(reverse('tenant:2fa_setup'))
+        
+        # Check responsive grid classes
+        self.assertContains(response, 'grid-cols-1')
+        self.assertContains(response, 'lg:grid-cols-2')
+        self.assertContains(response, 'sm:px-6')
+        self.assertContains(response, 'md:grid-cols-2')
+        
+        # Check mobile-friendly elements
+        self.assertContains(response, 'max-w-')
+        self.assertContains(response, 'px-4')
+        self.assertContains(response, 'py-')
+    
+    def test_2fa_ui_dark_mode_support(self):
+        """Test 2FA UI includes dark mode styling."""
+        self.client.login(username='testuser', password='testpass123')
+        
+        response = self.client.get(reverse('tenant:2fa_setup'))
+        
+        # Check dark mode classes
+        self.assertContains(response, 'is_dark_mode')
+        self.assertContains(response, 'cyber-bg-primary')
+        self.assertContains(response, 'cyber-neon-primary')
+        self.assertContains(response, 'cyber-text-primary')
+        
+        # Check conditional styling
+        self.assertContains(response, '{% if is_dark_mode %}')
+        self.assertContains(response, '{% else %}')
+    
+    def test_2fa_ui_persian_number_support(self):
+        """Test 2FA UI supports Persian numerals."""
+        self.client.login(username='testuser', password='testpass123')
+        
+        response = self.client.get(reverse('tenant:2fa_setup'))
+        
+        # Check Persian numerals in placeholders
+        self.assertContains(response, '۱۲۳۴۵۶')
+        
+        # Check JavaScript Persian number conversion
+        self.assertContains(response, '۰۱۲۳۴۵۶۷۸۹')
+        self.assertContains(response, 'replace(/[۰-۹]/g')
+    
+    def test_2fa_ui_error_handling(self):
+        """Test 2FA UI includes comprehensive error handling."""
+        self.client.login(username='testuser', password='testpass123')
+        
+        response = self.client.get(reverse('tenant:2fa_setup'))
+        
+        # Check error display elements
+        self.assertContains(response, 'tokenError')
+        self.assertContains(response, 'error-shake')
+        self.assertContains(response, 'x-show="tokenError"')
+        
+        # Check validation functions
+        self.assertContains(response, 'validateToken')
+        self.assertContains(response, 'handleSubmit')
+        
+        # Check error messages
+        self.assertContains(response, 'کد باید')
+        self.assertContains(response, 'رقم باشد')
+
+
+if __name__ == '__main__':
+    pytest.main([__file__])

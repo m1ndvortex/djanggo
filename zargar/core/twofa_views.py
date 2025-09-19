@@ -41,7 +41,8 @@ class TwoFASetupView(LoginRequiredMixin, TenantContextMixin, TemplateView):
         context.update({
             'page_title': 'تنظیم احراز هویت دو مرحله‌ای',
             'totp_device': totp_device,
-            'qr_code_image': totp_device.get_qr_code_image(),
+            'qr_code_data': totp_device.get_qr_code_image(),
+            'qr_code_url': totp_device.get_qr_code_url(),
             'secret_key': totp_device.secret_key,
             'backup_tokens': totp_device.backup_tokens if totp_device.is_confirmed else None,
             'is_2fa_enabled': user.is_2fa_enabled,
