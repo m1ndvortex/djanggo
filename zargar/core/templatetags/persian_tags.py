@@ -7,6 +7,8 @@ from django.utils.translation import gettext as _
 from decimal import Decimal
 import jdatetime
 from django.utils import timezone
+from zargar.core.persian_number_formatter import PersianNumberFormatter
+from zargar.core.calendar_utils import PersianCalendarUtils
 
 register = template.Library()
 
@@ -336,3 +338,200 @@ def current_persian_datetime():
     persian_now = jdatetime.datetime.fromgregorian(datetime=now)
     formatted = persian_now.strftime('%Y/%m/%d - %H:%M')
     return persian_number(formatted)
+
+
+# Enhanced Persian Number Formatting Template Tags
+
+@register.simple_tag
+def persian_currency(amount, include_symbol=True, use_persian_digits=True):
+    """
+    Template tag to format currency in Persian.
+    
+    Usage:
+        {% persian_currency 1000000 %}  <!-- ۱،۰۰۰،۰۰۰ تومان -->
+        {% persian_currency amount False %}  <!-- Without symbol -->
+        {% persian_currency amount True False %}  <!-- English digits -->
+    """
+    return PersianNumberFormatter.format_currency(
+        amount, 
+        include_symbol=include_symbol,
+        use_persian_digits=use_persian_digits
+    )
+
+
+@register.simple_tag
+def persian_weight(weight, unit='gram', use_persian_digits=True, show_unit_name=True):
+    """
+    Template tag to format weight in Persian.
+    
+    Usage:
+        {% persian_weight 100 %}  <!-- ۱۰۰ گرم -->
+        {% persian_weight weight 'mesghal' %}  <!-- مثقال -->
+        {% persian_weight weight 'soot' %}  <!-- سوت -->
+    """
+    return PersianNumberFormatter.format_weight(
+        weight,
+        unit=unit,
+        use_persian_digits=use_persian_digits,
+        show_unit_name=show_unit_name
+    )
+
+
+@register.simple_tag
+def persian_percentage(percentage, use_persian_digits=True, decimal_places=1):
+    """
+    Template tag to format percentage in Persian.
+    
+    Usage:
+        {% persian_percentage 25 %}  <!-- ۲۵.۰٪ -->
+        {% persian_percentage percentage True 0 %}  <!-- No decimals -->
+    """
+    return PersianNumberFormatter.format_percentage(
+        percentage,
+        use_persian_digits=use_persian_digits,
+        decimal_places=decimal_places
+    )
+
+
+@register.simple_tag
+def persian_large_number(number, use_persian_digits=True, use_word_format=False):
+    """
+    Template tag to format large numbers in Persian.
+    
+    Usage:
+        {% persian_large_number 1000000 %}  <!-- ۱،۰۰۰،۰۰۰ -->
+        {% persian_large_number 1000000 True True %}  <!-- ۱ میلیون -->
+    """
+    return PersianNumberFormatter.format_large_number(
+        number,
+        use_persian_digits=use_persian_digits,
+        use_word_format=use_word_format
+    )
+
+
+@register.simple_tag
+def weight_conversions(weight_grams, use_persian_digits=True):
+    """
+    Template tag to get weight in multiple units.
+    
+    Usage:
+        {% weight_conversions 4.608 %}
+    Returns dict with gram, mesghal, soot conversions.
+    """
+    return PersianNumberFormatter.format_weight_with_conversion(
+        weight_grams,
+        use_persian_digits=use_persian_digits
+    )
+
+
+@register.simple_tag
+def gold_price_calculation(price_per_gram, weight_grams, use_persian_digits=True):
+    """
+    Template tag to calculate and format gold prices.
+    
+    Usage:
+        {% gold_price_calculation 1000000 5.5 %}
+    Returns dict with price_per_gram, total_value, weight_display, etc.
+    """
+    return PersianNumberFormatter.format_gold_price(
+        price_per_gram,
+        weight_grams,
+        use_persian_digits=use_persian_digits
+    )
+
+
+@register.simple_tag
+def persian_digits(value):
+    """
+    Template tag to convert English digits to Persian.
+    
+    Usage:
+        {% persian_digits "123" %}  <!-- ۱۲۳ -->
+        {% persian_digits number_field %}
+    """
+    return PersianNumberFormatter.to_persian_digits(str(value))
+
+
+@register.simple_tag
+def english_digits(value):
+    """
+    Template tag to convert Persian digits to English.
+    
+    Usage:
+        {% english_digits "۱۲۳" %}  <!-- 123 -->
+    """
+    return PersianNumberFormatter.to_english_digits(str(value))
+
+
+# Enhanced Template Filters
+
+@register.filter
+def currency(value, include_symbol=True):
+    """
+    Template filter to format currency.
+    
+    Usage:
+        {{ amount|currency }}
+        {{ amount|currency:False }}  <!-- Without symbol -->
+    """
+    return PersianNumberFormatter.format_currency(value, include_symbol=include_symbol)
+
+
+@register.filter
+def weight(value, unit='gram'):
+    """
+    Template filter to format weight.
+    
+    Usage:
+        {{ weight_value|weight }}
+        {{ weight_value|weight:'mesghal' }}
+    """
+    return PersianNumberFormatter.format_weight(value, unit=unit)
+
+
+@register.filter
+def percentage(value, decimal_places=1):
+    """
+    Template filter to format percentage.
+    
+    Usage:
+        {{ percent_value|percentage }}
+        {{ percent_value|percentage:0 }}  <!-- No decimals -->
+    """
+    return PersianNumberFormatter.format_percentage(value, decimal_places=decimal_places)
+
+
+@register.filter
+def large_number(value, use_word_format=False):
+    """
+    Template filter to format large numbers.
+    
+    Usage:
+        {{ big_number|large_number }}
+        {{ big_number|large_number:True }}  <!-- With words -->
+    """
+    return PersianNumberFormatter.format_large_number(value, use_word_format=use_word_format)
+
+
+@register.filter
+def weight_in_units(value):
+    """
+    Template filter to get weight in multiple units.
+    
+    Usage:
+        {{ weight_grams|weight_in_units }}
+    Returns dict with conversions.
+    """
+    return PersianNumberFormatter.format_weight_with_conversion(value)
+
+
+@register.filter
+def parse_persian_number(value):
+    """
+    Template filter to parse Persian number string.
+    
+    Usage:
+        {{ "۱۲۳،۴۵۶"|parse_persian_number }}
+    """
+    parsed = PersianNumberFormatter.parse_persian_number(str(value))
+    return parsed if parsed is not None else value

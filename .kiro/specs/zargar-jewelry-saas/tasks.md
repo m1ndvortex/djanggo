@@ -191,7 +191,12 @@
     - Write frontend tests for Persian calendar components
     - _Requirements: 3.2, 3.8, 3.14_
 
-  - [ ] 4.5 Build Persian number formatting and currency system (Backend)
+  - [x] 4.5 Build Persian number formatting and currency system (Backend)
+
+
+
+
+
     - Create PersianNumberFormatter for Toman currency with Persian numerals (۱۲۳۴۵۶۷۸۹۰)
     - Implement Iranian number formatting standards for large numbers
     - Build weight conversion utilities for grams and Persian units (مثقال، سوت)
