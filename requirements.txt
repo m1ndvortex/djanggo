@@ -19,6 +19,8 @@ celery[redis]==5.4.0
 djangorestframework-simplejwt==5.5.1
 django-otp==1.5.4
 qrcode==7.4.2
+pyotp==2.9.0
+Pillow==10.4.0
 argon2-cffi==23.1.0
 
 # Storage

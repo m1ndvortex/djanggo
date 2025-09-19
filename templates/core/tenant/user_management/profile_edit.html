@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} - زرگر{% endblock %}
+
+{% block content %}
+<div class="min-h-screen {% if is_dark_mode %}bg-cyber-bg-primary{% else %}bg-gray-50{% endif %}">
+    <!-- Header -->
+    <div class="{% if is_dark_mode %}bg-cyber-bg-secondary border-b border-cyber-neon-primary/20{% else %}bg-white border-b border-gray-200{% endif %} shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center space-x-reverse space-x-4">
+                    <h1 class="text-2xl font-bold {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        {{ page_title }}
+                    </h1>
+                </div>
+                
+                <div class="flex items-center space-x-reverse space-x-3">
+                    <a href="{% url 'tenant:profile' %}" 
+                       class="inline-flex items-center px-4 py-2 border {% if is_dark_mode %}border-cyber-neon-primary/30 text-cyber-text-secondary hover:bg-cyber-bg-surface{% else %}border-gray-300 text-gray-700 hover:bg-gray-50{% endif %} rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        بازگشت به پروفایل
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="{% if is_dark_mode %}bg-gradient-to-br from-cyber-bg-surface to-cyber-bg-elevated border border-cyber-neon-primary/20{% else %}bg-white border border-gray-200{% endif %} shadow-sm rounded-lg">
+            <div class="px-6 py-4 border-b {% if is_dark_mode %}border-cyber-neon-primary/20{% else %}border-gray-200{% endif %}">
+                <h3 class="text-lg font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">ویرایش اطلاعات شخصی</h3>
+                <p class="mt-1 text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                    اطلاعات شخصی و تنظیمات حساب کاربری خود را به‌روزرسانی کنید.
+                </p>
+            </div>
+
+            <form method="post" class="px-6 py-6 space-y-6">
+                {% csrf_token %}
+                
+                <!-- Username (Read-only) -->
+                <div>
+                    <label class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-700{% endif %} mb-2">
+                        نام کاربری
+                    </label>
+                    <input type="text" 
+                           value="{{ user.username }}"
+                           class="block w-full px-3 py-2 border {% if is_dark_mode %}border-cyber-neon-primary/20 bg-cyber-bg-secondary text-cyber-text-secondary{% else %}border-gray-200 bg-gray-50 text-gray-500{% endif %} rounded-md shadow-sm sm:text-sm"
+                           readonly>
+                    <p class="mt-1 text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                        نام کاربری قابل تغییر نیست
+                    </p>
+                </div>
+
+                <!-- Email -->
+                <div>
+                    <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-700{% endif %} mb-2">
+                        ایمیل *
+                    </label>
+                    <input type="email" 
+                           name="{{ form.email.name }}" 
+                           id="{{ form.email.id_for_label }}"
+                           value="{{ form.email.value|default:'' }}"
+                           class="block w-full px-3 py-2 border {% if form.email.errors %}border-red-500{% else %}{% if is_dark_mode %}border-cyber-neon-primary/30 bg-cyber-bg-surface text-cyber-text-primary{% else %}border-gray-300{% endif %}{% endif %} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                           placeholder="example@domain.com"
+                           required>
+                    {% if form.email.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.email.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Names Row -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- First Name -->
+                    <div>
+                        <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-700{% endif %} mb-2">
+                            نام (انگلیسی)
+                        </label>
+                        <input type="text" 
+                               name="{{ form.first_name.name }}" 
+                               id="{{ form.first_name.id_for_label }}"
+                               value="{{ form.first_name.value|default:'' }}"
+                               class="block w-full px-3 py-2 border {% if form.first_name.errors %}border-red-500{% else %}{% if is_dark_mode %}border-cyber-neon-primary/30 bg-cyber-bg-surface text-cyber-text-primary{% else %}border-gray-300{% endif %}{% endif %} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                               placeholder="First Name">
+                        {% if form.first_name.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.first_name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Last Name -->
+                    <div>
+                        <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-700{% endif %} mb-2">
+                            نام خانوادگی (انگلیسی)
+                        </label>
+                        <input type="text" 
+                               name="{{ form.last_name.name }}" 
+                               id="{{ form.last_name.id_for_label }}"
+                               value="{{ form.last_name.value|default:'' }}"
+                               class="block w-full px-3 py-2 border {% if form.last_name.errors %}border-red-500{% else %}{% if is_dark_mode %}border-cyber-neon-primary/30 bg-cyber-bg-surface text-cyber-text-primary{% else %}border-gray-300{% endif %}{% endif %} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                               placeholder="Last Name">
+                        {% if form.last_name.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.last_name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Persian Names Row -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Persian First Name -->
+                    <div>
+                        <label for="{{ form.persian_first_name.id_for_label }}" class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-700{% endif %} mb-2">
+                            نام (فارسی) *
+                        </label>
+                        <input type="text" 
+                               name="{{ form.persian_first_name.name }}" 
+                               id="{{ form.persian_first_name.id_for_label }}"
+                               value="{{ form.persian_first_name.value|default:'' }}"
+                               class="block w-full px-3 py-2 border {% if form.persian_first_name.errors %}border-red-500{% else %}{% if is_dark_mode %}border-cyber-neon-primary/30 bg-cyber-bg-surface text-cyber-text-primary{% else %}border-gray-300{% endif %}{% endif %} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                               placeholder="نام فارسی"
+                               dir="rtl"
+                               required>
+                        {% if form.persian_first_name.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.persian_first_name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Persian Last Name -->
+                    <div>
+                        <label for="{{ form.persian_last_name.id_for_label }}" class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-700{% endif %} mb-2">
+                            نام خانوادگی (فارسی) *
+                        </label>
+                        <input type="text" 
+                               name="{{ form.persian_last_name.name }}" 
+                               id="{{ form.persian_last_name.id_for_label }}"
+                               value="{{ form.persian_last_name.value|default:'' }}"
+                               class="block w-full px-3 py-2 border {% if form.persian_last_name.errors %}border-red-500{% else %}{% if is_dark_mode %}border-cyber-neon-primary/30 bg-cyber-bg-surface text-cyber-text-primary{% else %}border-gray-300{% endif %}{% endif %} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                               placeholder="نام خانوادگی فارسی"
+                               dir="rtl"
+                               required>
+                        {% if form.persian_last_name.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.persian_last_name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Phone Number -->
+                <div>
+                    <label for="{{ form.phone_number.id_for_label }}" class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-700{% endif %} mb-2">
+                        شماره تلفن
+                    </label>
+                    <input type="tel" 
+                           name="{{ form.phone_number.name }}" 
+                           id="{{ form.phone_number.id_for_label }}"
+                           value="{{ form.phone_number.value|default:'' }}"
+                           class="block w-full px-3 py-2 border {% if form.phone_number.errors %}border-red-500{% else %}{% if is_dark_mode %}border-cyber-neon-primary/30 bg-cyber-bg-surface text-cyber-text-primary{% else %}border-gray-300{% endif %}{% endif %} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                           placeholder="09123456789"
+                           dir="ltr">
+                    {% if form.phone_number.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.phone_number.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Theme Preference -->
+                <div>
+                    <label for="{{ form.theme_preference.id_for_label }}" class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-700{% endif %} mb-2">
+                        تم ترجیحی
+                    </label>
+                    <select name="{{ form.theme_preference.name }}" 
+                            id="{{ form.theme_preference.id_for_label }}"
+                            class="block w-full px-3 py-2 border {% if form.theme_preference.errors %}border-red-500{% else %}{% if is_dark_mode %}border-cyber-neon-primary/30 bg-cyber-bg-surface text-cyber-text-primary{% else %}border-gray-300{% endif %}{% endif %} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <option value="light" {% if form.theme_preference.value == 'light' %}selected{% endif %}>روشن</option>
+                        <option value="dark" {% if form.theme_preference.value == 'dark' %}selected{% endif %}>تاریک (سایبری)</option>
+                    </select>
+                    {% if form.theme_preference.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.theme_preference.errors.0 }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                        تم تاریک شامل طراحی سایبری با افکت‌های نئون و شیشه‌ای است
+                    </p>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex justify-end space-x-reverse space-x-3 pt-6 border-t {% if is_dark_mode %}border-cyber-neon-primary/20{% else %}border-gray-200{% endif %}">
+                    <a href="{% url 'tenant:profile' %}" 
+                       class="inline-flex items-center px-4 py-2 border {% if is_dark_mode %}border-cyber-neon-primary/30 text-cyber-text-secondary hover:bg-cyber-bg-surface{% else %}border-gray-300 text-gray-700 hover:bg-gray-50{% endif %} rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+                        انصراف
+                    </a>
+                    <button type="submit" 
+                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white {% if is_dark_mode %}bg-gradient-to-r from-cyber-neon-primary to-cyber-neon-secondary hover:from-cyber-neon-primary/80 hover:to-cyber-neon-secondary/80{% else %}bg-blue-600 hover:bg-blue-700{% endif %} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        ذخیره تغییرات
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Help Section -->
+        <div class="mt-8 {% if is_dark_mode %}bg-gradient-to-br from-cyber-bg-surface to-cyber-bg-elevated border border-cyber-neon-secondary/20{% else %}bg-blue-50 border border-blue-200{% endif %} rounded-lg p-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-blue-400{% endif %}" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="mr-3">
+                    <h3 class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-blue-800{% endif %}">
+                        نکات مهم
+                    </h3>
+                    <div class="mt-2 text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-blue-700{% endif %}">
+                        <ul class="list-disc list-inside space-y-1">
+                            <li>نام فارسی در رابط کاربری نمایش داده می‌شود</li>
+                            <li>تغییر تم بلافاصله اعمال خواهد شد</li>
+                            <li>ایمیل برای بازیابی رمز عبور استفاده می‌شود</li>
+                            <li>شماره تلفن برای اطلاع‌رسانی‌های مهم استفاده می‌شود</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Persian input validation
+    const persianFields = ['{{ form.persian_first_name.id_for_label }}', '{{ form.persian_last_name.id_for_label }}'];
+    persianFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('input', function(e) {
+                // Allow Persian characters, spaces, and common punctuation
+                const persianRegex = /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\s\-\.]*$/;
+                if (!persianRegex.test(e.target.value)) {
+                    e.target.setCustomValidity('لطفاً فقط از حروف فارسی استفاده کنید');
+                } else {
+                    e.target.setCustomValidity('');
+                }
+            });
+        }
+    });
+    
+    // Phone number validation
+    const phoneField = document.getElementById('{{ form.phone_number.id_for_label }}');
+    if (phoneField) {
+        phoneField.addEventListener('input', function(e) {
+            // Allow only digits and common phone number characters
+            const phoneRegex = /^[\d\+\-\(\)\s]*$/;
+            if (!phoneRegex.test(e.target.value)) {
+                e.target.setCustomValidity('شماره تلفن نامعتبر است');
+            } else {
+                e.target.setCustomValidity('');
+            }
+        });
+    }
+    
+    // Theme preview
+    const themeSelect = document.getElementById('{{ form.theme_preference.id_for_label }}');
+    if (themeSelect) {
+        themeSelect.addEventListener('change', function(e) {
+            const selectedTheme = e.target.value;
+            // Show a preview message
+            const message = selectedTheme === 'dark' 
+                ? 'تم تاریک با طراحی سایبری انتخاب شد' 
+                : 'تم روشن انتخاب شد';
+            
+            // Create temporary notification
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 z-50 p-3 rounded-lg shadow-lg {% if is_dark_mode %}bg-cyber-bg-surface border border-cyber-neon-primary/30 text-cyber-text-primary{% else %}bg-white border border-gray-200 text-gray-900{% endif %}';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        });
+    }
+});
+</script>
+{% endblock %}

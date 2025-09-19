@@ -1,10 +1,10 @@
 """
 Views for tenant-specific functionality.
 """
-from django.shortcuts import render, redirect
-from django.views.generic import TemplateView, UpdateView, View
+from django.shortcuts import render, redirect, get_object_or_404
+from django.views.generic import TemplateView, UpdateView, View, ListView, CreateView, DeleteView
 from django.contrib.auth import views as auth_views
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib import messages
 from django.http import JsonResponse
 from django.utils.translation import gettext_lazy as _
@@ -12,6 +12,8 @@ from django.conf import settings
 from django.urls import reverse_lazy
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth import update_session_auth_hash
 import json
 from .models import User, AuditLog
 
@@ -33,6 +35,15 @@ class TenantContextMixin:
             })
         
         return context
+
+
+class TenantOwnerRequiredMixin(UserPassesTestMixin):
+    """
+    Mixin to require tenant owner access.
+    """
+    def test_func(self):
+        return (self.request.user.is_authenticated and 
+                self.request.user.can_manage_users())
 
 
 class TenantDashboardView(LoginRequiredMixin, TenantContextMixin, TemplateView):
@@ -362,3 +373,514 @@ class TwoFactorDisableView(LoginRequiredMixin, View):
         
         messages.success(request, _('Two-factor authentication disabled.'))
         return redirect('/profile/')
+
+
+# User Management Views
+
+class UserManagementListView(TenantOwnerRequiredMixin, TenantContextMixin, ListView):
+    """
+    List all users in the tenant for management.
+    """
+    model = User
+    template_name = 'core/tenant/user_management/list.html'
+    context_object_name = 'users'
+    paginate_by = 20
+    
+    def get_queryset(self):
+        """Get all users in current tenant."""
+        return User.objects.filter(is_active=True).order_by('-date_joined')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'page_title': 'مدیریت کاربران',
+            'total_users': self.get_queryset().count(),
+            'active_users': self.get_queryset().filter(is_active=True).count(),
+            'role_choices': User.ROLE_CHOICES,
+        })
+        return context
+
+
+class UserCreateView(TenantOwnerRequiredMixin, TenantContextMixin, CreateView):
+    """
+    Create new user in tenant.
+    """
+    model = User
+    template_name = 'core/tenant/user_management/create.html'
+    fields = [
+        'username', 'email', 'first_name', 'last_name',
+        'persian_first_name', 'persian_last_name', 'phone_number', 'role'
+    ]
+    success_url = reverse_lazy('tenant:user_management')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'page_title': 'افزودن کاربر جدید',
+            'form_action': 'create',
+        })
+        return context
+    
+    def form_valid(self, form):
+        """Create user with temporary password."""
+        user = form.save(commit=False)
+        
+        # Set temporary password
+        import secrets
+        import string
+        temp_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+        user.set_password(temp_password)
+        user.save()
+        
+        # Log user creation
+        AuditLog.objects.create(
+            user=self.request.user,
+            action='create',
+            model_name='User',
+            object_id=str(user.pk),
+            details={
+                'created_user': user.username,
+                'role': user.role,
+                'temp_password': temp_password,  # Store for initial setup
+            },
+            ip_address=self.get_client_ip(),
+            user_agent=self.request.META.get('HTTP_USER_AGENT', ''),
+        )
+        
+        messages.success(
+            self.request, 
+            _(f'کاربر {user.full_persian_name} با موفقیت ایجاد شد. رمز عبور موقت: {temp_password}')
+        )
+        return super().form_valid(form)
+    
+    def get_client_ip(self):
+        """Get client IP address."""
+        x_forwarded_for = self.request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = self.request.META.get('REMOTE_ADDR')
+        return ip
+
+
+class UserUpdateView(TenantOwnerRequiredMixin, TenantContextMixin, UpdateView):
+    """
+    Update user information and role.
+    """
+    model = User
+    template_name = 'core/tenant/user_management/edit.html'
+    fields = [
+        'first_name', 'last_name', 'persian_first_name', 'persian_last_name',
+        'email', 'phone_number', 'role', 'is_active'
+    ]
+    success_url = reverse_lazy('tenant:user_management')
+    
+    def get_queryset(self):
+        """Only allow editing users in current tenant."""
+        return User.objects.filter(is_active=True)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'page_title': f'ویرایش کاربر: {self.object.full_persian_name}',
+            'form_action': 'edit',
+            'user_obj': self.object,
+        })
+        return context
+    
+    def form_valid(self, form):
+        """Update user with audit logging."""
+        old_role = self.object.role
+        user = form.save()
+        
+        # Log role change if it occurred
+        if old_role != user.role:
+            AuditLog.objects.create(
+                user=self.request.user,
+                action='update',
+                model_name='User',
+                object_id=str(user.pk),
+                details={
+                    'updated_user': user.username,
+                    'old_role': old_role,
+                    'new_role': user.role,
+                    'changed_by': self.request.user.username,
+                },
+                ip_address=self.get_client_ip(),
+                user_agent=self.request.META.get('HTTP_USER_AGENT', ''),
+            )
+        
+        messages.success(self.request, _(f'اطلاعات کاربر {user.full_persian_name} به‌روزرسانی شد.'))
+        return super().form_valid(form)
+    
+    def get_client_ip(self):
+        """Get client IP address."""
+        x_forwarded_for = self.request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = self.request.META.get('REMOTE_ADDR')
+        return ip
+
+
+class UserDetailView(TenantOwnerRequiredMixin, TenantContextMixin, TemplateView):
+    """
+    View user details and activity.
+    """
+    template_name = 'core/tenant/user_management/detail.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user_id = kwargs.get('pk')
+        user_obj = get_object_or_404(User, pk=user_id, is_active=True)
+        
+        # Get user's recent activities
+        recent_activities = AuditLog.objects.filter(
+            user=user_obj
+        ).order_by('-timestamp')[:20]
+        
+        context.update({
+            'page_title': f'جزئیات کاربر: {user_obj.full_persian_name}',
+            'user_obj': user_obj,
+            'recent_activities': recent_activities,
+            'can_reset_password': True,
+            'can_toggle_2fa': True,
+        })
+        return context
+
+
+class UserDeactivateView(TenantOwnerRequiredMixin, View):
+    """
+    Deactivate user (soft delete).
+    """
+    def post(self, request, pk):
+        user = get_object_or_404(User, pk=pk, is_active=True)
+        
+        # Prevent self-deactivation
+        if user == request.user:
+            messages.error(request, _('نمی‌توانید خودتان را غیرفعال کنید.'))
+            return redirect('tenant:user_management')
+        
+        # Deactivate user
+        user.is_active = False
+        user.save(update_fields=['is_active'])
+        
+        # Log deactivation
+        AuditLog.objects.create(
+            user=request.user,
+            action='update',
+            model_name='User',
+            object_id=str(user.pk),
+            details={
+                'deactivated_user': user.username,
+                'deactivated_by': request.user.username,
+                'action': 'deactivated',
+            },
+            ip_address=self.get_client_ip(request),
+            user_agent=request.META.get('HTTP_USER_AGENT', ''),
+        )
+        
+        messages.success(request, _(f'کاربر {user.full_persian_name} غیرفعال شد.'))
+        return redirect('tenant:user_management')
+    
+    def get_client_ip(self, request):
+        """Get client IP address."""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+
+
+class UserPasswordResetView(TenantOwnerRequiredMixin, View):
+    """
+    Reset user password (admin action).
+    """
+    def post(self, request, pk):
+        user = get_object_or_404(User, pk=pk, is_active=True)
+        
+        # Generate new temporary password
+        import secrets
+        import string
+        temp_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+        user.set_password(temp_password)
+        user.save(update_fields=['password'])
+        
+        # Log password reset
+        AuditLog.objects.create(
+            user=request.user,
+            action='update',
+            model_name='User',
+            object_id=str(user.pk),
+            details={
+                'password_reset_user': user.username,
+                'reset_by': request.user.username,
+                'temp_password': temp_password,
+                'action': 'password_reset',
+            },
+            ip_address=self.get_client_ip(request),
+            user_agent=request.META.get('HTTP_USER_AGENT', ''),
+        )
+        
+        messages.success(
+            request, 
+            _(f'رمز عبور کاربر {user.full_persian_name} بازنشانی شد. رمز عبور جدید: {temp_password}')
+        )
+        return redirect('tenant:user_detail', pk=pk)
+    
+    def get_client_ip(self, request):
+        """Get client IP address."""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+
+
+class UserProfileView(LoginRequiredMixin, TenantContextMixin, TemplateView):
+    """
+    User profile view with 2FA management.
+    """
+    template_name = 'core/tenant/user_management/profile.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'page_title': 'پروفایل کاربری',
+            'user_obj': self.request.user,
+            'can_change_password': True,
+            'can_setup_2fa': not self.request.user.is_2fa_enabled,
+            'can_disable_2fa': self.request.user.is_2fa_enabled,
+        })
+        return context
+
+
+class UserProfileEditView(LoginRequiredMixin, TenantContextMixin, UpdateView):
+    """
+    Edit user profile.
+    """
+    model = User
+    template_name = 'core/tenant/user_management/profile_edit.html'
+    fields = [
+        'first_name', 'last_name', 'persian_first_name', 'persian_last_name',
+        'email', 'phone_number', 'theme_preference'
+    ]
+    success_url = reverse_lazy('tenant:profile')
+    
+    def get_object(self):
+        return self.request.user
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'page_title': 'ویرایش پروفایل',
+            'form_action': 'edit_profile',
+        })
+        return context
+    
+    def form_valid(self, form):
+        messages.success(self.request, _('پروفایل شما با موفقیت به‌روزرسانی شد.'))
+        return super().form_valid(form)
+
+
+class UserPasswordChangeView(LoginRequiredMixin, TenantContextMixin, TemplateView):
+    """
+    Change user password.
+    """
+    template_name = 'core/tenant/user_management/password_change.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'page_title': 'تغییر رمز عبور',
+            'form': PasswordChangeForm(self.request.user),
+        })
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        form = PasswordChangeForm(request.user, request.POST)
+        
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)  # Keep user logged in
+            
+            # Log password change
+            AuditLog.objects.create(
+                user=request.user,
+                action='update',
+                model_name='User',
+                object_id=str(user.pk),
+                details={
+                    'action': 'password_changed',
+                    'changed_by_self': True,
+                },
+                ip_address=self.get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', ''),
+            )
+            
+            messages.success(request, _('رمز عبور شما با موفقیت تغییر یافت.'))
+            return redirect('tenant:profile')
+        else:
+            context = self.get_context_data()
+            context['form'] = form
+            return render(request, self.template_name, context)
+    
+    def get_client_ip(self, request):
+        """Get client IP address."""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+
+
+class User2FASetupView(LoginRequiredMixin, TenantContextMixin, TemplateView):
+    """
+    2FA setup view with QR code generation.
+    """
+    template_name = 'core/tenant/user_management/2fa_setup.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        try:
+            # Generate TOTP secret and QR code
+            import pyotp
+            import qrcode
+            import io
+            import base64
+            
+            # Generate secret key
+            secret = pyotp.random_base32()
+            
+            # Create TOTP URI
+            totp_uri = pyotp.totp.TOTP(secret).provisioning_uri(
+                name=self.request.user.email,
+                issuer_name=f"زرگر - {getattr(self.request, 'tenant_context', {}).get('name', 'فروشگاه')}"
+            )
+            
+            # Generate QR code
+            qr = qrcode.QRCode(version=1, box_size=10, border=5)
+            qr.add_data(totp_uri)
+            qr.make(fit=True)
+            
+            img = qr.make_image(fill_color="black", back_color="white")
+            buffer = io.BytesIO()
+            img.save(buffer, format='PNG')
+            qr_code_data = base64.b64encode(buffer.getvalue()).decode()
+            
+            context.update({
+                'page_title': 'راه‌اندازی احراز هویت دو مرحله‌ای',
+                'secret_key': secret,
+                'qr_code_data': qr_code_data,
+                'totp_uri': totp_uri,
+            })
+        except ImportError:
+            # Handle missing dependencies gracefully
+            context.update({
+                'page_title': 'راه‌اندازی احراز هویت دو مرحله‌ای',
+                'secret_key': 'DEMO_SECRET_KEY',
+                'qr_code_data': None,
+                'totp_uri': None,
+                'error': 'Dependencies for 2FA are not installed'
+            })
+        
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        """Verify and enable 2FA."""
+        try:
+            import pyotp
+        except ImportError:
+            messages.error(request, _('Dependencies for 2FA are not installed.'))
+            return redirect('tenant:profile')
+        
+        secret = request.POST.get('secret')
+        token = request.POST.get('token')
+        
+        if not secret or not token:
+            messages.error(request, _('کلید مخفی و کد تأیید الزامی است.'))
+            return self.get(request, *args, **kwargs)
+        
+        # Verify token
+        totp = pyotp.TOTP(secret)
+        if totp.verify(token):
+            # Enable 2FA for user
+            request.user.is_2fa_enabled = True
+            request.user.save(update_fields=['is_2fa_enabled'])
+            
+            # TODO: Store secret key securely with django-otp
+            
+            # Log 2FA setup
+            AuditLog.objects.create(
+                user=request.user,
+                action='update',
+                model_name='User',
+                object_id=str(request.user.pk),
+                details={
+                    'action': '2fa_enabled',
+                    'setup_by_self': True,
+                },
+                ip_address=self.get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', ''),
+            )
+            
+            messages.success(request, _('احراز هویت دو مرحله‌ای با موفقیت فعال شد.'))
+            return redirect('tenant:profile')
+        else:
+            messages.error(request, _('کد تأیید نامعتبر است. لطفاً دوباره تلاش کنید.'))
+            return self.get(request, *args, **kwargs)
+    
+    def get_client_ip(self, request):
+        """Get client IP address."""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+
+
+class User2FADisableView(LoginRequiredMixin, View):
+    """
+    Disable 2FA for user.
+    """
+    def post(self, request):
+        if not request.user.is_2fa_enabled:
+            messages.warning(request, _('احراز هویت دو مرحله‌ای از قبل غیرفعال است.'))
+            return redirect('tenant:profile')
+        
+        # Disable 2FA
+        request.user.is_2fa_enabled = False
+        request.user.save(update_fields=['is_2fa_enabled'])
+        
+        # TODO: Remove 2FA devices with django-otp
+        
+        # Log 2FA disable
+        AuditLog.objects.create(
+            user=request.user,
+            action='update',
+            model_name='User',
+            object_id=str(request.user.pk),
+            details={
+                'action': '2fa_disabled',
+                'disabled_by_self': True,
+            },
+            ip_address=self.get_client_ip(request),
+            user_agent=request.META.get('HTTP_USER_AGENT', ''),
+        )
+        
+        messages.success(request, _('احراز هویت دو مرحله‌ای غیرفعال شد.'))
+        return redirect('tenant:profile')
+    
+    def get_client_ip(self, request):
+        """Get client IP address."""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip

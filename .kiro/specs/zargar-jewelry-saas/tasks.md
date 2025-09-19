@@ -78,7 +78,12 @@
     - Write unit tests for authentication and authorization logic
     - _Requirements: 4.1, 4.2, 10.1, 10.2_
 
-  - [ ] 3.2 Build user management frontend interfaces (Frontend)
+  - [x] 3.2 Build user management frontend interfaces (Frontend)
+
+
+
+
+
     - Create user management templates for tenant owners to manage employees
     - Build role assignment forms with Persian UI and permission controls
     - Implement user profile pages with 2FA enrollment interface
@@ -87,6 +92,7 @@
     - _Requirements: 10.1, 10.2, 10.3, 10.6_
 
   - [ ] 3.3 Implement Two-Factor Authentication (2FA) system (Backend)
+
     - Create TOTP device model for 2FA secret key storage
     - Implement QR code generation for authenticator app enrollment
     - Build 2FA verification views and backend logic

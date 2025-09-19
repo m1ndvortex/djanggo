@@ -11,7 +11,19 @@ from .tenant_views import (
     TenantPasswordResetView,
     TenantPasswordResetDoneView,
     TenantPasswordResetConfirmView,
-    TenantPasswordResetCompleteView
+    TenantPasswordResetCompleteView,
+    # User Management Views
+    UserManagementListView,
+    UserCreateView,
+    UserUpdateView,
+    UserDetailView,
+    UserDeactivateView,
+    UserPasswordResetView,
+    UserProfileView,
+    UserProfileEditView,
+    UserPasswordChangeView,
+    User2FASetupView,
+    User2FADisableView,
 )
 
 app_name = 'tenant'
@@ -32,4 +44,21 @@ urlpatterns = [
     
     # Theme toggle
     path('theme/toggle/', ThemeToggleView.as_view(), name='theme_toggle'),
+    
+    # User Management URLs (Owner only)
+    path('users/', UserManagementListView.as_view(), name='user_management'),
+    path('users/create/', UserCreateView.as_view(), name='user_create'),
+    path('users/<int:pk>/', UserDetailView.as_view(), name='user_detail'),
+    path('users/<int:pk>/edit/', UserUpdateView.as_view(), name='user_edit'),
+    path('users/<int:pk>/deactivate/', UserDeactivateView.as_view(), name='user_deactivate'),
+    path('users/<int:pk>/reset-password/', UserPasswordResetView.as_view(), name='user_password_reset'),
+    
+    # User Profile URLs
+    path('profile/', UserProfileView.as_view(), name='profile'),
+    path('profile/edit/', UserProfileEditView.as_view(), name='profile_edit'),
+    path('profile/password/', UserPasswordChangeView.as_view(), name='password_change'),
+    
+    # 2FA URLs
+    path('profile/2fa/setup/', User2FASetupView.as_view(), name='2fa_setup'),
+    path('profile/2fa/disable/', User2FADisableView.as_view(), name='2fa_disable'),
 ]
