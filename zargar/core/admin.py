@@ -4,7 +4,14 @@ Admin configuration for core models.
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
-from .models import User, SystemSettings, AuditLog
+from .models import User, SystemSettings, TOTPDevice
+from .security_models import SecurityEvent, AuditLog, RateLimitAttempt, SuspiciousActivity
+
+# Import security admin configurations
+from .security_admin import (
+    SecurityEventAdmin, AuditLogAdmin, RateLimitAttemptAdmin, 
+    SuspiciousActivityAdmin
+)
 
 
 @admin.register(User)
@@ -70,28 +77,33 @@ class SystemSettingsAdmin(admin.ModelAdmin):
     )
 
 
-@admin.register(AuditLog)
-class AuditLogAdmin(admin.ModelAdmin):
-    """
-    Admin for audit logs (read-only).
-    """
-    list_display = (
-        'timestamp', 'user', 'action', 'model_name',
-        'object_id', 'tenant_schema', 'ip_address'
+@admin.register(TOTPDevice)
+class TOTPDeviceAdmin(admin.ModelAdmin):
+    """Admin for TOTP devices."""
+    
+    list_display = ['user', 'is_confirmed', 'last_used_at', 'created_at']
+    list_filter = ['is_confirmed', 'created_at', 'last_used_at']
+    search_fields = ['user__username', 'user__email']
+    readonly_fields = ['secret_key', 'backup_tokens', 'created_at', 'updated_at', 'last_used_at']
+    
+    fieldsets = (
+        (_('Device Information'), {
+            'fields': ('user', 'is_confirmed', 'last_used_at')
+        }),
+        (_('Security Details'), {
+            'fields': ('secret_key', 'backup_tokens'),
+            'classes': ('collapse',)
+        }),
+        (_('Audit Information'), {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        })
     )
-    list_filter = ('action', 'timestamp', 'tenant_schema')
-    search_fields = ('user__username', 'action', 'model_name', 'object_id', 'ip_address')
-    readonly_fields = (
-        'user', 'action', 'model_name', 'object_id', 'details',
-        'ip_address', 'user_agent', 'tenant_schema', 'timestamp'
-    )
-    ordering = ('-timestamp',)
     
     def has_add_permission(self, request):
+        """Disable manual creation of TOTP devices."""
         return False
-    
-    def has_change_permission(self, request, obj=None):
-        return False
-    
-    def has_delete_permission(self, request, obj=None):
-        return False
+
+
+# Security models are registered in security_admin.py
+# This ensures they appear in the admin interface with proper configuration

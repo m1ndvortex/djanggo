@@ -68,6 +68,9 @@ MIDDLEWARE = [
     'zargar.core.middleware.HealthCheckMiddleware',  # Must be first for health checks
     'django_tenants.middleware.main.TenantMainMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'zargar.core.security_middleware.SecurityAuditMiddleware',  # Security audit logging
+    'zargar.core.security_middleware.RateLimitMiddleware',  # Rate limiting
+    'zargar.core.security_middleware.SuspiciousActivityDetectionMiddleware',  # Threat detection
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
