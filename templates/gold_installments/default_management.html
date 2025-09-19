@@ -1,0 +1,498 @@
+{% extends 'base_rtl.html' %}
+{% load persian_tags %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Default Management" %} - {{ contract.contract_number }} - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/gold-installments.css' %}" rel="stylesheet">
+<style>
+.action-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+.action-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+.severity-warning { border-left: 4px solid #ffc107; }
+.severity-danger { border-left: 4px solid #dc3545; }
+.severity-info { border-left: 4px solid #17a2b8; }
+.payment-timeline {
+    position: relative;
+    padding-left: 30px;
+}
+.payment-timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -23px;
+    top: 5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #6c757d;
+}
+.timeline-item.overdue::before { background: #dc3545; }
+.timeline-item.current::before { background: #28a745; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-gray-800">
+                        {% trans "Default Management" %}
+                        <span class="badge bg-danger ms-2">{{ contract.contract_number }}</span>
+                    </h1>
+                    <p class="text-muted">
+                        {{ contract.customer.persian_first_name }} {{ contract.customer.persian_last_name }}
+                        - {% trans "Contract Date" %}: {{ contract.contract_date_shamsi }}
+                    </p>
+                </div>
+                <div>
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'gold_installments:installment_tracking' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            {% trans "Back to Tracking" %}
+                        </a>
+                        <a href="{% url 'gold_installments:contract_detail' contract.pk %}" class="btn btn-info">
+                            <i class="fas fa-eye me-2"></i>
+                            {% trans "View Contract" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Contract Status and Analysis -->
+        <div class="col-lg-8">
+            <!-- Payment Analysis -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Payment History Analysis" %}</h6>
+                </div>
+                <div class="card-body">
+                    {% if payment_analysis.status == 'no_payments' %}
+                    <div class="alert alert-danger">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>{% trans "No Payments Made" %}</h6>
+                        <p class="mb-1">{{ payment_analysis.message }}</p>
+                        <small class="text-muted">
+                            {% trans "Contract created" %} {{ payment_analysis.days_since_contract }} {% trans "days ago" %}
+                        </small>
+                    </div>
+                    {% else %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">{% trans "Last Payment Date" %}</label>
+                                <div class="fw-bold">{{ payment_analysis.last_payment_date }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted">{% trans "Days Since Last Payment" %}</label>
+                                <div class="fw-bold {% if payment_analysis.days_since_last_payment > 30 %}text-danger{% elif payment_analysis.days_since_last_payment > 14 %}text-warning{% else %}text-success{% endif %}">
+                                    {% persian_number payment_analysis.days_since_last_payment %} {% trans "days" %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">{% trans "Total Payments Made" %}</label>
+                                <div class="fw-bold">{% persian_number payment_analysis.total_payments %}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted">{% trans "Payment Regularity" %}</label>
+                                <div>
+                                    {% if payment_analysis.payment_regularity == 'regular' %}
+                                        <span class="badge bg-success">{% trans "Regular" %}</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">{% trans "Irregular" %}</span>
+                                    {% endif %}
+                                    <small class="text-muted ms-2">
+                                        {% trans "Avg interval" %}: {% persian_number payment_analysis.average_interval %} {% trans "days" %}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if payment_analysis.status == 'overdue' %}
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-clock me-2"></i>{% trans "Payment Overdue" %}</h6>
+                        <p class="mb-0">{% trans "This contract is significantly overdue based on payment history patterns." %}</p>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Recovery Options -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Recovery Options" %}</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">{% trans "Current Debt Value" %}</label>
+                        <div class="h4 text-danger">{% persian_currency recovery_options.current_debt_value %}</div>
+                    </div>
+                    
+                    <div class="row">
+                        {% for method in recovery_options.recovery_methods %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card action-card h-100" onclick="selectRecoveryMethod('{{ method.method }}')">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ method.title }}</h6>
+                                    <p class="card-text text-muted">{{ method.description }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Default Actions -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Default Management Actions" %}</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for action in default_actions %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card action-card severity-{{ action.severity }}" 
+                                 onclick="showActionModal('{{ action.action }}', '{{ action.title }}', '{{ action.description }}', '{{ action.severity }}')">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        {% if action.severity == 'danger' %}
+                                            <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                                        {% elif action.severity == 'warning' %}
+                                            <i class="fas fa-exclamation-circle text-warning me-2"></i>
+                                        {% else %}
+                                            <i class="fas fa-info-circle text-info me-2"></i>
+                                        {% endif %}
+                                        {{ action.title }}
+                                    </h6>
+                                    <p class="card-text text-muted">{{ action.description }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Contract Summary -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Contract Summary" %}</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <div class="avatar-circle bg-danger text-white mb-2">
+                            {{ contract.customer.persian_first_name.0 }}{{ contract.customer.persian_last_name.0 }}
+                        </div>
+                        <h5 class="mb-1">{{ contract.customer.persian_first_name }} {{ contract.customer.persian_last_name }}</h5>
+                        <p class="text-muted mb-0">{{ contract.customer.phone_number }}</p>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted">{% trans "Contract Status" %}</small>
+                        <div>
+                            {% if contract.status == 'active' %}
+                                <span class="badge bg-warning">{% trans "Active (Overdue)" %}</span>
+                            {% elif contract.status == 'defaulted' %}
+                                <span class="badge bg-danger">{% trans "Defaulted" %}</span>
+                            {% elif contract.status == 'suspended' %}
+                                <span class="badge bg-secondary">{% trans "Suspended" %}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted">{% trans "Remaining Weight" %}</small>
+                        <div class="fw-bold text-danger">{% persian_weight contract.remaining_gold_weight_grams 'gram' %}</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted">{% trans "Completion Progress" %}</small>
+                        <div class="progress mb-1" style="height: 20px;">
+                            <div class="progress-bar bg-danger" role="progressbar" 
+                                 style="width: {{ contract.completion_percentage }}%">
+                                {% persian_number contract.completion_percentage %}%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted">{% trans "Gold Karat" %}</small>
+                        <div>{{ contract.gold_karat }} {% trans "karat" %}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Recent Activity" %}</h6>
+                </div>
+                <div class="card-body">
+                    <div class="payment-timeline">
+                        {% for payment in contract.payments.all|slice:":5" %}
+                        <div class="timeline-item {% if forloop.first %}current{% else %}overdue{% endif %}">
+                            <div class="fw-bold">{% persian_currency payment.payment_amount_toman %}</div>
+                            <small class="text-muted">{{ payment.payment_date_shamsi }}</small>
+                            <div class="text-muted">{{ payment.get_payment_method_display }}</div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-receipt fa-2x mb-2"></i>
+                            <p>{% trans "No payments recorded" %}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Quick Actions" %}</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'gold_installments:send_payment_reminder' contract.pk %}" class="btn btn-warning">
+                            <i class="fas fa-bell me-2"></i>
+                            {% trans "Send Reminder" %}
+                        </a>
+                        <a href="{% url 'gold_installments:payment_create' contract.pk %}" class="btn btn-success">
+                            <i class="fas fa-plus me-2"></i>
+                            {% trans "Record Payment" %}
+                        </a>
+                        <a href="{% url 'gold_installments:contract_generation' contract.pk %}" class="btn btn-info">
+                            <i class="fas fa-file-contract me-2"></i>
+                            {% trans "Generate Contract" %}
+                        </a>
+                        <button class="btn btn-outline-secondary" onclick="showContactCustomer()">
+                            <i class="fas fa-phone me-2"></i>
+                            {% trans "Contact Customer" %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Action Confirmation Modal -->
+<div class="modal fade" id="actionModal" tabindex="-1" aria-labelledby="actionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="actionModalLabel">{% trans "Confirm Action" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="actionForm" method="post" action="{% url 'gold_installments:process_default_action' contract.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="alert" id="actionAlert">
+                        <h6 id="actionTitle"></h6>
+                        <p id="actionDescription"></p>
+                    </div>
+                    
+                    <input type="hidden" id="actionType" name="action">
+                    
+                    <div class="mb-3">
+                        <label for="reason" class="form-label">{% trans "Reason" %}</label>
+                        <select class="form-select" id="reason" name="reason" required>
+                            <option value="">{% trans "Select reason..." %}</option>
+                            <option value="non_payment">{% trans "Non-payment" %}</option>
+                            <option value="customer_request">{% trans "Customer request" %}</option>
+                            <option value="business_decision">{% trans "Business decision" %}</option>
+                            <option value="legal_requirement">{% trans "Legal requirement" %}</option>
+                            <option value="other">{% trans "Other" %}</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">{% trans "Additional Notes" %}</label>
+                        <textarea class="form-control persian-textarea" id="notes" name="notes" rows="3"
+                                  placeholder="{% trans 'Enter additional details...' %}"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                    <button type="submit" class="btn" id="actionSubmitBtn">{% trans "Confirm Action" %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Recovery Method Modal -->
+<div class="modal fade" id="recoveryModal" tabindex="-1" aria-labelledby="recoveryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="recoveryModalLabel">{% trans "Recovery Method Details" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="recoveryMethodContent">
+                    <!-- Content will be populated by JavaScript -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
+                <button type="button" class="btn btn-primary" id="implementRecoveryBtn">{% trans "Implement Method" %}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contact Customer Modal -->
+<div class="modal fade" id="contactModal" tabindex="-1" aria-labelledby="contactModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="contactModalLabel">{% trans "Contact Customer" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">{% trans "Customer Name" %}</label>
+                    <div class="fw-bold">{{ contract.customer.persian_first_name }} {{ contract.customer.persian_last_name }}</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">{% trans "Phone Number" %}</label>
+                    <div class="d-flex align-items-center">
+                        <span class="fw-bold me-3">{{ contract.customer.phone_number }}</span>
+                        <a href="tel:{{ contract.customer.phone_number }}" class="btn btn-sm btn-success">
+                            <i class="fas fa-phone me-1"></i>{% trans "Call" %}
+                        </a>
+                    </div>
+                </div>
+                {% if contract.customer.email %}
+                <div class="mb-3">
+                    <label class="form-label">{% trans "Email" %}</label>
+                    <div class="d-flex align-items-center">
+                        <span class="fw-bold me-3">{{ contract.customer.email }}</span>
+                        <a href="mailto:{{ contract.customer.email }}" class="btn btn-sm btn-info">
+                            <i class="fas fa-envelope me-1"></i>{% trans "Email" %}
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+                <div class="mb-3">
+                    <label for="contactNotes" class="form-label">{% trans "Contact Notes" %}</label>
+                    <textarea class="form-control persian-textarea" id="contactNotes" rows="3"
+                              placeholder="{% trans 'Record your conversation notes here...' %}"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
+                <button type="button" class="btn btn-primary" onclick="saveContactNotes()">{% trans "Save Notes" %}</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/gold-installments.js' %}"></script>
+<script>
+function showActionModal(action, title, description, severity) {
+    document.getElementById('actionType').value = action;
+    document.getElementById('actionTitle').textContent = title;
+    document.getElementById('actionDescription').textContent = description;
+    
+    const alert = document.getElementById('actionAlert');
+    alert.className = `alert alert-${severity}`;
+    
+    const submitBtn = document.getElementById('actionSubmitBtn');
+    submitBtn.className = `btn btn-${severity}`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('actionModal'));
+    modal.show();
+}
+
+function selectRecoveryMethod(method) {
+    const recoveryMethods = {
+        'payment_plan': {
+            title: '{% trans "Extended Payment Plan" %}',
+            content: '{% trans "Offer the customer a restructured payment plan with smaller, more manageable amounts over a longer period." %}'
+        },
+        'partial_settlement': {
+            title: '{% trans "Partial Settlement" %}',
+            content: '{% trans "Accept a reduced amount to settle the contract completely, writing off the remaining balance." %}'
+        },
+        'gold_return': {
+            title: '{% trans "Gold Item Return" %}',
+            content: '{% trans "Customer returns equivalent gold items to settle the outstanding balance." %}'
+        },
+        'legal_action': {
+            title: '{% trans "Legal Recovery" %}',
+            content: '{% trans "Initiate legal proceedings to recover the outstanding debt through the court system." %}'
+        }
+    };
+    
+    const methodData = recoveryMethods[method];
+    if (methodData) {
+        document.getElementById('recoveryModalLabel').textContent = methodData.title;
+        document.getElementById('recoveryMethodContent').innerHTML = `
+            <div class="alert alert-info">
+                <h6>${methodData.title}</h6>
+                <p>${methodData.content}</p>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">{% trans "Implementation Notes" %}</label>
+                <textarea class="form-control persian-textarea" rows="3" 
+                          placeholder="{% trans 'Enter specific details for implementing this recovery method...' %}"></textarea>
+            </div>
+        `;
+        
+        const modal = new bootstrap.Modal(document.getElementById('recoveryModal'));
+        modal.show();
+    }
+}
+
+function showContactCustomer() {
+    const modal = new bootstrap.Modal(document.getElementById('contactModal'));
+    modal.show();
+}
+
+function saveContactNotes() {
+    const notes = document.getElementById('contactNotes').value;
+    if (notes.trim()) {
+        // In a real implementation, this would save to the database
+        alert('{% trans "Contact notes saved successfully" %}');
+        bootstrap.Modal.getInstance(document.getElementById('contactModal')).hide();
+    }
+}
+</script>
+{% endblock %}

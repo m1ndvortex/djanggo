@@ -20,10 +20,20 @@
                     <p class="text-muted">{% trans "Manage gold installment contracts and payments" %}</p>
                 </div>
                 <div>
-                    <a href="{% url 'gold_installments:contract_create' %}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>
-                        {% trans "New Contract" %}
-                    </a>
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'gold_installments:contract_create' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>
+                            {% trans "New Contract" %}
+                        </a>
+                        <a href="{% url 'gold_installments:installment_tracking' %}" class="btn btn-info">
+                            <i class="fas fa-chart-line me-2"></i>
+                            {% trans "Tracking Dashboard" %}
+                        </a>
+                        <a href="{% url 'gold_installments:notification_management' %}" class="btn btn-warning">
+                            <i class="fas fa-bell me-2"></i>
+                            {% trans "Notifications" %}
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

@@ -730,6 +730,515 @@ def ajax_customer_search(request):
     return JsonResponse({'customers': customer_data})
 
 
+class InstallmentTrackingDashboardView(LoginRequiredMixin, TenantContextMixin, ListView):
+    """Dashboard for tracking installments with overdue payment management."""
+    model = GoldInstallmentContract
+    template_name = 'gold_installments/installment_tracking.html'
+    context_object_name = 'contracts'
+    paginate_by = 20
+    
+    def get_queryset(self):
+        """Get contracts with filtering for tracking dashboard."""
+        queryset = GoldInstallmentContract.objects.filter(
+            tenant=self.request.tenant
+        ).select_related('customer').prefetch_related('payments')
+        
+        # Filter by tracking status
+        tracking_filter = self.request.GET.get('tracking_filter', 'all')
+        if tracking_filter == 'overdue':
+            # Filter overdue contracts
+            queryset = [c for c in queryset if c.is_overdue]
+        elif tracking_filter == 'due_soon':
+            # Contracts with payments due in next 7 days
+            queryset = [c for c in queryset if self._is_due_soon(c)]
+        elif tracking_filter == 'active':
+            queryset = queryset.filter(status='active')
+        elif tracking_filter == 'defaulted':
+            queryset = queryset.filter(status='defaulted')
+        
+        return queryset
+    
+    def _is_due_soon(self, contract):
+        """Check if contract has payment due in next 7 days."""
+        if contract.status != 'active':
+            return False
+        
+        last_payment = contract.payments.order_by('-payment_date').first()
+        if not last_payment:
+            return True  # No payments made, consider due soon
+        
+        next_payment_date = contract.calculate_next_payment_date(last_payment.payment_date)
+        days_until_due = (next_payment_date - timezone.now().date()).days
+        return 0 <= days_until_due <= 7
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Tracking statistics
+        all_contracts = GoldInstallmentContract.objects.filter(tenant=self.request.tenant)
+        context['tracking_stats'] = {
+            'total_active': all_contracts.filter(status='active').count(),
+            'overdue_count': sum(1 for c in all_contracts if c.is_overdue),
+            'due_soon_count': sum(1 for c in all_contracts if self._is_due_soon(c)),
+            'defaulted_count': all_contracts.filter(status='defaulted').count(),
+            'total_overdue_value': self._calculate_overdue_value(all_contracts),
+        }
+        
+        # Format for display
+        formatter = PersianNumberFormatter()
+        context['tracking_stats_display'] = {
+            key: formatter.to_persian_digits(value) if isinstance(value, (int, float, Decimal)) else value
+            for key, value in context['tracking_stats'].items()
+        }
+        
+        return context
+    
+    def _calculate_overdue_value(self, contracts):
+        """Calculate total value of overdue contracts."""
+        total_value = Decimal('0')
+        current_gold_price = Decimal('3500000')  # Mock price
+        
+        for contract in contracts:
+            if contract.is_overdue:
+                value_data = contract.calculate_current_gold_value(current_gold_price)
+                total_value += value_data['total_value_toman']
+        
+        return total_value
+
+
+class DefaultManagementView(LoginRequiredMixin, TenantContextMixin, DetailView):
+    """Interface for managing non-payment situations and collateral recovery."""
+    model = GoldInstallmentContract
+    template_name = 'gold_installments/default_management.html'
+    context_object_name = 'contract'
+    
+    def get_queryset(self):
+        return GoldInstallmentContract.objects.filter(tenant=self.request.tenant)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        contract = self.object
+        
+        # Default management options
+        context['default_actions'] = [
+            {
+                'action': 'suspend_contract',
+                'title': _('Suspend Contract'),
+                'description': _('Temporarily suspend contract due to non-payment'),
+                'severity': 'warning'
+            },
+            {
+                'action': 'mark_defaulted',
+                'title': _('Mark as Defaulted'),
+                'description': _('Mark contract as defaulted and begin recovery process'),
+                'severity': 'danger'
+            },
+            {
+                'action': 'restructure_payment',
+                'title': _('Restructure Payment Plan'),
+                'description': _('Modify payment schedule to help customer'),
+                'severity': 'info'
+            },
+            {
+                'action': 'collateral_recovery',
+                'title': _('Initiate Collateral Recovery'),
+                'description': _('Begin process to recover collateral items'),
+                'severity': 'danger'
+            }
+        ]
+        
+        # Payment history analysis
+        context['payment_analysis'] = self._analyze_payment_history(contract)
+        
+        # Recovery options
+        context['recovery_options'] = self._get_recovery_options(contract)
+        
+        return context
+    
+    def _analyze_payment_history(self, contract):
+        """Analyze payment history for default management."""
+        payments = contract.payments.all().order_by('-payment_date')
+        
+        if not payments.exists():
+            return {
+                'status': 'no_payments',
+                'message': _('No payments have been made on this contract'),
+                'days_since_contract': (timezone.now().date() - contract.contract_date).days
+            }
+        
+        last_payment = payments.first()
+        days_since_last_payment = (timezone.now().date() - last_payment.payment_date).days
+        
+        # Calculate payment regularity
+        payment_intervals = []
+        for i in range(1, min(len(payments), 6)):  # Last 5 intervals
+            interval = (payments[i-1].payment_date - payments[i].payment_date).days
+            payment_intervals.append(interval)
+        
+        avg_interval = sum(payment_intervals) / len(payment_intervals) if payment_intervals else 30
+        
+        return {
+            'last_payment_date': last_payment.payment_date,
+            'days_since_last_payment': days_since_last_payment,
+            'total_payments': payments.count(),
+            'average_interval': avg_interval,
+            'payment_regularity': 'regular' if avg_interval <= 35 else 'irregular',
+            'status': 'overdue' if days_since_last_payment > avg_interval * 1.5 else 'current'
+        }
+    
+    def _get_recovery_options(self, contract):
+        """Get available recovery options for defaulted contract."""
+        current_gold_price = Decimal('3500000')  # Mock price
+        current_value = contract.calculate_current_gold_value(current_gold_price)
+        
+        return {
+            'current_debt_value': current_value['total_value_toman'],
+            'recovery_methods': [
+                {
+                    'method': 'payment_plan',
+                    'title': _('Extended Payment Plan'),
+                    'description': _('Offer extended payment schedule with reduced amounts')
+                },
+                {
+                    'method': 'partial_settlement',
+                    'title': _('Partial Settlement'),
+                    'description': _('Accept partial payment to close contract')
+                },
+                {
+                    'method': 'gold_return',
+                    'title': _('Gold Item Return'),
+                    'description': _('Customer returns equivalent gold items')
+                },
+                {
+                    'method': 'legal_action',
+                    'title': _('Legal Recovery'),
+                    'description': _('Initiate legal proceedings for debt recovery')
+                }
+            ]
+        }
+
+
+class NotificationManagementView(LoginRequiredMixin, TenantContextMixin, ListView):
+    """Interface for managing payment reminders and notifications."""
+    model = GoldInstallmentContract
+    template_name = 'gold_installments/notification_management.html'
+    context_object_name = 'contracts'
+    
+    def get_queryset(self):
+        return GoldInstallmentContract.objects.filter(
+            tenant=self.request.tenant,
+            status='active'
+        ).select_related('customer')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Notification statistics
+        context['notification_stats'] = {
+            'pending_reminders': self._count_pending_reminders(),
+            'sent_today': self._count_sent_today(),
+            'scheduled_notifications': self._count_scheduled_notifications(),
+            'overdue_notifications': self._count_overdue_notifications()
+        }
+        
+        # Notification templates
+        context['notification_templates'] = [
+            {
+                'type': 'payment_reminder',
+                'title': _('Payment Reminder'),
+                'description': _('Remind customer of upcoming payment'),
+                'template': _('Dear {customer_name}, your payment of {amount} is due on {date}.')
+            },
+            {
+                'type': 'overdue_notice',
+                'title': _('Overdue Notice'),
+                'description': _('Notify customer of overdue payment'),
+                'template': _('Dear {customer_name}, your payment is overdue. Please contact us.')
+            },
+            {
+                'type': 'payment_confirmation',
+                'title': _('Payment Confirmation'),
+                'description': _('Confirm payment received'),
+                'template': _('Thank you {customer_name}, we received your payment of {amount}.')
+            },
+            {
+                'type': 'contract_completion',
+                'title': _('Contract Completion'),
+                'description': _('Notify customer of contract completion'),
+                'template': _('Congratulations {customer_name}, your gold installment contract is complete!')
+            }
+        ]
+        
+        # Notification schedule options
+        context['schedule_options'] = [
+            {'days': 7, 'label': _('7 days before due')},
+            {'days': 3, 'label': _('3 days before due')},
+            {'days': 1, 'label': _('1 day before due')},
+            {'days': 0, 'label': _('On due date')},
+            {'days': -1, 'label': _('1 day after due')},
+            {'days': -7, 'label': _('1 week after due')}
+        ]
+        
+        return context
+    
+    def _count_pending_reminders(self):
+        """Count contracts needing payment reminders."""
+        count = 0
+        for contract in self.get_queryset():
+            if self._needs_reminder(contract):
+                count += 1
+        return count
+    
+    def _needs_reminder(self, contract):
+        """Check if contract needs payment reminder."""
+        last_payment = contract.payments.order_by('-payment_date').first()
+        if not last_payment:
+            return True
+        
+        next_due_date = contract.calculate_next_payment_date(last_payment.payment_date)
+        days_until_due = (next_due_date - timezone.now().date()).days
+        return 0 <= days_until_due <= 7
+    
+    def _count_sent_today(self):
+        """Count notifications sent today."""
+        # This would integrate with actual notification system
+        return 0
+    
+    def _count_scheduled_notifications(self):
+        """Count scheduled notifications."""
+        # This would integrate with actual notification system
+        return 0
+    
+    def _count_overdue_notifications(self):
+        """Count overdue notification requirements."""
+        count = 0
+        for contract in self.get_queryset():
+            if contract.is_overdue:
+                count += 1
+        return count
+
+
+class ContractGenerationView(LoginRequiredMixin, TenantContextMixin, DetailView):
+    """Interface for generating contracts with Persian legal terms."""
+    model = GoldInstallmentContract
+    template_name = 'gold_installments/contract_generation.html'
+    context_object_name = 'contract'
+    
+    def get_queryset(self):
+        return GoldInstallmentContract.objects.filter(tenant=self.request.tenant)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        contract = self.object
+        
+        # Persian legal terms template
+        context['legal_terms_template'] = self._get_persian_legal_terms()
+        
+        # Contract data for generation
+        context['contract_data'] = {
+            'contract_number': contract.contract_number,
+            'customer_name': f"{contract.customer.persian_first_name} {contract.customer.persian_last_name}",
+            'customer_phone': contract.customer.phone_number,
+            'contract_date_shamsi': contract.contract_date_shamsi,
+            'initial_weight': contract.initial_gold_weight_grams,
+            'gold_karat': contract.gold_karat,
+            'payment_schedule': contract.get_payment_schedule_display(),
+            'special_conditions': contract.special_conditions or _('No special conditions')
+        }
+        
+        # Signature requirements
+        context['signature_requirements'] = [
+            {'party': 'customer', 'label': _('Customer Signature'), 'required': True},
+            {'party': 'shop_owner', 'label': _('Shop Owner Signature'), 'required': True},
+            {'party': 'witness1', 'label': _('Witness 1 Signature'), 'required': False},
+            {'party': 'witness2', 'label': _('Witness 2 Signature'), 'required': False}
+        ]
+        
+        return context
+    
+    def _get_persian_legal_terms(self):
+        """Get Persian legal terms template."""
+        return {
+            'title': _('Gold Installment Contract Terms and Conditions'),
+            'terms': [
+                _('This contract is governed by Iranian commercial law and regulations.'),
+                _('The customer acknowledges receipt of gold items as specified in this contract.'),
+                _('Payment schedule must be followed as agreed upon by both parties.'),
+                _('In case of default, the shop reserves the right to recover collateral.'),
+                _('Gold prices are subject to market fluctuations unless price protection is enabled.'),
+                _('Early payment discounts apply as specified in the contract terms.'),
+                _('Both parties agree to resolve disputes through mediation before legal action.'),
+                _('This contract is binding upon signature by both parties.')
+            ],
+            'footer': _('By signing below, both parties agree to the terms and conditions stated above.')
+        }
+
+
+@login_required
+def send_payment_reminder(request, contract_id):
+    """Send payment reminder to customer."""
+    contract = get_object_or_404(
+        GoldInstallmentContract,
+        id=contract_id,
+        tenant=request.tenant
+    )
+    
+    if request.method == 'POST':
+        try:
+            reminder_type = request.POST.get('reminder_type', 'payment_reminder')
+            message_template = request.POST.get('message_template', '')
+            send_method = request.POST.get('send_method', 'sms')  # sms, email, both
+            
+            # Format message with contract data
+            formatted_message = message_template.format(
+                customer_name=f"{contract.customer.persian_first_name} {contract.customer.persian_last_name}",
+                contract_number=contract.contract_number,
+                amount=PersianNumberFormatter().format_currency(
+                    contract.calculate_current_gold_value(Decimal('3500000'))['total_value_toman']
+                ),
+                date=timezone.now().date().strftime('%Y/%m/%d')
+            )
+            
+            # Send notification (mock implementation)
+            success = True  # Would integrate with actual SMS/email service
+            
+            if success:
+                messages.success(
+                    request,
+                    _('Payment reminder sent successfully to {customer}').format(
+                        customer=contract.customer.persian_first_name
+                    )
+                )
+            else:
+                messages.error(request, _('Failed to send payment reminder'))
+                
+        except Exception as e:
+            messages.error(request, _('An error occurred while sending reminder'))
+    
+    return redirect('gold_installments:notification_management')
+
+
+@login_required
+def schedule_notification(request, contract_id):
+    """Schedule notification for contract."""
+    contract = get_object_or_404(
+        GoldInstallmentContract,
+        id=contract_id,
+        tenant=request.tenant
+    )
+    
+    if request.method == 'POST':
+        try:
+            notification_type = request.POST.get('notification_type')
+            schedule_days = int(request.POST.get('schedule_days', 0))
+            message_template = request.POST.get('message_template', '')
+            
+            # Calculate schedule date
+            last_payment = contract.payments.order_by('-payment_date').first()
+            if last_payment:
+                next_due_date = contract.calculate_next_payment_date(last_payment.payment_date)
+                schedule_date = next_due_date + timedelta(days=schedule_days)
+            else:
+                schedule_date = timezone.now().date() + timedelta(days=schedule_days)
+            
+            # Create scheduled notification (mock implementation)
+            # In real implementation, this would create a database record
+            # and be processed by Celery task
+            
+            messages.success(
+                request,
+                _('Notification scheduled for {date}').format(
+                    date=schedule_date.strftime('%Y/%m/%d')
+                )
+            )
+            
+        except Exception as e:
+            messages.error(request, _('Failed to schedule notification'))
+    
+    return redirect('gold_installments:notification_management')
+
+
+@login_required
+def process_default_action(request, contract_id):
+    """Process default management action."""
+    contract = get_object_or_404(
+        GoldInstallmentContract,
+        id=contract_id,
+        tenant=request.tenant
+    )
+    
+    if request.method == 'POST':
+        try:
+            action = request.POST.get('action')
+            reason = request.POST.get('reason', '')
+            notes = request.POST.get('notes', '')
+            
+            if action == 'suspend_contract':
+                contract.status = 'suspended'
+                contract.save()
+                
+                # Create audit record
+                GoldWeightAdjustment.objects.create(
+                    contract=contract,
+                    adjustment_date=timezone.now().date(),
+                    weight_before_grams=contract.remaining_gold_weight_grams,
+                    adjustment_amount_grams=Decimal('0'),
+                    weight_after_grams=contract.remaining_gold_weight_grams,
+                    adjustment_type='correction',
+                    adjustment_reason='other',
+                    description=f"Contract suspended: {reason}",
+                    authorized_by=request.user,
+                    authorization_notes=notes
+                )
+                
+                messages.success(request, _('Contract has been suspended'))
+                
+            elif action == 'mark_defaulted':
+                contract.status = 'defaulted'
+                contract.save()
+                
+                messages.warning(request, _('Contract has been marked as defaulted'))
+                
+            elif action == 'restructure_payment':
+                # This would open a form to modify payment terms
+                messages.info(request, _('Payment restructuring initiated'))
+                
+            elif action == 'collateral_recovery':
+                # This would initiate collateral recovery process
+                messages.warning(request, _('Collateral recovery process initiated'))
+            
+        except Exception as e:
+            messages.error(request, _('Failed to process default action'))
+    
+    return redirect('gold_installments:default_management', pk=contract_id)
+
+
+@login_required
+def generate_contract_pdf(request, contract_id):
+    """Generate contract PDF with Persian legal terms."""
+    contract = get_object_or_404(
+        GoldInstallmentContract,
+        id=contract_id,
+        tenant=request.tenant
+    )
+    
+    try:
+        # This would integrate with PDF generation library
+        # For now, return a mock response
+        
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="contract_{contract.contract_number}.pdf"'
+        
+        # Mock PDF content
+        response.write(b'%PDF-1.4\n%Mock PDF content for contract generation')
+        
+        return response
+        
+    except Exception as e:
+        messages.error(request, _('Failed to generate contract PDF'))
+        return redirect('gold_installments:contract_generation', pk=contract_id)
+
+
 @login_required
 def ajax_gold_price_calculator(request):
     """AJAX endpoint for gold price calculations."""

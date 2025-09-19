@@ -42,4 +42,20 @@ urlpatterns = [
     
     # Export and reporting
     path('contract/<int:contract_id>/export/pdf/', views.contract_export_pdf, name='contract_export_pdf'),
+    
+    # Installment management and notification system
+    path('tracking/', views.InstallmentTrackingDashboardView.as_view(), name='installment_tracking'),
+    path('contract/<int:pk>/default-management/', views.DefaultManagementView.as_view(), name='default_management'),
+    path('notifications/', views.NotificationManagementView.as_view(), name='notification_management'),
+    path('contract/<int:pk>/contract-generation/', views.ContractGenerationView.as_view(), name='contract_generation'),
+    
+    # Notification actions
+    path('contract/<int:contract_id>/send-reminder/', views.send_payment_reminder, name='send_payment_reminder'),
+    path('contract/<int:contract_id>/schedule-notification/', views.schedule_notification, name='schedule_notification'),
+    
+    # Default management actions
+    path('contract/<int:contract_id>/process-default-action/', views.process_default_action, name='process_default_action'),
+    
+    # Contract generation
+    path('contract/<int:contract_id>/generate-pdf/', views.generate_contract_pdf, name='generate_contract_pdf'),
 ]

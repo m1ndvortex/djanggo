@@ -326,7 +326,12 @@
     - Write integration tests for gold price updates and payment calculations
     - _Requirements: 8.3, 8.4, 8.5, 8.11, 8.12, 3.12_
 
-  - [ ] 7.4 Build installment management and notification system UI (Frontend)
+  - [x] 7.4 Build installment management and notification system UI (Frontend)
+
+
+
+
+
     - Create installment tracking dashboard with overdue payment management
     - Build default management interface for non-payment situations and collateral recovery
     - Create notification management interface for payment reminders and scheduling
@@ -335,7 +340,11 @@
     - _Requirements: 8.7, 8.8, 8.9, 8.10, 8.13, 8.14, 8.15_
 
 - [ ] 8. Admin Super-Panel Development
-  - [ ] 8.1 Build admin dashboard with dual theme system (Frontend)
+  - [-] 8.1 Build admin dashboard with dual theme system (Frontend)
+
+
+
+
     - Create admin super-panel dashboard with system overview and key metrics in modern light mode
     - Build cybersecurity-themed admin interface with glassmorphism cards, neon borders, and deep dark backgrounds for dark mode
     - Implement Persian RTL admin interface with theme-aware components

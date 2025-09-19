@@ -1,343 +1,296 @@
 /**
- * Gold Installments System JavaScript
- * Provides interactive functionality for gold installment management
+ * Gold Installments JavaScript functionality
+ * Supports installment management and notification system UI
  */
 
-// Persian Number Formatter utility
+// Persian number formatter utility
 const PersianFormatter = {
-    // Persian digits mapping
-    persianDigits: ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'],
-    
-    // Convert English digits to Persian
     toPersianDigits: function(str) {
-        return str.toString().replace(/\d/g, function(match) {
-            return this.persianDigits[parseInt(match)];
-        }.bind(this));
+        const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+        const englishDigits = '0123456789';
+        
+        return str.toString().replace(/[0-9]/g, function(match) {
+            return persianDigits[englishDigits.indexOf(match)];
+        });
     },
     
-    // Format currency with Persian digits
     formatCurrency: function(amount, usePersianDigits = true) {
-        const formatted = new Intl.NumberFormat('fa-IR').format(amount) + ' تومان';
-        return usePersianDigits ? this.toPersianDigits(formatted) : formatted;
+        const formatted = new Intl.NumberFormat('fa-IR').format(amount);
+        return usePersianDigits ? this.toPersianDigits(formatted) + ' تومان' : formatted + ' تومان';
     },
     
-    // Format weight with Persian digits
     formatWeight: function(weight, unit = 'gram', usePersianDigits = true) {
-        const unitMap = {
-            'gram': 'گرم',
-            'mesghal': 'مثقال',
-            'soot': 'سوت'
-        };
-        const formatted = parseFloat(weight).toFixed(3) + ' ' + (unitMap[unit] || unit);
-        return usePersianDigits ? this.toPersianDigits(formatted) : formatted;
+        const formatted = parseFloat(weight).toFixed(3);
+        const result = usePersianDigits ? this.toPersianDigits(formatted) : formatted;
+        return result + (unit === 'gram' ? ' گرم' : ' ' + unit);
     },
     
-    // Format percentage
     formatPercentage: function(percentage, usePersianDigits = true) {
-        const formatted = parseFloat(percentage).toFixed(1) + '%';
-        return usePersianDigits ? this.toPersianDigits(formatted) : formatted;
-    },
-    
-    // Format number
-    formatNumber: function(number, usePersianDigits = true) {
-        const formatted = new Intl.NumberFormat('fa-IR').format(number);
-        return usePersianDigits ? this.toPersianDigits(formatted) : formatted;
+        const formatted = parseFloat(percentage).toFixed(2);
+        const result = usePersianDigits ? this.toPersianDigits(formatted) : formatted;
+        return result + '٪';
     }
 };
 
-// Gold Installments main object
-const GoldInstallments = {
-    
-    // Initialize the system
-    init: function() {
-        this.initEventListeners();
-        this.initPersianInputs();
-        this.initTooltips();
+// Gold price calculator
+const GoldCalculator = {
+    calculateGoldWeight: function(paymentAmount, goldPricePerGram) {
+        if (paymentAmount <= 0 || goldPricePerGram <= 0) {
+            return 0;
+        }
+        return paymentAmount / goldPricePerGram;
     },
     
-    // Initialize event listeners
-    initEventListeners: function() {
-        // Customer search functionality
-        $(document).on('input', '.customer-search', this.handleCustomerSearch);
-        
-        // Gold price calculator
-        $(document).on('input', '.gold-calculator-input', this.calculateGoldWeight);
-        
-        // Quick payment amounts
-        $(document).on('click', '.quick-amount', this.setQuickAmount);
-        
-        // Form validation
-        $(document).on('submit', '.gold-form', this.validateForm);
-        
-        // Price protection toggle
-        $(document).on('change', '[data-toggle="price-protection"]', this.togglePriceProtection);
-        
-        // Payment schedule toggle
-        $(document).on('change', '[data-toggle="schedule-options"]', this.toggleScheduleOptions);
+    calculatePaymentAmount: function(goldWeight, goldPricePerGram) {
+        if (goldWeight <= 0 || goldPricePerGram <= 0) {
+            return 0;
+        }
+        return goldWeight * goldPricePerGram;
     },
     
-    // Initialize Persian input formatting
-    initPersianInputs: function() {
-        // Format currency inputs
-        $('.persian-currency-input').on('input', function() {
-            const value = $(this).val().replace(/[^\d]/g, '');
-            if (value) {
-                const formatted = PersianFormatter.formatNumber(value, false);
-                $(this).val(formatted);
-            }
+    applyDiscount: function(amount, discountPercentage) {
+        if (discountPercentage <= 0) {
+            return amount;
+        }
+        return amount * (1 - discountPercentage / 100);
+    }
+};
+
+// Notification management
+const NotificationManager = {
+    templates: {
+        payment_reminder: 'عزیز {customer_name}، پرداخت شما برای قرارداد {contract_number} در تاریخ {date} سررسید می‌شود.',
+        overdue_notice: 'عزیز {customer_name}، پرداخت شما برای قرارداد {contract_number} معوقه شده است. لطفاً با ما تماس بگیرید.',
+        payment_confirmation: 'عزیز {customer_name}، پرداخت شما به مبلغ {amount} با موفقیت دریافت شد.',
+        contract_completion: 'تبریک {customer_name}، قرارداد طلای قرضی شما با شماره {contract_number} تکمیل شد!'
+    },
+    
+    formatMessage: function(template, data) {
+        let message = this.templates[template] || template;
+        
+        // Replace placeholders with actual data
+        Object.keys(data).forEach(key => {
+            const placeholder = '{' + key + '}';
+            message = message.replace(new RegExp(placeholder, 'g'), data[key]);
         });
         
-        // Format number inputs
-        $('.persian-number-input').on('input', function() {
-            const value = $(this).val();
-            if (value && !isNaN(value)) {
-                $(this).attr('data-original', value);
-            }
-        });
+        return message;
     },
     
-    // Initialize tooltips
-    initTooltips: function() {
-        $('[data-bs-toggle="tooltip"]').tooltip();
+    validatePhoneNumber: function(phoneNumber) {
+        // Iranian mobile number validation
+        const iranMobileRegex = /^(\+98|0)?9\d{9}$/;
+        return iranMobileRegex.test(phoneNumber);
+    }
+};
+
+// Contract management utilities
+const ContractManager = {
+    calculateProgress: function(initialWeight, remainingWeight) {
+        if (initialWeight <= 0) return 0;
+        const paidWeight = initialWeight - remainingWeight;
+        return (paidWeight / initialWeight) * 100;
     },
     
-    // Handle customer search
-    handleCustomerSearch: function() {
-        const query = $(this).val();
-        const resultsContainer = $('#customer-search-results');
+    isOverdue: function(lastPaymentDate, paymentSchedule) {
+        if (!lastPaymentDate) return true;
         
-        if (query.length < 2) {
-            resultsContainer.addClass('d-none');
-            return;
+        const today = new Date();
+        const lastPayment = new Date(lastPaymentDate);
+        const daysDiff = Math.floor((today - lastPayment) / (1000 * 60 * 60 * 24));
+        
+        // Determine overdue threshold based on payment schedule
+        let threshold = 30; // Default monthly
+        switch (paymentSchedule) {
+            case 'weekly':
+                threshold = 10;
+                break;
+            case 'bi_weekly':
+                threshold = 17;
+                break;
+            case 'monthly':
+                threshold = 35;
+                break;
         }
         
-        // AJAX call to search customers
-        $.ajax({
-            url: '/gold-installments/ajax/customer-search/',
-            data: { q: query },
-            success: function(data) {
-                if (data.customers && data.customers.length > 0) {
-                    let html = '';
-                    data.customers.forEach(function(customer) {
-                        html += `
-                            <a href="#" class="list-group-item list-group-item-action customer-select" 
-                               data-customer-id="${customer.id}">
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <h6 class="mb-1">${customer.display_name}</h6>
-                                        <small>${customer.phone}</small>
-                                    </div>
-                                </div>
-                            </a>
-                        `;
-                    });
-                    resultsContainer.html(html).removeClass('d-none');
-                } else {
-                    resultsContainer.addClass('d-none');
+        return daysDiff > threshold;
+    },
+    
+    getStatusColor: function(status, isOverdue = false) {
+        if (isOverdue) return 'danger';
+        
+        switch (status) {
+            case 'active': return 'success';
+            case 'completed': return 'primary';
+            case 'suspended': return 'warning';
+            case 'defaulted': return 'danger';
+            default: return 'secondary';
+        }
+    }
+};
+
+// UI utilities
+const UIUtils = {
+    showToast: function(message, type = 'info') {
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-white bg-${type} border-0 position-fixed top-0 end-0 m-3`;
+        toast.setAttribute('role', 'alert');
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+        
+        // Remove toast after it's hidden
+        toast.addEventListener('hidden.bs.toast', () => {
+            document.body.removeChild(toast);
+        });
+    },
+    
+    confirmAction: function(message, callback) {
+        if (confirm(message)) {
+            callback();
+        }
+    },
+    
+    formatDatePersian: function(date) {
+        // Simple Persian date formatting (would use proper library in production)
+        const options = { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit',
+            calendar: 'persian',
+            numberingSystem: 'persian'
+        };
+        
+        try {
+            return new Intl.DateTimeFormat('fa-IR', options).format(new Date(date));
+        } catch (e) {
+            // Fallback to simple formatting
+            const d = new Date(date);
+            return `${d.getFullYear()}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}`;
+        }
+    }
+};
+
+// AJAX utilities
+const AjaxUtils = {
+    getCsrfToken: function() {
+        return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+    },
+    
+    post: function(url, data, successCallback, errorCallback) {
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': this.getCsrfToken(),
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                successCallback(data);
+            } else {
+                errorCallback(data.error || 'Unknown error');
+            }
+        })
+        .catch(error => {
+            errorCallback(error.message);
+        });
+    },
+    
+    get: function(url, successCallback, errorCallback) {
+        fetch(url, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success !== false) {
+                successCallback(data);
+            } else {
+                errorCallback(data.error || 'Unknown error');
+            }
+        })
+        .catch(error => {
+            errorCallback(error.message);
+        });
+    }
+};
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Persian number inputs
+    document.querySelectorAll('.persian-number-input').forEach(input => {
+        input.addEventListener('input', function() {
+            // Convert English digits to Persian on display
+            const value = this.value;
+            const persianValue = PersianFormatter.toPersianDigits(value);
+            
+            // Update display without affecting the actual value
+            if (this.dataset.displayElement) {
+                const displayElement = document.getElementById(this.dataset.displayElement);
+                if (displayElement) {
+                    displayElement.textContent = persianValue;
                 }
             }
         });
-    },
+    });
     
-    // Calculate gold weight equivalent
-    calculateGoldWeight: function() {
-        const amount = parseFloat($(this).val()) || 0;
-        const goldPrice = parseFloat($('#current-gold-price').data('price')) || 3500000;
-        
-        if (amount > 0) {
-            const goldWeight = amount / goldPrice;
-            const displayElement = $(this).closest('.form-group').find('.gold-weight-display');
-            
-            if (displayElement.length) {
-                displayElement.text(PersianFormatter.formatWeight(goldWeight, 'gram'));
-            }
-            
-            // Trigger custom event
-            $(document).trigger('goldWeightCalculated', {
-                amount: amount,
-                goldPrice: goldPrice,
-                goldWeight: goldWeight
-            });
-        }
-    },
-    
-    // Set quick payment amount
-    setQuickAmount: function(e) {
-        e.preventDefault();
-        const amount = $(this).data('amount');
-        const targetInput = $('.payment-amount-input');
-        
-        if (targetInput.length) {
-            targetInput.val(amount).trigger('input');
-        }
-    },
-    
-    // Validate form before submission
-    validateForm: function(e) {
-        const form = $(this);
-        let isValid = true;
-        
-        // Check required fields
-        form.find('[required]').each(function() {
-            if (!$(this).val()) {
-                isValid = false;
-                $(this).addClass('is-invalid');
-            } else {
-                $(this).removeClass('is-invalid');
+    // Initialize currency inputs
+    document.querySelectorAll('.persian-currency-input').forEach(input => {
+        input.addEventListener('blur', function() {
+            const value = parseFloat(this.value) || 0;
+            if (value > 0) {
+                this.title = PersianFormatter.formatCurrency(value);
             }
         });
-        
-        // Custom validations
-        const paymentAmount = parseFloat(form.find('.payment-amount-input').val()) || 0;
-        if (paymentAmount <= 0) {
-            isValid = false;
-            form.find('.payment-amount-input').addClass('is-invalid');
-        }
-        
-        if (!isValid) {
-            e.preventDefault();
-            this.showValidationError('لطفاً تمام فیلدهای الزامی را تکمیل کنید.');
-        }
-        
-        return isValid;
-    },
+    });
     
-    // Toggle price protection options
-    togglePriceProtection: function() {
-        const isChecked = $(this).is(':checked');
-        const optionsContainer = $('#price-protection-options');
-        
-        if (isChecked) {
-            optionsContainer.removeClass('d-none');
-        } else {
-            optionsContainer.addClass('d-none');
-            optionsContainer.find('input').val('');
-        }
-    },
-    
-    // Toggle schedule options
-    toggleScheduleOptions: function() {
-        const selectedValue = $(this).val();
-        const customOptions = $('.custom-schedule-options');
-        
-        if (selectedValue === 'custom') {
-            customOptions.removeClass('d-none');
-        } else {
-            customOptions.addClass('d-none');
-        }
-    },
-    
-    // Show validation error
-    showValidationError: function(message) {
-        const alert = `
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        `;
-        
-        $('.container-fluid').prepend(alert);
-        
-        // Auto dismiss after 5 seconds
-        setTimeout(function() {
-            $('.alert-danger').fadeOut();
-        }, 5000);
-    },
-    
-    // Show success message
-    showSuccessMessage: function(message) {
-        const alert = `
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="fas fa-check-circle me-2"></i>
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        `;
-        
-        $('.container-fluid').prepend(alert);
-        
-        // Auto dismiss after 5 seconds
-        setTimeout(function() {
-            $('.alert-success').fadeOut();
-        }, 5000);
-    },
-    
-    // Initialize contract form
-    initContractForm: function() {
-        // Customer selection
-        $(document).on('click', '.customer-select', function(e) {
-            e.preventDefault();
-            const customerId = $(this).data('customer-id');
-            const customerName = $(this).find('h6').text();
+    // Initialize gold weight calculators
+    document.querySelectorAll('[data-calculator="gold-weight"]').forEach(input => {
+        input.addEventListener('input', function() {
+            const amount = parseFloat(this.value) || 0;
+            const goldPrice = parseFloat(this.dataset.goldPrice) || 3500000;
             
-            $('#id_customer').val(customerId);
-            $('#selected-customer-info').removeClass('d-none');
-            $('#customer-details').html(`<strong>${customerName}</strong>`);
-            $('#customer-search-results').addClass('d-none');
-        });
-        
-        // Gold value calculator
-        $('#id_initial_gold_weight_grams, #id_gold_karat').on('input', function() {
-            const weight = parseFloat($('#id_initial_gold_weight_grams').val()) || 0;
-            const karat = parseInt($('#id_gold_karat').val()) || 18;
-            const currentPrice = parseFloat($('#current-gold-price').data('price')) || 3500000;
-            
-            if (weight > 0) {
-                const totalValue = weight * currentPrice;
-                const pureGoldWeight = (weight * karat) / 24;
-                const pureGoldValue = pureGoldWeight * currentPrice;
+            if (amount > 0) {
+                const goldWeight = GoldCalculator.calculateGoldWeight(amount, goldPrice);
+                const displayElement = document.querySelector(this.dataset.target);
                 
-                $('#total-gold-value').text(PersianFormatter.formatCurrency(totalValue));
-                $('#pure-gold-value').text(PersianFormatter.formatCurrency(pureGoldValue));
+                if (displayElement) {
+                    displayElement.textContent = PersianFormatter.formatWeight(goldWeight);
+                }
             }
         });
-    },
+    });
     
-    // Initialize payment form
-    initPaymentForm: function() {
-        // Payment calculator
-        $('#id_payment_amount_toman').on('input', function() {
-            const amount = parseFloat($(this).val()) || 0;
-            const goldPrice = parseFloat($('#id_gold_price_per_gram_at_payment').val()) || 3500000;
-            
-            if (amount > 0 && goldPrice > 0) {
-                const goldWeight = amount / goldPrice;
-                $('#gold-weight-equivalent').text(PersianFormatter.formatWeight(goldWeight, 'gram'));
-            }
-        });
-        
-        // Payment method specific fields
-        $('#id_payment_method').change(function() {
-            const method = $(this).val();
-            const referenceField = $('#id_reference_number').closest('.mb-3');
-            
-            if (method === 'bank_transfer' || method === 'cheque') {
-                referenceField.show();
-                $('#id_reference_number').attr('required', true);
-            } else {
-                referenceField.hide();
-                $('#id_reference_number').attr('required', false);
-            }
-        });
-    },
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
     
-    // Export contract to PDF
-    exportToPDF: function(contractId) {
-        window.open(`/gold-installments/contract/${contractId}/export/pdf/`, '_blank');
-    },
-    
-    // Print contract
-    printContract: function() {
-        window.print();
-    }
-};
-
-// Initialize when document is ready
-$(document).ready(function() {
-    GoldInstallments.init();
+    // Initialize popovers
+    const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+    popoverTriggerList.map(function (popoverTriggerEl) {
+        return new bootstrap.Popover(popoverTriggerEl);
+    });
 });
 
 // Export for global access
-window.GoldInstallments = GoldInstallments;
 window.PersianFormatter = PersianFormatter;
+window.GoldCalculator = GoldCalculator;
+window.NotificationManager = NotificationManager;
+window.ContractManager = ContractManager;
+window.UIUtils = UIUtils;
+window.AjaxUtils = AjaxUtils;
