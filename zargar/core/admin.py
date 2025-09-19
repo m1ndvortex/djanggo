@@ -14,7 +14,7 @@ class UserAdmin(BaseUserAdmin):
     """
     list_display = (
         'username', 'email', 'persian_first_name', 'persian_last_name',
-        'role', 'is_2fa_enabled', 'theme_preference', 'tenant_schema',
+        'role', 'is_2fa_enabled', 'theme_preference',
         'is_active', 'date_joined'
     )
     list_filter = (
@@ -32,7 +32,7 @@ class UserAdmin(BaseUserAdmin):
             'fields': ('persian_first_name', 'persian_last_name', 'phone_number')
         }),
         (_('Role & Permissions'), {
-            'fields': ('role', 'tenant_schema')
+            'fields': ('role',)
         }),
         (_('Security & Preferences'), {
             'fields': ('is_2fa_enabled', 'theme_preference')
@@ -44,7 +44,7 @@ class UserAdmin(BaseUserAdmin):
             'fields': ('persian_first_name', 'persian_last_name', 'phone_number')
         }),
         (_('Role & Permissions'), {
-            'fields': ('role', 'tenant_schema')
+            'fields': ('role',)
         }),
     )
 

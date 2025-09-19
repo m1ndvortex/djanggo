@@ -1,54 +1,54 @@
-# Core Django and DRF
-Django==4.2.7
-djangorestframework==3.14.0
-django-cors-headers==4.3.1
-django-filter==23.3
+# Core Django and DRF - Updated to latest secure versions
+Django==4.2.16
+djangorestframework==3.15.2
+django-cors-headers==4.4.0
+django-filter==24.3
 
 # Multi-tenancy
-django-tenants==3.5.0
+django-tenants==3.7.0
 
 # Database and Caching
-psycopg2-binary==2.9.7
-redis>=4.5.2,<5.0.0
+psycopg2-binary==2.9.9
+redis>=5.0.0,<6.0.0
 django-redis==5.4.0
 
 # Background Tasks
-celery[redis]==5.3.4
+celery[redis]==5.4.0
 
-# Authentication and Security
+# Authentication and Security - Critical security updates
 djangorestframework-simplejwt==5.3.0
-django-otp==1.2.4
+django-otp==1.5.4
 qrcode==7.4.2
 argon2-cffi==23.1.0
 
 # Storage
-django-storages==1.14.2
-boto3==1.29.7
+django-storages==1.14.4
+boto3==1.35.0
 
 # Persian/RTL Support
 django-jalali==6.0.1
 persiantools==4.0.0
-jdatetime==4.1.0
+jdatetime==5.0.0
 
 # Frontend Integration
-django-compressor==4.4
-django-sass-processor==1.2.2
-libsass==0.22.0
+django-compressor==4.5.1
+django-sass-processor==1.4.1
+libsass==0.23.0
 
 # Environment Management
 python-decouple==3.8
-dj-database-url==2.1.0
+dj-database-url==2.2.0
 
 # Monitoring and Health Checks
-django-health-check==3.17.0
+django-health-check==3.18.3
 
 # Testing
-pytest==7.4.3
-pytest-django==4.7.0
-pytest-cov==4.1.0
-factory-boy==3.3.0
-PyYAML==6.0.1
-pytest-mock==3.12.0
+pytest==8.3.3
+pytest-django==4.9.0
+pytest-cov==5.0.0
+factory-boy==3.3.1
+PyYAML==6.0.2
+pytest-mock==3.14.0
 
 # Development
-django-debug-toolbar==4.2.0
+django-debug-toolbar==4.4.6

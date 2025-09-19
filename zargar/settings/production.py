@@ -2,18 +2,28 @@
 Production settings for zargar project.
 """
 from .base import *
+from .security import get_security_settings, AUTH_SECURITY, RATE_LIMITING, FILE_UPLOAD_SECURITY
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+# Apply production security settings
+security_settings = get_security_settings('production')
+for key, value in security_settings.items():
+    globals()[key] = value
 
-# Security settings for production
-SECURE_SSL_REDIRECT = True
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-SECURE_HSTS_SECONDS = 31536000
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
+# Apply additional security configurations
+globals().update(AUTH_SECURITY)
+globals().update(FILE_UPLOAD_SECURITY)
+
+# Rate limiting for DRF
+REST_FRAMEWORK.update({
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle'
+    ],
+    'DEFAULT_THROTTLE_RATES': RATE_LIMITING['DEFAULT_THROTTLE_RATES']
+})
+
+# Security middleware order is important
+MIDDLEWARE.insert(1, 'django.middleware.security.SecurityMiddleware')
 
 # Email configuration for production
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

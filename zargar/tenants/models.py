@@ -1,6 +1,9 @@
 from django.db import models
 from django_tenants.models import TenantMixin, DomainMixin
 
+# Import super admin models
+from .admin_models import SuperAdmin, SuperAdminSession
+
 
 class Tenant(TenantMixin):
     """

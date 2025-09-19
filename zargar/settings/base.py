@@ -19,7 +19,6 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,0.0.0.0', c
 # Application definition
 SHARED_APPS = [
     'django_tenants',  # Must be first
-    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -41,8 +40,7 @@ SHARED_APPS = [
     'django_jalali',
     
     # Local apps (shared across tenants)
-    'zargar.core',     # User model and core functionality
-    'zargar.tenants',  # Tenant and Domain models must be in shared
+    'zargar.tenants',  # Tenant, Domain, and SuperAdmin models in shared schema
     'zargar.api',      # API endpoints can be shared
 ]
 
@@ -51,8 +49,12 @@ TENANT_APPS = [
     'django.contrib.auth',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'django.contrib.admin',  # Admin is tenant-specific
     
-    # Tenant-specific business apps
+    # Core functionality with PERFECT tenant isolation
+    'zargar.core',     # User model and core functionality - IN TENANT_APPS for perfect isolation
+    
+    # Tenant-specific business apps - ALL perfectly isolated
     'zargar.jewelry',
     'zargar.accounting',
     'zargar.customers',
@@ -76,6 +78,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'zargar.core.middleware.TenantContextMiddleware',
+    'zargar.core.middleware.TenantIsolationMiddleware',  # New tenant isolation middleware
     'zargar.core.middleware.PersianLocalizationMiddleware',
 ]
 
@@ -272,6 +275,12 @@ ROOT_URLCONF = 'zargar.urls_tenants'
 
 # Custom User Model
 AUTH_USER_MODEL = 'core.User'
+
+# Authentication Backends
+AUTHENTICATION_BACKENDS = [
+    'zargar.core.auth_backends.TenantAwareAuthBackend',
+    'django.contrib.auth.backends.ModelBackend',  # Fallback
+]
 
 # Password Hashing
 PASSWORD_HASHERS = [

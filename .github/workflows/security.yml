@@ -1,0 +1,108 @@
+name: Security Audit
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run security audit daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+jobs:
+  security-audit:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pip-audit safety bandit semgrep
+        pip install -r requirements.txt
+    
+    - name: Run pip-audit for known vulnerabilities
+      run: |
+        pip-audit --format=json --output=pip-audit-report.json || true
+        pip-audit --format=text
+    
+    - name: Run Safety check
+      run: |
+        safety check --json --output safety-report.json || true
+        safety check
+    
+    - name: Run Bandit security linter
+      run: |
+        bandit -r zargar/ -f json -o bandit-report.json || true
+        bandit -r zargar/ -ll
+    
+    - name: Run Semgrep security scan
+      run: |
+        semgrep --config=auto zargar/ --json --output=semgrep-report.json || true
+        semgrep --config=auto zargar/
+    
+    - name: Django Security Check
+      run: |
+        python manage.py check --deploy --settings=zargar.settings.production
+    
+    - name: Upload security reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-reports
+        path: |
+          pip-audit-report.json
+          safety-report.json
+          bandit-report.json
+          semgrep-report.json
+    
+    - name: Comment PR with security summary
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          let comment = '## 🛡️ Security Audit Summary\n\n';
+          
+          try {
+            const pipAudit = JSON.parse(fs.readFileSync('pip-audit-report.json', 'utf8'));
+            comment += `**Dependency Vulnerabilities:** ${pipAudit.vulnerabilities?.length || 0} found\n`;
+          } catch (e) {
+            comment += '**Dependency Vulnerabilities:** Check failed\n';
+          }
+          
+          try {
+            const bandit = JSON.parse(fs.readFileSync('bandit-report.json', 'utf8'));
+            comment += `**Code Security Issues:** ${bandit.results?.length || 0} found\n`;
+          } catch (e) {
+            comment += '**Code Security Issues:** Check failed\n';
+          }
+          
+          comment += '\n📋 **Recommendations:**\n';
+          comment += '- Review security reports in the Actions artifacts\n';
+          comment += '- Update vulnerable dependencies\n';
+          comment += '- Fix any code security issues\n';
+          comment += '- Run `python scripts/security_audit.py` locally\n';
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
+
+  dependency-review:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+    - name: Dependency Review
+      uses: actions/dependency-review-action@v3
+      with:
+        fail-on-severity: high
+        allow-licenses: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC
