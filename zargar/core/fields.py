@@ -59,7 +59,7 @@ class PersianDateField(forms.DateField):
                     # Create Persian date and convert to Gregorian
                     persian_date = jdatetime.date(year, month, day)
                     return persian_date.togregorian()
-        except (ValueError, jdatetime.InvalidJalaliDate) as e:
+        except ValueError as e:
             raise ValidationError(_('تاریخ وارد شده معتبر نیست. لطفاً تاریخ را به صورت صحیح وارد کنید.'))
         
         raise ValidationError(_('فرمت تاریخ نامعتبر است. لطفاً از فرمت ۱۴۰۳/۰۱/۰۱ استفاده کنید.'))
@@ -115,7 +115,7 @@ class PersianDateTimeField(forms.DateTimeField):
                         # Create Persian datetime and convert to Gregorian
                         persian_datetime = jdatetime.datetime(year, month, day, hour, minute)
                         return persian_datetime.togregorian()
-        except (ValueError, jdatetime.InvalidJalaliDate):
+        except ValueError:
             pass
         
         raise ValidationError(_('فرمت تاریخ و زمان نامعتبر است. لطفاً از فرمت ۱۴۰۳/۰۱/۰۱ - ۱۲:۳۰ استفاده کنید.'))
@@ -353,10 +353,11 @@ class PersianEmailField(forms.EmailField):
     
     def validate(self, value):
         """Validate email with Persian error messages."""
-        try:
-            super().validate(value)
-        except ValidationError:
-            raise ValidationError(_('آدرس ایمیل وارد شده معتبر نیست.'))
+        if value:
+            try:
+                super().validate(value)
+            except ValidationError:
+                raise ValidationError(_('آدرس ایمیل وارد شده معتبر نیست.'))
 
 
 class PersianPostalCodeField(forms.CharField):

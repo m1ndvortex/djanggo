@@ -167,7 +167,12 @@
     - Write frontend tests for RTL layout, Persian text display, and theme switching
     - _Requirements: 3.1, 3.6, 3.7, 1.5_
 
-  - [ ] 4.3 Implement Shamsi calendar system integration (Backend)
+  - [x] 4.3 Implement Shamsi calendar system integration (Backend)
+
+
+
+
+
     - Create PersianDateField custom field for Shamsi calendar support
     - Build Persian date picker widgets with Shamsi calendar interface
     - Implement calendar conversion utilities (Shamsi, Gregorian, Hijri)
