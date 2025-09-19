@@ -249,7 +249,12 @@
     - _Requirements: 9.3, 7.8_
 
 - [ ] 6. Persian Accounting System Implementation
-  - [ ] 6.1 Create Persian accounting system models (Backend)
+  - [x] 6.1 Create Persian accounting system models (Backend)
+
+
+
+
+
     - Implement ChartOfAccounts model with Persian accounting terminology (کدینگ حسابداری)
     - Create JournalEntry model for transaction recording (ثبت اسناد حسابداری)
     - Build GeneralLedger and SubsidiaryLedger models (دفتر کل، دفتر معین)
