@@ -22,8 +22,13 @@ from .tenant_views import (
     UserProfileView,
     UserProfileEditView,
     UserPasswordChangeView,
-    User2FASetupView,
-    User2FADisableView,
+)
+from .twofa_views import (
+    TwoFASetupView,
+    TwoFADisableView,
+    TwoFAVerifyView,
+    TwoFABackupTokensView,
+    TwoFAStatusAPIView
 )
 
 app_name = 'tenant'
@@ -59,6 +64,9 @@ urlpatterns = [
     path('profile/password/', UserPasswordChangeView.as_view(), name='password_change'),
     
     # 2FA URLs
-    path('profile/2fa/setup/', User2FASetupView.as_view(), name='2fa_setup'),
-    path('profile/2fa/disable/', User2FADisableView.as_view(), name='2fa_disable'),
+    path('2fa/verify/', TwoFAVerifyView.as_view(), name='2fa_verify'),
+    path('profile/2fa/setup/', TwoFASetupView.as_view(), name='2fa_setup'),
+    path('profile/2fa/disable/', TwoFADisableView.as_view(), name='2fa_disable'),
+    path('profile/2fa/backup-tokens/', TwoFABackupTokensView.as_view(), name='2fa_backup_tokens'),
+    path('api/2fa/status/', TwoFAStatusAPIView.as_view(), name='2fa_status_api'),
 ]

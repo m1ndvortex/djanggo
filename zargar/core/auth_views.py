@@ -14,7 +14,7 @@ from django.urls import reverse_lazy
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 import json
-from .models import User, AuditLog
+from .models import User, AuditLog, TOTPDevice
 
 
 class AdminLoginView(auth_views.LoginView):
@@ -34,29 +34,48 @@ class AdminLoginView(auth_views.LoginView):
         return context
     
     def form_valid(self, form):
-        """Handle successful login with audit logging."""
+        """Handle successful login with audit logging and 2FA check."""
         user = form.get_user()
         
         # Check if user is super admin
-        if not user.is_super_admin:
+        if not user.is_superuser:
             messages.error(self.request, _('شما مجوز دسترسی به پنل مدیریت را ندارید.'))
             return self.form_invalid(form)
         
-        # Log successful login
-        AuditLog.objects.create(
-            user=user,
-            action='login',
-            details={
-                'login_type': 'admin_panel',
-                'ip_address': self.get_client_ip(),
-                'user_agent': self.request.META.get('HTTP_USER_AGENT', ''),
-            },
-            ip_address=self.get_client_ip(),
-            user_agent=self.request.META.get('HTTP_USER_AGENT', ''),
-        )
+        # Check if super admin has 2FA enabled (mandatory for super admins)
+        if not user.is_2fa_enabled:
+            messages.error(self.request, _('احراز هویت دو مرحله‌ای برای مدیران سیستم اجباری است.'))
+            return self.form_invalid(form)
         
-        messages.success(self.request, _(f'خوش آمدید، {user.full_persian_name}'))
-        return super().form_valid(form)
+        # Check if user has confirmed 2FA device
+        try:
+            totp_device = TOTPDevice.objects.get(user=user, is_confirmed=True)
+            
+            # Store user ID in session for 2FA verification
+            self.request.session['2fa_user_id'] = user.id
+            self.request.session['2fa_next_url'] = self.get_success_url()
+            self.request.session['is_admin_login'] = True
+            
+            # Log initial login attempt (before 2FA)
+            AuditLog.objects.create(
+                user=user,
+                action='login_attempt',
+                details={
+                    'login_type': 'admin_panel',
+                    'requires_2fa': True,
+                    'ip_address': self.get_client_ip(),
+                    'user_agent': self.request.META.get('HTTP_USER_AGENT', ''),
+                },
+                ip_address=self.get_client_ip(),
+                user_agent=self.request.META.get('HTTP_USER_AGENT', ''),
+            )
+            
+            # Redirect to 2FA verification
+            return redirect('core:admin_2fa_verify')
+            
+        except TOTPDevice.DoesNotExist:
+            messages.error(self.request, _('احراز هویت دو مرحله‌ای تنظیم نشده است. لطفاً ابتدا آن را فعال کنید.'))
+            return self.form_invalid(form)
     
     def form_invalid(self, form):
         """Handle failed login attempts."""
@@ -252,14 +271,98 @@ class Admin2FASetupView(LoginRequiredMixin, TemplateView):
 class Admin2FAVerifyView(TemplateView):
     """
     2FA verification view for admin users.
-    This will be implemented in a later task.
     """
     template_name = 'auth/admin_2fa_verify.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        """Check if admin user needs 2FA verification."""
+        # Check if user is in 2FA verification state
+        if not request.session.get('2fa_user_id') or not request.session.get('is_admin_login'):
+            messages.error(request, _('جلسه احراز هویت منقضی شده است.'))
+            return redirect('core:admin_login')
+        
+        return super().dispatch(request, *args, **kwargs)
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update({
             'page_title': 'تأیید کد دو مرحله‌ای',
             'is_2fa_verify': True,
+            'is_admin_verify': True,
         })
         return context
+    
+    def post(self, request, *args, **kwargs):
+        """Handle admin 2FA verification."""
+        user_id = request.session.get('2fa_user_id')
+        token = request.POST.get('token', '').strip()
+        
+        if not user_id or not token:
+            messages.error(request, _('اطلاعات ناقص ارسال شده است.'))
+            return self.get(request, *args, **kwargs)
+        
+        try:
+            user = User.objects.get(id=user_id)
+            
+            # Verify user is super admin
+            if not user.is_superuser:
+                messages.error(request, _('دسترسی غیرمجاز.'))
+                return redirect('core:admin_login')
+            
+            totp_device = TOTPDevice.objects.get(user=user, is_confirmed=True)
+            
+            if totp_device.verify_token(token):
+                # Complete admin login process
+                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+                
+                # Clear 2FA session data
+                del request.session['2fa_user_id']
+                del request.session['is_admin_login']
+                
+                messages.success(request, _(f'خوش آمدید، {user.full_persian_name}'))
+                
+                # Log successful admin 2FA verification
+                AuditLog.objects.create(
+                    user=user,
+                    action='2fa_verified',
+                    details={
+                        'ip_address': self.get_client_ip(),
+                        'user_agent': request.META.get('HTTP_USER_AGENT', ''),
+                        'login_type': 'admin_panel',
+                    },
+                    ip_address=self.get_client_ip(),
+                    user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                )
+                
+                # Redirect to admin dashboard
+                next_url = request.session.get('2fa_next_url', '/admin/dashboard/')
+                if '2fa_next_url' in request.session:
+                    del request.session['2fa_next_url']
+                
+                return redirect(next_url)
+            else:
+                messages.error(request, _('کد تأیید نامعتبر است.'))
+                
+                # Log failed admin 2FA verification
+                AuditLog.objects.create(
+                    user=user,
+                    action='2fa_failed',
+                    details={
+                        'action_type': 'admin_login_verification',
+                        'ip_address': self.get_client_ip(),
+                        'user_agent': request.META.get('HTTP_USER_AGENT', ''),
+                    },
+                    ip_address=self.get_client_ip(),
+                    user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                )
+                
+        except (User.DoesNotExist, TOTPDevice.DoesNotExist):
+            messages.error(request, _('خطا در احراز هویت.'))
+            return redirect('core:admin_login')
+        except Exception as e:
+            messages.error(request, _('خطای سیستمی رخ داده است.'))
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Admin 2FA verification error: {str(e)}")
+        
+        return self.get(request, *args, **kwargs)

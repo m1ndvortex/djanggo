@@ -4,9 +4,14 @@ Core models for zargar project.
 from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 from django_tenants.utils import get_tenant_model, connection
 from django.core.exceptions import ValidationError
 import threading
+import pyotp
+import qrcode
+from io import BytesIO
+import base64
 
 # Thread-local storage for tenant context
 _thread_locals = threading.local()
@@ -367,6 +372,193 @@ class SystemSettings(models.Model):
         return f"{self.key}: {self.value[:50]}"
 
 
+class TOTPDevice(TenantAwareModel):
+    """
+    TOTP device model for 2FA secret key storage.
+    Each user can have one TOTP device for authenticator app enrollment.
+    """
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='totp_device',
+        verbose_name=_('User')
+    )
+    
+    secret_key = models.CharField(
+        max_length=32,
+        verbose_name=_('Secret Key'),
+        help_text=_('Base32 encoded secret key for TOTP generation')
+    )
+    
+    is_confirmed = models.BooleanField(
+        default=False,
+        verbose_name=_('Is Confirmed'),
+        help_text=_('Whether the device has been confirmed by successful verification')
+    )
+    
+    backup_tokens = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name=_('Backup Tokens'),
+        help_text=_('List of one-time backup tokens for emergency access')
+    )
+    
+    last_used_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Last Used At'),
+        help_text=_('Timestamp when the device was last used for verification')
+    )
+    
+    class Meta:
+        verbose_name = _('TOTP Device')
+        verbose_name_plural = _('TOTP Devices')
+        db_table = 'core_totp_device'
+    
+    def __str__(self):
+        return f"TOTP Device for {self.user.username}"
+    
+    def save(self, *args, **kwargs):
+        """Generate secret key if not provided."""
+        if not self.secret_key:
+            self.secret_key = pyotp.random_base32()
+        
+        # Generate backup tokens if not provided
+        if not self.backup_tokens:
+            self.backup_tokens = self.generate_backup_tokens()
+        
+        super().save(*args, **kwargs)
+        
+        # Update user's 2FA status
+        if self.is_confirmed and not self.user.is_2fa_enabled:
+            self.user.is_2fa_enabled = True
+            self.user.save(update_fields=['is_2fa_enabled'])
+        elif not self.is_confirmed and self.user.is_2fa_enabled:
+            self.user.is_2fa_enabled = False
+            self.user.save(update_fields=['is_2fa_enabled'])
+    
+    def delete(self, *args, **kwargs):
+        """Disable 2FA when device is deleted."""
+        user = self.user
+        super().delete(*args, **kwargs)
+        
+        # Disable 2FA for user
+        user.is_2fa_enabled = False
+        user.save(update_fields=['is_2fa_enabled'])
+    
+    def generate_backup_tokens(self, count=10):
+        """Generate backup tokens for emergency access."""
+        import secrets
+        import string
+        
+        tokens = []
+        for _ in range(count):
+            # Generate 8-character alphanumeric token
+            token = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+            tokens.append(token)
+        
+        return tokens
+    
+    def get_totp(self):
+        """Get TOTP instance for this device."""
+        return pyotp.TOTP(self.secret_key)
+    
+    def verify_token(self, token):
+        """
+        Verify a TOTP token or backup token.
+        
+        Args:
+            token (str): The token to verify
+            
+        Returns:
+            bool: True if token is valid, False otherwise
+        """
+        # First try TOTP verification
+        totp = self.get_totp()
+        if totp.verify(token, valid_window=1):  # Allow 30 seconds window
+            self.last_used_at = timezone.now()
+            self.save(update_fields=['last_used_at'])
+            return True
+        
+        # Try backup tokens
+        if token.upper() in self.backup_tokens:
+            # Remove used backup token
+            self.backup_tokens.remove(token.upper())
+            self.last_used_at = timezone.now()
+            self.save(update_fields=['backup_tokens', 'last_used_at'])
+            return True
+        
+        return False
+    
+    def get_qr_code_url(self, issuer_name="ZARGAR Jewelry SaaS"):
+        """
+        Generate QR code URL for authenticator app enrollment.
+        
+        Args:
+            issuer_name (str): Name of the service issuing the token
+            
+        Returns:
+            str: QR code URL for TOTP setup
+        """
+        totp = self.get_totp()
+        
+        # Create provisioning URI
+        provisioning_uri = totp.provisioning_uri(
+            name=self.user.username,
+            issuer_name=issuer_name
+        )
+        
+        return provisioning_uri
+    
+    def get_qr_code_image(self, issuer_name="ZARGAR Jewelry SaaS"):
+        """
+        Generate QR code image as base64 string for display.
+        
+        Args:
+            issuer_name (str): Name of the service issuing the token
+            
+        Returns:
+            str: Base64 encoded QR code image
+        """
+        provisioning_uri = self.get_qr_code_url(issuer_name)
+        
+        # Generate QR code
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(provisioning_uri)
+        qr.make(fit=True)
+        
+        # Create image
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        # Convert to base64
+        buffer = BytesIO()
+        img.save(buffer, format='PNG')
+        img_str = base64.b64encode(buffer.getvalue()).decode()
+        
+        return f"data:image/png;base64,{img_str}"
+    
+    def confirm_device(self, token):
+        """
+        Confirm the device with a valid TOTP token.
+        
+        Args:
+            token (str): TOTP token to verify
+            
+        Returns:
+            bool: True if confirmation successful, False otherwise
+        """
+        if not self.is_confirmed and self.verify_token(token):
+            self.is_confirmed = True
+            self.save(update_fields=['is_confirmed'])
+            return True
+        return False
+
+
 class AuditLog(models.Model):
     """
     Audit log for tracking system activities.
@@ -381,6 +573,11 @@ class AuditLog(models.Model):
         ('tenant_suspended', _('Tenant Suspended')),
         ('impersonation_start', _('Impersonation Started')),
         ('impersonation_end', _('Impersonation Ended')),
+        ('2fa_enabled', _('2FA Enabled')),
+        ('2fa_disabled', _('2FA Disabled')),
+        ('2fa_verified', _('2FA Verified')),
+        ('2fa_failed', _('2FA Failed')),
+        ('backup_token_used', _('Backup Token Used')),
     ]
     
     user = models.ForeignKey(

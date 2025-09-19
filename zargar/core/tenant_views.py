@@ -15,7 +15,7 @@ from django.utils.decorators import method_decorator
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 import json
-from .models import User, AuditLog
+from .models import User, AuditLog, TOTPDevice
 
 
 class TenantContextMixin:
@@ -104,16 +104,50 @@ class TenantLoginView(TenantContextMixin, auth_views.LoginView):
         return context
     
     def form_valid(self, form):
-        """Handle successful login with audit logging."""
+        """Handle successful login with audit logging and 2FA check."""
         user = form.get_user()
         
         # Check if user belongs to current tenant
         tenant_schema = getattr(self.request, 'tenant_context', {}).get('schema_name')
-        if tenant_schema and user.tenant_schema and user.tenant_schema != tenant_schema:
+        if tenant_schema and hasattr(user, 'tenant_schema') and user.tenant_schema and user.tenant_schema != tenant_schema:
             messages.error(self.request, _('شما مجوز دسترسی به این فروشگاه را ندارید.'))
             return self.form_invalid(form)
         
-        # Log successful login
+        # Check if user has 2FA enabled
+        if user.is_2fa_enabled:
+            try:
+                totp_device = TOTPDevice.objects.get(user=user, is_confirmed=True)
+                
+                # Store user ID in session for 2FA verification
+                self.request.session['2fa_user_id'] = user.id
+                self.request.session['2fa_next_url'] = self.get_success_url()
+                
+                # Log initial login attempt (before 2FA)
+                AuditLog.objects.create(
+                    user=user,
+                    action='login_attempt',
+                    details={
+                        'login_type': 'tenant_portal',
+                        'requires_2fa': True,
+                        'tenant_schema': tenant_schema,
+                        'ip_address': self.get_client_ip(),
+                        'user_agent': self.request.META.get('HTTP_USER_AGENT', ''),
+                    },
+                    ip_address=self.get_client_ip(),
+                    user_agent=self.request.META.get('HTTP_USER_AGENT', ''),
+                    tenant_schema=tenant_schema,
+                )
+                
+                # Redirect to 2FA verification
+                return redirect('tenant:2fa_verify')
+                
+            except TOTPDevice.DoesNotExist:
+                # User has 2FA enabled but no confirmed device - disable 2FA
+                user.is_2fa_enabled = False
+                user.save(update_fields=['is_2fa_enabled'])
+                messages.warning(self.request, _('احراز هویت دو مرحله‌ای غیرفعال شد زیرا دستگاه تأیید شده‌ای یافت نشد.'))
+        
+        # Log successful login (no 2FA required)
         AuditLog.objects.create(
             user=user,
             action='login',

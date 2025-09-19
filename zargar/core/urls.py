@@ -11,7 +11,15 @@ from .auth_views import (
     AdminPasswordResetView,
     AdminPasswordResetDoneView,
     AdminPasswordResetConfirmView,
-    AdminPasswordResetCompleteView
+    AdminPasswordResetCompleteView,
+    Admin2FAVerifyView
+)
+from .twofa_views import (
+    TwoFASetupView,
+    TwoFADisableView,
+    TwoFAVerifyView,
+    TwoFABackupTokensView,
+    TwoFAStatusAPIView
 )
 
 app_name = 'core'
@@ -32,6 +40,9 @@ urlpatterns = [
     
     # Theme toggle
     path('theme/toggle/', ThemeToggleView.as_view(), name='theme_toggle'),
+    
+    # 2FA URLs
+    path('2fa/verify/', Admin2FAVerifyView.as_view(), name='admin_2fa_verify'),
     
     # Tenant management
     path('tenants/', views.TenantListView.as_view(), name='tenant_list'),

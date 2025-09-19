@@ -91,7 +91,9 @@
     - Write frontend tests for user management workflows
     - _Requirements: 10.1, 10.2, 10.3, 10.6_
 
-  - [ ] 3.3 Implement Two-Factor Authentication (2FA) system (Backend)
+  - [-] 3.3 Implement Two-Factor Authentication (2FA) system (Backend)
+
+
 
     - Create TOTP device model for 2FA secret key storage
     - Implement QR code generation for authenticator app enrollment
