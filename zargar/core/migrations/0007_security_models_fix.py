@@ -1,4 +1,4 @@
-# Generated migration for security models
+# Custom migration to fix security models
 
 from django.conf import settings
 from django.db import migrations, models
@@ -14,6 +14,13 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        # First, drop the existing AuditLog table if it exists
+        migrations.RunSQL(
+            "DROP TABLE IF EXISTS core_audit_log CASCADE;",
+            reverse_sql="-- No reverse operation"
+        ),
+        
+        # Create SecurityEvent model
         migrations.CreateModel(
             name='SecurityEvent',
             fields=[
@@ -44,6 +51,8 @@ class Migration(migrations.Migration):
                 'ordering': ['-created_at'],
             },
         ),
+        
+        # Create RateLimitAttempt model
         migrations.CreateModel(
             name='RateLimitAttempt',
             fields=[
@@ -65,6 +74,8 @@ class Migration(migrations.Migration):
                 'db_table': 'core_rate_limit_attempt',
             },
         ),
+        
+        # Create SuspiciousActivity model
         migrations.CreateModel(
             name='SuspiciousActivity',
             fields=[
@@ -94,104 +105,56 @@ class Migration(migrations.Migration):
                 'ordering': ['-created_at'],
             },
         ),
-        migrations.AlterModelOptions(
-            name='auditlog',
-            options={'ordering': ['-created_at'], 'verbose_name': 'Audit Log', 'verbose_name_plural': 'Audit Logs'},
+        
+        # Recreate AuditLog model from scratch
+        migrations.CreateModel(
+            name='AuditLog',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('created_at', models.DateTimeField(auto_now_add=True, help_text='Timestamp when the record was created', verbose_name='Created At')),
+                ('updated_at', models.DateTimeField(auto_now=True, help_text='Timestamp when the record was last updated', verbose_name='Updated At')),
+                ('action', models.CharField(choices=[('create', 'Create'), ('read', 'Read'), ('update', 'Update'), ('delete', 'Delete'), ('bulk_create', 'Bulk Create'), ('bulk_update', 'Bulk Update'), ('bulk_delete', 'Bulk Delete'), ('login', 'Login'), ('logout', 'Logout'), ('password_change', 'Password Change'), ('password_reset', 'Password Reset'), ('2fa_setup', '2FA Setup'), ('2fa_enable', '2FA Enable'), ('2fa_disable', '2FA Disable'), ('2fa_verify', '2FA Verify'), ('backup_token_generate', 'Backup Token Generate'), ('backup_token_use', 'Backup Token Use'), ('tenant_create', 'Tenant Create'), ('tenant_update', 'Tenant Update'), ('tenant_suspend', 'Tenant Suspend'), ('tenant_activate', 'Tenant Activate'), ('user_impersonate', 'User Impersonate'), ('impersonation_end', 'Impersonation End'), ('sale_create', 'Sale Create'), ('payment_process', 'Payment Process'), ('inventory_update', 'Inventory Update'), ('report_generate', 'Report Generate'), ('data_export', 'Data Export'), ('data_import', 'Data Import'), ('backup_create', 'Backup Create'), ('backup_restore', 'Backup Restore'), ('system_maintenance', 'System Maintenance'), ('configuration_change', 'Configuration Change')], max_length=50, verbose_name='Action')),
+                ('content_type', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='contenttypes.contenttype', verbose_name='Content Type')),
+                ('object_id', models.CharField(blank=True, max_length=100, verbose_name='Object ID')),
+                ('model_name', models.CharField(blank=True, max_length=100, verbose_name='Model Name')),
+                ('object_repr', models.CharField(blank=True, max_length=200, verbose_name='Object Representation')),
+                ('changes', models.JSONField(blank=True, default=dict, help_text='JSON representation of field changes', verbose_name='Changes')),
+                ('old_values', models.JSONField(blank=True, default=dict, help_text='Previous values before change', verbose_name='Old Values')),
+                ('new_values', models.JSONField(blank=True, default=dict, help_text='New values after change', verbose_name='New Values')),
+                ('ip_address', models.GenericIPAddressField(blank=True, null=True, verbose_name='IP Address')),
+                ('user_agent', models.TextField(blank=True, verbose_name='User Agent')),
+                ('session_key', models.CharField(blank=True, max_length=40, verbose_name='Session Key')),
+                ('request_path', models.CharField(blank=True, max_length=500, verbose_name='Request Path')),
+                ('request_method', models.CharField(blank=True, max_length=10, verbose_name='Request Method')),
+                ('details', models.JSONField(blank=True, default=dict, verbose_name='Additional Details')),
+                ('tenant_schema', models.CharField(blank=True, max_length=100, verbose_name='Tenant Schema')),
+                ('checksum', models.CharField(blank=True, help_text='SHA-256 checksum for tamper detection', max_length=64, verbose_name='Integrity Checksum')),
+                ('created_by', models.ForeignKey(blank=True, help_text='User who created this record', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created', to=settings.AUTH_USER_MODEL, verbose_name='Created By')),
+                ('updated_by', models.ForeignKey(blank=True, help_text='User who last updated this record', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated', to=settings.AUTH_USER_MODEL, verbose_name='Updated By')),
+                ('user', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='audit_logs', to=settings.AUTH_USER_MODEL, verbose_name='User')),
+            ],
+            options={
+                'verbose_name': 'Audit Log',
+                'verbose_name_plural': 'Audit Logs',
+                'db_table': 'core_audit_log',
+                'ordering': ['-created_at'],
+            },
         ),
-        migrations.RemoveField(
-            model_name='auditlog',
-            name='timestamp',
-        ),
-        migrations.AddField(
-            model_name='auditlog',
-            name='checksum',
-            field=models.CharField(blank=True, help_text='SHA-256 checksum for tamper detection', max_length=64, verbose_name='Integrity Checksum'),
-        ),
-        migrations.AddField(
-            model_name='auditlog',
-            name='content_type',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='contenttypes.contenttype', verbose_name='Content Type'),
-        ),
-        migrations.AddField(
-            model_name='auditlog',
-            name='created_at',
-            field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now, help_text='Timestamp when the record was created', verbose_name='Created At'),
-            preserve_default=False,
-        ),
-        migrations.AddField(
-            model_name='auditlog',
-            name='created_by',
-            field=models.ForeignKey(blank=True, help_text='User who created this record', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created', to=settings.AUTH_USER_MODEL, verbose_name='Created By'),
-        ),
-        migrations.AddField(
-            model_name='auditlog',
-            name='new_values',
-            field=models.JSONField(blank=True, default=dict, help_text='New values after change', verbose_name='New Values'),
-        ),
-        migrations.AddField(
-            model_name='auditlog',
-            name='object_repr',
-            field=models.CharField(blank=True, max_length=200, verbose_name='Object Representation'),
-        ),
-        migrations.AddField(
-            model_name='auditlog',
-            name='old_values',
-            field=models.JSONField(blank=True, default=dict, help_text='Previous values before change', verbose_name='Old Values'),
-        ),
-        migrations.AddField(
-            model_name='auditlog',
-            name='request_method',
-            field=models.CharField(blank=True, max_length=10, verbose_name='Request Method'),
-        ),
-        migrations.AddField(
-            model_name='auditlog',
-            name='request_path',
-            field=models.CharField(blank=True, max_length=500, verbose_name='Request Path'),
-        ),
-        migrations.AddField(
-            model_name='auditlog',
-            name='session_key',
-            field=models.CharField(blank=True, max_length=40, verbose_name='Session Key'),
-        ),
-        migrations.AddField(
-            model_name='auditlog',
-            name='updated_at',
-            field=models.DateTimeField(auto_now=True, help_text='Timestamp when the record was last updated', verbose_name='Updated At'),
-        ),
-        migrations.AddField(
-            model_name='auditlog',
-            name='updated_by',
-            field=models.ForeignKey(blank=True, help_text='User who last updated this record', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated', to=settings.AUTH_USER_MODEL, verbose_name='Updated By'),
-        ),
-        migrations.AlterField(
-            model_name='auditlog',
-            name='action',
-            field=models.CharField(choices=[('create', 'Create'), ('read', 'Read'), ('update', 'Update'), ('delete', 'Delete'), ('bulk_create', 'Bulk Create'), ('bulk_update', 'Bulk Update'), ('bulk_delete', 'Bulk Delete'), ('login', 'Login'), ('logout', 'Logout'), ('password_change', 'Password Change'), ('password_reset', 'Password Reset'), ('2fa_setup', '2FA Setup'), ('2fa_enable', '2FA Enable'), ('2fa_disable', '2FA Disable'), ('2fa_verify', '2FA Verify'), ('backup_token_generate', 'Backup Token Generate'), ('backup_token_use', 'Backup Token Use'), ('tenant_create', 'Tenant Create'), ('tenant_update', 'Tenant Update'), ('tenant_suspend', 'Tenant Suspend'), ('tenant_activate', 'Tenant Activate'), ('user_impersonate', 'User Impersonate'), ('impersonation_end', 'Impersonation End'), ('sale_create', 'Sale Create'), ('payment_process', 'Payment Process'), ('inventory_update', 'Inventory Update'), ('report_generate', 'Report Generate'), ('data_export', 'Data Export'), ('data_import', 'Data Import'), ('backup_create', 'Backup Create'), ('backup_restore', 'Backup Restore'), ('system_maintenance', 'System Maintenance'), ('configuration_change', 'Configuration Change')], max_length=50, verbose_name='Action'),
-        ),
-        migrations.AlterField(
-            model_name='auditlog',
-            name='changes',
-            field=models.JSONField(blank=True, default=dict, help_text='JSON representation of field changes', verbose_name='Changes'),
-        ),
-        migrations.AlterField(
-            model_name='auditlog',
-            name='details',
-            field=models.JSONField(blank=True, default=dict, verbose_name='Additional Details'),
-        ),
-        migrations.AlterField(
-            model_name='auditlog',
-            name='object_id',
-            field=models.CharField(blank=True, max_length=100, verbose_name='Object ID'),
-        ),
+        
+        # Add relationships
         migrations.AddField(
             model_name='suspiciousactivity',
             name='related_events',
             field=models.ManyToManyField(blank=True, related_name='suspicious_activities', to='core.securityevent', verbose_name='Related Security Events'),
         ),
+        
+        # Add unique constraints
         migrations.AlterUniqueTogether(
             name='ratelimitattempt',
             unique_together={('identifier', 'limit_type', 'endpoint')},
         ),
+        
+        # Add indexes
         migrations.AddIndex(
             model_name='securityevent',
             index=models.Index(fields=['event_type', 'created_at'], name='core_securi_event_t_b8e7b8_idx'),

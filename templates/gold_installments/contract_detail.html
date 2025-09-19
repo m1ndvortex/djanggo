@@ -1,0 +1,500 @@
+{% extends 'base_rtl.html' %}
+{% load persian_tags %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Contract" %} {{ contract.contract_number }} - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/gold-installments.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-gray-800">
+                        {% trans "Contract" %} {{ contract.contract_number }}
+                        {% if contract.is_overdue %}
+                            <span class="badge bg-warning ms-2">{% trans "Overdue" %}</span>
+                        {% endif %}
+                    </h1>
+                    <p class="text-muted">
+                        {{ contract.customer.persian_first_name }} {{ contract.customer.persian_last_name }}
+                        - {{ contract.contract_date_shamsi }}
+                    </p>
+                </div>
+                <div>
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'gold_installments:dashboard' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            {% trans "Back" %}
+                        </a>
+                        {% if contract.status == 'active' %}
+                        <a href="{% url 'gold_installments:payment_create' contract.pk %}" class="btn btn-success">
+                            <i class="fas fa-plus me-2"></i>
+                            {% trans "Add Payment" %}
+                        </a>
+                        <a href="{% url 'gold_installments:adjustment_create' contract.pk %}" class="btn btn-warning">
+                            <i class="fas fa-balance-scale me-2"></i>
+                            {% trans "Adjust Weight" %}
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'gold_installments:contract_edit' contract.pk %}" class="btn btn-primary">
+                            <i class="fas fa-edit me-2"></i>
+                            {% trans "Edit" %}
+                        </a>
+                        <a href="{% url 'gold_installments:contract_export_pdf' contract.pk %}" class="btn btn-outline-primary">
+                            <i class="fas fa-file-pdf me-2"></i>
+                            {% trans "Export PDF" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Contract Overview -->
+        <div class="col-lg-8">
+            <!-- Contract Status and Progress -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Contract Status" %}</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">{% trans "Status" %}</label>
+                                <div>
+                                    {% if contract.status == 'active' %}
+                                        <span class="badge bg-success fs-6">{% trans "Active" %}</span>
+                                    {% elif contract.status == 'completed' %}
+                                        <span class="badge bg-primary fs-6">{% trans "Completed" %}</span>
+                                    {% elif contract.status == 'defaulted' %}
+                                        <span class="badge bg-danger fs-6">{% trans "Defaulted" %}</span>
+                                    {% elif contract.status == 'suspended' %}
+                                        <span class="badge bg-warning fs-6">{% trans "Suspended" %}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary fs-6">{{ contract.get_status_display }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">{% trans "Balance Type" %}</label>
+                                <div>
+                                    {% if contract.balance_type == 'debt' %}
+                                        <span class="badge bg-warning fs-6">{% trans "Customer Owes Gold" %}</span>
+                                    {% else %}
+                                        <span class="badge bg-info fs-6">{% trans "Shop Owes Customer" %}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="mb-3">
+                        <label class="form-label text-muted">{% trans "Completion Progress" %}</label>
+                        <div class="progress mb-2" style="height: 25px;">
+                            <div class="progress-bar progress-bar-striped" role="progressbar" 
+                                 style="width: {{ contract.completion_percentage }}%"
+                                 aria-valuenow="{{ contract.completion_percentage }}" 
+                                 aria-valuemin="0" aria-valuemax="100">
+                                {% persian_number contract.completion_percentage %}%
+                            </div>
+                        </div>
+                        <small class="text-muted">
+                            {% blocktrans with completed=contract.total_gold_weight_paid|persian_weight:'gram' total=contract.initial_gold_weight_grams|persian_weight:'gram' %}
+                                {{ completed }} of {{ total }} completed
+                            {% endblocktrans %}
+                        </small>
+                    </div>
+
+                    <!-- Weight Information -->
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center p-3 border rounded">
+                                <div class="h4 mb-1 text-primary">
+                                    {% persian_weight contract.initial_gold_weight_grams 'gram' %}
+                                </div>
+                                <small class="text-muted">{% trans "Initial Weight" %}</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 border rounded">
+                                <div class="h4 mb-1 text-success">
+                                    {% persian_weight contract.total_gold_weight_paid 'gram' %}
+                                </div>
+                                <small class="text-muted">{% trans "Paid Weight" %}</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 border rounded">
+                                <div class="h4 mb-1 {% if contract.remaining_gold_weight_grams > 0 %}text-warning{% else %}text-success{% endif %}">
+                                    {% persian_weight contract.remaining_gold_weight_grams 'gram' %}
+                                </div>
+                                <small class="text-muted">{% trans "Remaining Weight" %}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Gold Value -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Current Gold Value" %}</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">{% trans "Current Gold Price" %}</label>
+                                <div class="h5 text-warning">
+                                    {% persian_currency current_gold_price %}
+                                    <small class="text-muted">{% trans "per gram" %}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">{% trans "Remaining Value" %}</label>
+                                <div class="h5 text-primary">
+                                    {% persian_currency current_value.total_value_toman %}
+                                </div>
+                                {% if current_value.price_protection_applied %}
+                                    <small class="badge bg-info">{% trans "Price Protection Applied" %}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if contract.early_payment_discount_percentage > 0 %}
+                    <div class="alert alert-success">
+                        <h6>{% trans "Early Payment Discount Available" %}</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>{% trans "Discount" %}:</strong> 
+                                {% persian_number contract.early_payment_discount_percentage %}%
+                            </div>
+                            <div class="col-md-6">
+                                <strong>{% trans "Discounted Value" %}:</strong>
+                                {% persian_currency early_payment_discount.discounted_value %}
+                            </div>
+                        </div>
+                        <small class="text-muted">
+                            {% trans "Save" %} {% persian_currency early_payment_discount.savings %} {% trans "with early completion" %}
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Payment History -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Payment History" %}</h6>
+                    <a href="{% url 'gold_installments:payment_history' contract.pk %}" class="btn btn-sm btn-outline-primary">
+                        {% trans "View All" %}
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if payments %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>{% trans "Date" %}</th>
+                                    <th>{% trans "Amount" %}</th>
+                                    <th>{% trans "Gold Price" %}</th>
+                                    <th>{% trans "Gold Weight" %}</th>
+                                    <th>{% trans "Method" %}</th>
+                                    <th>{% trans "Status" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in payments|slice:":5" %}
+                                <tr>
+                                    <td>
+                                        <div>{{ payment.payment_date_shamsi }}</div>
+                                        <small class="text-muted">{{ payment.payment_date }}</small>
+                                    </td>
+                                    <td>
+                                        <strong>{% persian_currency payment.payment_amount_toman %}</strong>
+                                        {% if payment.discount_applied %}
+                                            <br><small class="text-success">
+                                                {% trans "Discount" %}: {% persian_number payment.discount_percentage %}%
+                                            </small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% persian_currency payment.effective_gold_price_per_gram %}
+                                        {% if payment.price_protection_applied %}
+                                            <br><small class="badge bg-info">{% trans "Protected" %}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <strong>{% persian_weight payment.gold_weight_equivalent_grams 'gram' %}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ payment.get_payment_method_display }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">{% trans "Completed" %}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-receipt fa-2x text-gray-300 mb-3"></i>
+                        <p class="text-muted">{% trans "No payments recorded yet" %}</p>
+                        {% if contract.status == 'active' %}
+                        <a href="{% url 'gold_installments:payment_create' contract.pk %}" class="btn btn-primary">
+                            {% trans "Add First Payment" %}
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Weight Adjustments -->
+            {% if adjustments %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Weight Adjustments" %}</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>{% trans "Date" %}</th>
+                                    <th>{% trans "Type" %}</th>
+                                    <th>{% trans "Amount" %}</th>
+                                    <th>{% trans "Reason" %}</th>
+                                    <th>{% trans "Authorized By" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for adjustment in adjustments|slice:":5" %}
+                                <tr>
+                                    <td>
+                                        <div>{{ adjustment.adjustment_date_shamsi }}</div>
+                                        <small class="text-muted">{{ adjustment.adjustment_date }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if adjustment.adjustment_amount_grams > 0 %}bg-success{% else %}bg-warning{% endif %}">
+                                            {{ adjustment.get_adjustment_type_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <strong class="{% if adjustment.adjustment_amount_grams > 0 %}text-success{% else %}text-warning{% endif %}">
+                                            {% if adjustment.adjustment_amount_grams > 0 %}+{% endif %}{% persian_weight adjustment.adjustment_amount_grams 'gram' %}
+                                        </strong>
+                                    </td>
+                                    <td>{{ adjustment.get_adjustment_reason_display }}</td>
+                                    <td>{{ adjustment.authorized_by.get_full_name }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Customer Information -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Customer Information" %}</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <div class="avatar-circle bg-primary text-white mb-2">
+                            {{ contract.customer.persian_first_name.0 }}{{ contract.customer.persian_last_name.0 }}
+                        </div>
+                        <h5 class="mb-1">{{ contract.customer.persian_first_name }} {{ contract.customer.persian_last_name }}</h5>
+                        <p class="text-muted mb-0">{{ contract.customer.phone_number }}</p>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">{% trans "Customer Type" %}</small>
+                            <div>{{ contract.customer.get_customer_type_display }}</div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">{% trans "Loyalty Points" %}</small>
+                            <div>{% persian_number contract.customer.loyalty_points %}</div>
+                        </div>
+                    </div>
+                    
+                    {% if contract.customer.email %}
+                    <div class="mt-2">
+                        <small class="text-muted">{% trans "Email" %}</small>
+                        <div>{{ contract.customer.email }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Contract Details -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Contract Details" %}</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-muted">{% trans "Contract Number" %}</small>
+                        <div class="fw-bold">{{ contract.contract_number }}</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted">{% trans "Contract Date" %}</small>
+                        <div>{{ contract.contract_date_shamsi }}</div>
+                        <small class="text-muted">{{ contract.contract_date }}</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted">{% trans "Gold Karat" %}</small>
+                        <div>{{ contract.gold_karat }} {% trans "karat" %}</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted">{% trans "Payment Schedule" %}</small>
+                        <div>{{ contract.get_payment_schedule_display }}</div>
+                    </div>
+                    
+                    {% if contract.payment_amount_per_period %}
+                    <div class="mb-3">
+                        <small class="text-muted">{% trans "Fixed Payment Amount" %}</small>
+                        <div>{% persian_currency contract.payment_amount_per_period %}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if contract.has_price_protection %}
+                    <div class="mb-3">
+                        <small class="text-muted">{% trans "Price Protection" %}</small>
+                        <div>
+                            <span class="badge bg-info">{% trans "Enabled" %}</span>
+                            {% if contract.price_ceiling_per_gram %}
+                                <br><small>{% trans "Ceiling" %}: {% persian_currency contract.price_ceiling_per_gram %}</small>
+                            {% endif %}
+                            {% if contract.price_floor_per_gram %}
+                                <br><small>{% trans "Floor" %}: {% persian_currency contract.price_floor_per_gram %}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Payment Summary -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Payment Summary" %}</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-muted">{% trans "Total Payments" %}</small>
+                        <div class="fw-bold">{% persian_number payment_summary.total_payments %}</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted">{% trans "Total Amount Paid" %}</small>
+                        <div class="fw-bold text-success">{% persian_currency payment_summary.total_amount_paid %}</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted">{% trans "Average Payment" %}</small>
+                        <div>{% persian_currency payment_summary.average_payment_amount %}</div>
+                    </div>
+                    
+                    {% if payment_summary.last_payment_date %}
+                    <div class="mb-3">
+                        <small class="text-muted">{% trans "Last Payment" %}</small>
+                        <div>{{ payment_summary.last_payment_date }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Payment Form -->
+            {% if contract.status == 'active' %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Quick Payment" %}</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'gold_installments:payment_create' contract.pk %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="quick_payment_amount" class="form-label">{% trans "Payment Amount" %}</label>
+                            <input type="number" class="form-control persian-currency-input" 
+                                   id="quick_payment_amount" name="payment_amount_toman" 
+                                   placeholder="{% trans 'Enter amount in Toman' %}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="quick_payment_method" class="form-label">{% trans "Payment Method" %}</label>
+                            <select class="form-select" id="quick_payment_method" name="payment_method">
+                                <option value="cash">{% trans "Cash" %}</option>
+                                <option value="bank_transfer">{% trans "Bank Transfer" %}</option>
+                                <option value="card">{% trans "Card Payment" %}</option>
+                                <option value="cheque">{% trans "Cheque" %}</option>
+                            </select>
+                        </div>
+                        
+                        <div id="quick-payment-calculation" class="alert alert-light d-none">
+                            <small class="text-muted">{% trans "Gold Weight Equivalent" %}:</small>
+                            <div id="quick-gold-weight" class="fw-bold"></div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-plus me-2"></i>
+                            {% trans "Process Payment" %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/gold-installments.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Quick payment calculator
+    $('#quick_payment_amount').on('input', function() {
+        const amount = parseFloat($(this).val()) || 0;
+        const goldPrice = {{ current_gold_price }};
+        
+        if (amount > 0) {
+            const goldWeight = amount / goldPrice;
+            $('#quick-gold-weight').text(PersianFormatter.formatWeight(goldWeight, 'gram'));
+            $('#quick-payment-calculation').removeClass('d-none');
+        } else {
+            $('#quick-payment-calculation').addClass('d-none');
+        }
+    });
+});
+</script>
+{% endblock %}

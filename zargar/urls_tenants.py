@@ -40,6 +40,7 @@ urlpatterns = [
     path('jewelry/', include('zargar.jewelry.urls')),
     path('accounting/', include('zargar.accounting.urls')),
     path('customers/', include('zargar.customers.urls')),
+    path('gold-installments/', include('zargar.gold_installments.urls')),
     path('pos/', include('zargar.pos.urls')),
     path('reports/', include('zargar.reports.urls')),
     

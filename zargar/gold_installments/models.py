@@ -613,7 +613,7 @@ class GoldInstallmentPayment(TenantAwareModel):
         super().clean()
         
         # Validate effective price is not zero
-        if self.effective_gold_price_per_gram <= 0:
+        if self.effective_gold_price_per_gram is not None and self.effective_gold_price_per_gram <= 0:
             raise ValidationError({
                 'effective_gold_price_per_gram': _('Gold price must be greater than zero')
             })

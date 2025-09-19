@@ -297,7 +297,12 @@
     - Write unit tests for gold weight calculations and payment processing
     - _Requirements: 8.1, 8.2, 8.3, 8.6_
 
-  - [ ] 7.2 Build gold installment system UI (Frontend)
+  - [x] 7.2 Build gold installment system UI (Frontend)
+
+
+
+
+
     - Create gold loan registration interface with customer details and item specifications
     - Build payment schedule configuration interface (weekly, bi-weekly, monthly)
     - Build payment processing interface with gold weight conversion and Persian number display
@@ -307,7 +312,12 @@
     - Write tests for installment UI workflows and gold weight calculations
     - _Requirements: 8.1, 8.2, 8.5, 8.6_
 
-  - [ ] 7.3 Implement gold price integration and payment processing (Backend)
+  - [x] 7.3 Implement gold price integration and payment processing (Backend)
+
+
+
+
+
     - Create gold price API integration for real-time Iranian market prices
     - Build payment processing logic converting cash to gold weight reduction
     - Implement bidirectional transaction support for debt and credit balances

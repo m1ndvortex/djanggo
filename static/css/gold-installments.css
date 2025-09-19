@@ -1,0 +1,197 @@
+/* Gold Installments System Styles */
+
+/* Dashboard Cards */
+.border-left-primary {
+    border-left: 4px solid #4e73df !important;
+}
+
+.border-left-success {
+    border-left: 4px solid #1cc88a !important;
+}
+
+.border-left-info {
+    border-left: 4px solid #36b9cc !important;
+}
+
+.border-left-warning {
+    border-left: 4px solid #f6c23e !important;
+}
+
+/* Gold Price Display */
+.gold-price-display {
+    padding: 1rem;
+    background: linear-gradient(135deg, #f6c23e 0%, #f4b942 100%);
+    border-radius: 0.5rem;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.gold-price-trend .badge {
+    font-size: 0.75rem;
+}
+
+/* Contract Status Badges */
+.badge.fs-6 {
+    font-size: 0.875rem !important;
+    padding: 0.5rem 0.75rem;
+}
+
+/* Avatar Circle */
+.avatar-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 0 auto;
+}
+
+/* Progress Bars */
+.progress {
+    background-color: #e9ecef;
+    border-radius: 0.5rem;
+}
+
+.progress-bar {
+    background: linear-gradient(90deg, #1cc88a 0%, #17a673 100%);
+    border-radius: 0.5rem;
+}
+
+/* Weight Display Cards */
+.weight-display-card {
+    transition: all 0.3s ease;
+}
+
+.weight-display-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Persian Number Inputs */
+.persian-number-input,
+.persian-currency-input {
+    text-align: right;
+    direction: rtl;
+}
+
+.persian-percentage-input {
+    text-align: center;
+}
+
+/* Form Sections */
+.form-section {
+    margin-bottom: 2rem;
+}
+
+.form-section-header {
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Quick Payment Buttons */
+.quick-amount {
+    transition: all 0.2s ease;
+}
+
+.quick-amount:hover {
+    transform: scale(1.02);
+}
+
+/* Adjustment Preview */
+#adjustment-preview {
+    border: 2px solid #f6c23e;
+    background: linear-gradient(135deg, #fff9e6 0%, #fff5d6 100%);
+}
+
+/* Payment History Table */
+.payment-history-table {
+    font-size: 0.9rem;
+}
+
+.payment-history-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    border-bottom: 2px solid #dee2e6;
+}
+
+/* Contract Cards */
+.contract-card {
+    transition: all 0.3s ease;
+    border: 1px solid #e3e6f0;
+}
+
+.contract-card:hover {
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    transform: translateY(-2px);
+}
+
+/* Status Indicators */
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 0.5rem;
+}
+
+.status-active { background-color: #1cc88a; }
+.status-completed { background-color: #4e73df; }
+.status-overdue { background-color: #e74a3b; }
+.status-suspended { background-color: #f6c23e; }
+
+/* Gold Weight Calculator */
+.gold-calculator {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 1rem;
+    padding: 1.5rem;
+}
+
+.gold-calculator .form-control {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: white;
+}
+
+.gold-calculator .form-control::placeholder {
+    color: rgba(255,255,255,0.7);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .btn-group {
+        flex-direction: column;
+    }
+    
+    .btn-group .btn {
+        margin-bottom: 0.25rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.8rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .btn, .btn-group, .pagination, .alert {
+        display: none !important;
+    }
+    
+    .card {
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+    }
+    
+    .table {
+        font-size: 0.8rem;
+    }
+}

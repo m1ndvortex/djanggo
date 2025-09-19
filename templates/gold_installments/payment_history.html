@@ -1,0 +1,291 @@
+{% extends 'base_rtl.html' %}
+{% load persian_tags %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Payment History" %} - {{ contract.contract_number }} - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/gold-installments.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-gray-800">{% trans "Payment History" %}</h1>
+                    <p class="text-muted">
+                        {% trans "Contract" %}: {{ contract.contract_number }} - 
+                        {{ contract.customer.persian_first_name }} {{ contract.customer.persian_last_name }}
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'gold_installments:contract_detail' contract.pk %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        {% trans "Back to Contract" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Summary -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                {% trans "Total Payments" %}
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {% persian_number payment_summary.total_payments %}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-receipt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                {% trans "Total Amount" %}
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {% persian_currency payment_summary.total_amount_paid %}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-money-bill-wave fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                {% trans "Gold Weight Paid" %}
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {% persian_weight payment_summary.total_gold_weight_paid 'gram' %}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-weight fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                {% trans "Average Payment" %}
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {% persian_currency payment_summary.average_payment_amount %}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment History Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Detailed Payment History" %}</h6>
+                    <div>
+                        <button class="btn btn-sm btn-outline-primary" onclick="window.print()">
+                            <i class="fas fa-print me-2"></i>
+                            {% trans "Print" %}
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if payments %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover payment-history-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>{% trans "Payment Date" %}</th>
+                                    <th>{% trans "Amount (Toman)" %}</th>
+                                    <th>{% trans "Gold Price" %}</th>
+                                    <th>{% trans "Effective Price" %}</th>
+                                    <th>{% trans "Gold Weight" %}</th>
+                                    <th>{% trans "Method" %}</th>
+                                    <th>{% trans "Reference" %}</th>
+                                    <th>{% trans "Discount" %}</th>
+                                    <th>{% trans "Notes" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in payments %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold">{{ payment.payment_date_shamsi }}</div>
+                                        <small class="text-muted">{{ payment.payment_date }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold text-success">
+                                            {% persian_currency payment.payment_amount_toman %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>{% persian_currency payment.gold_price_per_gram_at_payment %}</div>
+                                        <small class="text-muted">{% trans "per gram" %}</small>
+                                    </td>
+                                    <td>
+                                        <div>{% persian_currency payment.effective_gold_price_per_gram %}</div>
+                                        {% if payment.price_protection_applied %}
+                                            <small class="badge bg-info">{% trans "Protected" %}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold text-primary">
+                                            {% persian_weight payment.gold_weight_equivalent_grams 'gram' %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">
+                                            {{ payment.get_payment_method_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if payment.reference_number %}
+                                            <code>{{ payment.reference_number }}</code>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if payment.discount_applied %}
+                                            <div class="text-success">
+                                                {% persian_number payment.discount_percentage %}%
+                                            </div>
+                                            <small class="text-muted">
+                                                {% persian_currency payment.discount_amount_toman %}
+                                            </small>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if payment.payment_notes %}
+                                            <div class="text-truncate" style="max-width: 150px;" 
+                                                 title="{{ payment.payment_notes }}">
+                                                {{ payment.payment_notes }}
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th>{% trans "Totals" %}</th>
+                                    <th class="text-success">
+                                        {% persian_currency payment_summary.total_amount_paid %}
+                                    </th>
+                                    <th colspan="2" class="text-center text-muted">-</th>
+                                    <th class="text-primary">
+                                        {% persian_weight payment_summary.total_gold_weight_paid 'gram' %}
+                                    </th>
+                                    <th colspan="4" class="text-center text-muted">-</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if is_paginated %}
+                    <nav aria-label="{% trans 'Payment history pagination' %}" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1">
+                                        {% trans "First" %}
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                                        {% trans "Previous" %}
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            <li class="page-item active">
+                                <span class="page-link">
+                                    {% blocktrans with current=page_obj.number total=page_obj.paginator.num_pages %}
+                                        Page {{ current }} of {{ total }}
+                                    {% endblocktrans %}
+                                </span>
+                            </li>
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                                        {% trans "Next" %}
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
+                                        {% trans "Last" %}
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-receipt fa-3x text-gray-300 mb-3"></i>
+                        <h5 class="text-gray-600">{% trans "No payments found" %}</h5>
+                        <p class="text-muted">{% trans "No payments have been recorded for this contract yet." %}</p>
+                        {% if contract.status == 'active' %}
+                        <a href="{% url 'gold_installments:payment_create' contract.pk %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>
+                            {% trans "Add First Payment" %}
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/gold-installments.js' %}"></script>
+{% endblock %}
