@@ -1,0 +1,576 @@
+/**
+ * Admin Dashboard CSS for ZARGAR jewelry SaaS platform
+ * Supports dual theme system with modern light and cybersecurity dark modes
+ */
+
+/* Admin Dashboard Base Styles */
+.admin-dashboard {
+    font-family: 'Vazirmatn', 'Yekan Bakh', 'Tahoma', sans-serif;
+    direction: rtl;
+    min-height: 100vh;
+    transition: all 0.3s ease;
+}
+
+/* Modern Theme (Light Mode) */
+.modern-theme-active {
+    background: linear-gradient(135deg, #f9fafb 0%, #ffffff 50%, #f3f4f6 100%);
+    color: #111827;
+}
+
+.modern-theme-active .admin-sidebar {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-left: 1px solid #e5e7eb;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.05);
+}
+
+.modern-theme-active .cyber-glass-card {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(10px);
+}
+
+.modern-theme-active .cyber-glass-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    border-color: #d1d5db;
+}
+
+.modern-theme-active .modern-nav-item {
+    color: #6b7280;
+    transition: all 0.2s ease;
+}
+
+.modern-theme-active .modern-nav-item:hover {
+    background: #f3f4f6;
+    color: #3b82f6;
+    transform: translateX(-2px);
+}
+
+.modern-theme-active .modern-nav-item-active {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    color: #3b82f6;
+    border-right: 3px solid #3b82f6;
+    font-weight: 600;
+}
+
+/* Cybersecurity Theme (Dark Mode) */
+.cyber-theme-active {
+    background: linear-gradient(135deg, #0B0E1A 0%, #1A1D29 50%, #252A3A 100%);
+    color: #FFFFFF;
+    position: relative;
+    overflow-x: hidden;
+}
+
+.cyber-theme-active::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(0, 212, 255, 0.03) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(0, 255, 136, 0.03) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(255, 107, 53, 0.02) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: -1;
+}
+
+.cyber-theme-active .admin-sidebar {
+    background: linear-gradient(180deg, 
+        rgba(37, 42, 58, 0.95) 0%, 
+        rgba(26, 29, 41, 0.98) 50%,
+        rgba(11, 14, 26, 0.99) 100%);
+    backdrop-filter: blur(20px) saturate(150%);
+    border-left: 1px solid rgba(0, 212, 255, 0.1);
+    box-shadow: -8px 0 40px rgba(0, 0, 0, 0.6);
+    position: relative;
+}
+
+.cyber-theme-active .admin-sidebar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 2px;
+    height: 100%;
+    background: linear-gradient(180deg, 
+        transparent 0%, 
+        rgba(0, 212, 255, 0.5) 50%, 
+        transparent 100%);
+    animation: cyber-pulse 3s ease-in-out infinite;
+}
+
+.cyber-theme-active .cyber-glass-card {
+    backdrop-filter: blur(16px) saturate(150%);
+    background: linear-gradient(145deg, 
+        rgba(37, 42, 58, 0.8) 0%, 
+        rgba(26, 29, 41, 0.9) 50%,
+        rgba(11, 14, 26, 0.95) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 
+        0 12px 40px rgba(0, 0, 0, 0.6), 
+        inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    position: relative;
+    overflow: hidden;
+}
+
+.cyber-theme-active .cyber-glass-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(0, 212, 255, 0.3), 
+        transparent);
+    opacity: 0.6;
+}
+
+.cyber-theme-active .cyber-glass-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.8), 
+        inset 0 1px 0 rgba(255, 255, 255, 0.05),
+        0 0 30px rgba(0, 212, 255, 0.1);
+    border-color: rgba(0, 212, 255, 0.3);
+}
+
+.cyber-theme-active .cyber-nav-item {
+    color: #B8BCC8;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.cyber-theme-active .cyber-nav-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 0;
+    background: linear-gradient(180deg, #00D4FF, #00FF88);
+    transition: height 0.3s ease;
+    border-radius: 0 2px 2px 0;
+}
+
+.cyber-theme-active .cyber-nav-item:hover {
+    background: rgba(0, 212, 255, 0.05);
+    color: #00D4FF;
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    transform: translateX(-2px);
+}
+
+.cyber-theme-active .cyber-nav-item:hover::before {
+    height: 60%;
+}
+
+.cyber-theme-active .cyber-nav-item-active {
+    background: linear-gradient(135deg, 
+        rgba(0, 212, 255, 0.1) 0%, 
+        rgba(0, 255, 136, 0.05) 100%);
+    color: #00D4FF;
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-right: 3px solid #00D4FF;
+    font-weight: 600;
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+}
+
+.cyber-theme-active .cyber-nav-item-active::before {
+    height: 80%;
+}
+
+/* Cybersecurity Button Styles */
+.cyber-neon-button {
+    background: linear-gradient(145deg, 
+        rgba(0, 212, 255, 0.08) 0%, 
+        rgba(0, 255, 136, 0.04) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    box-shadow: 
+        0 8px 32px rgba(0, 212, 255, 0.15), 
+        0 0 20px rgba(0, 212, 255, 0.1);
+    color: #FFFFFF;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.cyber-neon-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(0, 212, 255, 0.2), 
+        transparent);
+    transition: left 0.5s ease;
+}
+
+.cyber-neon-button:hover::before {
+    left: 100%;
+}
+
+.cyber-neon-button:hover {
+    transform: scale(1.02);
+    box-shadow: 
+        0 12px 40px rgba(0, 212, 255, 0.25), 
+        0 0 30px rgba(0, 212, 255, 0.2);
+    border-color: rgba(0, 212, 255, 0.4);
+}
+
+.cyber-secondary-button {
+    background: rgba(0, 255, 136, 0.05);
+    border: 1px solid rgba(0, 255, 136, 0.2);
+    color: #00FF88;
+    transition: all 0.3s ease;
+}
+
+.cyber-secondary-button:hover {
+    background: rgba(0, 255, 136, 0.1);
+    border-color: rgba(0, 255, 136, 0.4);
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+    transform: scale(1.02);
+}
+
+/* Text Effects */
+.cyber-text-glow {
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+    animation: cyber-glow 3s ease-in-out infinite;
+}
+
+.cyber-number-display {
+    color: #00FF88;
+    font-weight: 600;
+    text-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
+    font-feature-settings: 'tnum' 1;
+}
+
+/* Metric Cards */
+.metric-card {
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.metric-icon {
+    transition: all 0.3s ease;
+}
+
+.cyber-theme-active .metric-card:hover .metric-icon {
+    transform: scale(1.1);
+}
+
+.metric-trend {
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Chart Containers */
+.chart-container {
+    border-radius: 12px;
+    position: relative;
+}
+
+.chart-wrapper {
+    position: relative;
+    height: 200px;
+}
+
+.chart-controls button {
+    transition: all 0.2s ease;
+}
+
+.chart-controls button:hover {
+    transform: scale(1.05);
+}
+
+/* Activity Feed */
+.activity-feed {
+    border-radius: 12px;
+}
+
+.activity-item {
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.activity-icon {
+    flex-shrink: 0;
+}
+
+.activity-content {
+    min-width: 0;
+}
+
+/* Quick Actions */
+.quick-actions {
+    border-radius: 12px;
+}
+
+.action-button {
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.action-button:hover {
+    transform: translateX(-2px);
+}
+
+/* Sidebar Styles */
+.admin-sidebar {
+    transition: transform 0.3s ease;
+    z-index: 40;
+}
+
+.sidebar-header {
+    position: relative;
+}
+
+.cyber-logo-container {
+    position: relative;
+}
+
+.sidebar-menu {
+    height: calc(100vh - 200px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+
+.sidebar-menu::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sidebar-menu::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar-menu::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+}
+
+.cyber-theme-active .sidebar-menu::-webkit-scrollbar-thumb {
+    background: rgba(0, 212, 255, 0.2);
+}
+
+.sidebar-footer {
+    backdrop-filter: blur(10px);
+}
+
+/* Top Header */
+.top-header {
+    backdrop-filter: blur(20px);
+    transition: all 0.3s ease;
+}
+
+/* Main Content */
+.main-content {
+    transition: margin-right 0.3s ease;
+    min-height: 100vh;
+}
+
+.dashboard-content {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Animations */
+@keyframes cyber-pulse {
+    0%, 100% {
+        opacity: 0.3;
+        transform: scaleY(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scaleY(1.1);
+    }
+}
+
+@keyframes cyber-glow {
+    0%, 100% {
+        text-shadow: 0 0 5px rgba(0, 212, 255, 0.3);
+    }
+    50% {
+        text-shadow: 
+            0 0 10px rgba(0, 212, 255, 0.5),
+            0 0 20px rgba(0, 212, 255, 0.3),
+            0 0 30px rgba(0, 212, 255, 0.1);
+    }
+}
+
+@keyframes neon-border {
+    0%, 100% {
+        border-color: rgba(0, 212, 255, 0.2);
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+    }
+    50% {
+        border-color: rgba(0, 212, 255, 0.4);
+        box-shadow: 0 0 30px rgba(0, 212, 255, 0.2);
+    }
+}
+
+@keyframes slide-in-right {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fade-in-up {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .admin-sidebar {
+        width: 280px;
+    }
+    
+    .main-content {
+        margin-right: 0;
+    }
+    
+    .dashboard-content {
+        padding: 1rem;
+    }
+    
+    .metrics-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .analytics-section {
+        grid-template-columns: 1fr;
+    }
+    
+    .activity-section {
+        grid-template-columns: 1fr;
+    }
+    
+    .cyber-glass-card {
+        padding: 1rem;
+    }
+    
+    .metric-card {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-sidebar {
+        width: 100%;
+    }
+    
+    .dashboard-content {
+        padding: 0.5rem;
+    }
+    
+    .cyber-glass-card {
+        padding: 0.75rem;
+        margin: 0.25rem;
+    }
+    
+    .top-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    .sidebar-header {
+        padding: 1rem;
+    }
+    
+    .sidebar-menu {
+        padding: 0.75rem;
+    }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    .cyber-theme-active {
+        --cyber-border-glass: rgba(255, 255, 255, 0.3);
+        --cyber-border-neon: rgba(0, 212, 255, 0.6);
+    }
+    
+    .modern-theme-active .cyber-glass-card {
+        border-color: #000000;
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    .cyber-text-glow {
+        animation: none;
+        text-shadow: 0 0 5px rgba(0, 212, 255, 0.3);
+    }
+}
+
+/* Print Styles */
+@media print {
+    .admin-sidebar,
+    .theme-toggle,
+    .mobile-menu-button {
+        display: none !important;
+    }
+    
+    .main-content {
+        margin-right: 0 !important;
+    }
+    
+    .cyber-theme-active {
+        background: white !important;
+        color: black !important;
+    }
+    
+    .cyber-glass-card {
+        background: white !important;
+        border: 1px solid #ccc !important;
+        box-shadow: none !important;
+    }
+}
+
+/* Focus Styles for Accessibility */
+.focus-visible:focus {
+    outline: 2px solid #00D4FF;
+    outline-offset: 2px;
+}
+
+.modern-theme-active .focus-visible:focus {
+    outline-color: #3b82f6;
+}
+
+/* Selection Styles */
+::selection {
+    background: rgba(0, 212, 255, 0.3);
+    color: #FFFFFF;
+}
+
+.modern-theme-active ::selection {
+    background: rgba(59, 130, 246, 0.3);
+    color: #111827;
+}

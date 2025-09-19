@@ -23,6 +23,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('health/', health_check, name='health_check'),
     path('api/', include('zargar.api.urls')),
+    path('super-panel/', include('zargar.core.urls')),
 ]
 
 # Serve static and media files in development

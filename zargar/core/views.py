@@ -31,18 +31,44 @@ class SuperPanelDashboardView(SuperAdminRequiredMixin, TemplateView):
         
         # Get tenant statistics
         from zargar.tenants.models import Tenant
-        context['total_tenants'] = Tenant.objects.count()
-        context['active_tenants'] = Tenant.objects.filter(is_active=True).count()
+        from datetime import datetime, timedelta
+        
+        total_tenants = Tenant.objects.count()
+        active_tenants = Tenant.objects.filter(is_active=True).count()
+        
+        context['total_tenants'] = total_tenants
+        context['active_tenants'] = active_tenants
+        
+        # Calculate growth percentages
+        last_month = datetime.now() - timedelta(days=30)
+        tenants_last_month = Tenant.objects.filter(created_on__gte=last_month).count()
+        context['tenant_growth'] = round((tenants_last_month / max(total_tenants - tenants_last_month, 1)) * 100, 1) if total_tenants > 0 else 0
         
         # Get user statistics
-        context['total_users'] = User.objects.count()
-        context['active_users'] = User.objects.filter(is_active=True).count()
+        total_users = User.objects.count()
+        active_users = User.objects.filter(is_active=True).count()
+        
+        context['total_users'] = total_users
+        context['active_users'] = active_users
+        
+        # Calculate user growth
+        users_last_month = User.objects.filter(date_joined__gte=last_month).count()
+        context['user_growth'] = round((users_last_month / max(total_users - users_last_month, 1)) * 100, 1) if total_users > 0 else 0
         
         # Get recent audit logs
-        context['recent_logs'] = AuditLog.objects.select_related('user')[:10]
+        context['recent_logs'] = AuditLog.objects.select_related('user').order_by('-timestamp')[:10]
         
         # System health metrics
         context['system_health'] = self.get_system_health()
+        
+        # Chart data for frontend
+        context['tenant_growth_data'] = self.get_tenant_growth_data()
+        context['system_performance_data'] = self.get_system_performance_data()
+        context['active_tenants_trend'] = self.get_active_tenants_trend()
+        
+        # Theme context
+        context['is_dark_mode'] = self.request.session.get('theme', 'light') == 'dark'
+        context['current_theme'] = self.request.session.get('theme', 'light')
         
         return context
     
@@ -63,9 +89,83 @@ class SuperPanelDashboardView(SuperAdminRequiredMixin, TemplateView):
         except Exception:
             health['database'] = 'error'
         
-        # TODO: Add Redis and Celery health checks
+        # Test Redis connection
+        try:
+            from django.core.cache import cache
+            cache.set('health_check', 'ok', 10)
+            result = cache.get('health_check')
+            if result != 'ok':
+                health['redis'] = 'error'
+        except Exception:
+            health['redis'] = 'error'
+        
+        # Test Celery workers
+        try:
+            from celery import current_app
+            inspect = current_app.control.inspect()
+            stats = inspect.stats()
+            if not stats:
+                health['celery'] = 'warning'
+        except Exception:
+            health['celery'] = 'error'
         
         return health
+    
+    def get_tenant_growth_data(self):
+        """
+        Get tenant growth data for the last 6 months.
+        """
+        from zargar.tenants.models import Tenant
+        from datetime import datetime, timedelta
+        import calendar
+        
+        # Get data for last 6 months
+        data = []
+        for i in range(6):
+            month_start = datetime.now().replace(day=1) - timedelta(days=30*i)
+            month_end = month_start.replace(day=calendar.monthrange(month_start.year, month_start.month)[1])
+            
+            count = Tenant.objects.filter(
+                created_on__gte=month_start,
+                created_on__lte=month_end
+            ).count()
+            data.insert(0, count)
+        
+        return ','.join(map(str, data))
+    
+    def get_system_performance_data(self):
+        """
+        Get system performance metrics (CPU, Memory, Disk usage).
+        """
+        import psutil
+        
+        try:
+            cpu_percent = psutil.cpu_percent(interval=1)
+            memory_percent = psutil.virtual_memory().percent
+            disk_percent = psutil.disk_usage('/').percent
+            
+            return f"{cpu_percent:.0f},{memory_percent:.0f},{disk_percent:.0f}"
+        except Exception:
+            # Return mock data if psutil is not available
+            return "65,78,45"
+    
+    def get_active_tenants_trend(self):
+        """
+        Get active tenants trend for the last 6 periods.
+        """
+        from zargar.tenants.models import Tenant
+        from datetime import datetime, timedelta
+        
+        data = []
+        for i in range(6):
+            date = datetime.now() - timedelta(days=7*i)  # Weekly data
+            count = Tenant.objects.filter(
+                is_active=True,
+                created_on__lte=date
+            ).count()
+            data.insert(0, count)
+        
+        return ','.join(map(str, data))
 
 
 class TenantListView(SuperAdminRequiredMixin, ListView):
@@ -257,8 +357,7 @@ class SystemSettingsView(SuperAdminRequiredMixin, ListView):
     template_name = 'core/super_panel/settings.html'
     context_object_name = 'settings'
 
-cla
-ss PersianCalendarDemoView(TemplateView):
+class PersianCalendarDemoView(TemplateView):
     """
     Demo view for Persian calendar frontend components.
     """

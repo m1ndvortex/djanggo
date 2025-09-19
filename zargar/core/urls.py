@@ -43,7 +43,7 @@ app_name = 'core'
 
 urlpatterns = [
     # Super-panel dashboard
-    path('', views.SuperPanelDashboardView.as_view(), name='dashboard'),
+    path('', views.SuperPanelDashboardView.as_view(), name='super_panel_dashboard'),
     
     # Authentication URLs
     path('login/', AdminLoginView.as_view(), name='admin_login'),
