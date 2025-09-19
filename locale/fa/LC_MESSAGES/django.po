@@ -1,0 +1,76 @@
+# Persian (Farsi) translation for ZARGAR Jewelry SaaS
+# Copyright (C) 2024 ZARGAR
+# This file is distributed under the same license as the ZARGAR package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: ZARGAR 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-09-19 14:50+0330\n"
+"PO-Revision-Date: 2024-09-19 14:50+0330\n"
+"Last-Translator: ZARGAR Team\n"
+"Language-Team: Persian\n"
+"Language: fa\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+# Basic UI
+msgid "Login"
+msgstr "ورود"
+
+msgid "Logout"
+msgstr "خروج"
+
+msgid "Dashboard"
+msgstr "داشبورد"
+
+msgid "Save"
+msgstr "ذخیره"
+
+msgid "Cancel"
+msgstr "لغو"
+
+msgid "Delete"
+msgstr "حذف"
+
+msgid "Edit"
+msgstr "ویرایش"
+
+msgid "Add"
+msgstr "افزودن"
+
+# Business Terms
+msgid "Jewelry"
+msgstr "جواهرات"
+
+msgid "Gold"
+msgstr "طلا"
+
+msgid "Weight"
+msgstr "وزن"
+
+msgid "Karat"
+msgstr "عیار"
+
+msgid "Customer"
+msgstr "مشتری"
+
+msgid "Invoice"
+msgstr "فاکتور"
+
+msgid "Payment"
+msgstr "پرداخت"
+
+msgid "Inventory"
+msgstr "موجودی"
+
+msgid "Sales"
+msgstr "فروش"
+
+msgid "Accounting"
+msgstr "حسابداری"
+
+msgid "Reports"
+msgstr "گزارش‌ها"

@@ -1,0 +1,197 @@
+{% load persian_tags %}
+<div class="persian-number-input-container" dir="rtl">
+    <input 
+        type="text" 
+        name="{{ field_name }}" 
+        id="{{ field_id }}"
+        value="{{ field_value|default:'' }}"
+        placeholder="{{ placeholder }}"
+        class="persian-number-input w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-right"
+        data-persian-number-input
+        autocomplete="off"
+    >
+</div>
+
+<style>
+.persian-number-input-container {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+
+.persian-number-input {
+    font-family: 'Vazir', 'Tahoma', sans-serif;
+    direction: rtl;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.persian-number-input:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Dark mode styles */
+.dark .persian-number-input {
+    background-color: #1f2937;
+    border-color: #374151;
+    color: #f9fafb;
+}
+
+.dark .persian-number-input:focus {
+    border-color: #00D4FF;
+    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+}
+
+/* Cybersecurity theme */
+.cyber-theme .persian-number-input {
+    background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    color: #ffffff;
+    backdrop-filter: blur(10px);
+}
+
+.cyber-theme .persian-number-input:focus {
+    border-color: #00D4FF;
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+}
+
+.cyber-theme .persian-number-input::placeholder {
+    color: rgba(184, 188, 200, 0.7);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const numberInputs = document.querySelectorAll('[data-persian-number-input]');
+    
+    numberInputs.forEach(function(input) {
+        // Convert English digits to Persian on input
+        input.addEventListener('input', function(e) {
+            let value = e.target.value;
+            
+            // Convert English digits to Persian
+            value = convertToPersianDigits(value);
+            
+            // Allow only Persian digits, decimal separator, and thousand separator
+            value = value.replace(/[^\d۰-۹٫٬]/g, '');
+            
+            // Format with thousand separators
+            value = formatPersianNumber(value);
+            
+            e.target.value = value;
+        });
+        
+        // Handle paste events
+        input.addEventListener('paste', function(e) {
+            e.preventDefault();
+            
+            let pastedText = (e.clipboardData || window.clipboardData).getData('text');
+            
+            // Clean and format the pasted text
+            pastedText = pastedText.replace(/[^\d۰-۹.,]/g, '');
+            pastedText = convertToPersianDigits(pastedText);
+            pastedText = formatPersianNumber(pastedText);
+            
+            e.target.value = pastedText;
+            
+            // Trigger input event for any listeners
+            e.target.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+        
+        // Handle focus - select all text for easy editing
+        input.addEventListener('focus', function(e) {
+            setTimeout(() => {
+                e.target.select();
+            }, 10);
+        });
+        
+        // Format on blur
+        input.addEventListener('blur', function(e) {
+            let value = e.target.value;
+            if (value) {
+                value = formatPersianNumber(value);
+                e.target.value = value;
+            }
+        });
+    });
+    
+    function convertToPersianDigits(str) {
+        const englishDigits = '0123456789';
+        const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+        
+        for (let i = 0; i < englishDigits.length; i++) {
+            str = str.replace(new RegExp(englishDigits[i], 'g'), persianDigits[i]);
+        }
+        
+        // Also convert common decimal separators
+        str = str.replace(/\./g, '٫');
+        str = str.replace(/,/g, '٬');
+        
+        return str;
+    }
+    
+    function convertToEnglishDigits(str) {
+        const englishDigits = '0123456789';
+        const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+        
+        for (let i = 0; i < persianDigits.length; i++) {
+            str = str.replace(new RegExp(persianDigits[i], 'g'), englishDigits[i]);
+        }
+        
+        return str;
+    }
+    
+    function formatPersianNumber(value) {
+        if (!value) return value;
+        
+        // Remove existing thousand separators
+        value = value.replace(/٬/g, '');
+        
+        // Split by decimal separator
+        let parts = value.split('٫');
+        let integerPart = parts[0];
+        let decimalPart = parts[1];
+        
+        // Add thousand separators to integer part
+        if (integerPart.length > 3) {
+            // Convert to English for processing
+            let englishInteger = convertToEnglishDigits(integerPart);
+            
+            // Add commas
+            englishInteger = englishInteger.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            
+            // Convert back to Persian
+            integerPart = convertToPersianDigits(englishInteger);
+            integerPart = integerPart.replace(/,/g, '٬');
+        }
+        
+        // Reconstruct the number
+        if (decimalPart !== undefined) {
+            return integerPart + '٫' + decimalPart;
+        } else {
+            return integerPart;
+        }
+    }
+    
+    // Utility function to get numeric value from Persian formatted string
+    window.getPersianNumericValue = function(persianString) {
+        if (!persianString) return 0;
+        
+        // Convert to English digits and remove formatting
+        let englishString = convertToEnglishDigits(persianString);
+        englishString = englishString.replace(/,/g, '');
+        englishString = englishString.replace(/٬/g, '');
+        englishString = englishString.replace(/٫/g, '.');
+        
+        return parseFloat(englishString) || 0;
+    };
+    
+    // Utility function to format a numeric value as Persian
+    window.formatAsPersianNumber = function(numericValue) {
+        if (numericValue === null || numericValue === undefined) return '';
+        
+        let formatted = numericValue.toLocaleString('en-US');
+        return convertToPersianDigits(formatted.replace(/,/g, '٬'));
+    };
+});
+</script>
