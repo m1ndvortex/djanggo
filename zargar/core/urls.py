@@ -21,6 +21,23 @@ from .twofa_views import (
     TwoFABackupTokensView,
     TwoFAStatusAPIView
 )
+# Import security views only if they exist
+try:
+    from .security_views import (
+        SecurityDashboardView,
+        SecurityEventsListView,
+        SecurityEventDetailView,
+        SecurityEventResolveView,
+        AuditLogsListView,
+        SuspiciousActivitiesListView,
+        SuspiciousActivityInvestigateView,
+        SecurityAlertsAPIView,
+        RateLimitAttemptsListView,
+        UnblockRateLimitView
+    )
+    SECURITY_VIEWS_AVAILABLE = True
+except ImportError:
+    SECURITY_VIEWS_AVAILABLE = False
 
 app_name = 'core'
 
@@ -57,6 +74,22 @@ urlpatterns = [
     
     # System monitoring
     path('health/', views.SystemHealthView.as_view(), name='system_health'),
-    path('audit-logs/', views.AuditLogListView.as_view(), name='audit_logs'),
     path('settings/', views.SystemSettingsView.as_view(), name='system_settings'),
+    
 ]
+
+# Add security dashboard URLs if views are available
+if SECURITY_VIEWS_AVAILABLE:
+    urlpatterns += [
+        # Security dashboard
+        path('security/', SecurityDashboardView.as_view(), name='security_dashboard'),
+        path('security/events/', SecurityEventsListView.as_view(), name='security_events'),
+        path('security/events/<int:pk>/', SecurityEventDetailView.as_view(), name='security_event_detail'),
+        path('security/events/<int:pk>/resolve/', SecurityEventResolveView.as_view(), name='security_event_resolve'),
+        path('security/audit-logs/', AuditLogsListView.as_view(), name='audit_logs'),
+        path('security/suspicious-activities/', SuspiciousActivitiesListView.as_view(), name='suspicious_activities'),
+        path('security/suspicious-activities/<int:pk>/investigate/', SuspiciousActivityInvestigateView.as_view(), name='suspicious_activity_investigate'),
+        path('security/rate-limits/', RateLimitAttemptsListView.as_view(), name='rate_limits'),
+        path('security/rate-limits/<int:pk>/unblock/', UnblockRateLimitView.as_view(), name='unblock_rate_limit'),
+        path('security/alerts/api/', SecurityAlertsAPIView.as_view(), name='security_alerts_api'),
+    ]
