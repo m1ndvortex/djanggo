@@ -459,3 +459,362 @@ class Supplier(TenantAwareModel):
             'last_order_date',
             'updated_at'
         ])
+
+
+class PurchaseOrder(TenantAwareModel):
+    """
+    Purchase order model for supplier relationship management.
+    """
+    STATUS_CHOICES = [
+        ('draft', _('Draft')),
+        ('sent', _('Sent to Supplier')),
+        ('confirmed', _('Confirmed by Supplier')),
+        ('partially_received', _('Partially Received')),
+        ('completed', _('Completed')),
+        ('cancelled', _('Cancelled')),
+    ]
+    
+    PRIORITY_CHOICES = [
+        ('low', _('Low')),
+        ('normal', _('Normal')),
+        ('high', _('High')),
+        ('urgent', _('Urgent')),
+    ]
+    
+    # Basic information
+    order_number = models.CharField(
+        max_length=50,
+        unique=True,
+        verbose_name=_('Order Number')
+    )
+    supplier = models.ForeignKey(
+        Supplier,
+        on_delete=models.PROTECT,
+        related_name='purchase_orders',
+        verbose_name=_('Supplier')
+    )
+    
+    # Order details
+    order_date = models.DateField(
+        verbose_name=_('Order Date')
+    )
+    expected_delivery_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name=_('Expected Delivery Date')
+    )
+    actual_delivery_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name=_('Actual Delivery Date')
+    )
+    
+    # Status and priority
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='draft',
+        verbose_name=_('Status')
+    )
+    priority = models.CharField(
+        max_length=10,
+        choices=PRIORITY_CHOICES,
+        default='normal',
+        verbose_name=_('Priority')
+    )
+    
+    # Financial information
+    subtotal = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name=_('Subtotal (Toman)')
+    )
+    tax_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name=_('Tax Amount (Toman)')
+    )
+    discount_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name=_('Discount Amount (Toman)')
+    )
+    total_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name=_('Total Amount (Toman)')
+    )
+    
+    # Payment information
+    payment_terms = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name=_('Payment Terms')
+    )
+    payment_due_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name=_('Payment Due Date')
+    )
+    is_paid = models.BooleanField(
+        default=False,
+        verbose_name=_('Is Paid')
+    )
+    payment_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name=_('Payment Date')
+    )
+    
+    # Additional information
+    notes = models.TextField(
+        blank=True,
+        verbose_name=_('Notes')
+    )
+    internal_notes = models.TextField(
+        blank=True,
+        verbose_name=_('Internal Notes')
+    )
+    
+    # Delivery information
+    delivery_address = models.TextField(
+        blank=True,
+        verbose_name=_('Delivery Address')
+    )
+    shipping_cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        verbose_name=_('Shipping Cost (Toman)')
+    )
+    
+    class Meta:
+        verbose_name = _('Purchase Order')
+        verbose_name_plural = _('Purchase Orders')
+        ordering = ['-order_date', '-created_at']
+        indexes = [
+            models.Index(fields=['order_number']),
+            models.Index(fields=['supplier']),
+            models.Index(fields=['status']),
+            models.Index(fields=['order_date']),
+            models.Index(fields=['expected_delivery_date']),
+        ]
+    
+    def __str__(self):
+        return f"{self.order_number} - {self.supplier.name}"
+    
+    def save(self, *args, **kwargs):
+        """Generate order number if not provided."""
+        if not self.order_number:
+            self.order_number = self.generate_order_number()
+        
+        # Calculate total amount
+        self.total_amount = self.subtotal + self.tax_amount + self.shipping_cost - self.discount_amount
+        
+        super().save(*args, **kwargs)
+    
+    def generate_order_number(self):
+        """Generate unique order number."""
+        from django.utils import timezone
+        import random
+        
+        date_str = timezone.now().strftime('%Y%m%d')
+        random_str = str(random.randint(1000, 9999))
+        return f"PO-{date_str}-{random_str}"
+    
+    @property
+    def is_overdue(self):
+        """Check if order is overdue."""
+        if not self.expected_delivery_date:
+            return False
+        
+        from django.utils import timezone
+        today = timezone.now().date()
+        
+        return (self.status not in ['completed', 'cancelled'] and 
+                self.expected_delivery_date < today)
+    
+    @property
+    def days_until_delivery(self):
+        """Calculate days until expected delivery."""
+        if not self.expected_delivery_date:
+            return None
+        
+        from django.utils import timezone
+        today = timezone.now().date()
+        delta = self.expected_delivery_date - today
+        
+        return delta.days
+    
+    def mark_as_sent(self):
+        """Mark order as sent to supplier."""
+        self.status = 'sent'
+        self.save(update_fields=['status', 'updated_at'])
+    
+    def mark_as_confirmed(self):
+        """Mark order as confirmed by supplier."""
+        self.status = 'confirmed'
+        self.save(update_fields=['status', 'updated_at'])
+    
+    def mark_as_received(self, partial=False):
+        """Mark order as received."""
+        if partial:
+            self.status = 'partially_received'
+        else:
+            self.status = 'completed'
+            from django.utils import timezone
+            self.actual_delivery_date = timezone.now().date()
+        
+        self.save(update_fields=['status', 'actual_delivery_date', 'updated_at'])
+        
+        # Update supplier statistics
+        if self.status == 'completed':
+            self.supplier.update_order_stats(self.total_amount)
+    
+    def cancel_order(self, reason=""):
+        """Cancel the purchase order."""
+        self.status = 'cancelled'
+        if reason:
+            self.internal_notes += f"\nCancelled: {reason}"
+        
+        self.save(update_fields=['status', 'internal_notes', 'updated_at'])
+
+
+class PurchaseOrderItem(TenantAwareModel):
+    """
+    Individual items in a purchase order.
+    """
+    purchase_order = models.ForeignKey(
+        PurchaseOrder,
+        on_delete=models.CASCADE,
+        related_name='items',
+        verbose_name=_('Purchase Order')
+    )
+    
+    # Item details
+    item_name = models.CharField(
+        max_length=200,
+        verbose_name=_('Item Name')
+    )
+    item_description = models.TextField(
+        blank=True,
+        verbose_name=_('Item Description')
+    )
+    sku = models.CharField(
+        max_length=50,
+        blank=True,
+        verbose_name=_('SKU')
+    )
+    
+    # Quantity and pricing
+    quantity_ordered = models.PositiveIntegerField(
+        verbose_name=_('Quantity Ordered')
+    )
+    quantity_received = models.PositiveIntegerField(
+        default=0,
+        verbose_name=_('Quantity Received')
+    )
+    unit_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name=_('Unit Price (Toman)')
+    )
+    total_price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        verbose_name=_('Total Price (Toman)')
+    )
+    
+    # Item specifications (for jewelry)
+    weight_grams = models.DecimalField(
+        max_digits=8,
+        decimal_places=3,
+        null=True,
+        blank=True,
+        verbose_name=_('Weight (Grams)')
+    )
+    karat = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_('Karat')
+    )
+    gemstone_type = models.CharField(
+        max_length=50,
+        blank=True,
+        verbose_name=_('Gemstone Type')
+    )
+    
+    # Status
+    is_received = models.BooleanField(
+        default=False,
+        verbose_name=_('Is Received')
+    )
+    received_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name=_('Received Date')
+    )
+    
+    # Notes
+    notes = models.TextField(
+        blank=True,
+        verbose_name=_('Notes')
+    )
+    
+    class Meta:
+        verbose_name = _('Purchase Order Item')
+        verbose_name_plural = _('Purchase Order Items')
+        ordering = ['id']
+    
+    def __str__(self):
+        return f"{self.purchase_order.order_number} - {self.item_name}"
+    
+    def save(self, *args, **kwargs):
+        """Calculate total price."""
+        self.total_price = self.quantity_ordered * self.unit_price
+        
+        # Check if fully received
+        if self.quantity_received >= self.quantity_ordered:
+            self.is_received = True
+            if not self.received_date:
+                from django.utils import timezone
+                self.received_date = timezone.now().date()
+        
+        super().save(*args, **kwargs)
+        
+        # Update purchase order totals
+        self.update_purchase_order_totals()
+    
+    def update_purchase_order_totals(self):
+        """Update purchase order subtotal."""
+        po = self.purchase_order
+        po.subtotal = sum(item.total_price for item in po.items.all())
+        po.save(update_fields=['subtotal', 'total_amount', 'updated_at'])
+    
+    @property
+    def quantity_pending(self):
+        """Calculate quantity still pending delivery."""
+        return max(0, self.quantity_ordered - self.quantity_received)
+    
+    @property
+    def is_fully_received(self):
+        """Check if item is fully received."""
+        return self.quantity_received >= self.quantity_ordered
+    
+    def receive_quantity(self, quantity):
+        """Receive a specific quantity of this item."""
+        if quantity <= 0:
+            return False
+        
+        max_receivable = self.quantity_pending
+        if quantity > max_receivable:
+            quantity = max_receivable
+        
+        self.quantity_received += quantity
+        self.save()
+        
+        return True

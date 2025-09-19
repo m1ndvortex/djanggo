@@ -215,15 +215,33 @@
     - Write frontend tests for Persian number formatting display
     - _Requirements: 3.3, 3.4, 8.8_
 
-- [ ] 5. Core Business Models & Database Schema
-  - [ ] 5.1 Create jewelry inventory management models (Backend)
+- [x] 5. Core Business Models & Database Schema
+
+
+
+
+
+
+
+  - [x] 5.1 Create jewelry inventory management models (Backend)
+
+
+
+
+
+
+
+
+
     - Create JewelryItem model with weight, karat, manufacturing cost, and SKU tracking
     - Build ProductCategory and Gemstone models for comprehensive item classification
     - Implement JewelryItemPhoto model for multiple image management
     - Write tests for inventory model validation and relationships
     - _Requirements: 7.1, 7.6, 7.7_
 
-  - [ ] 5.2 Build customer and supplier management models (Backend)
+  - [x] 5.2 Build customer and supplier management models (Backend)
+
+
     - Create Customer model with Persian name handling and loyalty point tracking
     - Implement Supplier model with purchase order and payment term management
     - Build PurchaseOrder model for supplier relationship management
