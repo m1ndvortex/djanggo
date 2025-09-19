@@ -66,7 +66,12 @@
     - _Requirements: 2.3, 2.5, 2.7_
 
 - [ ] 3. Authentication & Security System
-  - [ ] 3.1 Extend Django's built-in authentication with tenant awareness (Backend)
+  - [x] 3.1 Extend Django's built-in authentication with tenant awareness (Backend)
+
+
+
+
+
     - Create custom User model extending AbstractUser with tenant relationship
     - Implement role-based access control with Owner, Accountant, Salesperson roles
     - Configure DRF token authentication with JWT support for API access

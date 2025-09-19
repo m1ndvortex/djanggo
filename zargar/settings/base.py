@@ -217,11 +217,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Django REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'zargar.core.authentication.TenantAwareJWTAuthentication',
+        'zargar.core.authentication.TenantAwareTokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
+        'zargar.core.permissions.TenantPermission',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
@@ -279,6 +281,8 @@ AUTH_USER_MODEL = 'core.User'
 # Authentication Backends
 AUTHENTICATION_BACKENDS = [
     'zargar.core.auth_backends.TenantAwareAuthBackend',
+    'zargar.core.auth_backends.SuperAdminBackend',
+    'zargar.core.auth_backends.TenantUserBackend',
     'django.contrib.auth.backends.ModelBackend',  # Fallback
 ]
 
