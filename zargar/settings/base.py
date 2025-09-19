@@ -58,6 +58,7 @@ TENANT_APPS = [
     'zargar.jewelry',
     'zargar.accounting',
     'zargar.customers',
+    'zargar.gold_installments',  # Gold installment system
     'zargar.pos',
     'zargar.reports',
 ]

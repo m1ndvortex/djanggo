@@ -1,0 +1,375 @@
+/* Persian Accounting Tables Styles */
+
+/* Table Components */
+.table-cyber {
+    @apply w-full text-sm;
+}
+
+.table-cyber thead th {
+    @apply px-4 py-3 font-semibold border-b;
+}
+
+.light .table-cyber thead th {
+    @apply bg-gray-50 text-gray-900 border-gray-200;
+}
+
+.dark .table-cyber thead th {
+    background: linear-gradient(145deg, rgba(37, 42, 58, 0.9) 0%, rgba(26, 29, 41, 0.8) 100%);
+    color: #FFFFFF;
+    border-color: rgba(255, 255, 255, 0.06);
+    text-shadow: 0 0 5px rgba(0, 212, 255, 0.3);
+}
+
+.table-cyber tbody td {
+    @apply px-4 py-3 border-b;
+}
+
+.light .table-cyber tbody td {
+    @apply border-gray-200;
+}
+
+.dark .table-cyber tbody td {
+    border-color: rgba(255, 255, 255, 0.04);
+}
+
+.table-row-cyber {
+    @apply transition-all duration-200;
+}
+
+.light .table-row-cyber:hover {
+    @apply bg-gray-50;
+}
+
+.dark .table-row-cyber:hover {
+    background: rgba(37, 42, 58, 0.8);
+    transform: translateX(4px);
+    box-shadow: 0 4px 16px rgba(0, 212, 255, 0.1);
+}
+
+/* Form Components */
+.form-input-cyber {
+    @apply w-full px-3 py-2 rounded-lg border transition-all duration-200;
+}
+
+.light .form-input-cyber {
+    @apply border-gray-300 bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200;
+}
+
+.dark .form-input-cyber {
+    background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: #FFFFFF;
+    backdrop-filter: blur(8px);
+}
+
+.dark .form-input-cyber:focus {
+    border-color: #00D4FF;
+    box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+    background: linear-gradient(145deg, rgba(37, 42, 58, 0.9) 0%, rgba(26, 29, 41, 0.95) 100%);
+}
+
+.dark .form-input-cyber::placeholder {
+    color: #6B7280;
+}
+
+.form-select-cyber {
+    @apply w-full px-3 py-2 rounded-lg border transition-all duration-200;
+}
+
+.light .form-select-cyber {
+    @apply border-gray-300 bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200;
+}
+
+.dark .form-select-cyber {
+    background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: #FFFFFF;
+    backdrop-filter: blur(8px);
+}
+
+.dark .form-select-cyber:focus {
+    border-color: #00D4FF;
+    box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+}
+
+.dark .form-select-cyber option {
+    background: #1A1D29;
+    color: #FFFFFF;
+}
+
+.form-label-cyber {
+    @apply block text-sm font-medium mb-2;
+}
+
+.light .form-label-cyber {
+    @apply text-gray-700;
+}
+
+.dark .form-label-cyber {
+    color: #B8BCC8;
+}
+
+.form-error-cyber {
+    @apply mt-1 text-sm;
+}
+
+.light .form-error-cyber {
+    @apply text-red-600;
+}
+
+.dark .form-error-cyber {
+    color: #FF4757;
+    text-shadow: 0 0 5px rgba(255, 71, 87, 0.3);
+}
+
+.form-help-cyber {
+    @apply mt-1 text-xs;
+}
+
+.light .form-help-cyber {
+    @apply text-gray-500;
+}
+
+.dark .form-help-cyber {
+    color: #6B7280;
+}
+
+/* Checkbox and Radio Styles */
+.form-check-input {
+    @apply w-4 h-4 rounded border transition-all duration-200;
+}
+
+.light .form-check-input {
+    @apply border-gray-300 text-blue-600 focus:ring-blue-500;
+}
+
+.dark .form-check-input {
+    background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: #00D4FF;
+}
+
+.dark .form-check-input:checked {
+    background: linear-gradient(145deg, #00D4FF 0%, #00FF88 100%);
+    border-color: #00D4FF;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+.dark .form-check-input:focus {
+    box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+}
+
+/* Persian Input Styling */
+.persian-input {
+    font-family: 'Vazirmatn', 'Tahoma', sans-serif;
+    direction: rtl;
+    text-align: right;
+}
+
+.persian-input[dir="ltr"] {
+    direction: ltr;
+    text-align: left;
+}
+
+/* Amount Input Styling */
+.amount-input {
+    font-family: 'Vazirmatn', 'Courier New', monospace;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Account Select Styling */
+.account-select {
+    font-family: 'Vazirmatn', 'Tahoma', sans-serif;
+}
+
+/* Status Indicators */
+.status-indicator {
+    @apply w-3 h-3 rounded-full;
+}
+
+.status-posted {
+    @apply bg-green-500;
+}
+
+.dark .status-posted {
+    background: #00FF88;
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+}
+
+.status-draft {
+    @apply bg-yellow-500;
+}
+
+.dark .status-draft {
+    background: #FFB800;
+    box-shadow: 0 0 10px rgba(255, 184, 0, 0.5);
+}
+
+.status-pending {
+    @apply bg-blue-500;
+}
+
+.dark .status-pending {
+    background: #00D4FF;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+.status-cancelled {
+    @apply bg-red-500;
+}
+
+.dark .status-cancelled {
+    background: #FF4757;
+    box-shadow: 0 0 10px rgba(255, 71, 87, 0.5);
+}
+
+/* Balance Display */
+.balance-positive {
+    @apply text-green-600 font-medium;
+}
+
+.dark .balance-positive {
+    color: #00FF88;
+    text-shadow: 0 0 5px rgba(0, 255, 136, 0.3);
+}
+
+.balance-negative {
+    @apply text-red-600 font-medium;
+}
+
+.dark .balance-negative {
+    color: #FF4757;
+    text-shadow: 0 0 5px rgba(255, 71, 87, 0.3);
+}
+
+.balance-zero {
+    @apply text-gray-500 font-medium;
+}
+
+.dark .balance-zero {
+    color: #6B7280;
+}
+
+/* Loading States */
+.loading-row {
+    @apply animate-pulse;
+}
+
+.loading-cell {
+    @apply h-4 rounded;
+}
+
+.light .loading-cell {
+    @apply bg-gray-200;
+}
+
+.dark .loading-cell {
+    background: linear-gradient(90deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 50%, rgba(37, 42, 58, 0.8) 100%);
+}
+
+/* Sortable Headers */
+.sortable-header {
+    @apply cursor-pointer select-none transition-all duration-200;
+}
+
+.sortable-header:hover {
+    @apply opacity-80;
+}
+
+.dark .sortable-header:hover {
+    text-shadow: 0 0 8px rgba(0, 212, 255, 0.5);
+}
+
+.sort-asc::after {
+    content: " ↑";
+    @apply text-blue-500;
+}
+
+.dark .sort-asc::after {
+    color: #00D4FF;
+}
+
+.sort-desc::after {
+    content: " ↓";
+    @apply text-blue-500;
+}
+
+.dark .sort-desc::after {
+    color: #00D4FF;
+}
+
+/* Responsive Table */
+@media (max-width: 768px) {
+    .table-cyber {
+        @apply text-xs;
+    }
+    
+    .table-cyber thead th,
+    .table-cyber tbody td {
+        @apply px-2 py-2;
+    }
+    
+    .form-input-cyber,
+    .form-select-cyber {
+        @apply px-2 py-1.5 text-sm;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .table-cyber {
+        @apply text-xs;
+        border-collapse: collapse;
+    }
+    
+    .table-cyber thead th {
+        @apply bg-gray-100 text-black border border-gray-400;
+    }
+    
+    .table-cyber tbody td {
+        @apply border border-gray-400;
+    }
+    
+    .table-row-cyber:hover {
+        background: none !important;
+        transform: none !important;
+    }
+    
+    .btn-icon-cyber {
+        display: none;
+    }
+    
+    .badge-cyber {
+        @apply border border-gray-400 bg-gray-100 text-gray-800;
+    }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    .table-cyber thead th {
+        @apply bg-black text-white border-2 border-white;
+    }
+    
+    .table-cyber tbody td {
+        @apply border-2 border-gray-800;
+    }
+    
+    .form-input-cyber,
+    .form-select-cyber {
+        @apply border-2 border-gray-800;
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    .table-row-cyber,
+    .form-input-cyber,
+    .form-select-cyber,
+    .sortable-header {
+        transition: none;
+    }
+    
+    .table-row-cyber:hover {
+        transform: none;
+    }
+}

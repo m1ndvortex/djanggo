@@ -1,0 +1,452 @@
+/* Persian Accounting Dashboard Styles */
+
+/* Card Components */
+.card-cyber {
+    @apply p-6 rounded-lg border transition-all duration-300;
+}
+
+/* Light mode card */
+.light .card-cyber {
+    @apply bg-white border-gray-200 shadow-sm;
+}
+
+.light .card-cyber:hover {
+    @apply shadow-md;
+}
+
+/* Dark mode card (cybersecurity theme) */
+.dark .card-cyber {
+    backdrop-filter: blur(16px) saturate(150%);
+    background: linear-gradient(145deg, 
+        rgba(37, 42, 58, 0.8) 0%, 
+        rgba(26, 29, 41, 0.9) 50%,
+        rgba(11, 14, 26, 0.95) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.dark .card-cyber:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 50px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Button Components */
+.btn-primary-cyber {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center;
+}
+
+.light .btn-primary-cyber {
+    @apply bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow-md;
+}
+
+.dark .btn-primary-cyber {
+    background: linear-gradient(145deg, rgba(0,212,255,0.08) 0%, rgba(0,255,136,0.04) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.15), 0 0 20px rgba(0, 212, 255, 0.1);
+    color: #00D4FF;
+}
+
+.dark .btn-primary-cyber:hover {
+    transform: scale(1.05);
+    box-shadow: 0 12px 40px rgba(0, 212, 255, 0.25), 0 0 30px rgba(0, 212, 255, 0.2);
+    color: #FFFFFF;
+}
+
+.btn-secondary-cyber {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center;
+}
+
+.light .btn-secondary-cyber {
+    @apply bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300;
+}
+
+.dark .btn-secondary-cyber {
+    background: linear-gradient(145deg, rgba(0,255,136,0.08) 0%, rgba(255,107,53,0.04) 100%);
+    border: 1px solid rgba(0, 255, 136, 0.2);
+    box-shadow: 0 4px 16px rgba(0, 255, 136, 0.1);
+    color: #00FF88;
+}
+
+.dark .btn-secondary-cyber:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0, 255, 136, 0.2);
+    color: #FFFFFF;
+}
+
+.btn-outline-cyber {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center border;
+}
+
+.light .btn-outline-cyber {
+    @apply border-gray-300 text-gray-700 hover:bg-gray-50;
+}
+
+.dark .btn-outline-cyber {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #B8BCC8;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.dark .btn-outline-cyber:hover {
+    border-color: rgba(0, 212, 255, 0.3);
+    color: #00D4FF;
+    background: rgba(0, 212, 255, 0.05);
+}
+
+.btn-icon-cyber {
+    @apply p-2 rounded-lg transition-all duration-200 flex items-center justify-center;
+}
+
+.light .btn-icon-cyber {
+    @apply text-gray-600 hover:bg-gray-100 hover:text-gray-900;
+}
+
+.dark .btn-icon-cyber {
+    color: #B8BCC8;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.dark .btn-icon-cyber:hover {
+    color: #00D4FF;
+    background: rgba(0, 212, 255, 0.1);
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+}
+
+/* Badge Components */
+.badge-cyber {
+    @apply px-2 py-1 text-xs font-medium rounded-full;
+}
+
+.light .badge-success {
+    @apply bg-green-100 text-green-800;
+}
+
+.dark .badge-success {
+    background: rgba(0, 255, 136, 0.2);
+    color: #00FF88;
+    border: 1px solid rgba(0, 255, 136, 0.3);
+}
+
+.light .badge-warning {
+    @apply bg-yellow-100 text-yellow-800;
+}
+
+.dark .badge-warning {
+    background: rgba(255, 184, 0, 0.2);
+    color: #FFB800;
+    border: 1px solid rgba(255, 184, 0, 0.3);
+}
+
+.light .badge-info {
+    @apply bg-blue-100 text-blue-800;
+}
+
+.dark .badge-info {
+    background: rgba(0, 212, 255, 0.2);
+    color: #00D4FF;
+    border: 1px solid rgba(0, 212, 255, 0.3);
+}
+
+.light .badge-danger {
+    @apply bg-red-100 text-red-800;
+}
+
+.dark .badge-danger {
+    background: rgba(255, 71, 87, 0.2);
+    color: #FF4757;
+    border: 1px solid rgba(255, 71, 87, 0.3);
+}
+
+/* Account type badges */
+.badge-asset {
+    @apply badge-cyber;
+}
+
+.light .badge-asset {
+    @apply bg-blue-100 text-blue-800;
+}
+
+.dark .badge-asset {
+    background: rgba(0, 212, 255, 0.2);
+    color: #00D4FF;
+    border: 1px solid rgba(0, 212, 255, 0.3);
+}
+
+.badge-liability {
+    @apply badge-cyber;
+}
+
+.light .badge-liability {
+    @apply bg-red-100 text-red-800;
+}
+
+.dark .badge-liability {
+    background: rgba(255, 71, 87, 0.2);
+    color: #FF4757;
+    border: 1px solid rgba(255, 71, 87, 0.3);
+}
+
+.badge-equity {
+    @apply badge-cyber;
+}
+
+.light .badge-equity {
+    @apply bg-purple-100 text-purple-800;
+}
+
+.dark .badge-equity {
+    background: rgba(165, 94, 234, 0.2);
+    color: #A55EEA;
+    border: 1px solid rgba(165, 94, 234, 0.3);
+}
+
+.badge-revenue {
+    @apply badge-cyber;
+}
+
+.light .badge-revenue {
+    @apply bg-green-100 text-green-800;
+}
+
+.dark .badge-revenue {
+    background: rgba(0, 255, 136, 0.2);
+    color: #00FF88;
+    border: 1px solid rgba(0, 255, 136, 0.3);
+}
+
+.badge-expense {
+    @apply badge-cyber;
+}
+
+.light .badge-expense {
+    @apply bg-orange-100 text-orange-800;
+}
+
+.dark .badge-expense {
+    background: rgba(255, 107, 53, 0.2);
+    color: #FF6B35;
+    border: 1px solid rgba(255, 107, 53, 0.3);
+}
+
+.badge-cost_of_goods_sold {
+    @apply badge-cyber;
+}
+
+.light .badge-cost_of_goods_sold {
+    @apply bg-yellow-100 text-yellow-800;
+}
+
+.dark .badge-cost_of_goods_sold {
+    background: rgba(255, 184, 0, 0.2);
+    color: #FFB800;
+    border: 1px solid rgba(255, 184, 0, 0.3);
+}
+
+/* Balance type badges */
+.badge-debit {
+    @apply badge-cyber;
+}
+
+.light .badge-debit {
+    @apply bg-blue-100 text-blue-800;
+}
+
+.dark .badge-debit {
+    background: rgba(0, 212, 255, 0.2);
+    color: #00D4FF;
+    border: 1px solid rgba(0, 212, 255, 0.3);
+}
+
+.badge-credit {
+    @apply badge-cyber;
+}
+
+.light .badge-credit {
+    @apply bg-green-100 text-green-800;
+}
+
+.dark .badge-credit {
+    background: rgba(0, 255, 136, 0.2);
+    color: #00FF88;
+    border: 1px solid rgba(0, 255, 136, 0.3);
+}
+
+/* Entry type badges */
+.badge-general {
+    @apply badge-cyber;
+}
+
+.light .badge-general {
+    @apply bg-gray-100 text-gray-800;
+}
+
+.dark .badge-general {
+    background: rgba(184, 188, 200, 0.2);
+    color: #B8BCC8;
+    border: 1px solid rgba(184, 188, 200, 0.3);
+}
+
+.badge-sales {
+    @apply badge-cyber;
+}
+
+.light .badge-sales {
+    @apply bg-green-100 text-green-800;
+}
+
+.dark .badge-sales {
+    background: rgba(0, 255, 136, 0.2);
+    color: #00FF88;
+    border: 1px solid rgba(0, 255, 136, 0.3);
+}
+
+.badge-purchase {
+    @apply badge-cyber;
+}
+
+.light .badge-purchase {
+    @apply bg-orange-100 text-orange-800;
+}
+
+.dark .badge-purchase {
+    background: rgba(255, 107, 53, 0.2);
+    color: #FF6B35;
+    border: 1px solid rgba(255, 107, 53, 0.3);
+}
+
+.badge-payment {
+    @apply badge-cyber;
+}
+
+.light .badge-payment {
+    @apply bg-red-100 text-red-800;
+}
+
+.dark .badge-payment {
+    background: rgba(255, 71, 87, 0.2);
+    color: #FF4757;
+    border: 1px solid rgba(255, 71, 87, 0.3);
+}
+
+.badge-receipt {
+    @apply badge-cyber;
+}
+
+.light .badge-receipt {
+    @apply bg-blue-100 text-blue-800;
+}
+
+.dark .badge-receipt {
+    background: rgba(0, 212, 255, 0.2);
+    color: #00D4FF;
+    border: 1px solid rgba(0, 212, 255, 0.3);
+}
+
+.badge-adjustment {
+    @apply badge-cyber;
+}
+
+.light .badge-adjustment {
+    @apply bg-yellow-100 text-yellow-800;
+}
+
+.dark .badge-adjustment {
+    background: rgba(255, 184, 0, 0.2);
+    color: #FFB800;
+    border: 1px solid rgba(255, 184, 0, 0.3);
+}
+
+.badge-closing {
+    @apply badge-cyber;
+}
+
+.light .badge-closing {
+    @apply bg-purple-100 text-purple-800;
+}
+
+.dark .badge-closing {
+    background: rgba(165, 94, 234, 0.2);
+    color: #A55EEA;
+    border: 1px solid rgba(165, 94, 234, 0.3);
+}
+
+/* Persian Number Styling */
+.persian-numbers {
+    font-family: 'Vazirmatn', 'Tahoma', sans-serif;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Animations for cybersecurity theme */
+@keyframes neon-pulse {
+    from { 
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+    }
+    to { 
+        box-shadow: 0 0 30px rgba(0, 212, 255, 0.3), 0 0 60px rgba(0, 255, 136, 0.1);
+    }
+}
+
+@keyframes cyber-glow {
+    0%, 100% { 
+        text-shadow: 0 0 5px #00D4FF;
+    }
+    50% { 
+        text-shadow: 0 0 10px #00D4FF, 0 0 20px #00D4FF, 0 0 30px #00D4FF;
+    }
+}
+
+.dark .card-cyber.animate-pulse {
+    animation: neon-pulse 2s ease-in-out infinite alternate;
+}
+
+.dark .cyber-glow {
+    animation: cyber-glow 3s ease-in-out infinite;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .card-cyber {
+        @apply p-4;
+    }
+    
+    .btn-primary-cyber,
+    .btn-secondary-cyber,
+    .btn-outline-cyber {
+        @apply px-3 py-2 text-sm;
+    }
+    
+    .btn-icon-cyber {
+        @apply p-1.5;
+    }
+}
+
+/* RTL Support */
+[dir="rtl"] .card-cyber {
+    text-align: right;
+}
+
+[dir="rtl"] .btn-primary-cyber svg,
+[dir="rtl"] .btn-secondary-cyber svg {
+    margin-left: 0;
+    margin-right: 0.5rem;
+}
+
+/* Print Styles */
+@media print {
+    .card-cyber {
+        @apply shadow-none border border-gray-300;
+        background: white !important;
+        color: black !important;
+    }
+    
+    .btn-primary-cyber,
+    .btn-secondary-cyber,
+    .btn-outline-cyber,
+    .btn-icon-cyber {
+        display: none;
+    }
+    
+    .badge-cyber {
+        @apply border border-gray-400 bg-gray-100 text-gray-800;
+    }
+}

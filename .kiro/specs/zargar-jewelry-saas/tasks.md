@@ -262,7 +262,17 @@
     - Write unit tests for accounting model relationships and validation
     - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
-  - [ ] 6.2 Build Persian accounting system UI (Frontend)
+  - [x] 6.2 Build Persian accounting system UI (Frontend)
+
+
+
+
+
+
+
+
+
+
     - Create chart of accounts management interface with Persian terminology
     - Build journal entry creation and editing forms with Persian validation
     - Build general ledger and subsidiary ledger viewing interfaces
@@ -273,7 +283,13 @@
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
 - [ ] 7. Gold Installment System Implementation
-  - [ ] 7.1 Create gold installment contract models (Backend)
+  - [x] 7.1 Create gold installment contract models (Backend)
+
+
+
+
+
+
     - Implement GoldInstallmentContract model with weight-based calculations
     - Create GoldInstallmentPayment model for payment processing and tracking
     - Build GoldWeightAdjustment model for manual balance adjustments with audit trail

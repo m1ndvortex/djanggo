@@ -1,0 +1,456 @@
+/* Persian Accounting Forms Styles */
+
+/* Form Container */
+.form-container-cyber {
+    @apply max-w-4xl mx-auto;
+}
+
+/* Form Grid */
+.form-grid-cyber {
+    @apply grid grid-cols-1 lg:grid-cols-2 gap-8;
+}
+
+/* Form Section */
+.form-section-cyber {
+    @apply space-y-6;
+}
+
+.form-section-title {
+    @apply text-lg font-semibold border-b pb-2 mb-4;
+}
+
+.light .form-section-title {
+    @apply text-gray-900 border-gray-200;
+}
+
+.dark .form-section-title {
+    color: #FFFFFF;
+    border-color: rgba(255, 255, 255, 0.06);
+    text-shadow: 0 0 5px rgba(0, 212, 255, 0.3);
+}
+
+/* Form Field */
+.form-field-cyber {
+    @apply space-y-2;
+}
+
+/* Form Input Extensions */
+.form-input-cyber.error {
+    @apply border-red-500;
+}
+
+.light .form-input-cyber.error {
+    @apply border-red-500 focus:border-red-500 focus:ring-red-200;
+}
+
+.dark .form-input-cyber.error {
+    border-color: #FF4757;
+    box-shadow: 0 0 0 2px rgba(255, 71, 87, 0.2);
+}
+
+.form-input-cyber.success {
+    @apply border-green-500;
+}
+
+.light .form-input-cyber.success {
+    @apply border-green-500 focus:border-green-500 focus:ring-green-200;
+}
+
+.dark .form-input-cyber.success {
+    border-color: #00FF88;
+    box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.2);
+}
+
+/* Textarea Styling */
+.form-textarea-cyber {
+    @apply w-full px-3 py-2 rounded-lg border transition-all duration-200 resize-vertical;
+    min-height: 80px;
+}
+
+.light .form-textarea-cyber {
+    @apply border-gray-300 bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200;
+}
+
+.dark .form-textarea-cyber {
+    background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: #FFFFFF;
+    backdrop-filter: blur(8px);
+}
+
+.dark .form-textarea-cyber:focus {
+    border-color: #00D4FF;
+    box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+}
+
+.dark .form-textarea-cyber::placeholder {
+    color: #6B7280;
+}
+
+/* Required Field Indicator */
+.required-indicator {
+    @apply text-red-500 font-bold;
+}
+
+.dark .required-indicator {
+    color: #FF4757;
+    text-shadow: 0 0 3px rgba(255, 71, 87, 0.5);
+}
+
+/* Form Actions */
+.form-actions-cyber {
+    @apply flex items-center justify-between pt-8 mt-8 border-t;
+}
+
+.light .form-actions-cyber {
+    @apply border-gray-200;
+}
+
+.dark .form-actions-cyber {
+    border-color: rgba(255, 255, 255, 0.06);
+}
+
+.form-actions-left {
+    @apply flex items-center gap-4;
+}
+
+.form-actions-right {
+    @apply text-sm;
+}
+
+.light .form-actions-right {
+    @apply text-gray-500;
+}
+
+.dark .form-actions-right {
+    color: #6B7280;
+}
+
+/* Inline Form Groups */
+.form-inline-group {
+    @apply flex items-center gap-3;
+}
+
+.form-inline-label {
+    @apply text-sm font-medium mb-0;
+}
+
+.light .form-inline-label {
+    @apply text-gray-700;
+}
+
+.dark .form-inline-label {
+    color: #B8BCC8;
+}
+
+/* Form Validation States */
+.form-valid {
+    @apply border-green-500;
+}
+
+.light .form-valid {
+    @apply border-green-500 bg-green-50;
+}
+
+.dark .form-valid {
+    border-color: #00FF88;
+    background: rgba(0, 255, 136, 0.05);
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.1);
+}
+
+.form-invalid {
+    @apply border-red-500;
+}
+
+.light .form-invalid {
+    @apply border-red-500 bg-red-50;
+}
+
+.dark .form-invalid {
+    border-color: #FF4757;
+    background: rgba(255, 71, 87, 0.05);
+    box-shadow: 0 0 10px rgba(255, 71, 87, 0.1);
+}
+
+/* Form Error Messages */
+.form-error-list {
+    @apply mt-2 space-y-1;
+}
+
+.form-error-item {
+    @apply text-sm flex items-center gap-2;
+}
+
+.light .form-error-item {
+    @apply text-red-600;
+}
+
+.dark .form-error-item {
+    color: #FF4757;
+}
+
+.form-error-icon {
+    @apply w-4 h-4 flex-shrink-0;
+}
+
+/* Form Success Messages */
+.form-success-cyber {
+    @apply p-4 rounded-lg border flex items-center gap-3;
+}
+
+.light .form-success-cyber {
+    @apply bg-green-50 border-green-200 text-green-800;
+}
+
+.dark .form-success-cyber {
+    background: rgba(0, 255, 136, 0.1);
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    color: #00FF88;
+}
+
+/* Form Warning Messages */
+.form-warning-cyber {
+    @apply p-4 rounded-lg border flex items-center gap-3;
+}
+
+.light .form-warning-cyber {
+    @apply bg-yellow-50 border-yellow-200 text-yellow-800;
+}
+
+.dark .form-warning-cyber {
+    background: rgba(255, 184, 0, 0.1);
+    border: 1px solid rgba(255, 184, 0, 0.3);
+    color: #FFB800;
+}
+
+/* Form Info Messages */
+.form-info-cyber {
+    @apply p-4 rounded-lg border flex items-center gap-3;
+}
+
+.light .form-info-cyber {
+    @apply bg-blue-50 border-blue-200 text-blue-800;
+}
+
+.dark .form-info-cyber {
+    background: rgba(0, 212, 255, 0.1);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    color: #00D4FF;
+}
+
+/* Formset Styling */
+.formset-cyber {
+    @apply space-y-4;
+}
+
+.formset-form {
+    @apply p-4 rounded-lg border;
+}
+
+.light .formset-form {
+    @apply bg-gray-50 border-gray-200;
+}
+
+.dark .formset-form {
+    background: linear-gradient(145deg, rgba(37, 42, 58, 0.6) 0%, rgba(26, 29, 41, 0.7) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.formset-header {
+    @apply flex items-center justify-between mb-4;
+}
+
+.formset-title {
+    @apply font-medium;
+}
+
+.light .formset-title {
+    @apply text-gray-900;
+}
+
+.dark .formset-title {
+    color: #FFFFFF;
+}
+
+.formset-delete {
+    @apply text-red-600 hover:text-red-800 transition-colors;
+}
+
+.dark .formset-delete {
+    color: #FF4757;
+}
+
+.dark .formset-delete:hover {
+    color: #FF6B7A;
+}
+
+.formset-add {
+    @apply mt-4 btn-outline-cyber;
+}
+
+/* Dynamic Form Fields */
+.dynamic-field {
+    @apply transition-all duration-300;
+}
+
+.dynamic-field.removing {
+    @apply opacity-0 transform scale-95;
+}
+
+.dynamic-field.adding {
+    @apply opacity-0 transform scale-95;
+}
+
+.dynamic-field.added {
+    @apply opacity-100 transform scale-100;
+}
+
+/* Form Loading States */
+.form-loading {
+    @apply relative overflow-hidden;
+}
+
+.form-loading::after {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30;
+    animation: shimmer 2s infinite;
+}
+
+.dark .form-loading::after {
+    background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.1), transparent);
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Form Disabled States */
+.form-disabled {
+    @apply opacity-60 pointer-events-none;
+}
+
+.form-input-cyber:disabled,
+.form-select-cyber:disabled,
+.form-textarea-cyber:disabled {
+    @apply opacity-60 cursor-not-allowed;
+}
+
+.light .form-input-cyber:disabled,
+.light .form-select-cyber:disabled,
+.light .form-textarea-cyber:disabled {
+    @apply bg-gray-100;
+}
+
+.dark .form-input-cyber:disabled,
+.dark .form-select-cyber:disabled,
+.dark .form-textarea-cyber:disabled {
+    background: rgba(37, 42, 58, 0.4);
+}
+
+/* Persian Number Input */
+.persian-number-input {
+    font-family: 'Vazirmatn', 'Courier New', monospace;
+    font-variant-numeric: tabular-nums;
+    direction: rtl;
+    text-align: right;
+}
+
+/* Account Code Input */
+.account-code-input {
+    font-family: 'Courier New', monospace;
+    direction: ltr;
+    text-align: left;
+    letter-spacing: 0.05em;
+}
+
+/* IBAN Input */
+.iban-input {
+    font-family: 'Courier New', monospace;
+    direction: ltr;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+/* Date Input Styling */
+.date-input-cyber {
+    @apply form-input-cyber;
+    font-family: 'Vazirmatn', 'Tahoma', sans-serif;
+}
+
+/* Responsive Form Design */
+@media (max-width: 768px) {
+    .form-grid-cyber {
+        @apply grid-cols-1 gap-6;
+    }
+    
+    .form-actions-cyber {
+        @apply flex-col items-stretch gap-4;
+    }
+    
+    .form-actions-left {
+        @apply flex-col gap-3;
+    }
+    
+    .form-inline-group {
+        @apply flex-col items-start gap-2;
+    }
+    
+    .formset-header {
+        @apply flex-col items-start gap-2;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .form-container-cyber {
+        @apply max-w-none;
+    }
+    
+    .form-input-cyber,
+    .form-select-cyber,
+    .form-textarea-cyber {
+        @apply border border-gray-400 bg-white text-black;
+    }
+    
+    .form-actions-cyber {
+        display: none;
+    }
+    
+    .formset-delete,
+    .formset-add {
+        display: none;
+    }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    .form-input-cyber,
+    .form-select-cyber,
+    .form-textarea-cyber {
+        @apply border-2 border-gray-800;
+    }
+    
+    .form-error-cyber {
+        @apply bg-red-100 border-2 border-red-800 text-red-900;
+    }
+    
+    .form-success-cyber {
+        @apply bg-green-100 border-2 border-green-800 text-green-900;
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    .form-input-cyber,
+    .form-select-cyber,
+    .form-textarea-cyber,
+    .dynamic-field {
+        transition: none;
+    }
+    
+    .form-loading::after {
+        animation: none;
+    }
+}

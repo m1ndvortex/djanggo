@@ -1,0 +1,420 @@
+{% extends 'base_rtl.html' %}
+{% load static %}
+{% load persian_tags %}
+
+{% block title %}داشبورد حسابداری - زرگر{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/accounting-dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-6">
+    <!-- Header Section -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
+        <div class="mb-4 lg:mb-0">
+            <h1 class="text-3xl font-bold 
+                       {% if is_dark_mode %}text-cyber-text-primary{% else %}text-light-text-primary{% endif %}">
+                داشبورد حسابداری
+            </h1>
+            <p class="mt-2 
+                     {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-light-text-secondary{% endif %}">
+                مدیریت جامع سیستم حسابداری فارسی
+            </p>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="flex flex-wrap gap-3">
+            <a href="{% url 'accounting:journal_entries_create' %}" 
+               class="btn-primary-cyber flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                سند جدید
+            </a>
+            <a href="{% url 'accounting:chart_of_accounts_create' %}" 
+               class="btn-secondary-cyber flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                </svg>
+                حساب جدید
+            </a>
+        </div>
+    </div>
+
+    <!-- Key Metrics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Total Accounts Card -->
+        <div class="card-cyber">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-light-text-secondary{% endif %}">
+                        کل حساب‌ها
+                    </p>
+                    <p class="text-2xl font-bold persian-numbers
+                             {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-light-accent{% endif %}">
+                        {{ total_accounts }}
+                    </p>
+                </div>
+                <div class="p-3 rounded-lg 
+                           {% if is_dark_mode %}bg-cyber-neon-secondary/10{% else %}bg-blue-100{% endif %}">
+                    <svg class="w-8 h-8 
+                               {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-blue-600{% endif %}" 
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Entries Card -->
+        <div class="card-cyber">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-light-text-secondary{% endif %}">
+                        اسناد در انتظار
+                    </p>
+                    <p class="text-2xl font-bold persian-numbers
+                             {% if is_dark_mode %}text-cyber-neon-warning{% else %}text-yellow-600{% endif %}">
+                        {{ pending_entries }}
+                    </p>
+                </div>
+                <div class="p-3 rounded-lg 
+                           {% if is_dark_mode %}bg-cyber-neon-warning/10{% else %}bg-yellow-100{% endif %}">
+                    <svg class="w-8 h-8 
+                               {% if is_dark_mode %}text-cyber-neon-warning{% else %}text-yellow-600{% endif %}" 
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Entries Card -->
+        <div class="card-cyber">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-light-text-secondary{% endif %}">
+                        اسناد ماه جاری
+                    </p>
+                    <p class="text-2xl font-bold persian-numbers
+                             {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}">
+                        {{ monthly_entries }}
+                    </p>
+                </div>
+                <div class="p-3 rounded-lg 
+                           {% if is_dark_mode %}bg-cyber-neon-primary/10{% else %}bg-blue-100{% endif %}">
+                    <svg class="w-8 h-8 
+                               {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}" 
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bank Accounts Card -->
+        <div class="card-cyber">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-light-text-secondary{% endif %}">
+                        حساب‌های بانکی
+                    </p>
+                    <p class="text-2xl font-bold persian-numbers
+                             {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}">
+                        {{ active_bank_accounts }}
+                    </p>
+                </div>
+                <div class="p-3 rounded-lg 
+                           {% if is_dark_mode %}bg-cyber-neon-secondary/10{% else %}bg-green-100{% endif %}">
+                    <svg class="w-8 h-8 
+                               {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}" 
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cheque Status Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- Pending Cheques Card -->
+        <div class="card-cyber">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-light-text-secondary{% endif %}">
+                        چک‌های در انتظار
+                    </p>
+                    <p class="text-2xl font-bold persian-numbers
+                             {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}">
+                        {{ pending_cheques }}
+                    </p>
+                </div>
+                <div class="p-3 rounded-lg 
+                           {% if is_dark_mode %}bg-cyber-neon-primary/10{% else %}bg-blue-100{% endif %}">
+                    <svg class="w-8 h-8 
+                               {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}" 
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overdue Cheques Card -->
+        <div class="card-cyber">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-light-text-secondary{% endif %}">
+                        چک‌های سررسید گذشته
+                    </p>
+                    <p class="text-2xl font-bold persian-numbers
+                             {% if is_dark_mode %}text-cyber-neon-danger{% else %}text-red-600{% endif %}">
+                        {{ overdue_cheques }}
+                    </p>
+                </div>
+                <div class="p-3 rounded-lg 
+                           {% if is_dark_mode %}bg-cyber-neon-danger/10{% else %}bg-red-100{% endif %}">
+                    <svg class="w-8 h-8 
+                               {% if is_dark_mode %}text-cyber-neon-danger{% else %}text-red-600{% endif %}" 
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Recent Journal Entries -->
+        <div class="lg:col-span-2">
+            <div class="card-cyber">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-semibold 
+                              {% if is_dark_mode %}text-cyber-text-primary{% else %}text-light-text-primary{% endif %}">
+                        آخرین اسناد حسابداری
+                    </h3>
+                    <a href="{% url 'accounting:journal_entries_list' %}" 
+                       class="text-sm 
+                              {% if is_dark_mode %}text-cyber-neon-primary hover:text-cyber-neon-secondary{% else %}text-blue-600 hover:text-blue-800{% endif %} 
+                              transition-colors">
+                        مشاهده همه
+                    </a>
+                </div>
+                
+                {% if recent_entries %}
+                <div class="space-y-4">
+                    {% for entry in recent_entries %}
+                    <div class="flex items-center justify-between p-4 rounded-lg border
+                               {% if is_dark_mode %}bg-cyber-bg-surface border-cyber-border-glass{% else %}bg-gray-50 border-gray-200{% endif %}">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-3">
+                                <span class="px-2 py-1 text-xs font-medium rounded-full
+                                           {% if entry.status == 'posted' %}
+                                               {% if is_dark_mode %}bg-cyber-neon-secondary/20 text-cyber-neon-secondary{% else %}bg-green-100 text-green-800{% endif %}
+                                           {% elif entry.status == 'draft' %}
+                                               {% if is_dark_mode %}bg-cyber-neon-warning/20 text-cyber-neon-warning{% else %}bg-yellow-100 text-yellow-800{% endif %}
+                                           {% else %}
+                                               {% if is_dark_mode %}bg-cyber-text-muted/20 text-cyber-text-muted{% else %}bg-gray-100 text-gray-800{% endif %}
+                                           {% endif %}">
+                                    {{ entry.get_status_display }}
+                                </span>
+                                <span class="font-medium 
+                                           {% if is_dark_mode %}text-cyber-text-primary{% else %}text-light-text-primary{% endif %}">
+                                    {{ entry.entry_number }}
+                                </span>
+                            </div>
+                            <p class="mt-1 text-sm 
+                                     {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-light-text-secondary{% endif %}">
+                                {{ entry.description|truncatechars:50 }}
+                            </p>
+                            <p class="mt-1 text-xs 
+                                     {% if is_dark_mode %}text-cyber-text-muted{% else %}text-light-text-muted{% endif %}">
+                                {{ entry.entry_date_shamsi }} - {{ entry.get_entry_type_display }}
+                            </p>
+                        </div>
+                        <div class="text-left">
+                            <p class="text-sm font-medium persian-numbers
+                                     {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}">
+                                {{ entry.total_debit|persian_currency }}
+                            </p>
+                            <a href="{% url 'accounting:journal_entries_detail' entry.pk %}" 
+                               class="text-xs 
+                                      {% if is_dark_mode %}text-cyber-neon-primary hover:text-cyber-neon-secondary{% else %}text-blue-600 hover:text-blue-800{% endif %} 
+                                      transition-colors">
+                                جزئیات
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <svg class="mx-auto h-12 w-12 
+                               {% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-400{% endif %}" 
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <p class="mt-2 text-sm 
+                             {% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">
+                        هنوز سندی ثبت نشده است
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Links & Account Summary -->
+        <div class="space-y-6">
+            <!-- Quick Links -->
+            <div class="card-cyber">
+                <h3 class="text-lg font-semibold mb-4 
+                          {% if is_dark_mode %}text-cyber-text-primary{% else %}text-light-text-primary{% endif %}">
+                    دسترسی سریع
+                </h3>
+                <div class="space-y-3">
+                    <a href="{% url 'accounting:chart_of_accounts_list' %}" 
+                       class="flex items-center gap-3 p-3 rounded-lg transition-all duration-200
+                              {% if is_dark_mode %}hover:bg-cyber-bg-surface text-cyber-text-secondary hover:text-cyber-neon-primary{% else %}hover:bg-gray-50 text-gray-600 hover:text-blue-600{% endif %}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        </svg>
+                        فهرست حساب‌ها
+                    </a>
+                    
+                    <a href="{% url 'accounting:journal_entries_list' %}" 
+                       class="flex items-center gap-3 p-3 rounded-lg transition-all duration-200
+                              {% if is_dark_mode %}hover:bg-cyber-bg-surface text-cyber-text-secondary hover:text-cyber-neon-primary{% else %}hover:bg-gray-50 text-gray-600 hover:text-blue-600{% endif %}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        اسناد حسابداری
+                    </a>
+                    
+                    <a href="{% url 'accounting:general_ledger' %}" 
+                       class="flex items-center gap-3 p-3 rounded-lg transition-all duration-200
+                              {% if is_dark_mode %}hover:bg-cyber-bg-surface text-cyber-text-secondary hover:text-cyber-neon-primary{% else %}hover:bg-gray-50 text-gray-600 hover:text-blue-600{% endif %}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                        دفتر کل
+                    </a>
+                    
+                    <a href="{% url 'accounting:subsidiary_ledger' %}" 
+                       class="flex items-center gap-3 p-3 rounded-lg transition-all duration-200
+                              {% if is_dark_mode %}hover:bg-cyber-bg-surface text-cyber-text-secondary hover:text-cyber-neon-primary{% else %}hover:bg-gray-50 text-gray-600 hover:text-blue-600{% endif %}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                        </svg>
+                        دفتر معین
+                    </a>
+                    
+                    <a href="{% url 'accounting:bank_accounts_list' %}" 
+                       class="flex items-center gap-3 p-3 rounded-lg transition-all duration-200
+                              {% if is_dark_mode %}hover:bg-cyber-bg-surface text-cyber-text-secondary hover:text-cyber-neon-primary{% else %}hover:bg-gray-50 text-gray-600 hover:text-blue-600{% endif %}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                        </svg>
+                        حساب‌های بانکی
+                    </a>
+                    
+                    <a href="{% url 'accounting:cheques_list' %}" 
+                       class="flex items-center gap-3 p-3 rounded-lg transition-all duration-200
+                              {% if is_dark_mode %}hover:bg-cyber-bg-surface text-cyber-text-secondary hover:text-cyber-neon-primary{% else %}hover:bg-gray-50 text-gray-600 hover:text-blue-600{% endif %}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                        مدیریت چک‌ها
+                    </a>
+                    
+                    <a href="{% url 'accounting:reports_dashboard' %}" 
+                       class="flex items-center gap-3 p-3 rounded-lg transition-all duration-200
+                              {% if is_dark_mode %}hover:bg-cyber-bg-surface text-cyber-text-secondary hover:text-cyber-neon-primary{% else %}hover:bg-gray-50 text-gray-600 hover:text-blue-600{% endif %}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        گزارش‌های مالی
+                    </a>
+                </div>
+            </div>
+
+            <!-- Account Type Summary -->
+            {% if account_summary %}
+            <div class="card-cyber">
+                <h3 class="text-lg font-semibold mb-4 
+                          {% if is_dark_mode %}text-cyber-text-primary{% else %}text-light-text-primary{% endif %}">
+                    خلاصه انواع حساب‌ها
+                </h3>
+                <div class="space-y-3">
+                    {% for summary in account_summary %}
+                    <div class="flex items-center justify-between p-3 rounded-lg
+                               {% if is_dark_mode %}bg-cyber-bg-surface{% else %}bg-gray-50{% endif %}">
+                        <span class="text-sm 
+                                   {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            {{ summary.account_type|get_account_type_display }}
+                        </span>
+                        <div class="text-left">
+                            <span class="text-sm font-medium persian-numbers
+                                       {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                {{ summary.count }}
+                            </span>
+                            <span class="text-xs 
+                                       {% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">
+                                حساب
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Current Date Display -->
+    <div class="mt-8 text-center">
+        <p class="text-sm 
+                 {% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">
+            تاریخ شمسی: <span class="persian-numbers font-medium">{{ shamsi_date }}</span>
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Persian number formatting
+    const persianElements = document.querySelectorAll('.persian-numbers');
+    persianElements.forEach(element => {
+        if (window.PersianNumbers) {
+            element.textContent = window.PersianNumbers.toPersian(element.textContent);
+        }
+    });
+    
+    // Add hover animations for cybersecurity theme
+    if (document.body.classList.contains('dark')) {
+        const cards = document.querySelectorAll('.card-cyber');
+        cards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+                this.style.boxShadow = '0 16px 50px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.05)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.03)';
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

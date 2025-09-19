@@ -1,0 +1,323 @@
+{% extends 'base_rtl.html' %}
+{% load static %}
+{% load persian_tags %}
+
+{% block title %}دفتر کل - زرگر{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/accounting-tables.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-6">
+    <!-- Header Section -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
+        <div class="mb-4 lg:mb-0">
+            <h1 class="text-3xl font-bold 
+                       {% if is_dark_mode %}text-cyber-text-primary{% else %}text-light-text-primary{% endif %}">
+                دفتر کل
+            </h1>
+            <p class="mt-2 
+                     {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-light-text-secondary{% endif %}">
+                مشاهده مانده حساب‌ها در دوره‌های مالی
+            </p>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="card-cyber mb-6">
+        <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- Fiscal Year -->
+            <div>
+                <label class="block text-sm font-medium mb-2 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                    سال مالی
+                </label>
+                <input type="text" 
+                       name="year" 
+                       value="{{ fiscal_year }}"
+                       placeholder="1402"
+                       class="form-input-cyber"
+                       dir="ltr">
+            </div>
+            
+            <!-- Period Month -->
+            <div>
+                <label class="block text-sm font-medium mb-2 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                    ماه دوره
+                </label>
+                <select name="month" class="form-select-cyber">
+                    {% for month_num, month_name in shamsi_months %}
+                    <option value="{{ month_num }}" {% if period_month == month_num %}selected{% endif %}>
+                        {{ month_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Account Filter -->
+            <div>
+                <label class="block text-sm font-medium mb-2 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                    حساب خاص
+                </label>
+                <select name="account" class="form-select-cyber">
+                    <option value="">همه حساب‌ها</option>
+                    {% for account in accounts %}
+                    <option value="{{ account.id }}" {% if selected_account == account.id|stringformat:"s" %}selected{% endif %}>
+                        {{ account.account_code }} - {{ account.account_name_persian }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Filter Button -->
+            <div class="flex items-end">
+                <button type="submit" class="btn-primary-cyber w-full">
+                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    مشاهده
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- General Ledger Table -->
+    <div class="card-cyber">
+        {% if ledger_entries %}
+        <div class="mb-4 flex items-center justify-between">
+            <h3 class="text-lg font-semibold 
+                      {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                دفتر کل - {{ fiscal_year }}/{{ period_month|stringformat:"02d" }}
+            </h3>
+            <div class="flex gap-2">
+                <button onclick="printReport()" class="btn-outline-cyber">
+                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                    </svg>
+                    چاپ
+                </button>
+                <button onclick="exportToExcel()" class="btn-outline-cyber">
+                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    اکسل
+                </button>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="table-cyber">
+                <thead>
+                    <tr>
+                        <th class="text-right">کد حساب</th>
+                        <th class="text-right">نام حساب</th>
+                        <th class="text-right">نوع حساب</th>
+                        <th class="text-right">مانده ابتدای دوره</th>
+                        <th class="text-right">مجموع بدهکار</th>
+                        <th class="text-right">مجموع بستانکار</th>
+                        <th class="text-right">مانده پایان دوره</th>
+                        <th class="text-center">عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in ledger_entries %}
+                    <tr class="table-row-cyber">
+                        <td class="font-mono font-medium 
+                                  {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}">
+                            {{ entry.account.account_code }}
+                        </td>
+                        <td>
+                            <div class="font-medium 
+                                       {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                {{ entry.account.account_name_persian }}
+                            </div>
+                            {% if entry.account.account_name_english %}
+                            <div class="text-sm 
+                                       {% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">
+                                {{ entry.account.account_name_english }}
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge-cyber badge-{{ entry.account.account_type }}">
+                                {{ entry.account.get_account_type_display }}
+                            </span>
+                        </td>
+                        <td class="text-left">
+                            <span class="font-medium persian-numbers
+                                        {% if entry.opening_balance >= 0 %}
+                                            {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}
+                                        {% else %}
+                                            {% if is_dark_mode %}text-cyber-neon-danger{% else %}text-red-600{% endif %}
+                                        {% endif %}">
+                                {{ entry.opening_balance|persian_currency }}
+                            </span>
+                        </td>
+                        <td class="text-left">
+                            <span class="font-medium persian-numbers
+                                        {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}">
+                                {{ entry.period_debit|persian_currency }}
+                            </span>
+                        </td>
+                        <td class="text-left">
+                            <span class="font-medium persian-numbers
+                                        {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}">
+                                {{ entry.period_credit|persian_currency }}
+                            </span>
+                        </td>
+                        <td class="text-left">
+                            <span class="font-bold persian-numbers
+                                        {% if entry.closing_balance >= 0 %}
+                                            {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}
+                                        {% else %}
+                                            {% if is_dark_mode %}text-cyber-neon-danger{% else %}text-red-600{% endif %}
+                                        {% endif %}">
+                                {{ entry.closing_balance|persian_currency }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <a href="{% url 'accounting:subsidiary_ledger' %}?account={{ entry.account.id }}" 
+                               class="btn-icon-cyber" 
+                               title="مشاهده دفتر معین">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                                </svg>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="font-bold border-t-2 
+                              {% if is_dark_mode %}border-cyber-border-glass bg-cyber-bg-surface{% else %}border-gray-300 bg-gray-50{% endif %}">
+                        <td colspan="3" class="text-right 
+                                              {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                            مجموع کل:
+                        </td>
+                        <td class="text-left">
+                            <span class="persian-numbers
+                                        {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}">
+                                {{ ledger_entries|sum_field:'opening_balance'|persian_currency }}
+                            </span>
+                        </td>
+                        <td class="text-left">
+                            <span class="persian-numbers
+                                        {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}">
+                                {{ ledger_entries|sum_field:'period_debit'|persian_currency }}
+                            </span>
+                        </td>
+                        <td class="text-left">
+                            <span class="persian-numbers
+                                        {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}">
+                                {{ ledger_entries|sum_field:'period_credit'|persian_currency }}
+                            </span>
+                        </td>
+                        <td class="text-left">
+                            <span class="persian-numbers
+                                        {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}">
+                                {{ ledger_entries|sum_field:'closing_balance'|persian_currency }}
+                            </span>
+                        </td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-12">
+            <svg class="mx-auto h-16 w-16 
+                       {% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-400{% endif %}" 
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+            </svg>
+            <h3 class="mt-4 text-lg font-medium 
+                      {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                اطلاعاتی یافت نشد
+            </h3>
+            <p class="mt-2 text-sm 
+                     {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                برای دوره انتخابی اطلاعات دفتر کل موجود نیست.
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Persian number formatting
+    const persianElements = document.querySelectorAll('.persian-numbers');
+    persianElements.forEach(element => {
+        if (window.PersianNumbers) {
+            element.textContent = window.PersianNumbers.toPersian(element.textContent);
+        }
+    });
+    
+    // Add table row hover effects for cybersecurity theme
+    if (document.body.classList.contains('dark')) {
+        const tableRows = document.querySelectorAll('.table-row-cyber');
+        tableRows.forEach(row => {
+            row.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = 'rgba(37, 42, 58, 0.8)';
+                this.style.transform = 'translateX(4px)';
+            });
+            
+            row.addEventListener('mouseleave', function() {
+                this.style.backgroundColor = '';
+                this.style.transform = 'translateX(0)';
+            });
+        });
+    }
+});
+
+function printReport() {
+    window.print();
+}
+
+function exportToExcel() {
+    // Create a simple CSV export
+    const table = document.querySelector('.table-cyber');
+    let csv = [];
+    
+    // Headers
+    const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+    csv.push(headers.join(','));
+    
+    // Data rows
+    const rows = table.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+        const cells = Array.from(row.querySelectorAll('td')).map(td => {
+            // Clean up the cell content
+            let text = td.textContent.trim();
+            // Remove extra whitespace and newlines
+            text = text.replace(/\s+/g, ' ');
+            // Escape commas
+            if (text.includes(',')) {
+                text = `"${text}"`;
+            }
+            return text;
+        });
+        csv.push(cells.join(','));
+    });
+    
+    // Download
+    const csvContent = csv.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `general_ledger_{{ fiscal_year }}_{{ period_month }}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
+{% endblock %}
