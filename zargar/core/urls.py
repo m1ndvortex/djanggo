@@ -76,6 +76,9 @@ urlpatterns = [
     path('health/', views.SystemHealthView.as_view(), name='system_health'),
     path('settings/', views.SystemSettingsView.as_view(), name='system_settings'),
     
+    # Demo URLs
+    path('demo/persian-calendar/', views.PersianCalendarDemoView.as_view(), name='persian_calendar_demo'),
+    
 ]
 
 # Add security dashboard URLs if views are available

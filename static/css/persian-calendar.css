@@ -1,9 +1,18 @@
-/* Persian Calendar Widget Styles */
+/* Persian Calendar Widget Styles - Enhanced with Range Selection and Fiscal Year Support */
 
 .persian-date-widget {
     position: relative;
     display: inline-block;
     width: 100%;
+}
+
+/* Range mode specific styles */
+.persian-date-widget.range-mode .persian-date-input {
+    min-width: 300px;
+}
+
+.persian-date-widget.fiscal-year-mode .persian-date-input {
+    min-width: 250px;
 }
 
 .persian-date-input {
@@ -157,6 +166,40 @@
     background: #1565c0;
 }
 
+/* Range selection styles */
+.calendar-day.in-range {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.calendar-day.range-start {
+    background: #1976d2;
+    color: white;
+    font-weight: bold;
+    border-radius: 4px 0 0 4px;
+}
+
+.calendar-day.range-end {
+    background: #1976d2;
+    color: white;
+    font-weight: bold;
+    border-radius: 0 4px 4px 0;
+}
+
+.calendar-day.range-start.range-end {
+    border-radius: 4px;
+}
+
+/* Fiscal year and quarter styles */
+.calendar-day.fiscal-year {
+    border: 1px solid #4caf50;
+}
+
+.calendar-day.quarter {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
 .calendar-footer {
     display: flex;
     justify-content: space-between;
@@ -207,6 +250,151 @@
     border-color: #004085;
 }
 
+/* Fiscal Year Selector Styles */
+.fiscal-year-selector {
+    margin: 12px 0;
+    padding: 12px;
+    border-top: 1px solid #eee;
+    border-bottom: 1px solid #eee;
+}
+
+.fiscal-year-title {
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.fiscal-year-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: center;
+}
+
+.fiscal-year-option {
+    padding: 4px 8px;
+    font-size: 12px;
+    border: 1px solid #ddd;
+    background: #f8f9fa;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 50px;
+    text-align: center;
+}
+
+.fiscal-year-option:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.fiscal-year-option.selected {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+/* Fiscal Year Controls Styles */
+.fiscal-year-controls {
+    margin: 12px 0;
+    padding: 12px;
+    border-top: 1px solid #eee;
+}
+
+.fiscal-year-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.fiscal-year-quick {
+    padding: 6px 12px;
+    font-size: 12px;
+    border: 1px solid #28a745;
+    background: #28a745;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.fiscal-year-quick:hover {
+    background: #218838;
+    border-color: #1e7e34;
+}
+
+/* Quarter Controls Styles */
+.quarter-controls {
+    margin: 12px 0;
+    padding: 12px;
+    border-top: 1px solid #eee;
+}
+
+.quarter-title {
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.quarter-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.quarter-option {
+    padding: 8px;
+    border: 1px solid #ddd;
+    background: #f8f9fa;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.quarter-option:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.quarter-option.selected {
+    background: #6f42c1;
+    color: white;
+    border-color: #6f42c1;
+}
+
+.quarter-name {
+    font-weight: bold;
+    font-size: 13px;
+    margin-bottom: 2px;
+}
+
+.quarter-description {
+    font-size: 11px;
+    opacity: 0.8;
+}
+
+/* Range Toggle Button */
+.range-toggle {
+    padding: 4px 8px;
+    font-size: 11px;
+    border: 1px solid #17a2b8;
+    background: #17a2b8;
+    color: white;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.range-toggle:hover {
+    background: #138496;
+    border-color: #117a8b;
+}
+
 /* Dark theme support */
 [data-theme="dark"] .persian-calendar-container {
     background: #2d3748;
@@ -250,6 +438,61 @@
 
 [data-theme="dark"] .calendar-footer {
     border-top-color: #4a5568;
+}
+
+/* Dark theme - Range and Fiscal Year styles */
+[data-theme="dark"] .calendar-day.in-range {
+    background: #4a5568;
+    color: #63b3ed;
+}
+
+[data-theme="dark"] .calendar-day.range-start,
+[data-theme="dark"] .calendar-day.range-end {
+    background: #3182ce;
+    color: #ffffff;
+}
+
+[data-theme="dark"] .calendar-day.fiscal-year {
+    border-color: #68d391;
+}
+
+[data-theme="dark"] .calendar-day.quarter {
+    background: #553c9a;
+    color: #d6bcfa;
+}
+
+[data-theme="dark"] .fiscal-year-selector,
+[data-theme="dark"] .fiscal-year-controls,
+[data-theme="dark"] .quarter-controls {
+    border-color: #4a5568;
+}
+
+[data-theme="dark"] .fiscal-year-title,
+[data-theme="dark"] .quarter-title {
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .fiscal-year-option,
+[data-theme="dark"] .quarter-option {
+    background: #4a5568;
+    border-color: #4a5568;
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .fiscal-year-option:hover,
+[data-theme="dark"] .quarter-option:hover {
+    background: #2d3748;
+    border-color: #2d3748;
+}
+
+[data-theme="dark"] .fiscal-year-option.selected {
+    background: #3182ce;
+    border-color: #3182ce;
+}
+
+[data-theme="dark"] .quarter-option.selected {
+    background: #805ad5;
+    border-color: #805ad5;
 }
 
 /* Cybersecurity theme support */
@@ -373,6 +616,99 @@
 
 [data-theme="cybersecurity"] .confirm-btn:hover {
     box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+    transform: scale(1.05);
+}
+
+/* Cybersecurity theme - Range and Fiscal Year styles */
+[data-theme="cybersecurity"] .calendar-day.in-range {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 255, 136, 0.05) 100%);
+    color: #00d4ff;
+    border: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+[data-theme="cybersecurity"] .calendar-day.range-start,
+[data-theme="cybersecurity"] .calendar-day.range-end {
+    background: linear-gradient(145deg, #00d4ff 0%, #00ff88 100%);
+    color: #0b0e1a;
+    font-weight: bold;
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+}
+
+[data-theme="cybersecurity"] .calendar-day.fiscal-year {
+    border: 1px solid rgba(0, 255, 136, 0.5);
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+}
+
+[data-theme="cybersecurity"] .calendar-day.quarter {
+    background: linear-gradient(145deg, rgba(165, 94, 234, 0.3) 0%, rgba(255, 107, 53, 0.2) 100%);
+    color: #a55eea;
+    border: 1px solid rgba(165, 94, 234, 0.3);
+}
+
+[data-theme="cybersecurity"] .fiscal-year-selector,
+[data-theme="cybersecurity"] .fiscal-year-controls,
+[data-theme="cybersecurity"] .quarter-controls {
+    border-color: rgba(0, 212, 255, 0.2);
+    background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 100%);
+}
+
+[data-theme="cybersecurity"] .fiscal-year-title,
+[data-theme="cybersecurity"] .quarter-title {
+    color: #ffffff;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+[data-theme="cybersecurity"] .fiscal-year-option,
+[data-theme="cybersecurity"] .quarter-option {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 255, 136, 0.05) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    color: #ffffff;
+    transition: all 0.3s ease;
+}
+
+[data-theme="cybersecurity"] .fiscal-year-option:hover,
+[data-theme="cybersecurity"] .quarter-option:hover {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.2) 0%, rgba(0, 255, 136, 0.1) 100%);
+    border-color: #00d4ff;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+    transform: scale(1.05);
+}
+
+[data-theme="cybersecurity"] .fiscal-year-option.selected {
+    background: linear-gradient(145deg, #00d4ff 0%, #00ff88 100%);
+    color: #0b0e1a;
+    border-color: #00d4ff;
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+}
+
+[data-theme="cybersecurity"] .quarter-option.selected {
+    background: linear-gradient(145deg, #a55eea 0%, #ff6b35 100%);
+    color: #ffffff;
+    border-color: #a55eea;
+    box-shadow: 0 0 20px rgba(165, 94, 234, 0.5);
+}
+
+[data-theme="cybersecurity"] .fiscal-year-quick {
+    background: linear-gradient(145deg, rgba(0, 255, 136, 0.3) 0%, rgba(0, 212, 255, 0.2) 100%);
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    color: #00ff88;
+    transition: all 0.3s ease;
+}
+
+[data-theme="cybersecurity"] .fiscal-year-quick:hover {
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+    transform: scale(1.05);
+}
+
+[data-theme="cybersecurity"] .range-toggle {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.3) 0%, rgba(0, 255, 136, 0.2) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    color: #00d4ff;
+    transition: all 0.3s ease;
+}
+
+[data-theme="cybersecurity"] .range-toggle:hover {
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
     transform: scale(1.05);
 }
 

@@ -256,3 +256,27 @@ class SystemSettingsView(SuperAdminRequiredMixin, ListView):
     model = SystemSettings
     template_name = 'core/super_panel/settings.html'
     context_object_name = 'settings'
+
+cla
+ss PersianCalendarDemoView(TemplateView):
+    """
+    Demo view for Persian calendar frontend components.
+    """
+    template_name = 'demo/persian_calendar_demo.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Add current Persian date for demo
+        from .calendar_utils import PersianCalendarUtils
+        utils = PersianCalendarUtils()
+        current_persian = utils.get_current_persian_date()
+        
+        context['current_persian_date'] = utils.format_persian_date(
+            current_persian, format_style='numeric'
+        )
+        context['current_persian_date_formatted'] = utils.format_persian_date(
+            current_persian, format_style='full'
+        )
+        
+        return context

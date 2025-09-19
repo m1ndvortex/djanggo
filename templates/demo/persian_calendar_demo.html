@@ -1,0 +1,399 @@
+{% extends "base_rtl.html" %}
+{% load persian_tags %}
+
+{% block title %}نمایش تقویم شمسی{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/persian-calendar.css' %}">
+<link rel="stylesheet" href="{% static 'css/persian-date-range.css' %}">
+<style>
+.demo-section {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #f9f9f9;
+}
+
+.demo-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.demo-description {
+    color: #666;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.demo-example {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: white;
+    border: 1px solid #eee;
+    border-radius: 4px;
+}
+
+.demo-label {
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.feature-list {
+    list-style: none;
+    padding: 0;
+}
+
+.feature-list li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.feature-list li:before {
+    content: "✓";
+    color: #28a745;
+    font-weight: bold;
+    margin-left: 0.5rem;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/persian-calendar.js' %}"></script>
+<script src="{% static 'js/persian-date-range.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-4">
+            نمایش اجزای تقویم شمسی
+        </h1>
+        <p class="text-gray-600">
+            نمایش کامل ویجت‌های تقویم شمسی با قابلیت انتخاب تاریخ، بازه زمانی و سال مالی
+        </p>
+    </div>
+
+    <!-- Single Date Picker -->
+    <div class="demo-section">
+        <h2 class="demo-title">انتخابگر تاریخ تکی</h2>
+        <p class="demo-description">
+            ویجت انتخاب تاریخ با تقویم شمسی کامل و قابلیت‌های پیشرفته
+        </p>
+        
+        <div class="demo-example">
+            <label class="demo-label" for="single_date">انتخاب تاریخ تولد:</label>
+            <div class="persian-date-widget" data-field-name="single_date" data-mode="single">
+                <input 
+                    type="text" 
+                    id="single_date"
+                    name="single_date"
+                    class="persian-date-input w-full px-3 py-2 border border-gray-300 rounded-md"
+                    placeholder="۱۴۰۳/۰۷/۲۴"
+                    readonly
+                >
+                <div class="persian-calendar-container" style="display: none;">
+                    <div class="persian-calendar" data-year="1403" data-month="7">
+                        <div class="calendar-header">
+                            <button type="button" class="btn btn-sm btn-outline-primary prev-year" data-action="prev-year">
+                                <i class="fas fa-angle-double-right"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary prev-month" data-action="prev-month">
+                                <i class="fas fa-angle-right"></i>
+                            </button>
+                            <div class="calendar-title">
+                                <span class="month-name">مهر</span>
+                                <span class="year-name">۱۴۰۳</span>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary next-month" data-action="next-month">
+                                <i class="fas fa-angle-left"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary next-year" data-action="next-year">
+                                <i class="fas fa-angle-double-left"></i>
+                            </button>
+                        </div>
+                        <div class="calendar-weekdays">
+                            <div class="weekday">ش</div>
+                            <div class="weekday">ی</div>
+                            <div class="weekday">د</div>
+                            <div class="weekday">س</div>
+                            <div class="weekday">چ</div>
+                            <div class="weekday">پ</div>
+                            <div class="weekday">ج</div>
+                        </div>
+                        <div class="calendar-days">
+                            <!-- Days will be populated by JavaScript -->
+                        </div>
+                        <div class="calendar-footer">
+                            <button type="button" class="btn btn-sm btn-primary today-btn" data-action="today">
+                                امروز
+                            </button>
+                            <button type="button" class="btn btn-sm btn-secondary clear-btn" data-action="clear">
+                                پاک کردن
+                            </button>
+                            <button type="button" class="btn btn-sm btn-success confirm-btn" data-action="confirm">
+                                تأیید
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <ul class="feature-list">
+            <li>تقویم شمسی کامل با نام ماه‌ها و روزهای هفته به فارسی</li>
+            <li>نمایش امروز با رنگ متمایز</li>
+            <li>ناوبری آسان بین ماه‌ها و سال‌ها</li>
+            <li>دکمه‌های سریع برای امروز و پاک کردن</li>
+            <li>پشتیبانی از کیبورد و دسترسی‌پذیری</li>
+        </ul>
+    </div>
+
+    <!-- Date Range Picker -->
+    <div class="demo-section">
+        <h2 class="demo-title">انتخابگر بازه زمانی</h2>
+        <p class="demo-description">
+            ویجت انتخاب بازه زمانی با قابلیت‌های سریع برای سال مالی و فصل‌ها
+        </p>
+        
+        <div class="demo-example">
+            <label class="demo-label">انتخاب بازه زمانی گزارش:</label>
+            {% include 'core/components/persian_date_range.html' with field_name='report_range' %}
+        </div>
+        
+        <ul class="feature-list">
+            <li>انتخاب سریع بازه‌های زمانی (امروز، این هفته، این ماه)</li>
+            <li>انتخاب سال مالی جاری و گذشته</li>
+            <li>انتخاب فصل‌های مالی (فروردین-خرداد، تیر-شهریور، ...)</li>
+            <li>نمایش تعداد روزهای انتخاب شده</li>
+            <li>واسط کاربری بصری برای نمایش بازه</li>
+        </ul>
+    </div>
+
+    <!-- Range Selection Calendar -->
+    <div class="demo-section">
+        <h2 class="demo-title">تقویم انتخاب بازه</h2>
+        <p class="demo-description">
+            تقویم با قابلیت انتخاب بازه زمانی مستقیم از روی تقویم
+        </p>
+        
+        <div class="demo-example">
+            <label class="demo-label" for="range_calendar">انتخاب بازه از تقویم:</label>
+            <div class="persian-date-widget range-mode" data-field-name="range_calendar" data-mode="range">
+                <input 
+                    type="text" 
+                    id="range_calendar"
+                    name="range_calendar"
+                    class="persian-date-input w-full px-3 py-2 border border-gray-300 rounded-md"
+                    placeholder="انتخاب بازه زمانی..."
+                    readonly
+                >
+                <div class="persian-calendar-container" style="display: none;">
+                    <div class="persian-calendar" data-year="1403" data-month="7">
+                        <div class="calendar-header">
+                            <button type="button" class="btn btn-sm btn-outline-primary prev-year" data-action="prev-year">
+                                <i class="fas fa-angle-double-right"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary prev-month" data-action="prev-month">
+                                <i class="fas fa-angle-right"></i>
+                            </button>
+                            <div class="calendar-title">
+                                <span class="month-name">مهر</span>
+                                <span class="year-name">۱۴۰۳</span>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary next-month" data-action="next-month">
+                                <i class="fas fa-angle-left"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary next-year" data-action="next-year">
+                                <i class="fas fa-angle-double-left"></i>
+                            </button>
+                        </div>
+                        <div class="calendar-weekdays">
+                            <div class="weekday">ش</div>
+                            <div class="weekday">ی</div>
+                            <div class="weekday">د</div>
+                            <div class="weekday">س</div>
+                            <div class="weekday">چ</div>
+                            <div class="weekday">پ</div>
+                            <div class="weekday">ج</div>
+                        </div>
+                        <div class="calendar-days">
+                            <!-- Days will be populated by JavaScript -->
+                        </div>
+                        <div class="calendar-footer">
+                            <button type="button" class="btn btn-sm btn-info range-toggle" data-action="toggle-range">
+                                حالت بازه
+                            </button>
+                            <button type="button" class="btn btn-sm btn-primary today-btn" data-action="today">
+                                امروز
+                            </button>
+                            <button type="button" class="btn btn-sm btn-secondary clear-btn" data-action="clear">
+                                پاک کردن
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <ul class="feature-list">
+            <li>انتخاب تاریخ شروع و پایان با کلیک روی تقویم</li>
+            <li>نمایش بصری بازه انتخاب شده</li>
+            <li>رنگ‌بندی متمایز برای شروع، پایان و روزهای میانی</li>
+            <li>قابلیت تغییر حالت بین تک تاریخ و بازه</li>
+        </ul>
+    </div>
+
+    <!-- Fiscal Year Calendar -->
+    <div class="demo-section">
+        <h2 class="demo-title">تقویم سال مالی</h2>
+        <p class="demo-description">
+            تقویم با قابلیت‌های ویژه برای سال مالی و فصل‌های مالی
+        </p>
+        
+        <div class="demo-example">
+            <label class="demo-label" for="fiscal_calendar">انتخاب سال/فصل مالی:</label>
+            <div class="persian-date-widget fiscal-year-mode" data-field-name="fiscal_calendar" data-mode="fiscal-year" data-show-fiscal-year="true" data-show-quarters="true">
+                <input 
+                    type="text" 
+                    id="fiscal_calendar"
+                    name="fiscal_calendar"
+                    class="persian-date-input w-full px-3 py-2 border border-gray-300 rounded-md"
+                    placeholder="انتخاب سال مالی..."
+                    readonly
+                >
+                <div class="persian-calendar-container" style="display: none;">
+                    <div class="persian-calendar" data-year="1403" data-month="1">
+                        <div class="calendar-header">
+                            <button type="button" class="btn btn-sm btn-outline-primary prev-year" data-action="prev-year">
+                                <i class="fas fa-angle-double-right"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary prev-month" data-action="prev-month">
+                                <i class="fas fa-angle-right"></i>
+                            </button>
+                            <div class="calendar-title">
+                                <span class="month-name">فروردین</span>
+                                <span class="year-name">۱۴۰۳</span>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary next-month" data-action="next-month">
+                                <i class="fas fa-angle-left"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary next-year" data-action="next-year">
+                                <i class="fas fa-angle-double-left"></i>
+                            </button>
+                        </div>
+                        <div class="calendar-weekdays">
+                            <div class="weekday">ش</div>
+                            <div class="weekday">ی</div>
+                            <div class="weekday">د</div>
+                            <div class="weekday">س</div>
+                            <div class="weekday">چ</div>
+                            <div class="weekday">پ</div>
+                            <div class="weekday">ج</div>
+                        </div>
+                        <div class="calendar-days">
+                            <!-- Days will be populated by JavaScript -->
+                        </div>
+                        <div class="calendar-footer">
+                            <button type="button" class="btn btn-sm btn-success fiscal-year-quick" data-action="current-fiscal-year">
+                                سال جاری
+                            </button>
+                            <button type="button" class="btn btn-sm btn-warning fiscal-year-quick" data-action="prev-fiscal-year">
+                                سال گذشته
+                            </button>
+                            <button type="button" class="btn btn-sm btn-secondary clear-btn" data-action="clear">
+                                پاک کردن
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <ul class="feature-list">
+            <li>انتخاب سریع سال مالی جاری و گذشته</li>
+            <li>انتخاب فصل‌های مالی (فروردین-خرداد، تیر-شهریور، مهر-آذر، دی-اسفند)</li>
+            <li>نمایش بصری سال مالی روی تقویم</li>
+            <li>انتخابگر سال‌های مختلف</li>
+            <li>سازگاری با استانداردهای حسابداری ایرانی</li>
+        </ul>
+    </div>
+
+    <!-- Theme Support -->
+    <div class="demo-section">
+        <h2 class="demo-title">پشتیبانی از تم‌ها</h2>
+        <p class="demo-description">
+            تقویم از تم‌های مختلف شامل حالت روشن، تاریک و سایبری پشتیبانی می‌کند
+        </p>
+        
+        <div class="demo-example">
+            <div class="flex gap-4 justify-center">
+                <button onclick="setTheme('light')" class="px-4 py-2 bg-blue-500 text-white rounded">
+                    تم روشن
+                </button>
+                <button onclick="setTheme('dark')" class="px-4 py-2 bg-gray-800 text-white rounded">
+                    تم تاریک
+                </button>
+                <button onclick="setTheme('cybersecurity')" class="px-4 py-2 bg-gradient-to-r from-cyan-500 to-green-500 text-white rounded">
+                    تم سایبری
+                </button>
+            </div>
+        </div>
+        
+        <ul class="feature-list">
+            <li>تم روشن: طراحی مدرن و تمیز</li>
+            <li>تم تاریک: مناسب برای استفاده در نور کم</li>
+            <li>تم سایبری: طراحی پیشرفته با افکت‌های نئونی و شیشه‌ای</li>
+            <li>تغییر خودکار رنگ‌ها و افکت‌ها</li>
+            <li>حفظ تنظیمات تم در جلسات مختلف</li>
+        </ul>
+    </div>
+
+    <!-- Technical Features -->
+    <div class="demo-section">
+        <h2 class="demo-title">ویژگی‌های فنی</h2>
+        <p class="demo-description">
+            قابلیت‌های پیشرفته و فنی تقویم شمسی
+        </p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="demo-example">
+                <h4 class="font-bold mb-2">تبدیل خودکار اعداد</h4>
+                <p>تبدیل خودکار اعداد انگلیسی به فارسی: {{ "1403/07/24"|persian_number }}</p>
+            </div>
+            
+            <div class="demo-example">
+                <h4 class="font-bold mb-2">اعتبارسنجی تاریخ</h4>
+                <p>بررسی صحت تاریخ‌های شمسی و سال‌های کبیسه</p>
+            </div>
+            
+            <div class="demo-example">
+                <h4 class="font-bold mb-2">ناوبری کیبورد</h4>
+                <p>پشتیبانی کامل از کیبورد و دسترسی‌پذیری</p>
+            </div>
+            
+            <div class="demo-example">
+                <h4 class="font-bold mb-2">طراحی واکنش‌گرا</h4>
+                <p>سازگاری با تمام اندازه‌های صفحه و دستگاه‌ها</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+}
+
+// Initialize theme from localStorage
+document.addEventListener('DOMContentLoaded', function() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    setTheme(savedTheme);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,441 @@
+/* Persian Date Range Selector Styles */
+
+.persian-date-range-widget {
+    font-family: 'Vazir', 'Tahoma', sans-serif;
+    direction: rtl;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 16px 0;
+}
+
+/* Input Fields */
+.persian-date-range-inputs {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.persian-date-range-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.persian-date-range-label {
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+}
+
+.persian-date-range-start,
+.persian-date-range-end {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    direction: rtl;
+    text-align: right;
+    min-width: 120px;
+    transition: border-color 0.3s ease;
+}
+
+.persian-date-range-start:focus,
+.persian-date-range-end:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.persian-date-range-separator {
+    font-size: 16px;
+    font-weight: bold;
+    color: #666;
+    margin: 0 8px;
+}
+
+/* Range Display */
+.persian-date-range-display {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.range-display-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.range-dates {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+}
+
+.range-start {
+    color: #28a745;
+}
+
+.range-end {
+    color: #dc3545;
+}
+
+.range-separator {
+    margin: 0 8px;
+    color: #666;
+}
+
+.range-duration {
+    font-size: 14px;
+    color: #666;
+}
+
+.range-display-empty {
+    color: #999;
+    font-style: italic;
+}
+
+/* Quick Selectors */
+.persian-date-range-quick {
+    border-top: 1px solid #e9ecef;
+    padding-top: 20px;
+}
+
+.quick-selector-group {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.quick-selector-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+    margin: 0 0 16px 0;
+    text-align: center;
+}
+
+.quick-selector-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.quick-selector-section h5 {
+    font-size: 14px;
+    font-weight: bold;
+    color: #555;
+    margin: 0;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #eee;
+}
+
+.quick-selector-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.quick-selector-btn {
+    padding: 6px 12px;
+    font-size: 13px;
+    border: 1px solid #007bff;
+    background: #fff;
+    color: #007bff;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.quick-selector-btn:hover {
+    background: #007bff;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+}
+
+.quick-selector-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 123, 255, 0.2);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .persian-date-range-inputs {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .persian-date-range-separator {
+        text-align: center;
+        margin: 8px 0;
+    }
+    
+    .quick-selector-buttons {
+        justify-content: center;
+    }
+    
+    .quick-selector-btn {
+        flex: 1;
+        min-width: 120px;
+    }
+}
+
+@media (max-width: 480px) {
+    .persian-date-range-widget {
+        padding: 16px;
+    }
+    
+    .quick-selector-btn {
+        font-size: 12px;
+        padding: 8px 10px;
+        min-width: 100px;
+    }
+}
+
+/* Dark Theme Support */
+[data-theme="dark"] .persian-date-range-widget {
+    background: #2d3748;
+    border-color: #4a5568;
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .persian-date-range-label {
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .persian-date-range-start,
+[data-theme="dark"] .persian-date-range-end {
+    background: #4a5568;
+    border-color: #4a5568;
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .persian-date-range-start:focus,
+[data-theme="dark"] .persian-date-range-end:focus {
+    border-color: #63b3ed;
+    box-shadow: 0 0 0 2px rgba(99, 179, 237, 0.25);
+}
+
+[data-theme="dark"] .persian-date-range-display {
+    background: #4a5568;
+    border-color: #4a5568;
+}
+
+[data-theme="dark"] .range-dates {
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .range-start {
+    color: #68d391;
+}
+
+[data-theme="dark"] .range-end {
+    color: #fc8181;
+}
+
+[data-theme="dark"] .range-separator,
+[data-theme="dark"] .range-duration {
+    color: #a0aec0;
+}
+
+[data-theme="dark"] .quick-selector-title {
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .quick-selector-section h5 {
+    color: #cbd5e0;
+    border-bottom-color: #4a5568;
+}
+
+[data-theme="dark"] .quick-selector-btn {
+    background: #4a5568;
+    border-color: #63b3ed;
+    color: #63b3ed;
+}
+
+[data-theme="dark"] .quick-selector-btn:hover {
+    background: #63b3ed;
+    color: #2d3748;
+}
+
+/* Cybersecurity Theme Support */
+[data-theme="cybersecurity"] .persian-date-range-widget {
+    background: linear-gradient(145deg, rgba(37, 42, 58, 0.95) 0%, rgba(26, 29, 41, 0.98) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 212, 255, 0.1);
+    backdrop-filter: blur(16px);
+}
+
+[data-theme="cybersecurity"] .persian-date-range-label {
+    color: #ffffff;
+    text-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+}
+
+[data-theme="cybersecurity"] .persian-date-range-start,
+[data-theme="cybersecurity"] .persian-date-range-end {
+    background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    color: #ffffff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+[data-theme="cybersecurity"] .persian-date-range-start:focus,
+[data-theme="cybersecurity"] .persian-date-range-end:focus {
+    border-color: #00d4ff;
+    box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.25), 0 0 20px rgba(0, 212, 255, 0.1);
+}
+
+[data-theme="cybersecurity"] .persian-date-range-display {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 255, 136, 0.05) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+[data-theme="cybersecurity"] .range-dates {
+    color: #ffffff;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+[data-theme="cybersecurity"] .range-start {
+    color: #00ff88;
+    text-shadow: 0 0 8px rgba(0, 255, 136, 0.6);
+}
+
+[data-theme="cybersecurity"] .range-end {
+    color: #ff6b35;
+    text-shadow: 0 0 8px rgba(255, 107, 53, 0.6);
+}
+
+[data-theme="cybersecurity"] .range-separator,
+[data-theme="cybersecurity"] .range-duration {
+    color: #b8bcc8;
+}
+
+[data-theme="cybersecurity"] .quick-selector-title {
+    color: #ffffff;
+    text-shadow: 0 0 15px rgba(0, 212, 255, 0.6);
+}
+
+[data-theme="cybersecurity"] .quick-selector-section h5 {
+    color: #00d4ff;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+    text-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+}
+
+[data-theme="cybersecurity"] .quick-selector-btn {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 255, 136, 0.05) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    color: #00d4ff;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="cybersecurity"] .quick-selector-btn:hover {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.3) 0%, rgba(0, 255, 136, 0.2) 100%);
+    color: #ffffff;
+    border-color: #00d4ff;
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.4), 0 4px 12px rgba(0, 0, 0, 0.4);
+    transform: translateY(-2px);
+}
+
+[data-theme="cybersecurity"] .quick-selector-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3), 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Animation Effects */
+.persian-date-range-widget {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.quick-selector-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.quick-selector-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.3s ease, height 0.3s ease;
+}
+
+.quick-selector-btn:hover::before {
+    width: 100%;
+    height: 100%;
+}
+
+/* Loading State */
+.persian-date-range-widget.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.persian-date-range-widget.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 24px;
+    height: 24px;
+    margin: -12px 0 0 -12px;
+    border: 2px solid #007bff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Error State */
+.persian-date-range-widget.error {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.25);
+}
+
+.persian-date-range-widget.error .persian-date-range-start,
+.persian-date-range-widget.error .persian-date-range-end {
+    border-color: #dc3545;
+}
+
+/* Success State */
+.persian-date-range-widget.success {
+    border-color: #28a745;
+    box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.25);
+}
+
+.persian-date-range-widget.success .persian-date-range-display {
+    background: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}

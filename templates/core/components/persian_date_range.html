@@ -1,0 +1,169 @@
+{% load persian_tags %}
+<div class="persian-date-range-widget" data-widget-type="date-range">
+    <!-- Date Range Input Fields -->
+    <div class="persian-date-range-inputs">
+        <div class="persian-date-range-input-group">
+            <label class="persian-date-range-label" for="{{ field_name }}_start">تاریخ شروع:</label>
+            <input 
+                type="text" 
+                id="{{ field_name }}_start"
+                name="{{ field_name }}_start"
+                class="persian-date-range-start"
+                placeholder="۱۴۰۳/۰۱/۰۱"
+                value="{{ start_value|default:'' }}"
+                autocomplete="off"
+                data-persian-date-input
+            >
+        </div>
+        
+        <div class="persian-date-range-separator">تا</div>
+        
+        <div class="persian-date-range-input-group">
+            <label class="persian-date-range-label" for="{{ field_name }}_end">تاریخ پایان:</label>
+            <input 
+                type="text" 
+                id="{{ field_name }}_end"
+                name="{{ field_name }}_end"
+                class="persian-date-range-end"
+                placeholder="۱۴۰۳/۱۲/۲۹"
+                value="{{ end_value|default:'' }}"
+                autocomplete="off"
+                data-persian-date-input
+            >
+        </div>
+    </div>
+    
+    <!-- Range Display -->
+    <div class="persian-date-range-display">
+        <div class="range-display-empty">بازه زمانی انتخاب نشده</div>
+    </div>
+    
+    <!-- Quick Selectors -->
+    <div class="persian-date-range-quick">
+        <!-- Quick selectors will be populated by JavaScript -->
+    </div>
+</div>
+
+<style>
+/* Component-specific styles */
+.persian-date-range-widget {
+    font-family: 'Vazir', 'Tahoma', sans-serif;
+    direction: rtl;
+}
+
+.persian-date-range-inputs {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.persian-date-range-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.persian-date-range-label {
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+}
+
+.persian-date-range-start,
+.persian-date-range-end {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    direction: rtl;
+    text-align: right;
+    min-width: 120px;
+    transition: border-color 0.3s ease;
+}
+
+.persian-date-range-start:focus,
+.persian-date-range-end:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.persian-date-range-separator {
+    font-size: 16px;
+    font-weight: bold;
+    color: #666;
+    margin: 0 8px;
+}
+
+.persian-date-range-display {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.range-display-empty {
+    color: #999;
+    font-style: italic;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .persian-date-range-inputs {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .persian-date-range-separator {
+        text-align: center;
+        margin: 8px 0;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Persian date range widget
+    const widget = document.querySelector('[data-widget-type="date-range"]');
+    if (widget && typeof PersianDateRange !== 'undefined') {
+        new PersianDateRange(widget);
+    }
+    
+    // Persian digit conversion for inputs
+    const dateInputs = widget.querySelectorAll('[data-persian-date-input]');
+    dateInputs.forEach(function(input) {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value;
+            
+            // Convert English digits to Persian
+            const englishDigits = '0123456789';
+            const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+            
+            for (let i = 0; i < englishDigits.length; i++) {
+                value = value.replace(new RegExp(englishDigits[i], 'g'), persianDigits[i]);
+            }
+            
+            // Format as date (YYYY/MM/DD)
+            value = value.replace(/[^\d۰-۹\/]/g, '');
+            
+            if (value.length > 4 && value.indexOf('/') === -1) {
+                value = value.substring(0, 4) + '/' + value.substring(4);
+            }
+            if (value.length > 7 && value.lastIndexOf('/') === 4) {
+                value = value.substring(0, 7) + '/' + value.substring(7);
+            }
+            
+            // Limit to 10 characters (YYYY/MM/DD)
+            if (value.length > 10) {
+                value = value.substring(0, 10);
+            }
+            
+            e.target.value = value;
+        });
+    });
+});
+</script>
