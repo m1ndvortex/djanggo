@@ -1,0 +1,496 @@
+{% extends 'admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}جزئیات فاکتور {{ invoice.invoice_number }} - پنل مدیریت زرگر{% endblock %}
+
+{% block page_header %}
+<div class="bg-white dark:bg-cyber-bg-secondary rounded-lg shadow-lg dark:shadow-2xl p-6 mb-6 cyber-glass">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary">فاکتور {{ invoice.invoice_number }}</h1>
+            <p class="text-gray-600 dark:text-cyber-text-secondary mt-1">{{ invoice.tenant.name }} - {{ invoice.subscription_plan.name_persian }}</p>
+        </div>
+        <div class="flex space-x-3 space-x-reverse">
+            {% if invoice.status != 'paid' %}
+            <button onclick="processPayment()" 
+                    class="bg-green-600 dark:bg-cyber-neon-secondary hover:bg-green-700 dark:hover:bg-cyber-neon-secondary/80 text-white px-4 py-2 rounded-lg transition-colors cyber-button">
+                پردازش پرداخت
+            </button>
+            {% endif %}
+            <button onclick="window.print()" 
+                    class="bg-blue-600 dark:bg-cyber-neon-primary hover:bg-blue-700 dark:hover:bg-cyber-neon-primary/80 text-white px-4 py-2 rounded-lg transition-colors cyber-button">
+                چاپ فاکتور
+            </button>
+            <a href="{% url 'core:tenants:billing:invoices' %}" 
+               class="bg-gray-600 dark:bg-cyber-bg-elevated hover:bg-gray-700 dark:hover:bg-cyber-bg-elevated/80 text-white px-4 py-2 rounded-lg transition-colors">
+                بازگشت به لیست
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Invoice Details -->
+    <div class="lg:col-span-2 space-y-6">
+        <!-- Invoice Header -->
+        <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 cyber-card">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-cyber-text-primary mb-2">اطلاعات فاکتور</h2>
+                    <div class="space-y-2">
+                        <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">
+                            <span class="font-medium">شماره فاکتور:</span> {{ invoice.invoice_number }}
+                        </p>
+                        <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">
+                            <span class="font-medium">UUID:</span> {{ invoice.uuid }}
+                        </p>
+                        <p class="text-sm text-gray-600 dark:text-cyber-text-secondary persian-numbers">
+                            <span class="font-medium">تاریخ صدور:</span> {{ invoice.issue_date_shamsi|date:"Y/m/d" }}
+                        </p>
+                        <p class="text-sm text-gray-600 dark:text-cyber-text-secondary persian-numbers">
+                            <span class="font-medium">سررسید:</span> {{ invoice.due_date_shamsi|date:"Y/m/d" }}
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="text-left">
+                    <span class="inline-flex px-3 py-1 text-sm font-semibold rounded-full
+                        {% if invoice.status == 'paid' %}bg-green-100 dark:bg-cyber-neon-secondary/20 text-green-800 dark:text-cyber-neon-secondary
+                        {% elif invoice.status == 'pending' %}bg-yellow-100 dark:bg-cyber-neon-warning/20 text-yellow-800 dark:text-cyber-neon-warning
+                        {% elif invoice.status == 'overdue' %}bg-red-100 dark:bg-cyber-neon-danger/20 text-red-800 dark:text-cyber-neon-danger
+                        {% elif invoice.status == 'cancelled' %}bg-gray-100 dark:bg-cyber-bg-elevated text-gray-800 dark:text-cyber-text-muted
+                        {% endif %}">
+                        {{ invoice.get_status_display }}
+                    </span>
+                    {% if invoice.is_overdue %}
+                    <p class="text-xs text-red-600 dark:text-cyber-neon-danger mt-1 persian-numbers">
+                        {{ invoice.days_overdue }} روز معوقه
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Billing Period -->
+            <div class="border-t dark:border-cyber-neon-primary/20 pt-4">
+                <h3 class="font-medium text-gray-900 dark:text-cyber-text-primary mb-2">دوره صورتحساب</h3>
+                <p class="text-sm text-gray-600 dark:text-cyber-text-secondary persian-numbers">
+                    از {{ invoice.billing_period_start|date:"Y/m/d" }} تا {{ invoice.billing_period_end|date:"Y/m/d" }}
+                </p>
+            </div>
+        </div>
+        
+        <!-- Tenant Information -->
+        <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 cyber-card">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">اطلاعات تنانت</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">
+                        <span class="font-medium">نام:</span> {{ invoice.tenant.name }}
+                    </p>
+                    <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">
+                        <span class="font-medium">دامنه:</span> {{ invoice.tenant.domain_url }}
+                    </p>
+                    <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">
+                        <span class="font-medium">ایمیل مالک:</span> {{ invoice.tenant.owner_email }}
+                    </p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">
+                        <span class="font-medium">پلن اشتراک:</span> {{ invoice.subscription_plan.name_persian }}
+                    </p>
+                    <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">
+                        <span class="font-medium">وضعیت تنانت:</span> 
+                        <span class="{% if invoice.tenant.is_active %}text-green-600 dark:text-cyber-neon-secondary{% else %}text-red-600 dark:text-cyber-neon-danger{% endif %}">
+                            {% if invoice.tenant.is_active %}فعال{% else %}غیرفعال{% endif %}
+                        </span>
+                    </p>
+                    <p class="text-sm text-gray-600 dark:text-cyber-text-secondary persian-numbers">
+                        <span class="font-medium">تاریخ ایجاد:</span> {{ invoice.tenant.created_on|date:"Y/m/d" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Invoice Line Items -->
+        <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 cyber-card">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">آیتم‌های فاکتور</h3>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-cyber-neon-primary/20">
+                    <thead class="bg-gray-50 dark:bg-cyber-bg-elevated">
+                        <tr>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase">شرح</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase">تعداد</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase">قیمت واحد</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase">مجموع</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-cyber-neon-primary/10">
+                        {% for item in invoice.line_items %}
+                        <tr>
+                            <td class="px-4 py-3">
+                                <div class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary">
+                                    {{ item.description }}
+                                </div>
+                                {% if item.description_english %}
+                                <div class="text-xs text-gray-500 dark:text-cyber-text-muted">
+                                    {{ item.description_english }}
+                                </div>
+                                {% endif %}
+                                {% if item.period_start and item.period_end %}
+                                <div class="text-xs text-gray-500 dark:text-cyber-text-muted persian-numbers">
+                                    دوره: {{ item.period_start }} تا {{ item.period_end }}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-900 dark:text-cyber-text-primary persian-numbers">
+                                {{ item.quantity }}
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-900 dark:text-cyber-text-primary persian-numbers">
+                                {{ item.unit_price|floatformat:0 }} تومان
+                            </td>
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-cyber-text-primary persian-numbers">
+                                {% if item.is_discount %}
+                                <span class="text-green-600 dark:text-cyber-neon-secondary">
+                                    {{ item.total_price|floatformat:0 }} تومان
+                                </span>
+                                {% else %}
+                                {{ item.total_price|floatformat:0 }} تومان
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Invoice Totals -->
+        <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 cyber-card">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">خلاصه مالی</h3>
+            <div class="space-y-3">
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-cyber-text-secondary">جمع کل:</span>
+                    <span class="font-medium text-gray-900 dark:text-cyber-text-primary persian-numbers">
+                        {{ invoice.subtotal_toman|floatformat:0 }} تومان
+                    </span>
+                </div>
+                
+                {% if invoice.discount_amount_toman %}
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-cyber-text-secondary">تخفیف:</span>
+                    <span class="font-medium text-green-600 dark:text-cyber-neon-secondary persian-numbers">
+                        -{{ invoice.discount_amount_toman|floatformat:0 }} تومان
+                    </span>
+                </div>
+                {% endif %}
+                
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-cyber-text-secondary">مالیات ({{ invoice.tax_rate }}%):</span>
+                    <span class="font-medium text-gray-900 dark:text-cyber-text-primary persian-numbers">
+                        {{ invoice.tax_amount_toman|floatformat:0 }} تومان
+                    </span>
+                </div>
+                
+                <div class="border-t dark:border-cyber-neon-primary/20 pt-3">
+                    <div class="flex justify-between">
+                        <span class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">مبلغ نهایی:</span>
+                        <span class="text-lg font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">
+                            {{ invoice.total_amount_toman|floatformat:0 }} تومان
+                        </span>
+                    </div>
+                    <p class="text-sm text-gray-500 dark:text-cyber-text-muted mt-1">
+                        {{ invoice.total_amount_persian_text }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Notes -->
+        {% if invoice.notes %}
+        <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 cyber-card">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">یادداشت‌ها</h3>
+            <p class="text-gray-700 dark:text-cyber-text-secondary">{{ invoice.notes }}</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="space-y-6">
+        <!-- Payment Information -->
+        {% if invoice.status == 'paid' %}
+        <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 cyber-card">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">اطلاعات پرداخت</h3>
+            <div class="space-y-3">
+                <div>
+                    <span class="text-sm text-gray-600 dark:text-cyber-text-secondary">روش پرداخت:</span>
+                    <p class="font-medium text-gray-900 dark:text-cyber-text-primary">
+                        {{ invoice.get_payment_method_display }}
+                    </p>
+                </div>
+                
+                {% if invoice.payment_date_shamsi %}
+                <div>
+                    <span class="text-sm text-gray-600 dark:text-cyber-text-secondary">تاریخ پرداخت:</span>
+                    <p class="font-medium text-gray-900 dark:text-cyber-text-primary persian-numbers">
+                        {{ invoice.payment_date_shamsi|date:"Y/m/d" }}
+                    </p>
+                </div>
+                {% endif %}
+                
+                {% if invoice.payment_reference %}
+                <div>
+                    <span class="text-sm text-gray-600 dark:text-cyber-text-secondary">شماره مرجع:</span>
+                    <p class="font-medium text-gray-900 dark:text-cyber-text-primary">
+                        {{ invoice.payment_reference }}
+                    </p>
+                </div>
+                {% endif %}
+                
+                {% if invoice.bank_name %}
+                <div>
+                    <span class="text-sm text-gray-600 dark:text-cyber-text-secondary">بانک:</span>
+                    <p class="font-medium text-gray-900 dark:text-cyber-text-primary">
+                        {{ invoice.bank_name }}
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Quick Actions -->
+        <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 cyber-card">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">عملیات سریع</h3>
+            <div class="space-y-3">
+                {% if invoice.status != 'paid' %}
+                <button onclick="processPayment()" 
+                        class="w-full bg-green-600 dark:bg-cyber-neon-secondary hover:bg-green-700 dark:hover:bg-cyber-neon-secondary/80 text-white py-2 px-4 rounded-lg transition-colors cyber-button">
+                    پردازش پرداخت
+                </button>
+                {% endif %}
+                
+                <button onclick="window.print()" 
+                        class="w-full bg-blue-600 dark:bg-cyber-neon-primary hover:bg-blue-700 dark:hover:bg-cyber-neon-primary/80 text-white py-2 px-4 rounded-lg transition-colors cyber-button">
+                    چاپ فاکتور
+                </button>
+                
+                <a href="{% url 'core:tenants:tenant_detail' invoice.tenant.pk %}" 
+                   class="w-full bg-purple-600 dark:bg-cyber-neon-purple hover:bg-purple-700 dark:hover:bg-cyber-neon-purple/80 text-white py-2 px-4 rounded-lg transition-colors cyber-button text-center block">
+                    مشاهده تنانت
+                </a>
+                
+                {% if invoice.status != 'cancelled' %}
+                <button onclick="cancelInvoice()" 
+                        class="w-full bg-red-600 dark:bg-cyber-neon-danger hover:bg-red-700 dark:hover:bg-cyber-neon-danger/80 text-white py-2 px-4 rounded-lg transition-colors">
+                    لغو فاکتور
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Related Invoices -->
+        {% if related_invoices %}
+        <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 cyber-card">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">فاکتورهای مرتبط</h3>
+            <div class="space-y-3">
+                {% for related_invoice in related_invoices %}
+                <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-cyber-bg-elevated rounded-lg">
+                    <div>
+                        <p class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary">
+                            {{ related_invoice.invoice_number }}
+                        </p>
+                        <p class="text-xs text-gray-500 dark:text-cyber-text-muted persian-numbers">
+                            {{ related_invoice.issue_date_shamsi|date:"Y/m/d" }}
+                        </p>
+                    </div>
+                    <div class="text-left">
+                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
+                            {% if related_invoice.status == 'paid' %}bg-green-100 dark:bg-cyber-neon-secondary/20 text-green-800 dark:text-cyber-neon-secondary
+                            {% elif related_invoice.status == 'pending' %}bg-yellow-100 dark:bg-cyber-neon-warning/20 text-yellow-800 dark:text-cyber-neon-warning
+                            {% elif related_invoice.status == 'overdue' %}bg-red-100 dark:bg-cyber-neon-danger/20 text-red-800 dark:text-cyber-neon-danger
+                            {% endif %}">
+                            {{ related_invoice.get_status_display }}
+                        </span>
+                        <a href="{% url 'core:tenants:billing:invoice_detail' related_invoice.pk %}" 
+                           class="block text-xs text-primary-600 dark:text-cyber-neon-primary hover:text-primary-800 dark:hover:text-cyber-neon-primary/80 mt-1">
+                            مشاهده
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Audit Information -->
+        <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 cyber-card">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">اطلاعات سیستمی</h3>
+            <div class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-cyber-text-secondary">ایجاد شده در:</span>
+                    <span class="text-gray-900 dark:text-cyber-text-primary persian-numbers">
+                        {{ invoice.created_at|date:"Y/m/d H:i" }}
+                    </span>
+                </div>
+                
+                {% if invoice.created_by %}
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-cyber-text-secondary">ایجاد شده توسط:</span>
+                    <span class="text-gray-900 dark:text-cyber-text-primary">
+                        {{ invoice.created_by.get_full_name|default:invoice.created_by.username }}
+                    </span>
+                </div>
+                {% endif %}
+                
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-cyber-text-secondary">آخرین به‌روزرسانی:</span>
+                    <span class="text-gray-900 dark:text-cyber-text-primary persian-numbers">
+                        {{ invoice.updated_at|date:"Y/m/d H:i" }}
+                    </span>
+                </div>
+                
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-cyber-text-secondary">PDF تولید شده:</span>
+                    <span class="text-gray-900 dark:text-cyber-text-primary">
+                        {% if invoice.pdf_generated %}بله{% else %}خیر{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Processing Modal -->
+<div id="paymentModal" class="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 hidden">
+    <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-xl dark:shadow-2xl p-6 w-full max-w-md cyber-glass">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">پردازش پرداخت فاکتور</h3>
+        
+        <form id="paymentForm">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">روش پرداخت</label>
+                    <select name="payment_method" required 
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-primary-500 dark:focus:border-cyber-neon-primary bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary">
+                        <option value="">انتخاب کنید...</option>
+                        {% for value, label in payment_methods %}
+                            <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">شماره مرجع پرداخت</label>
+                    <input type="text" name="payment_reference" 
+                           placeholder="شماره تراکنش، شماره چک و غیره..."
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-primary-500 dark:focus:border-cyber-neon-primary bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">تاریخ پرداخت</label>
+                    <input type="date" name="payment_date" 
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-primary-500 dark:focus:border-cyber-neon-primary bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary">
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3 space-x-reverse mt-6">
+                <button type="button" onclick="closePaymentModal()" 
+                        class="bg-gray-500 dark:bg-cyber-bg-elevated hover:bg-gray-600 dark:hover:bg-cyber-bg-elevated/80 text-white px-4 py-2 rounded-lg transition-colors">
+                    انصراف
+                </button>
+                <button type="submit" 
+                        class="bg-green-600 dark:bg-cyber-neon-secondary hover:bg-green-700 dark:hover:bg-cyber-neon-secondary/80 text-white px-4 py-2 rounded-lg transition-colors cyber-button">
+                    ثبت پرداخت
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    body {
+        background: white !important;
+        color: black !important;
+    }
+    
+    .cyber-card, .cyber-glass {
+        background: white !important;
+        box-shadow: none !important;
+        border: 1px solid #e5e7eb !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function processPayment() {
+    document.getElementById('paymentModal').classList.remove('hidden');
+    
+    // Set today's date as default
+    const today = new Date().toISOString().split('T')[0];
+    document.querySelector('input[name="payment_date"]').value = today;
+}
+
+function closePaymentModal() {
+    document.getElementById('paymentModal').classList.add('hidden');
+    document.getElementById('paymentForm').reset();
+}
+
+function cancelInvoice() {
+    if (confirm('آیا از لغو این فاکتور اطمینان دارید؟ این عمل قابل بازگشت نیست.')) {
+        // Implementation for invoice cancellation
+        ZargarAdmin.showMessage('قابلیت لغو فاکتور در حال توسعه است.', 'info');
+    }
+}
+
+document.getElementById('paymentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    ZargarAdmin.showLoading();
+    
+    fetch(`{% url 'core:tenants:billing:invoice_payment' invoice.pk %}`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        ZargarAdmin.hideLoading();
+        
+        if (data.success) {
+            ZargarAdmin.showMessage(data.message, 'success');
+            closePaymentModal();
+            // Reload page to show updated status
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            ZargarAdmin.showMessage(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        ZargarAdmin.hideLoading();
+        ZargarAdmin.showMessage('خطا در پردازش پرداخت', 'error');
+        console.error('Error:', error);
+    });
+});
+
+// Close modal when clicking outside
+document.getElementById('paymentModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closePaymentModal();
+    }
+});
+</script>
+{% endblock %}

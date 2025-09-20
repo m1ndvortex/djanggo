@@ -394,7 +394,15 @@
     - Write tests for subscription management and invoice generation
     - _Requirements: 5.5, 5.6_
 
-  - [ ] 8.5 Build subscription and billing management UI (Frontend)
+  - [x] 8.5 Build subscription and billing management UI (Frontend)
+
+
+
+
+
+
+
+
     - Build subscription management interface with plan creation and editing forms
     - Create billing dashboard with invoice generation, payment tracking, and Persian reports
     - Implement billing workflow UI forms with Persian validation

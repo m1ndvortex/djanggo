@@ -1,0 +1,552 @@
+/* Billing Management Styles */
+
+/* Persian Number Formatting */
+.persian-numbers {
+    font-feature-settings: "ss01" on;
+    direction: ltr;
+    unicode-bidi: embed;
+}
+
+/* Billing Card Styles */
+.billing-card {
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.billing-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.dark .billing-card:hover {
+    box-shadow: 0 8px 25px rgba(0, 212, 255, 0.1);
+}
+
+/* Popular Plan Styling */
+.popular-plan {
+    position: relative;
+    border: 2px solid #3b82f6;
+    transform: scale(1.05);
+}
+
+.dark .popular-plan {
+    border-color: #00D4FF;
+}
+
+.popular-plan::before {
+    content: "محبوب‌ترین";
+    position: absolute;
+    top: -12px;
+    right: 20px;
+    background: #3b82f6;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.dark .popular-plan::before {
+    background: #00D4FF;
+    color: #0B0E1A;
+}
+
+/* Invoice Status Badges */
+.invoice-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.invoice-status.paid {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.dark .invoice-status.paid {
+    background-color: rgba(0, 255, 136, 0.2);
+    color: #00FF88;
+}
+
+.invoice-status.pending {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.dark .invoice-status.pending {
+    background-color: rgba(255, 184, 0, 0.2);
+    color: #FFB800;
+}
+
+.invoice-status.overdue {
+    background-color: #fecaca;
+    color: #991b1b;
+}
+
+.dark .invoice-status.overdue {
+    background-color: rgba(255, 71, 87, 0.2);
+    color: #FF4757;
+}
+
+.invoice-status.cancelled {
+    background-color: #f3f4f6;
+    color: #374151;
+}
+
+.dark .invoice-status.cancelled {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #9CA3AF;
+}
+
+/* Payment Method Icons */
+.payment-method-icon {
+    width: 20px;
+    height: 20px;
+    margin-left: 8px;
+    opacity: 0.7;
+}
+
+/* Billing Form Styles */
+.billing-form-group {
+    margin-bottom: 1.5rem;
+}
+
+.billing-form-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.dark .billing-form-label {
+    color: #B8BCC8;
+}
+
+.billing-form-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #D1D5DB;
+    border-radius: 0.5rem;
+    background-color: white;
+    color: #111827;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.dark .billing-form-input {
+    border-color: rgba(0, 212, 255, 0.3);
+    background-color: #252A3A;
+    color: #FFFFFF;
+}
+
+.billing-form-input:focus {
+    outline: none;
+    ring: 2px;
+    ring-color: #3B82F6;
+    border-color: #3B82F6;
+}
+
+.dark .billing-form-input:focus {
+    ring-color: #00D4FF;
+    border-color: #00D4FF;
+}
+
+.billing-form-error {
+    color: #DC2626;
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+.dark .billing-form-error {
+    color: #FF4757;
+}
+
+.billing-form-help {
+    color: #6B7280;
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+.dark .billing-form-help {
+    color: #9CA3AF;
+}
+
+/* Currency Input Styling */
+.currency-input {
+    position: relative;
+}
+
+.currency-input::after {
+    content: "تومان";
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6B7280;
+    font-size: 0.875rem;
+    pointer-events: none;
+}
+
+.dark .currency-input::after {
+    color: #9CA3AF;
+}
+
+/* Feature Checkbox Styling */
+.feature-checkbox {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    border: 1px solid #E5E7EB;
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.dark .feature-checkbox {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.feature-checkbox:hover {
+    background-color: #F9FAFB;
+    border-color: #D1D5DB;
+}
+
+.dark .feature-checkbox:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: rgba(0, 212, 255, 0.3);
+}
+
+.feature-checkbox input[type="checkbox"] {
+    margin-left: 0.75rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 0.25rem;
+    border: 1px solid #D1D5DB;
+    color: #3B82F6;
+}
+
+.dark .feature-checkbox input[type="checkbox"] {
+    border-color: rgba(0, 212, 255, 0.3);
+    color: #00D4FF;
+}
+
+/* Statistics Cards */
+.stats-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.dark .stats-card {
+    background: linear-gradient(135deg, #252A3A 0%, #1A1D29 100%);
+    border-color: rgba(0, 212, 255, 0.2);
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.dark .stats-card:hover {
+    box-shadow: 0 10px 25px rgba(0, 212, 255, 0.1);
+}
+
+.stats-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.stats-icon.revenue {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.dark .stats-icon.revenue {
+    background-color: rgba(0, 255, 136, 0.2);
+    color: #00FF88;
+}
+
+.stats-icon.invoices {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.dark .stats-icon.invoices {
+    background-color: rgba(0, 212, 255, 0.2);
+    color: #00D4FF;
+}
+
+.stats-icon.pending {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.dark .stats-icon.pending {
+    background-color: rgba(255, 184, 0, 0.2);
+    color: #FFB800;
+}
+
+.stats-icon.overdue {
+    background-color: #fecaca;
+    color: #991b1b;
+}
+
+.dark .stats-icon.overdue {
+    background-color: rgba(255, 71, 87, 0.2);
+    color: #FF4757;
+}
+
+/* Chart Containers */
+.chart-container {
+    position: relative;
+    height: 300px;
+    margin: 1rem 0;
+}
+
+.chart-container canvas {
+    max-height: 100%;
+}
+
+/* Table Enhancements */
+.billing-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.dark .billing-table {
+    box-shadow: 0 1px 3px rgba(0, 212, 255, 0.1);
+}
+
+.billing-table th {
+    background-color: #f8fafc;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.75rem;
+    padding: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.dark .billing-table th {
+    background-color: #1A1D29;
+    border-color: rgba(0, 212, 255, 0.2);
+    color: #B8BCC8;
+}
+
+.billing-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.dark .billing-table td {
+    border-color: rgba(255, 255, 255, 0.05);
+}
+
+.billing-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.dark .billing-table tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* Modal Enhancements */
+.billing-modal {
+    backdrop-filter: blur(8px);
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.dark .billing-modal {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+.billing-modal-content {
+    background: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.dark .billing-modal-content {
+    background: linear-gradient(145deg, #252A3A 0%, #1A1D29 100%);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+}
+
+/* Progress Bars */
+.progress-bar {
+    width: 100%;
+    height: 0.5rem;
+    background-color: #e5e7eb;
+    border-radius: 9999px;
+    overflow: hidden;
+}
+
+.dark .progress-bar {
+    background-color: #374151;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+    border-radius: 9999px;
+    transition: width 0.3s ease;
+}
+
+.dark .progress-bar-fill {
+    background: linear-gradient(90deg, #00D4FF, #00FF88);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .billing-card {
+        margin-bottom: 1rem;
+    }
+    
+    .popular-plan {
+        transform: none;
+    }
+    
+    .stats-card {
+        padding: 1rem;
+    }
+    
+    .billing-table {
+        font-size: 0.875rem;
+    }
+    
+    .billing-table th,
+    .billing-table td {
+        padding: 0.75rem 0.5rem;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .billing-card,
+    .stats-card {
+        break-inside: avoid;
+        box-shadow: none !important;
+        border: 1px solid #e5e7eb !important;
+    }
+    
+    .billing-table {
+        box-shadow: none !important;
+    }
+    
+    body {
+        background: white !important;
+        color: black !important;
+    }
+    
+    .dark * {
+        background: white !important;
+        color: black !important;
+        border-color: #e5e7eb !important;
+    }
+}
+
+/* Animation Classes */
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.slide-in-right {
+    animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Loading States */
+.loading-skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+
+.dark .loading-skeleton {
+    background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+    background-size: 200% 100%;
+}
+
+@keyframes loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Utility Classes */
+.text-currency {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+}
+
+.rtl-flip {
+    transform: scaleX(-1);
+}
+
+.persian-digits {
+    font-feature-settings: "ss01" on;
+}
+
+/* Focus States */
+.focus-ring {
+    transition: all 0.2s ease;
+}
+
+.focus-ring:focus {
+    outline: none;
+    ring: 2px;
+    ring-offset: 2px;
+    ring-color: #3b82f6;
+}
+
+.dark .focus-ring:focus {
+    ring-color: #00D4FF;
+    ring-offset-color: #0B0E1A;
+}

@@ -1,0 +1,310 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+
+{% block title %}داشبورد مالی - پنل مدیریت زرگر{% endblock %}
+
+{% block page_header %}
+<div class="bg-white dark:bg-cyber-bg-secondary rounded-lg shadow-lg dark:shadow-2xl p-6 mb-6 cyber-glass">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary">داشبورد مالی</h1>
+            <p class="text-gray-600 dark:text-cyber-text-secondary mt-1">مدیریت اشتراکات، فاکتورها و درآمد</p>
+        </div>
+        <div class="flex space-x-3 space-x-reverse">
+            <a href="{% url 'admin_panel:tenants:billing:invoice_create' %}" 
+               class="bg-primary-600 dark:bg-cyber-neon-primary hover:bg-primary-700 dark:hover:bg-cyber-neon-primary/80 text-white px-4 py-2 rounded-lg transition-colors cyber-button">
+                ایجاد فاکتور جدید
+            </a>
+            <a href="{% url 'admin_panel:tenants:billing:bulk_invoice_generation' %}" 
+               class="bg-green-600 dark:bg-cyber-neon-secondary hover:bg-green-700 dark:hover:bg-cyber-neon-secondary/80 text-white px-4 py-2 rounded-lg transition-colors cyber-button">
+                تولید انبوه فاکتور
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Statistics Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Current Month Revenue -->
+    <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 cyber-card">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-green-100 dark:bg-cyber-neon-secondary/20">
+                <svg class="w-6 h-6 text-green-600 dark:text-cyber-neon-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">درآمد ماه جاری</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">
+                    {{ current_month_revenue|floatformat:0 }} تومان
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Invoices -->
+    <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 cyber-card">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-blue-100 dark:bg-cyber-neon-primary/20">
+                <svg class="w-6 h-6 text-blue-600 dark:text-cyber-neon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">کل فاکتورها</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ total_invoices }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Invoices -->
+    <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 cyber-card">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 dark:bg-cyber-neon-warning/20">
+                <svg class="w-6 h-6 text-yellow-600 dark:text-cyber-neon-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">در انتظار پرداخت</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ pending_invoices }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overdue Invoices -->
+    <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 cyber-card">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-red-100 dark:bg-cyber-neon-danger/20">
+                <svg class="w-6 h-6 text-red-600 dark:text-cyber-neon-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">معوقه</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ overdue_invoices }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- Revenue Trend Chart -->
+    <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 cyber-card">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">روند درآمد (۶ ماه اخیر)</h3>
+        <canvas id="revenueChart" width="400" height="200"></canvas>
+    </div>
+
+    <!-- Subscription Plan Distribution -->
+    <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 cyber-card">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">توزیع پلن‌های اشتراک</h3>
+        <div class="space-y-4">
+            {% for plan in plan_distribution %}
+            <div class="flex justify-between items-center">
+                <div>
+                    <p class="font-medium text-gray-900 dark:text-cyber-text-primary">{{ plan.name_persian }}</p>
+                    <p class="text-sm text-gray-600 dark:text-cyber-text-secondary persian-numbers">
+                        {{ plan.monthly_price_toman|floatformat:0 }} تومان/ماه
+                    </p>
+                </div>
+                <div class="text-left">
+                    <p class="text-lg font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ plan.tenant_count }}</p>
+                    <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">تنانت</p>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-gray-500 dark:text-cyber-text-muted text-center py-4">هیچ پلن اشتراکی یافت نشد</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Recent Invoices and Overdue Items -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+    <!-- Recent Invoices -->
+    <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 cyber-card">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">آخرین فاکتورها</h3>
+            <a href="{% url 'admin_panel:tenants:billing:invoices' %}" 
+               class="text-primary-600 dark:text-cyber-neon-primary hover:text-primary-800 dark:hover:text-cyber-neon-primary/80 text-sm">
+                مشاهده همه
+            </a>
+        </div>
+        <div class="space-y-3">
+            {% for invoice in recent_invoices %}
+            <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-cyber-bg-elevated rounded-lg">
+                <div>
+                    <p class="font-medium text-gray-900 dark:text-cyber-text-primary">{{ invoice.invoice_number }}</p>
+                    <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">{{ invoice.tenant.name }}</p>
+                </div>
+                <div class="text-left">
+                    <p class="font-medium text-gray-900 dark:text-cyber-text-primary persian-numbers">
+                        {{ invoice.total_amount_toman|floatformat:0 }} تومان
+                    </p>
+                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
+                        {% if invoice.status == 'paid' %}bg-green-100 dark:bg-cyber-neon-secondary/20 text-green-800 dark:text-cyber-neon-secondary
+                        {% elif invoice.status == 'pending' %}bg-yellow-100 dark:bg-cyber-neon-warning/20 text-yellow-800 dark:text-cyber-neon-warning
+                        {% elif invoice.status == 'overdue' %}bg-red-100 dark:bg-cyber-neon-danger/20 text-red-800 dark:text-cyber-neon-danger
+                        {% endif %}">
+                        {{ invoice.get_status_display }}
+                    </span>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-gray-500 dark:text-cyber-text-muted text-center py-4">هیچ فاکتوری یافت نشد</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Overdue Invoices Requiring Attention -->
+    <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 cyber-card">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">فاکتورهای معوقه</h3>
+            <a href="{% url 'admin_panel:tenants:billing:invoices' %}?status=overdue" 
+               class="text-red-600 dark:text-cyber-neon-danger hover:text-red-800 dark:hover:text-cyber-neon-danger/80 text-sm">
+                مشاهده همه
+            </a>
+        </div>
+        <div class="space-y-3">
+            {% for invoice in overdue_invoices_list %}
+            <div class="flex justify-between items-center p-3 bg-red-50 dark:bg-cyber-neon-danger/10 rounded-lg border border-red-200 dark:border-cyber-neon-danger/30">
+                <div>
+                    <p class="font-medium text-gray-900 dark:text-cyber-text-primary">{{ invoice.invoice_number }}</p>
+                    <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">{{ invoice.tenant.name }}</p>
+                    <p class="text-xs text-red-600 dark:text-cyber-neon-danger">
+                        {{ invoice.days_overdue }} روز معوقه
+                    </p>
+                </div>
+                <div class="text-left">
+                    <p class="font-medium text-gray-900 dark:text-cyber-text-primary persian-numbers">
+                        {{ invoice.total_amount_toman|floatformat:0 }} تومان
+                    </p>
+                    <a href="{% url 'admin_panel:tenants:billing:invoice_detail' invoice.pk %}" 
+                       class="text-xs text-primary-600 dark:text-cyber-neon-primary hover:text-primary-800 dark:hover:text-cyber-neon-primary/80">
+                        پردازش پرداخت
+                    </a>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-4">
+                <svg class="w-12 h-12 text-green-500 dark:text-cyber-neon-secondary mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <p class="text-green-600 dark:text-cyber-neon-secondary font-medium">همه فاکتورها به‌روز هستند!</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 mt-8 cyber-card">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">عملیات سریع</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <a href="{% url 'admin_panel:tenants:billing:subscription_plans' %}" 
+           class="flex items-center p-4 bg-gray-50 dark:bg-cyber-bg-elevated rounded-lg hover:bg-gray-100 dark:hover:bg-cyber-bg-elevated/80 transition-colors">
+            <svg class="w-8 h-8 text-primary-600 dark:text-cyber-neon-primary ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+            </svg>
+            <div>
+                <p class="font-medium text-gray-900 dark:text-cyber-text-primary">مدیریت پلن‌ها</p>
+                <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">ایجاد و ویرایش پلن‌های اشتراک</p>
+            </div>
+        </a>
+
+        <a href="{% url 'admin_panel:tenants:billing:invoices' %}" 
+           class="flex items-center p-4 bg-gray-50 dark:bg-cyber-bg-elevated rounded-lg hover:bg-gray-100 dark:hover:bg-cyber-bg-elevated/80 transition-colors">
+            <svg class="w-8 h-8 text-green-600 dark:text-cyber-neon-secondary ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <div>
+                <p class="font-medium text-gray-900 dark:text-cyber-text-primary">مدیریت فاکتورها</p>
+                <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">مشاهده و پردازش فاکتورها</p>
+            </div>
+        </a>
+
+        <a href="{% url 'admin_panel:tenants:billing:reports' %}" 
+           class="flex items-center p-4 bg-gray-50 dark:bg-cyber-bg-elevated rounded-lg hover:bg-gray-100 dark:hover:bg-cyber-bg-elevated/80 transition-colors">
+            <svg class="w-8 h-8 text-purple-600 dark:text-cyber-neon-purple ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+            <div>
+                <p class="font-medium text-gray-900 dark:text-cyber-text-primary">گزارش‌گیری</p>
+                <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">گزارش‌های مالی و تحلیلی</p>
+            </div>
+        </a>
+
+        <a href="{% url 'admin_panel:tenants:billing:settings' %}" 
+           class="flex items-center p-4 bg-gray-50 dark:bg-cyber-bg-elevated rounded-lg hover:bg-gray-100 dark:hover:bg-cyber-bg-elevated/80 transition-colors">
+            <svg class="w-8 h-8 text-gray-600 dark:text-cyber-text-secondary ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+            <div>
+                <p class="font-medium text-gray-900 dark:text-cyber-text-primary">تنظیمات</p>
+                <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">تنظیمات سیستم مالی</p>
+            </div>
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Revenue Trend Chart
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    const revenueData = {{ revenue_trend|safe }};
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: revenueData.map(item => item.month),
+            datasets: [{
+                label: 'درآمد (تومان)',
+                data: revenueData.map(item => item.revenue),
+                borderColor: document.documentElement.classList.contains('dark') ? '#00D4FF' : '#3b82f6',
+                backgroundColor: document.documentElement.classList.contains('dark') ? 'rgba(0, 212, 255, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: document.documentElement.classList.contains('dark') ? '#FFFFFF' : '#374151'
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: document.documentElement.classList.contains('dark') ? '#B8BCC8' : '#6B7280',
+                        callback: function(value) {
+                            return new Intl.NumberFormat('fa-IR').format(value) + ' تومان';
+                        }
+                    },
+                    grid: {
+                        color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: document.documentElement.classList.contains('dark') ? '#B8BCC8' : '#6B7280'
+                    },
+                    grid: {
+                        color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

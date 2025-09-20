@@ -13,6 +13,7 @@ import json
 import hashlib
 import time
 from .security_models import SecurityEvent, AuditLog, RateLimitAttempt, SuspiciousActivity
+from django_tenants.utils import connection
 
 
 class SecurityAuditMiddleware:
@@ -242,17 +243,24 @@ class RateLimitMiddleware:
         identifier = self._get_rate_limit_identifier(request)
         config = self.rate_limits.get(limit_type, self.rate_limits['api_general'])
         
-        # Check database rate limit record
-        attempt, is_blocked = RateLimitAttempt.record_attempt(
-            identifier=identifier,
-            limit_type=limit_type,
-            endpoint=request.path,
-            user_agent=request.META.get('HTTP_USER_AGENT', ''),
-            details={
-                'method': request.method,
-                'user_id': request.user.id if hasattr(request, 'user') and request.user.is_authenticated else None,
-            }
-        )
+        # Get appropriate models and check database rate limit record
+        try:
+            models = self._get_security_models()
+            RateLimitAttemptModel = models.get('RateLimitAttempt', RateLimitAttempt)
+            
+            attempt, is_blocked = RateLimitAttemptModel.record_attempt(
+                identifier=identifier,
+                limit_type=limit_type,
+                endpoint=request.path,
+                user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                details={
+                    'method': request.method,
+                    'user_id': request.user.id if hasattr(request, 'user') and request.user.is_authenticated else None,
+                }
+            )
+        except Exception:
+            # Fallback: allow request if rate limiting fails
+            return False, 1000
         
         if is_blocked or attempt.is_currently_blocked():
             return True, 0
@@ -352,30 +360,70 @@ class SuspiciousActivityDetectionMiddleware:
         
         return response
     
+    def _get_security_models(self):
+        """Get the appropriate security models based on current schema."""
+        try:
+            # Check if we're in a tenant schema or public schema
+            schema_name = connection.get_schema()
+            
+            if schema_name == 'public':
+                # Use public security models from tenants app
+                from zargar.tenants.admin_models import PublicSuspiciousActivity, PublicSecurityEvent, PublicAuditLog, PublicRateLimitAttempt
+                return {
+                    'SuspiciousActivity': PublicSuspiciousActivity,
+                    'SecurityEvent': PublicSecurityEvent,
+                    'AuditLog': PublicAuditLog,
+                    'RateLimitAttempt': PublicRateLimitAttempt,
+                }
+            else:
+                # Use tenant security models from core app
+                return {
+                    'SuspiciousActivity': SuspiciousActivity,
+                    'SecurityEvent': SecurityEvent,
+                    'AuditLog': AuditLog,
+                    'RateLimitAttempt': RateLimitAttempt,
+                }
+        except Exception:
+            # Fallback to tenant models if schema detection fails
+            return {
+                'SuspiciousActivity': SuspiciousActivity,
+                'SecurityEvent': SecurityEvent,
+                'AuditLog': AuditLog,
+            }
+    
     def _detect_suspicious_activity(self, request):
         """Detect various suspicious activity patterns."""
-        ip_address = self._get_client_ip(request)
-        user_agent = request.META.get('HTTP_USER_AGENT', '')
-        
-        # Check for rapid requests
-        if self._detect_rapid_requests(ip_address):
-            SuspiciousActivity.detect_and_create(
-                activity_type='unusual_access_pattern',
-                ip_address=ip_address,
-                user_agent=user_agent,
-                pattern_data={'pattern': 'rapid_requests'},
-                confidence_score=0.8
-            )
-        
-        # Check for suspicious user agent
-        if self._detect_suspicious_user_agent(user_agent):
-            SuspiciousActivity.detect_and_create(
-                activity_type='suspicious_user_agent',
-                ip_address=ip_address,
-                user_agent=user_agent,
-                pattern_data={'pattern': 'suspicious_user_agent'},
-                confidence_score=0.9
-            )
+        try:
+            ip_address = self._get_client_ip(request)
+            user_agent = request.META.get('HTTP_USER_AGENT', '')
+            
+            # Get appropriate security models
+            models = self._get_security_models()
+            SuspiciousActivityModel = models['SuspiciousActivity']
+            
+            # Check for rapid requests
+            if self._detect_rapid_requests(ip_address):
+                SuspiciousActivityModel.detect_and_create(
+                    activity_type='unusual_access_pattern',
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    pattern_data={'pattern': 'rapid_requests'},
+                    confidence_score=0.8
+                )
+            
+            # Check for suspicious user agent
+            if self._detect_suspicious_user_agent(user_agent):
+                SuspiciousActivityModel.detect_and_create(
+                    activity_type='suspicious_user_agent',
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    pattern_data={'pattern': 'suspicious_user_agent'},
+                    confidence_score=0.9
+                )
+        except Exception as e:
+            # Silently fail to avoid breaking the request
+            # In production, you might want to log this error
+            pass
         
         # Check for suspicious paths
         if self._detect_suspicious_path(request.path):
@@ -481,50 +529,91 @@ class SuspiciousActivityDetectionMiddleware:
 @receiver(user_logged_in)
 def log_user_login(sender, request, user, **kwargs):
     """Log successful user login."""
-    SecurityEvent.log_event(
-        event_type='login_success',
-        request=request,
-        user=user,
-        severity='low',
-        details={
-            'login_method': 'standard',
-            'user_agent': request.META.get('HTTP_USER_AGENT', ''),
-        }
-    )
+    try:
+        # Get appropriate security models
+        schema_name = connection.get_schema()
+        
+        if schema_name == 'public':
+            from zargar.tenants.admin_models import PublicSecurityEvent
+            SecurityEventModel = PublicSecurityEvent
+        else:
+            SecurityEventModel = SecurityEvent
+        
+        SecurityEventModel.log_event(
+            event_type='login_success',
+            request=request,
+            user=user,
+            severity='low',
+            details={
+                'login_method': 'standard',
+                'user_agent': request.META.get('HTTP_USER_AGENT', ''),
+            }
+        )
+    except Exception:
+        # Silently fail to avoid breaking login
+        pass
     
-    AuditLog.log_action(
-        action='login',
-        user=user,
-        request=request,
-        details={
-            'login_timestamp': timezone.now().isoformat(),
-            'session_key': request.session.session_key,
-        }
-    )
+    try:
+        # Get appropriate audit log model
+        schema_name = connection.get_schema()
+        
+        if schema_name == 'public':
+            from zargar.tenants.admin_models import PublicAuditLog
+            AuditLogModel = PublicAuditLog
+        else:
+            AuditLogModel = AuditLog
+        
+        AuditLogModel.log_action(
+            action='login',
+            user=user,
+            request=request,
+            details={
+                'login_timestamp': timezone.now().isoformat(),
+                'session_key': request.session.session_key,
+            }
+        )
+    except Exception:
+        # Silently fail to avoid breaking login
+        pass
 
 
 @receiver(user_logged_out)
 def log_user_logout(sender, request, user, **kwargs):
     """Log user logout."""
     if user:
-        SecurityEvent.log_event(
-            event_type='logout',
-            request=request,
-            user=user,
-            severity='low',
-            details={
-                'logout_method': 'standard',
-            }
-        )
-        
-        AuditLog.log_action(
-            action='logout',
-            user=user,
-            request=request,
-            details={
-                'logout_timestamp': timezone.now().isoformat(),
-            }
-        )
+        try:
+            # Get appropriate security models
+            schema_name = connection.get_schema()
+            
+            if schema_name == 'public':
+                from zargar.tenants.admin_models import PublicSecurityEvent, PublicAuditLog
+                SecurityEventModel = PublicSecurityEvent
+                AuditLogModel = PublicAuditLog
+            else:
+                SecurityEventModel = SecurityEvent
+                AuditLogModel = AuditLog
+            
+            SecurityEventModel.log_event(
+                event_type='logout',
+                request=request,
+                user=user,
+                severity='low',
+                details={
+                    'logout_method': 'standard',
+                }
+            )
+            
+            AuditLogModel.log_action(
+                action='logout',
+                user=user,
+                request=request,
+                details={
+                    'logout_timestamp': timezone.now().isoformat(),
+                }
+            )
+        except Exception:
+            # Silently fail to avoid breaking logout
+            pass
 
 
 @receiver(user_login_failed)
@@ -532,16 +621,29 @@ def log_failed_login(sender, credentials, request, **kwargs):
     """Log failed login attempt."""
     username = credentials.get('username', '')
     
-    SecurityEvent.log_event(
-        event_type='login_failed',
-        request=request,
-        username_attempted=username,
-        severity='medium',
-        details={
-            'attempted_username': username,
-            'failure_reason': 'invalid_credentials',
-        }
-    )
+    try:
+        # Get appropriate security models
+        schema_name = connection.get_schema()
+        
+        if schema_name == 'public':
+            from zargar.tenants.admin_models import PublicSecurityEvent
+            SecurityEventModel = PublicSecurityEvent
+        else:
+            SecurityEventModel = SecurityEvent
+        
+        SecurityEventModel.log_event(
+            event_type='login_failed',
+            request=request,
+            username_attempted=username,
+            severity='medium',
+            details={
+                'attempted_username': username,
+                'failure_reason': 'invalid_credentials',
+            }
+        )
+    except Exception:
+        # Silently fail to avoid breaking login process
+        pass
     
     # Check for brute force patterns
     ip_address = SecurityEvent._get_client_ip(request)

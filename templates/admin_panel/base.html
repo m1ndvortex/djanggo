@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="fa" x-data="{ darkMode: localStorage.getItem('theme') === 'dark' || false }" :class="{ 'dark': darkMode }">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}پنل مدیریت زرگر{% endblock %}</title>
+    
+    <!-- Persian Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'vazir': ['Vazirmatn', 'sans-serif'],
+                    },
+                    colors: {
+                        // Light mode colors
+                        primary: {
+                            50: '#f0f9ff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        },
+                        // Cybersecurity dark mode colors
+                        cyber: {
+                            bg: {
+                                primary: '#0B0E1A',
+                                secondary: '#1A1D29',
+                                surface: '#252A3A',
+                                elevated: '#2D3348',
+                            },
+                            neon: {
+                                primary: '#00D4FF',
+                                secondary: '#00FF88',
+                                tertiary: '#FF6B35',
+                                warning: '#FFB800',
+                                danger: '#FF4757',
+                                purple: '#A55EEA',
+                            },
+                            text: {
+                                primary: '#FFFFFF',
+                                secondary: '#B8BCC8',
+                                muted: '#6B7280',
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    
+    <!-- Chart.js for statistics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom CSS -->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/billing-management.css' %}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="font-vazir bg-gray-50 dark:bg-cyber-bg-primary text-gray-900 dark:text-cyber-text-primary transition-colors duration-300">
+    
+    <!-- Navigation -->
+    {% if user.is_authenticated %}
+    <nav class="bg-white dark:bg-cyber-bg-secondary shadow-lg dark:shadow-2xl border-b dark:border-cyber-neon-primary/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <!-- Logo and Title -->
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <h1 class="text-xl font-bold text-gray-900 dark:text-cyber-text-primary">
+                            {% block nav_title %}پنل مدیریت زرگر{% endblock %}
+                        </h1>
+                    </div>
+                </div>
+                
+                <!-- Navigation Links -->
+                <div class="hidden md:flex items-center space-x-4 space-x-reverse">
+                    <a href="{% url 'admin_panel:dashboard' %}" 
+                       class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-cyber-text-secondary hover:text-gray-900 dark:hover:text-cyber-neon-primary transition-colors">
+                        داشبورد
+                    </a>
+                    <a href="{% url 'admin_panel:tenants:tenant_list' %}" 
+                       class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-cyber-text-secondary hover:text-gray-900 dark:hover:text-cyber-neon-primary transition-colors">
+                        مدیریت تنانت‌ها
+                    </a>
+                    <a href="{% url 'admin_panel:tenants:billing:dashboard' %}" 
+                       class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-cyber-text-secondary hover:text-gray-900 dark:hover:text-cyber-neon-primary transition-colors">
+                        مدیریت مالی
+                    </a>
+                </div>
+                
+                <!-- User Menu and Theme Toggle -->
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <!-- Theme Toggle -->
+                    <button @click="darkMode = !darkMode; localStorage.setItem('theme', darkMode ? 'dark' : 'light')"
+                            class="p-2 rounded-lg bg-gray-100 dark:bg-cyber-bg-surface hover:bg-gray-200 dark:hover:bg-cyber-bg-elevated transition-colors">
+                        <svg x-show="!darkMode" class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                        </svg>
+                        <svg x-show="darkMode" class="w-5 h-5 text-cyber-neon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                        </svg>
+                    </button>
+                    
+                    <!-- User Menu -->
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open" 
+                                class="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary">
+                            <span class="ml-2 text-gray-700 dark:text-cyber-text-secondary">{{ user.get_full_name|default:user.username }}</span>
+                            <svg class="w-4 h-4 text-gray-400 dark:text-cyber-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        
+                        <div x-show="open" @click.away="open = false" 
+                             x-transition:enter="transition ease-out duration-100"
+                             x-transition:enter-start="transform opacity-0 scale-95"
+                             x-transition:enter-end="transform opacity-100 scale-100"
+                             x-transition:leave="transition ease-in duration-75"
+                             x-transition:leave-start="transform opacity-100 scale-100"
+                             x-transition:leave-end="transform opacity-0 scale-95"
+                             class="origin-top-left absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-cyber-bg-surface ring-1 ring-black ring-opacity-5 dark:ring-cyber-neon-primary/20">
+                            <div class="py-1">
+                                <a href="{% url 'admin_panel:logout' %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-cyber-text-secondary hover:bg-gray-100 dark:hover:bg-cyber-bg-elevated">
+                                    خروج
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+    
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <!-- Messages -->
+        {% if messages %}
+            <div class="mb-6">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} bg-{{ message.tags == 'error' and 'red' or message.tags == 'success' and 'green' or 'blue' }}-100 dark:bg-cyber-bg-surface border border-{{ message.tags == 'error' and 'red' or message.tags == 'success' and 'green' or 'blue' }}-300 dark:border-cyber-neon-{{ message.tags == 'error' and 'danger' or message.tags == 'success' and 'secondary' or 'primary' }}/30 text-{{ message.tags == 'error' and 'red' or message.tags == 'success' and 'green' or 'blue' }}-800 dark:text-cyber-text-primary px-4 py-3 rounded-lg mb-4">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        <!-- Page Header -->
+        {% block page_header %}{% endblock %}
+        
+        <!-- Page Content -->
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-white dark:bg-cyber-bg-secondary border-t dark:border-cyber-neon-primary/20 mt-12">
+        <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+            <div class="text-center text-sm text-gray-500 dark:text-cyber-text-muted">
+                © ۱۴۰۳ سیستم مدیریت زرگر. تمامی حقوق محفوظ است.
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Custom JavaScript -->
+    {% block extra_js %}{% endblock %}
+    
+    <script>
+        // Global JavaScript utilities
+        window.ZargarAdmin = {
+            showLoading: function() {
+                // Implementation
+            },
+            hideLoading: function() {
+                // Implementation
+            },
+            showMessage: function(message, type = 'info') {
+                // Create and show toast message
+                const toast = document.createElement('div');
+                toast.className = `fixed top-4 left-4 bg-${type === 'error' ? 'red' : type === 'success' ? 'green' : 'blue'}-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-transform duration-300 translate-x-full`;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => toast.classList.remove('translate-x-full'), 100);
+                setTimeout(() => {
+                    toast.classList.add('translate-x-full');
+                    setTimeout(() => document.body.removeChild(toast), 300);
+                }, 3000);
+            }
+        };
+    </script>
+</body>
+</html>

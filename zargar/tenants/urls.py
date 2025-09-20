@@ -22,4 +22,7 @@ urlpatterns = [
     # Search and bulk operations
     path('tenants/search/', views.TenantSearchView.as_view(), name='tenant_search'),
     path('tenants/bulk-action/', views.TenantBulkActionView.as_view(), name='tenant_bulk_action'),
+    
+    # Billing and Subscription Management
+    path('billing/', include('zargar.tenants.billing_urls')),
 ]

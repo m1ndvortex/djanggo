@@ -32,7 +32,7 @@ urlpatterns = [
     path('api/', include('zargar.api.urls')),
     
     # Super-panel specific URLs
-    path('super-panel/', include('zargar.core.urls')),
+    path('super-panel/', include('zargar.admin_panel.urls', namespace='admin_panel')),
     
     # Authentication URLs
     path('auth/', include('django.contrib.auth.urls')),
