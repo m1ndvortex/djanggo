@@ -25,6 +25,15 @@ urlpatterns = [
     path('impersonation/session/<uuid:session_id>/', views.ImpersonationSessionDetailView.as_view(), name='impersonation_session_detail'),
     path('impersonation/stats/', views.ImpersonationStatsView.as_view(), name='impersonation_stats'),
     
+    # Backup Management
+    path('backup/', views.BackupManagementView.as_view(), name='backup_management'),
+    path('backup/history/', views.BackupHistoryView.as_view(), name='backup_history'),
+    path('backup/create/', views.CreateBackupView.as_view(), name='create_backup'),
+    path('backup/schedule/', views.BackupScheduleView.as_view(), name='backup_schedule'),
+    path('backup/restore/', views.TenantRestoreView.as_view(), name='tenant_restore'),
+    path('backup/job/<uuid:job_id>/', views.BackupJobDetailView.as_view(), name='backup_job_detail'),
+    path('backup/status/', views.BackupStatusAPIView.as_view(), name='backup_status_api'),
+    
     # Include django-hijack URLs
     path('hijack/', include('hijack.urls')),
     

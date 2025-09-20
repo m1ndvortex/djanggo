@@ -4,11 +4,8 @@ Models for admin panel impersonation system.
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
-from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 import uuid
-
-User = get_user_model()
 
 
 class ImpersonationSession(models.Model):
@@ -330,3 +327,538 @@ class ImpersonationSessionManager(models.Manager):
 
 # Add the custom manager to the model
 ImpersonationSession.add_to_class('objects', ImpersonationSessionManager())
+
+
+class BackupJob(models.Model):
+    """
+    Model to track backup jobs and their status.
+    """
+    BACKUP_TYPES = [
+        ('full_system', _('Full System Backup')),
+        ('tenant_only', _('Single Tenant Backup')),
+        ('configuration', _('Configuration Backup')),
+        ('database_only', _('Database Only Backup')),
+    ]
+    
+    STATUS_CHOICES = [
+        ('pending', _('Pending')),
+        ('running', _('Running')),
+        ('completed', _('Completed')),
+        ('failed', _('Failed')),
+        ('cancelled', _('Cancelled')),
+    ]
+    
+    FREQUENCY_CHOICES = [
+        ('manual', _('Manual')),
+        ('daily', _('Daily')),
+        ('weekly', _('Weekly')),
+        ('monthly', _('Monthly')),
+    ]
+    
+    # Job identification
+    job_id = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        verbose_name=_('Job ID'),
+        help_text=_('Unique identifier for this backup job')
+    )
+    
+    name = models.CharField(
+        max_length=200,
+        verbose_name=_('Backup Name'),
+        help_text=_('Human-readable name for this backup')
+    )
+    
+    backup_type = models.CharField(
+        max_length=20,
+        choices=BACKUP_TYPES,
+        verbose_name=_('Backup Type')
+    )
+    
+    # Scheduling
+    frequency = models.CharField(
+        max_length=20,
+        choices=FREQUENCY_CHOICES,
+        default='manual',
+        verbose_name=_('Backup Frequency')
+    )
+    
+    scheduled_time = models.TimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Scheduled Time'),
+        help_text=_('Time of day for automatic backups')
+    )
+    
+    next_run = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Next Scheduled Run')
+    )
+    
+    # Status and timing
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending',
+        verbose_name=_('Status')
+    )
+    
+    started_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Started At')
+    )
+    
+    completed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Completed At')
+    )
+    
+    # Backup details
+    tenant_schema = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name=_('Tenant Schema'),
+        help_text=_('Specific tenant schema for tenant-only backups')
+    )
+    
+    file_path = models.CharField(
+        max_length=500,
+        blank=True,
+        verbose_name=_('Backup File Path'),
+        help_text=_('Path to the backup file in storage')
+    )
+    
+    file_size_bytes = models.BigIntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_('File Size (Bytes)')
+    )
+    
+    # Storage information
+    storage_backends = models.JSONField(
+        default=list,
+        verbose_name=_('Storage Backends'),
+        help_text=_('List of storage backends where backup is stored')
+    )
+    
+    # Progress and logging
+    progress_percentage = models.PositiveIntegerField(
+        default=0,
+        verbose_name=_('Progress Percentage')
+    )
+    
+    log_messages = models.JSONField(
+        default=list,
+        verbose_name=_('Log Messages'),
+        help_text=_('Array of log messages from backup process')
+    )
+    
+    error_message = models.TextField(
+        blank=True,
+        verbose_name=_('Error Message')
+    )
+    
+    # Metadata
+    metadata = models.JSONField(
+        default=dict,
+        verbose_name=_('Backup Metadata'),
+        help_text=_('Additional metadata about the backup')
+    )
+    
+    # Audit fields
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by_id = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_('Created By ID'),
+        help_text=_('ID of the user who created this backup')
+    )
+    
+    created_by_username = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name=_('Created By Username'),
+        help_text=_('Username of the user who created this backup')
+    )
+    
+    class Meta:
+        verbose_name = _('Backup Job')
+        verbose_name_plural = _('Backup Jobs')
+        db_table = 'admin_backup_job'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status', 'created_at']),
+            models.Index(fields=['backup_type', 'status']),
+            models.Index(fields=['frequency', 'next_run']),
+            models.Index(fields=['job_id']),
+        ]
+    
+    def __str__(self):
+        return f"{self.name} ({self.get_status_display()})"
+    
+    @property
+    def duration(self):
+        """Calculate backup duration."""
+        if self.started_at and self.completed_at:
+            return self.completed_at - self.started_at
+        elif self.started_at:
+            return timezone.now() - self.started_at
+        return timezone.timedelta(0)
+    
+    @property
+    def is_running(self):
+        """Check if backup is currently running."""
+        return self.status == 'running'
+    
+    @property
+    def is_completed(self):
+        """Check if backup completed successfully."""
+        return self.status == 'completed'
+    
+    @property
+    def is_failed(self):
+        """Check if backup failed."""
+        return self.status == 'failed'
+    
+    @property
+    def file_size_human(self):
+        """Return human-readable file size."""
+        if not self.file_size_bytes:
+            return 'Unknown'
+        
+        for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+            if self.file_size_bytes < 1024.0:
+                return f"{self.file_size_bytes:.1f} {unit}"
+            self.file_size_bytes /= 1024.0
+        return f"{self.file_size_bytes:.1f} PB"
+    
+    def add_log_message(self, level, message):
+        """Add a log message to the backup job."""
+        log_entry = {
+            'timestamp': timezone.now().isoformat(),
+            'level': level,
+            'message': message
+        }
+        self.log_messages.append(log_entry)
+        if self.pk:  # Only save if object exists in database
+            self.save(update_fields=['log_messages'])
+    
+    def update_progress(self, percentage, message=None):
+        """Update backup progress."""
+        self.progress_percentage = min(100, max(0, percentage))
+        if message:
+            self.add_log_message('info', message)
+        if self.pk:  # Only save if object exists in database
+            self.save(update_fields=['progress_percentage'])
+    
+    def mark_as_running(self):
+        """Mark backup as running."""
+        self.status = 'running'
+        self.started_at = timezone.now()
+        self.progress_percentage = 0
+        self.add_log_message('info', 'Backup job started')
+        self.save(update_fields=['status', 'started_at', 'progress_percentage'])
+    
+    def mark_as_completed(self, file_path, file_size_bytes, storage_backends):
+        """Mark backup as completed."""
+        self.status = 'completed'
+        self.completed_at = timezone.now()
+        self.progress_percentage = 100
+        self.file_path = file_path
+        self.file_size_bytes = file_size_bytes
+        self.storage_backends = storage_backends
+        self.add_log_message('info', 'Backup job completed successfully')
+        self.save(update_fields=[
+            'status', 'completed_at', 'progress_percentage', 
+            'file_path', 'file_size_bytes', 'storage_backends'
+        ])
+    
+    def mark_as_failed(self, error_message):
+        """Mark backup as failed."""
+        self.status = 'failed'
+        self.completed_at = timezone.now()
+        self.error_message = error_message
+        self.add_log_message('error', f'Backup job failed: {error_message}')
+        self.save(update_fields=['status', 'completed_at', 'error_message'])
+    
+    def calculate_next_run(self):
+        """Calculate next run time based on frequency."""
+        if self.frequency == 'manual':
+            self.next_run = None
+            return
+        
+        from datetime import timedelta
+        
+        base_time = timezone.now()
+        if self.scheduled_time:
+            # Set to scheduled time today or tomorrow
+            base_time = base_time.replace(
+                hour=self.scheduled_time.hour,
+                minute=self.scheduled_time.minute,
+                second=0,
+                microsecond=0
+            )
+            if base_time <= timezone.now():
+                base_time += timedelta(days=1)
+        
+        if self.frequency == 'daily':
+            self.next_run = base_time
+        elif self.frequency == 'weekly':
+            # Next week same day
+            days_ahead = 7 - base_time.weekday()
+            if days_ahead <= 0:  # Target day already happened this week
+                days_ahead += 7
+            self.next_run = base_time + timedelta(days=days_ahead)
+        elif self.frequency == 'monthly':
+            # Next month same day
+            if base_time.month == 12:
+                next_month = base_time.replace(year=base_time.year + 1, month=1)
+            else:
+                next_month = base_time.replace(month=base_time.month + 1)
+            self.next_run = next_month
+        
+        if self.pk:  # Only save if object exists in database
+            self.save(update_fields=['next_run'])
+
+
+class BackupSchedule(models.Model):
+    """
+    Model to manage backup scheduling configuration.
+    """
+    name = models.CharField(
+        max_length=200,
+        verbose_name=_('Schedule Name')
+    )
+    
+    backup_type = models.CharField(
+        max_length=20,
+        choices=BackupJob.BACKUP_TYPES,
+        verbose_name=_('Backup Type')
+    )
+    
+    frequency = models.CharField(
+        max_length=20,
+        choices=BackupJob.FREQUENCY_CHOICES,
+        verbose_name=_('Frequency')
+    )
+    
+    scheduled_time = models.TimeField(
+        verbose_name=_('Scheduled Time')
+    )
+    
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name=_('Is Active')
+    )
+    
+    # Retention settings
+    retention_days = models.PositiveIntegerField(
+        default=30,
+        verbose_name=_('Retention Days'),
+        help_text=_('Number of days to keep backups')
+    )
+    
+    max_backups = models.PositiveIntegerField(
+        default=10,
+        verbose_name=_('Maximum Backups'),
+        help_text=_('Maximum number of backups to keep')
+    )
+    
+    # Notification settings
+    notify_on_success = models.BooleanField(
+        default=False,
+        verbose_name=_('Notify on Success')
+    )
+    
+    notify_on_failure = models.BooleanField(
+        default=True,
+        verbose_name=_('Notify on Failure')
+    )
+    
+    notification_emails = models.JSONField(
+        default=list,
+        verbose_name=_('Notification Emails'),
+        help_text=_('List of email addresses for notifications')
+    )
+    
+    # Audit fields
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by_id = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_('Created By ID'),
+        help_text=_('ID of the user who created this schedule')
+    )
+    
+    created_by_username = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name=_('Created By Username'),
+        help_text=_('Username of the user who created this schedule')
+    )
+    
+    class Meta:
+        verbose_name = _('Backup Schedule')
+        verbose_name_plural = _('Backup Schedules')
+        db_table = 'admin_backup_schedule'
+        ordering = ['name']
+    
+    def __str__(self):
+        return f"{self.name} ({self.get_frequency_display()})"
+
+
+class RestoreJob(models.Model):
+    """
+    Model to track restore operations.
+    """
+    RESTORE_TYPES = [
+        ('full_system', _('Full System Restore')),
+        ('single_tenant', _('Single Tenant Restore')),
+        ('configuration', _('Configuration Restore')),
+    ]
+    
+    STATUS_CHOICES = [
+        ('pending', _('Pending')),
+        ('running', _('Running')),
+        ('completed', _('Completed')),
+        ('failed', _('Failed')),
+        ('cancelled', _('Cancelled')),
+    ]
+    
+    # Job identification
+    job_id = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        verbose_name=_('Job ID')
+    )
+    
+    restore_type = models.CharField(
+        max_length=20,
+        choices=RESTORE_TYPES,
+        verbose_name=_('Restore Type')
+    )
+    
+    # Source backup
+    source_backup = models.ForeignKey(
+        BackupJob,
+        on_delete=models.CASCADE,
+        verbose_name=_('Source Backup')
+    )
+    
+    # Target information
+    target_tenant_schema = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name=_('Target Tenant Schema'),
+        help_text=_('Target tenant schema for single tenant restore')
+    )
+    
+    # Status and timing
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending',
+        verbose_name=_('Status')
+    )
+    
+    started_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Started At')
+    )
+    
+    completed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Completed At')
+    )
+    
+    # Progress and logging
+    progress_percentage = models.PositiveIntegerField(
+        default=0,
+        verbose_name=_('Progress Percentage')
+    )
+    
+    log_messages = models.JSONField(
+        default=list,
+        verbose_name=_('Log Messages')
+    )
+    
+    error_message = models.TextField(
+        blank=True,
+        verbose_name=_('Error Message')
+    )
+    
+    # Confirmation
+    confirmation_token = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name=_('Confirmation Token'),
+        help_text=_('Token required for dangerous restore operations')
+    )
+    
+    confirmed_by_typing = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name=_('Confirmed by Typing'),
+        help_text=_('Text that user typed to confirm restore')
+    )
+    
+    # Audit fields
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by_id = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_('Created By ID'),
+        help_text=_('ID of the user who created this restore job')
+    )
+    
+    created_by_username = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name=_('Created By Username'),
+        help_text=_('Username of the user who created this restore job')
+    )
+    
+    class Meta:
+        verbose_name = _('Restore Job')
+        verbose_name_plural = _('Restore Jobs')
+        db_table = 'admin_restore_job'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Restore {self.job_id} ({self.get_status_display()})"
+    
+    @property
+    def duration(self):
+        """Calculate restore duration."""
+        if self.started_at and self.completed_at:
+            return self.completed_at - self.started_at
+        elif self.started_at:
+            return timezone.now() - self.started_at
+        return timezone.timedelta(0)
+    
+    def add_log_message(self, level, message):
+        """Add a log message to the restore job."""
+        log_entry = {
+            'timestamp': timezone.now().isoformat(),
+            'level': level,
+            'message': message
+        }
+        self.log_messages.append(log_entry)
+        if self.pk:
+            self.save(update_fields=['log_messages'])
+    
+    def update_progress(self, percentage, message=None):
+        """Update restore progress."""
+        self.progress_percentage = min(100, max(0, percentage))
+        if message:
+            self.add_log_message('info', message)
+        if self.pk:
+            self.save(update_fields=['progress_percentage'])

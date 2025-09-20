@@ -425,3 +425,374 @@ class ImpersonationStatsView(SuperAdminRequiredMixin, TemplateView):
         })
         
         return context
+
+
+class BackupManagementView(SuperAdminRequiredMixin, TemplateView):
+    """
+    Main backup management dashboard view.
+    """
+    template_name = 'admin_panel/backup_management.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Import backup models
+        from .models import BackupJob, BackupSchedule, RestoreJob
+        
+        # Recent backup jobs
+        recent_backups = BackupJob.objects.order_by('-created_at')[:10]
+        
+        # Backup statistics
+        total_backups = BackupJob.objects.count()
+        successful_backups = BackupJob.objects.filter(status='completed').count()
+        failed_backups = BackupJob.objects.filter(status='failed').count()
+        running_backups = BackupJob.objects.filter(status='running').count()
+        
+        # Storage statistics
+        from zargar.core.storage_utils import get_backup_storage_status
+        storage_status = get_backup_storage_status()
+        
+        # Active schedules
+        active_schedules = BackupSchedule.objects.filter(is_active=True)
+        
+        # Recent restore jobs
+        recent_restores = RestoreJob.objects.order_by('-created_at')[:5]
+        
+        # Calculate total backup size
+        total_size_bytes = BackupJob.objects.filter(
+            status='completed',
+            file_size_bytes__isnull=False
+        ).aggregate(
+            total=Sum('file_size_bytes')
+        )['total'] or 0
+        
+        # Format total size
+        def format_bytes(bytes_value):
+            if not bytes_value:
+                return '0 B'
+            for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+                if bytes_value < 1024.0:
+                    return f"{bytes_value:.1f} {unit}"
+                bytes_value /= 1024.0
+            return f"{bytes_value:.1f} PB"
+        
+        context.update({
+            'recent_backups': recent_backups,
+            'total_backups': total_backups,
+            'successful_backups': successful_backups,
+            'failed_backups': failed_backups,
+            'running_backups': running_backups,
+            'storage_status': storage_status,
+            'active_schedules': active_schedules,
+            'recent_restores': recent_restores,
+            'total_backup_size': format_bytes(total_size_bytes),
+            'success_rate': round((successful_backups / total_backups * 100) if total_backups > 0 else 0, 1),
+        })
+        
+        return context
+
+
+class BackupHistoryView(SuperAdminRequiredMixin, ListView):
+    """
+    View to display backup history with filtering and pagination.
+    """
+    template_name = 'admin_panel/backup_history.html'
+    context_object_name = 'backups'
+    paginate_by = 20
+    
+    def get_queryset(self):
+        from .models import BackupJob
+        
+        queryset = BackupJob.objects.order_by('-created_at')
+        
+        # Filter by status
+        status_filter = self.request.GET.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        
+        # Filter by backup type
+        type_filter = self.request.GET.get('type')
+        if type_filter:
+            queryset = queryset.filter(backup_type=type_filter)
+        
+        # Filter by date range
+        date_from = self.request.GET.get('date_from')
+        date_to = self.request.GET.get('date_to')
+        
+        if date_from:
+            try:
+                from datetime import datetime
+                date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
+                queryset = queryset.filter(created_at__date__gte=date_from_obj)
+            except ValueError:
+                pass
+        
+        if date_to:
+            try:
+                from datetime import datetime
+                date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
+                queryset = queryset.filter(created_at__date__lte=date_to_obj)
+            except ValueError:
+                pass
+        
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Add filter values to context
+        context['status_filter'] = self.request.GET.get('status', '')
+        context['type_filter'] = self.request.GET.get('type', '')
+        context['date_from'] = self.request.GET.get('date_from', '')
+        context['date_to'] = self.request.GET.get('date_to', '')
+        
+        # Add choices for filters
+        from .models import BackupJob
+        context['status_choices'] = BackupJob.STATUS_CHOICES
+        context['type_choices'] = BackupJob.BACKUP_TYPES
+        
+        return context
+
+
+class CreateBackupView(SuperAdminRequiredMixin, View):
+    """
+    View to create a new backup job.
+    """
+    
+    def post(self, request):
+        """Handle backup creation request."""
+        from .models import BackupJob
+        from zargar.tenants.models import Tenant
+        
+        backup_type = request.POST.get('backup_type')
+        backup_name = request.POST.get('backup_name')
+        tenant_schema = request.POST.get('tenant_schema', '')
+        
+        if not backup_type or not backup_name:
+            messages.error(request, _('نوع پشتیبان‌گیری و نام الزامی است.'))
+            return redirect('admin_panel:backup_management')
+        
+        try:
+            # Create backup job
+            backup_job = BackupJob.objects.create(
+                name=backup_name,
+                backup_type=backup_type,
+                tenant_schema=tenant_schema,
+                created_by_id=request.user.id,
+                created_by_username=request.user.username,
+                status='pending'
+            )
+            
+            # Start backup process asynchronously
+            from .tasks import start_backup_job
+            start_backup_job.delay(backup_job.job_id)
+            
+            messages.success(
+                request, 
+                _(f'پشتیبان‌گیری "{backup_name}" با موفقیت شروع شد.')
+            )
+            
+        except Exception as e:
+            logger.error(f"Error creating backup job: {str(e)}")
+            messages.error(request, _('خطا در ایجاد پشتیبان‌گیری'))
+        
+        return redirect('admin_panel:backup_management')
+
+
+class BackupScheduleView(SuperAdminRequiredMixin, TemplateView):
+    """
+    View to manage backup schedules.
+    """
+    template_name = 'admin_panel/backup_schedule.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        from .models import BackupSchedule
+        
+        # Get all schedules
+        schedules = BackupSchedule.objects.order_by('name')
+        
+        context.update({
+            'schedules': schedules,
+            'backup_types': BackupSchedule._meta.get_field('backup_type').choices,
+            'frequencies': BackupSchedule._meta.get_field('frequency').choices,
+        })
+        
+        return context
+    
+    def post(self, request):
+        """Handle schedule creation/update."""
+        from .models import BackupSchedule
+        
+        schedule_id = request.POST.get('schedule_id')
+        name = request.POST.get('name')
+        backup_type = request.POST.get('backup_type')
+        frequency = request.POST.get('frequency')
+        scheduled_time = request.POST.get('scheduled_time')
+        is_active = request.POST.get('is_active') == 'on'
+        
+        try:
+            if schedule_id:
+                # Update existing schedule
+                schedule = BackupSchedule.objects.get(id=schedule_id)
+                schedule.name = name
+                schedule.backup_type = backup_type
+                schedule.frequency = frequency
+                schedule.scheduled_time = scheduled_time
+                schedule.is_active = is_active
+                schedule.save()
+                
+                messages.success(request, _('زمان‌بندی پشتیبان‌گیری به‌روزرسانی شد.'))
+            else:
+                # Create new schedule
+                BackupSchedule.objects.create(
+                    name=name,
+                    backup_type=backup_type,
+                    frequency=frequency,
+                    scheduled_time=scheduled_time,
+                    is_active=is_active,
+                    created_by_id=request.user.id,
+                    created_by_username=request.user.username
+                )
+                
+                messages.success(request, _('زمان‌بندی پشتیبان‌گیری جدید ایجاد شد.'))
+                
+        except Exception as e:
+            logger.error(f"Error managing backup schedule: {str(e)}")
+            messages.error(request, _('خطا در مدیریت زمان‌بندی پشتیبان‌گیری'))
+        
+        return redirect('admin_panel:backup_schedule')
+
+
+class TenantRestoreView(SuperAdminRequiredMixin, TemplateView):
+    """
+    View to handle tenant restoration from backups.
+    """
+    template_name = 'admin_panel/tenant_restore.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        from .models import BackupJob
+        from zargar.tenants.models import Tenant
+        
+        # Get available backups for restoration
+        available_backups = BackupJob.objects.filter(
+            status='completed',
+            backup_type__in=['full_system', 'tenant_only']
+        ).order_by('-created_at')[:20]
+        
+        # Get all tenants for selection
+        tenants = Tenant.objects.exclude(schema_name='public').order_by('name')
+        
+        context.update({
+            'available_backups': available_backups,
+            'tenants': tenants,
+        })
+        
+        return context
+    
+    def post(self, request):
+        """Handle tenant restore request."""
+        from .models import BackupJob, RestoreJob
+        from zargar.tenants.models import Tenant
+        
+        backup_id = request.POST.get('backup_id')
+        target_tenant_id = request.POST.get('target_tenant_id')
+        confirmation_text = request.POST.get('confirmation_text')
+        
+        if not backup_id or not target_tenant_id:
+            messages.error(request, _('پشتیبان و تنانت هدف الزامی است.'))
+            return redirect('admin_panel:tenant_restore')
+        
+        try:
+            backup = BackupJob.objects.get(id=backup_id)
+            tenant = Tenant.objects.get(id=target_tenant_id)
+            
+            # Validate confirmation text
+            expected_text = tenant.domain_url
+            if confirmation_text != expected_text:
+                messages.error(
+                    request, 
+                    _(f'متن تأیید اشتباه است. لطفاً "{expected_text}" را تایپ کنید.')
+                )
+                return redirect('admin_panel:tenant_restore')
+            
+            # Create restore job
+            restore_job = RestoreJob.objects.create(
+                restore_type='single_tenant',
+                source_backup=backup,
+                target_tenant_schema=tenant.schema_name,
+                confirmed_by_typing=confirmation_text,
+                created_by_id=request.user.id,
+                created_by_username=request.user.username,
+                status='pending'
+            )
+            
+            # Start restore process asynchronously
+            from .tasks import start_restore_job
+            start_restore_job.delay(restore_job.job_id)
+            
+            messages.success(
+                request,
+                _(f'بازیابی تنانت "{tenant.name}" شروع شد. این عملیات ممکن است چند دقیقه طول بکشد.')
+            )
+            
+        except Exception as e:
+            logger.error(f"Error starting tenant restore: {str(e)}")
+            messages.error(request, _('خطا در شروع بازیابی تنانت'))
+        
+        return redirect('admin_panel:tenant_restore')
+
+
+class BackupJobDetailView(SuperAdminRequiredMixin, TemplateView):
+    """
+    View to display detailed information about a backup job.
+    """
+    template_name = 'admin_panel/backup_job_detail.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        from .models import BackupJob
+        
+        job_id = kwargs.get('job_id')
+        backup_job = get_object_or_404(BackupJob, job_id=job_id)
+        
+        context['backup_job'] = backup_job
+        context['log_messages'] = backup_job.log_messages
+        
+        return context
+
+
+class BackupStatusAPIView(SuperAdminRequiredMixin, View):
+    """
+    API view to get real-time backup status updates.
+    """
+    
+    def get(self, request):
+        """Return backup status as JSON."""
+        from .models import BackupJob
+        
+        job_id = request.GET.get('job_id')
+        if not job_id:
+            return JsonResponse({'error': 'Missing job_id parameter'}, status=400)
+        
+        try:
+            backup_job = BackupJob.objects.get(job_id=job_id)
+            
+            return JsonResponse({
+                'status': backup_job.status,
+                'progress': backup_job.progress_percentage,
+                'duration': str(backup_job.duration),
+                'file_size': backup_job.file_size_human if backup_job.file_size_bytes else None,
+                'error_message': backup_job.error_message,
+                'log_messages': backup_job.log_messages[-10:],  # Last 10 messages
+            })
+            
+        except BackupJob.DoesNotExist:
+            return JsonResponse({'error': 'Backup job not found'}, status=404)
+        except Exception as e:
+            logger.error(f"Error getting backup status: {str(e)}")
+            return JsonResponse({'error': 'Internal server error'}, status=500)

@@ -1,0 +1,407 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}زمان‌بندی پشتیبان‌گیری{% endblock %}
+
+{% block extra_css %}
+<style>
+    .schedule-card {
+        transition: all 0.3s ease;
+    }
+    
+    .schedule-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .frequency-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        font-weight: 600;
+    }
+    
+    .frequency-daily { background-color: #3b82f6; color: white; }
+    .frequency-weekly { background-color: #10b981; color: white; }
+    .frequency-monthly { background-color: #f59e0b; color: white; }
+    .frequency-manual { background-color: #6b7280; color: white; }
+    
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+    
+    .status-active { background-color: #10b981; }
+    .status-inactive { background-color: #ef4444; }
+    
+    /* Dark mode cybersecurity theme */
+    [data-theme="dark"] .schedule-card {
+        background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 100%);
+        border: 1px solid rgba(0, 212, 255, 0.2);
+        backdrop-filter: blur(16px);
+    }
+    
+    [data-theme="dark"] .schedule-card:hover {
+        box-shadow: 0 12px 40px rgba(0, 212, 255, 0.15), 0 0 20px rgba(0, 212, 255, 0.1);
+        border-color: rgba(0, 212, 255, 0.4);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-6" x-data="backupSchedule()">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">زمان‌بندی پشتیبان‌گیری</h1>
+            <p class="text-gray-600 dark:text-gray-300 mt-2">مدیریت زمان‌بندی خودکار پشتیبان‌گیری</p>
+        </div>
+        <div class="flex gap-3">
+            <button @click="showCreateScheduleModal = true" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                زمان‌بندی جدید
+            </button>
+            <a href="{% url 'admin_panel:backup_management' %}" 
+               class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                بازگشت
+            </a>
+        </div>
+    </div>
+
+    <!-- Schedule Statistics -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">کل زمان‌بندی‌ها</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ schedules.count }}</p>
+                </div>
+                <div class="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full">
+                    <svg class="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">فعال</p>
+                    <p class="text-3xl font-bold text-green-600 dark:text-green-400">
+                        {{ schedules|length|add:"-1" }}
+                    </p>
+                </div>
+                <div class="bg-green-100 dark:bg-green-900/30 p-3 rounded-full">
+                    <svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">روزانه</p>
+                    <p class="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                        {% for schedule in schedules %}{% if schedule.frequency == 'daily' %}1{% endif %}{% endfor %}
+                    </p>
+                </div>
+                <div class="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full">
+                    <svg class="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">هفتگی</p>
+                    <p class="text-3xl font-bold text-purple-600 dark:text-purple-400">
+                        {% for schedule in schedules %}{% if schedule.frequency == 'weekly' %}1{% endif %}{% endfor %}
+                    </p>
+                </div>
+                <div class="bg-purple-100 dark:bg-purple-900/30 p-3 rounded-full">
+                    <svg class="w-8 h-8 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule List -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">زمان‌بندی‌های موجود</h2>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {% for schedule in schedules %}
+            <div class="schedule-card bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                        <span class="status-indicator {% if schedule.is_active %}status-active{% else %}status-inactive{% endif %}"></span>
+                        <div>
+                            <h3 class="font-bold text-gray-900 dark:text-white">{{ schedule.name }}</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                                {% if schedule.backup_type == 'full_system' %}پشتیبان کامل سیستم
+                                {% elif schedule.backup_type == 'database_only' %}فقط پایگاه داده
+                                {% elif schedule.backup_type == 'configuration' %}فقط پیکربندی
+                                {% else %}{{ schedule.get_backup_type_display }}{% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                        <button @click="editSchedule({{ schedule.id }})" 
+                                class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                        </button>
+                        
+                        <button @click="toggleSchedule({{ schedule.id }}, {{ schedule.is_active|yesno:'false,true' }})"
+                                class="{% if schedule.is_active %}text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300{% else %}text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300{% endif %} p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600">
+                            {% if schedule.is_active %}
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            {% else %}
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h8m-9-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            {% endif %}
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">تکرار:</span>
+                        <span class="frequency-badge frequency-{{ schedule.frequency }}">
+                            {% if schedule.frequency == 'daily' %}روزانه
+                            {% elif schedule.frequency == 'weekly' %}هفتگی
+                            {% elif schedule.frequency == 'monthly' %}ماهانه
+                            {% else %}دستی{% endif %}
+                        </span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">زمان اجرا:</span>
+                        <span class="text-sm font-medium text-gray-900 dark:text-white">{{ schedule.scheduled_time }}</span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">نگهداری:</span>
+                        <span class="text-sm font-medium text-gray-900 dark:text-white">{{ schedule.retention_days }} روز</span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">وضعیت:</span>
+                        <span class="text-sm font-medium {% if schedule.is_active %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+                            {% if schedule.is_active %}فعال{% else %}غیرفعال{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-2 text-center py-12">
+                <svg class="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <p class="text-gray-600 dark:text-gray-400">هیچ زمان‌بندی تعریف نشده است</p>
+                <button @click="showCreateScheduleModal = true" 
+                        class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                    ایجاد اولین زمان‌بندی
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Create/Edit Schedule Modal -->
+    <div x-show="showCreateScheduleModal" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+         @click.away="closeModal()">
+        
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-lg mx-4"
+             @click.stop>
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white" x-text="editingSchedule ? 'ویرایش زمان‌بندی' : 'زمان‌بندی جدید'"></h3>
+                <button @click="closeModal()" 
+                        class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <form method="post" @submit="submitForm">
+                {% csrf_token %}
+                <input type="hidden" name="schedule_id" x-model="editingSchedule">
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            نام زمان‌بندی
+                        </label>
+                        <input type="text" name="name" x-model="formData.name" required
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                               placeholder="مثال: پشتیبان روزانه">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            نوع پشتیبان‌گیری
+                        </label>
+                        <select name="backup_type" x-model="formData.backup_type" required
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                            <option value="full_system">پشتیبان کامل سیستم</option>
+                            <option value="database_only">فقط پایگاه داده</option>
+                            <option value="configuration">فقط پیکربندی</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            تکرار
+                        </label>
+                        <select name="frequency" x-model="formData.frequency" required
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                            <option value="daily">روزانه</option>
+                            <option value="weekly">هفتگی</option>
+                            <option value="monthly">ماهانه</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            زمان اجرا
+                        </label>
+                        <input type="time" name="scheduled_time" x-model="formData.scheduled_time" required
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            مدت نگهداری (روز)
+                        </label>
+                        <input type="number" name="retention_days" x-model="formData.retention_days" min="1" max="365" value="30"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+                    
+                    <div class="flex items-center">
+                        <input type="checkbox" name="is_active" x-model="formData.is_active" id="is_active"
+                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label for="is_active" class="mr-2 block text-sm text-gray-900 dark:text-white">
+                            فعال
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="flex gap-3 mt-6">
+                    <button type="submit"
+                            class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                        <span x-text="editingSchedule ? 'به‌روزرسانی' : 'ایجاد زمان‌بندی'"></span>
+                    </button>
+                    <button type="button" @click="closeModal()"
+                            class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        انصراف
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function backupSchedule() {
+    return {
+        showCreateScheduleModal: false,
+        editingSchedule: null,
+        formData: {
+            name: '',
+            backup_type: 'full_system',
+            frequency: 'daily',
+            scheduled_time: '03:00',
+            retention_days: 30,
+            is_active: true
+        },
+        
+        editSchedule(scheduleId) {
+            // In a real implementation, you would fetch the schedule data
+            this.editingSchedule = scheduleId;
+            this.showCreateScheduleModal = true;
+            
+            // For demo purposes, we'll just open the modal
+            // In reality, you'd populate formData with existing schedule data
+        },
+        
+        closeModal() {
+            this.showCreateScheduleModal = false;
+            this.editingSchedule = null;
+            this.resetForm();
+        },
+        
+        resetForm() {
+            this.formData = {
+                name: '',
+                backup_type: 'full_system',
+                frequency: 'daily',
+                scheduled_time: '03:00',
+                retention_days: 30,
+                is_active: true
+            };
+        },
+        
+        submitForm(event) {
+            // Form will be submitted normally
+            // You could add client-side validation here if needed
+        },
+        
+        async toggleSchedule(scheduleId, newStatus) {
+            try {
+                const response = await fetch(`/admin/backup/schedule/toggle/${scheduleId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ is_active: newStatus })
+                });
+                
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('خطا در تغییر وضعیت زمان‌بندی');
+                }
+            } catch (error) {
+                console.error('Error toggling schedule:', error);
+                alert('خطا در تغییر وضعیت زمان‌بندی');
+            }
+        }
+    }
+}
+</script>
+{% endblock %}
