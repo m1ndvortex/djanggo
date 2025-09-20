@@ -22,6 +22,7 @@ qrcode==7.4.2
 pyotp==2.9.0
 Pillow==10.4.0
 argon2-cffi==23.1.0
+django-hijack==3.4.5
 
 # Storage
 django-storages==1.14.4

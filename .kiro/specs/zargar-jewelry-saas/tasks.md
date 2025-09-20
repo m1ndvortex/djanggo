@@ -409,7 +409,12 @@
     - Write tests for billing UI workflows and Persian formatting
     - _Requirements: 5.5, 5.6_
 
-  - [ ] 8.6 Build secure admin impersonation system using django-hijack (Backend)
+  - [x] 8.6 Build secure admin impersonation system using django-hijack (Backend)
+
+
+
+
+
     - Install and configure django-hijack package in Django settings and requirements
     - Configure django-hijack with tenant-aware permissions and super-admin restrictions
     - Create ImpersonationSession model for comprehensive audit logging of all hijack sessions
@@ -419,7 +424,12 @@
     - Write security tests for django-hijack integration and audit trail functionality
     - _Requirements: 5.4, 5.7, 5.10, 5.11_
 
-  - [ ] 8.7 Build admin impersonation frontend interface using django-hijack (Frontend)
+  - [x] 8.7 Build admin impersonation frontend interface using django-hijack (Frontend)
+
+
+
+
+
     - Integrate django-hijack templates with admin interface and Persian RTL layout
     - Build user search interface with django-hijack "Impersonate" buttons for each user
     - Customize django-hijack notification banner with Persian text and exit functionality
@@ -431,6 +441,7 @@
 
 - [ ] 9. Backup & Recovery System Implementation
   - [ ] 9.1 Configure Cloudflare R2 and Backblaze B2 storage integration (Backend)
+
     - Set up django-storages with Cloudflare R2 and Backblaze B2 configurations using provided credentials
     - Implement RedundantBackupStorage class for dual storage upload
     - Configure environment variables for storage credentials in Docker environment

@@ -30,6 +30,8 @@ SHARED_APPS = [
     'rest_framework_simplejwt',
     'corsheaders',
     'django_otp',
+    'hijack',
+    'hijack.contrib.admin',
     'storages',
     'compressor',
     'sass_processor',
@@ -79,6 +81,8 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django_otp.middleware.OTPMiddleware',
+    'hijack.middleware.HijackUserMiddleware',  # Django-hijack middleware
+    'zargar.admin_panel.middleware.ImpersonationAuditMiddleware',  # Custom impersonation audit
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.locale.LocaleMiddleware',
@@ -335,6 +339,23 @@ SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 
+# Django-Hijack Configuration
+HIJACK_LOGIN_REDIRECT_URL = '/'  # Redirect to tenant dashboard after hijack
+HIJACK_LOGOUT_REDIRECT_URL = '/admin/dashboard/'  # Redirect to admin panel after release
+HIJACK_ALLOW_GET_REQUESTS = False  # Only allow POST requests for security
+HIJACK_REGISTER_ADMIN = False  # Don't auto-register in admin (we'll do it manually)
+HIJACK_USE_BOOTSTRAP = False  # We use our own styling
+HIJACK_DISPLAY_ADMIN_BUTTON = False  # We'll create custom buttons
+HIJACK_DISPLAY_WARNING = True  # Show warning banner
+HIJACK_PERMISSION_CHECK = 'zargar.admin_panel.hijack_permissions.is_super_admin'  # Custom permission check
+HIJACK_AUTHORIZATION_CHECK = 'zargar.admin_panel.hijack_permissions.authorize_hijack'  # Custom authorization
+HIJACK_DECORATOR = 'zargar.admin_panel.hijack_permissions.hijack_decorator'  # Custom decorator
+
+# Hijack session settings
+HIJACK_INSERT_BEFORE = '</body>'  # Where to insert the hijack banner
+HIJACK_NOTIFY_ADMIN = True  # Notify admin of hijack sessions
+HIJACK_NOTIFY_USER = False  # Don't notify the hijacked user
+
 # Logging
 LOGGING = {
     'version': 1,
@@ -361,6 +382,12 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
         },
+        'hijack_audit': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'hijack_audit.log',
+            'formatter': 'verbose',
+        },
     },
     'root': {
         'handlers': ['console', 'file'],
@@ -375,6 +402,11 @@ LOGGING = {
         'zargar': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
+            'propagate': False,
+        },
+        'hijack_audit': {
+            'handlers': ['hijack_audit', 'console'],
+            'level': 'INFO',
             'propagate': False,
         },
     },
