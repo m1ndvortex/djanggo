@@ -1,0 +1,381 @@
+{% extends 'admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}مدیریت تنانت‌ها - پنل مدیریت زرگر{% endblock %}
+
+{% block nav_title %}مدیریت تنانت‌ها{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tenant-card {
+        transition: all 0.3s ease;
+    }
+    .tenant-card:hover {
+        transform: translateY(-2px);
+    }
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    .status-active {
+        background-color: rgba(34, 197, 94, 0.1);
+        color: rgb(34, 197, 94);
+        border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+    .status-inactive {
+        background-color: rgba(239, 68, 68, 0.1);
+        color: rgb(239, 68, 68);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+    .dark .status-active {
+        background-color: rgba(0, 255, 136, 0.1);
+        color: #00FF88;
+        border: 1px solid rgba(0, 255, 136, 0.2);
+    }
+    .dark .status-inactive {
+        background-color: rgba(255, 71, 87, 0.1);
+        color: #FF4757;
+        border: 1px solid rgba(255, 71, 87, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block page_header %}
+<div class="bg-white dark:bg-cyber-bg-secondary rounded-lg shadow-lg dark:shadow-2xl p-6 mb-6 cyber-glass">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary">مدیریت تنانت‌ها</h1>
+            <p class="text-gray-600 dark:text-cyber-text-secondary mt-1">مدیریت فروشگاه‌های طلا و جواهر</p>
+        </div>
+        <div class="flex space-x-3 space-x-reverse">
+            <a href="{% url 'core:tenants:tenant_create' %}" 
+               class="bg-primary-500 dark:bg-cyber-neon-primary hover:bg-primary-600 dark:hover:bg-cyber-neon-primary/80 text-white px-4 py-2 rounded-lg font-medium transition-colors cyber-button">
+                <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                ایجاد تنانت جدید
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Statistics Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow dark:shadow-2xl p-6 cyber-card">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-blue-100 dark:bg-cyber-neon-primary/10">
+                <svg class="w-6 h-6 text-blue-600 dark:text-cyber-neon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">کل تنانت‌ها</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ total_tenants }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow dark:shadow-2xl p-6 cyber-card">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-green-100 dark:bg-cyber-neon-secondary/10">
+                <svg class="w-6 h-6 text-green-600 dark:text-cyber-neon-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">فعال</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ active_tenants }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow dark:shadow-2xl p-6 cyber-card">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-red-100 dark:bg-cyber-neon-danger/10">
+                <svg class="w-6 h-6 text-red-600 dark:text-cyber-neon-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">غیرفعال</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ inactive_tenants }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow dark:shadow-2xl p-6 cyber-card">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 dark:bg-cyber-neon-warning/10">
+                <svg class="w-6 h-6 text-yellow-600 dark:text-cyber-neon-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">عضویت اخیر (۳۰ روز)</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ recent_signups }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search and Filter Section -->
+<div class="bg-white dark:bg-cyber-bg-secondary rounded-lg shadow-lg dark:shadow-2xl p-6 mb-6 cyber-glass">
+    <form method="get" class="space-y-4" hx-get="{% url 'core:tenants:tenant_list' %}" hx-target="#tenant-list-container" hx-trigger="submit, input delay:500ms from:input[name='search']">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div class="md:col-span-2">
+                <label for="search" class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">جستجو</label>
+                <input type="text" name="search" id="search" value="{{ request.GET.search }}"
+                       placeholder="جستجو در نام، مالک، ایمیل یا اسکیما..."
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-primary-500 dark:focus:border-cyber-neon-primary bg-white dark:bg-cyber-bg-surface text-gray-900 dark:text-cyber-text-primary">
+            </div>
+            
+            <div>
+                <label for="status" class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">وضعیت</label>
+                <select name="status" id="status" class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-primary-500 dark:focus:border-cyber-neon-primary bg-white dark:bg-cyber-bg-surface text-gray-900 dark:text-cyber-text-primary">
+                    <option value="">همه وضعیت‌ها</option>
+                    <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>فعال</option>
+                    <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>غیرفعال</option>
+                </select>
+            </div>
+            
+            <div>
+                <label for="plan" class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">پلن اشتراک</label>
+                <select name="plan" id="plan" class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-primary-500 dark:focus:border-cyber-neon-primary bg-white dark:bg-cyber-bg-surface text-gray-900 dark:text-cyber-text-primary">
+                    <option value="">همه پلن‌ها</option>
+                    {% for value, label in subscription_plans %}
+                        <option value="{{ value }}" {% if request.GET.plan == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="flex items-end">
+                <button type="submit" class="w-full bg-primary-500 dark:bg-cyber-neon-primary hover:bg-primary-600 dark:hover:bg-cyber-neon-primary/80 text-white px-4 py-2 rounded-lg font-medium transition-colors cyber-button">
+                    <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    جستجو
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Bulk Actions -->
+<div id="bulk-actions" class="bg-white dark:bg-cyber-bg-secondary rounded-lg shadow-lg dark:shadow-2xl p-4 mb-6 hidden cyber-glass">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-4 space-x-reverse">
+            <span class="text-sm font-medium text-gray-700 dark:text-cyber-text-secondary">
+                <span id="selected-count">0</span> تنانت انتخاب شده
+            </span>
+            <select id="bulk-action-select" class="px-3 py-1 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg text-sm bg-white dark:bg-cyber-bg-surface text-gray-900 dark:text-cyber-text-primary">
+                <option value="">انتخاب عمل...</option>
+                <option value="activate">فعال کردن</option>
+                <option value="deactivate">غیرفعال کردن</option>
+                <option value="delete">حذف</option>
+            </select>
+            <button id="apply-bulk-action" class="bg-primary-500 dark:bg-cyber-neon-primary hover:bg-primary-600 dark:hover:bg-cyber-neon-primary/80 text-white px-4 py-1 rounded-lg text-sm font-medium transition-colors cyber-button">
+                اعمال
+            </button>
+        </div>
+        <button id="clear-selection" class="text-gray-500 dark:text-cyber-text-muted hover:text-gray-700 dark:hover:text-cyber-text-secondary text-sm">
+            لغو انتخاب
+        </button>
+    </div>
+</div>
+
+<!-- Tenant List -->
+<div id="tenant-list-container">
+    {% include 'admin/tenants/tenant_list_partial.html' %}
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<div class="bg-white dark:bg-cyber-bg-secondary rounded-lg shadow-lg dark:shadow-2xl p-4 mt-6 cyber-glass">
+    <div class="flex items-center justify-between">
+        <div class="text-sm text-gray-700 dark:text-cyber-text-secondary">
+            نمایش {{ page_obj.start_index }} تا {{ page_obj.end_index }} از {{ page_obj.paginator.count }} تنانت
+        </div>
+        <div class="flex space-x-2 space-x-reverse">
+            {% if page_obj.has_previous %}
+                <a href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.plan %}&plan={{ request.GET.plan }}{% endif %}" 
+                   class="px-3 py-2 text-sm font-medium text-gray-500 dark:text-cyber-text-muted bg-white dark:bg-cyber-bg-surface border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated">
+                    اول
+                </a>
+                <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.plan %}&plan={{ request.GET.plan }}{% endif %}" 
+                   class="px-3 py-2 text-sm font-medium text-gray-500 dark:text-cyber-text-muted bg-white dark:bg-cyber-bg-surface border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated">
+                    قبلی
+                </a>
+            {% endif %}
+            
+            <span class="px-3 py-2 text-sm font-medium text-gray-900 dark:text-cyber-text-primary bg-primary-50 dark:bg-cyber-neon-primary/10 border border-primary-300 dark:border-cyber-neon-primary/30 rounded-lg">
+                {{ page_obj.number }}
+            </span>
+            
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.plan %}&plan={{ request.GET.plan }}{% endif %}" 
+                   class="px-3 py-2 text-sm font-medium text-gray-500 dark:text-cyber-text-muted bg-white dark:bg-cyber-bg-surface border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated">
+                    بعدی
+                </a>
+                <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.plan %}&plan={{ request.GET.plan }}{% endif %}" 
+                   class="px-3 py-2 text-sm font-medium text-gray-500 dark:text-cyber-text-muted bg-white dark:bg-cyber-bg-surface border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated">
+                    آخر
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('input[name="tenant_ids"]');
+    const selectAllCheckbox = document.getElementById('select-all');
+    const bulkActionsDiv = document.getElementById('bulk-actions');
+    const selectedCountSpan = document.getElementById('selected-count');
+    const bulkActionSelect = document.getElementById('bulk-action-select');
+    const applyBulkActionBtn = document.getElementById('apply-bulk-action');
+    const clearSelectionBtn = document.getElementById('clear-selection');
+    
+    function updateBulkActions() {
+        const selectedCheckboxes = document.querySelectorAll('input[name="tenant_ids"]:checked');
+        const count = selectedCheckboxes.length;
+        
+        if (count > 0) {
+            bulkActionsDiv.classList.remove('hidden');
+            selectedCountSpan.textContent = ZargarAdmin.formatPersianNumber(count);
+        } else {
+            bulkActionsDiv.classList.add('hidden');
+        }
+        
+        // Update select all checkbox
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = count === checkboxes.length;
+            selectAllCheckbox.indeterminate = count > 0 && count < checkboxes.length;
+        }
+    }
+    
+    // Handle individual checkbox changes
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateBulkActions);
+    });
+    
+    // Handle select all checkbox
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateBulkActions();
+        });
+    }
+    
+    // Handle clear selection
+    clearSelectionBtn.addEventListener('click', function() {
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+        }
+        updateBulkActions();
+    });
+    
+    // Handle bulk action application
+    applyBulkActionBtn.addEventListener('click', function() {
+        const selectedCheckboxes = document.querySelectorAll('input[name="tenant_ids"]:checked');
+        const action = bulkActionSelect.value;
+        
+        if (!action) {
+            ZargarAdmin.showMessage('لطفاً عملی را انتخاب کنید.', 'error');
+            return;
+        }
+        
+        if (selectedCheckboxes.length === 0) {
+            ZargarAdmin.showMessage('لطفاً حداقل یک تنانت را انتخاب کنید.', 'error');
+            return;
+        }
+        
+        const tenantIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+        const actionText = {
+            'activate': 'فعال کردن',
+            'deactivate': 'غیرفعال کردن',
+            'delete': 'حذف'
+        }[action];
+        
+        if (confirm(`آیا مطمئن هستید که می‌خواهید ${actionText} ${ZargarAdmin.formatPersianNumber(tenantIds.length)} تنانت انتخاب شده را انجام دهید؟`)) {
+            ZargarAdmin.showLoading();
+            
+            fetch('{% url "core:tenants:tenant_bulk_action" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: new URLSearchParams({
+                    'action': action,
+                    'tenant_ids': tenantIds
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                ZargarAdmin.hideLoading();
+                if (data.success) {
+                    ZargarAdmin.showMessage(data.message, 'success');
+                    location.reload();
+                } else {
+                    ZargarAdmin.showMessage(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                ZargarAdmin.hideLoading();
+                ZargarAdmin.showMessage('خطا در انجام عملیات', 'error');
+            });
+        }
+    });
+    
+    // Handle status toggle
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('toggle-status-btn')) {
+            e.preventDefault();
+            const tenantId = e.target.dataset.tenantId;
+            const currentStatus = e.target.dataset.currentStatus === 'true';
+            const newStatusText = currentStatus ? 'غیرفعال' : 'فعال';
+            
+            if (confirm(`آیا مطمئن هستید که می‌خواهید این تنانت را ${newStatusText} کنید؟`)) {
+                ZargarAdmin.showLoading();
+                
+                fetch(`/admin/tenants/${tenantId}/toggle-status/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    ZargarAdmin.hideLoading();
+                    if (data.success) {
+                        ZargarAdmin.showMessage(data.message, 'success');
+                        location.reload();
+                    } else {
+                        ZargarAdmin.showMessage(data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    ZargarAdmin.hideLoading();
+                    ZargarAdmin.showMessage('خطا در تغییر وضعیت', 'error');
+                });
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
