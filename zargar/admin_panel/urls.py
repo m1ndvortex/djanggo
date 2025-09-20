@@ -3,6 +3,7 @@ URL configuration for admin panel.
 """
 from django.urls import path, include
 from . import views
+from . import disaster_recovery_views
 
 app_name = 'admin_panel'
 
@@ -33,6 +34,11 @@ urlpatterns = [
     path('backup/restore/', views.TenantRestoreView.as_view(), name='tenant_restore'),
     path('backup/job/<uuid:job_id>/', views.BackupJobDetailView.as_view(), name='backup_job_detail'),
     path('backup/status/', views.BackupStatusAPIView.as_view(), name='backup_status_api'),
+    
+    # Disaster Recovery
+    path('disaster-recovery/', disaster_recovery_views.DisasterRecoveryDashboardView.as_view(), name='disaster_recovery_dashboard'),
+    path('disaster-recovery/test/', disaster_recovery_views.DisasterRecoveryTestView.as_view(), name='disaster_recovery_test'),
+    path('disaster-recovery/documentation/', disaster_recovery_views.DisasterRecoveryDocumentationView.as_view(), name='disaster_recovery_documentation'),
     
     # Include django-hijack URLs
     path('hijack/', include('hijack.urls')),

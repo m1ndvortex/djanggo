@@ -489,7 +489,15 @@
     - Write integration tests for complete disaster recovery scenarios
     - _Requirements: 5.11, 5.12_
 
-  - [ ] 9.5 Build disaster recovery dashboard UI (Frontend)
+  - [x] 9.5 Build disaster recovery dashboard UI (Frontend)
+
+
+
+
+
+
+
+
     - Build disaster recovery dashboard with step-by-step rebuild procedures display
     - Create disaster recovery testing interface with validation results
     - Implement recovery procedure documentation viewer with clear instructions
@@ -498,6 +506,7 @@
     - _Requirements: 5.11, 5.12_
 
   - [ ] 9.6 Build tenant restoration system backend (Backend)
+
     - Create automated, temporary snapshot system before high-risk tenant operations (like data import) for quick, targeted undo
     - Implement selective tenant restoration from main backup using pg_restore with specific flags (--schema=tenant_schema_name)
     - Build Celery background task for tenant restoration that extracts and restores only specific tenant's schema
