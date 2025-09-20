@@ -452,7 +452,7 @@
     - Write tests for storage connectivity and file upload/download
     - _Requirements: 5.10, 5.11_
 
-  - [ ] 9.2 Build automated backup system backend (Backend)
+  - [x] 9.2 Build automated backup system backend (Backend)
 
 
 
@@ -505,7 +505,12 @@
     - Write tests for disaster recovery UI and documentation access
     - _Requirements: 5.11, 5.12_
 
-  - [ ] 9.6 Build tenant restoration system backend (Backend)
+  - [x] 9.6 Build tenant restoration system backend (Backend)
+
+
+
+
+
 
     - Create automated, temporary snapshot system before high-risk tenant operations (like data import) for quick, targeted undo
     - Implement selective tenant restoration from main backup using pg_restore with specific flags (--schema=tenant_schema_name)

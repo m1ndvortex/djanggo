@@ -674,7 +674,8 @@ class TenantRestoreView(SuperAdminRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        from .models import BackupJob
+        from .models import BackupJob, RestoreJob
+        from .tenant_restoration import tenant_restoration_manager
         from zargar.tenants.models import Tenant
         
         # Get available backups for restoration
@@ -686,16 +687,39 @@ class TenantRestoreView(SuperAdminRequiredMixin, TemplateView):
         # Get all tenants for selection
         tenants = Tenant.objects.exclude(schema_name='public').order_by('name')
         
+        # Get available snapshots
+        available_snapshots = tenant_restoration_manager.get_available_snapshots()
+        
+        # Get recent restore jobs
+        recent_restores = RestoreJob.objects.order_by('-created_at')[:10]
+        
         context.update({
             'available_backups': available_backups,
             'tenants': tenants,
+            'available_snapshots': available_snapshots,
+            'recent_restores': recent_restores,
         })
         
         return context
     
     def post(self, request):
         """Handle tenant restore request."""
-        from .models import BackupJob, RestoreJob
+        from .tenant_restoration import tenant_restoration_manager
+        from zargar.tenants.models import Tenant
+        
+        restore_type = request.POST.get('restore_type')
+        
+        if restore_type == 'from_backup':
+            return self._handle_backup_restore(request)
+        elif restore_type == 'from_snapshot':
+            return self._handle_snapshot_restore(request)
+        else:
+            messages.error(request, _('نوع بازیابی نامعتبر است.'))
+            return redirect('admin_panel:tenant_restore')
+    
+    def _handle_backup_restore(self, request):
+        """Handle restoration from main backup."""
+        from .tenant_restoration import tenant_restoration_manager
         from zargar.tenants.models import Tenant
         
         backup_id = request.POST.get('backup_id')
@@ -707,43 +731,191 @@ class TenantRestoreView(SuperAdminRequiredMixin, TemplateView):
             return redirect('admin_panel:tenant_restore')
         
         try:
-            backup = BackupJob.objects.get(id=backup_id)
             tenant = Tenant.objects.get(id=target_tenant_id)
             
-            # Validate confirmation text
-            expected_text = tenant.domain_url
-            if confirmation_text != expected_text:
-                messages.error(
-                    request, 
-                    _(f'متن تأیید اشتباه است. لطفاً "{expected_text}" را تایپ کنید.')
-                )
-                return redirect('admin_panel:tenant_restore')
-            
-            # Create restore job
-            restore_job = RestoreJob.objects.create(
-                restore_type='single_tenant',
-                source_backup=backup,
+            # Use tenant restoration manager
+            result = tenant_restoration_manager.restore_tenant_from_main_backup(
+                backup_id=backup_id,
                 target_tenant_schema=tenant.schema_name,
-                confirmed_by_typing=confirmation_text,
+                confirmation_text=confirmation_text,
                 created_by_id=request.user.id,
-                created_by_username=request.user.username,
-                status='pending'
+                created_by_username=request.user.username
             )
             
-            # Start restore process asynchronously
-            from .tasks import start_restore_job
-            start_restore_job.delay(restore_job.job_id)
+            if result['success']:
+                messages.success(
+                    request,
+                    _(f'بازیابی تنانت "{tenant.name}" شروع شد. شناسه کار: {result["restore_job_id"][:8]}...')
+                )
+            else:
+                messages.error(request, _(f'خطا در شروع بازیابی: {result["error"]}'))
             
-            messages.success(
-                request,
-                _(f'بازیابی تنانت "{tenant.name}" شروع شد. این عملیات ممکن است چند دقیقه طول بکشد.')
-            )
-            
+        except Tenant.DoesNotExist:
+            messages.error(request, _('تنانت مورد نظر یافت نشد.'))
         except Exception as e:
             logger.error(f"Error starting tenant restore: {str(e)}")
             messages.error(request, _('خطا در شروع بازیابی تنانت'))
         
         return redirect('admin_panel:tenant_restore')
+    
+    def _handle_snapshot_restore(self, request):
+        """Handle restoration from snapshot."""
+        from .tenant_restoration import tenant_restoration_manager
+        
+        snapshot_id = request.POST.get('snapshot_id')
+        
+        if not snapshot_id:
+            messages.error(request, _('شناسه اسنپ‌شات الزامی است.'))
+            return redirect('admin_panel:tenant_restore')
+        
+        try:
+            # Use tenant restoration manager
+            result = tenant_restoration_manager.restore_tenant_from_snapshot(
+                snapshot_id=snapshot_id,
+                created_by_id=request.user.id,
+                created_by_username=request.user.username
+            )
+            
+            if result['success']:
+                messages.success(
+                    request,
+                    _(f'بازیابی از اسنپ‌شات شروع شد. شناسه کار: {result["restore_job_id"][:8]}...')
+                )
+            else:
+                messages.error(request, _(f'خطا در شروع بازیابی: {result["error"]}'))
+            
+        except Exception as e:
+            logger.error(f"Error starting snapshot restore: {str(e)}")
+            messages.error(request, _('خطا در شروع بازیابی از اسنپ‌شات'))
+        
+        return redirect('admin_panel:tenant_restore')
+
+
+class TenantSnapshotView(SuperAdminRequiredMixin, TemplateView):
+    """
+    View to manage tenant snapshots.
+    """
+    template_name = 'admin_panel/tenant_snapshots.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        from .models import TenantSnapshot
+        from .tenant_restoration import tenant_restoration_manager
+        from zargar.tenants.models import Tenant
+        
+        # Get available snapshots
+        available_snapshots = tenant_restoration_manager.get_available_snapshots()
+        
+        # Get all tenants for filtering
+        tenants = Tenant.objects.exclude(schema_name='public').order_by('name')
+        
+        # Get recent snapshots with more details
+        recent_snapshots = TenantSnapshot.objects.order_by('-created_at')[:20]
+        
+        context.update({
+            'available_snapshots': available_snapshots,
+            'tenants': tenants,
+            'recent_snapshots': recent_snapshots,
+        })
+        
+        return context
+    
+    def post(self, request):
+        """Handle snapshot operations."""
+        action = request.POST.get('action')
+        
+        if action == 'create_snapshot':
+            return self._handle_create_snapshot(request)
+        elif action == 'cleanup_snapshots':
+            return self._handle_cleanup_snapshots(request)
+        else:
+            messages.error(request, _('عملیات نامعتبر است.'))
+            return redirect('admin_panel:tenant_snapshots')
+    
+    def _handle_create_snapshot(self, request):
+        """Handle manual snapshot creation."""
+        from .tenant_restoration import tenant_restoration_manager
+        from zargar.tenants.models import Tenant
+        
+        tenant_id = request.POST.get('tenant_id')
+        operation_description = request.POST.get('operation_description')
+        
+        if not tenant_id or not operation_description:
+            messages.error(request, _('تنانت و توضیحات عملیات الزامی است.'))
+            return redirect('admin_panel:tenant_snapshots')
+        
+        try:
+            tenant = Tenant.objects.get(id=tenant_id)
+            
+            # Create snapshot
+            result = tenant_restoration_manager.create_pre_operation_snapshot(
+                tenant_schema=tenant.schema_name,
+                operation_description=operation_description,
+                created_by_id=request.user.id,
+                created_by_username=request.user.username
+            )
+            
+            if result['success']:
+                messages.success(
+                    request,
+                    _(f'اسنپ‌شات برای تنانت "{tenant.name}" ایجاد شد. شناسه: {result["snapshot_id"][:8]}...')
+                )
+            else:
+                messages.error(request, _(f'خطا در ایجاد اسنپ‌شات: {result["error"]}'))
+            
+        except Tenant.DoesNotExist:
+            messages.error(request, _('تنانت مورد نظر یافت نشد.'))
+        except Exception as e:
+            logger.error(f"Error creating snapshot: {str(e)}")
+            messages.error(request, _('خطا در ایجاد اسنپ‌شات'))
+        
+        return redirect('admin_panel:tenant_snapshots')
+    
+    def _handle_cleanup_snapshots(self, request):
+        """Handle snapshot cleanup."""
+        from .tenant_restoration import tenant_restoration_manager
+        
+        try:
+            result = tenant_restoration_manager.cleanup_old_snapshots()
+            
+            if result['success']:
+                messages.success(request, _('پاکسازی اسنپ‌شات‌ها شروع شد.'))
+            else:
+                messages.error(request, _(f'خطا در پاکسازی: {result["error"]}'))
+            
+        except Exception as e:
+            logger.error(f"Error starting snapshot cleanup: {str(e)}")
+            messages.error(request, _('خطا در شروع پاکسازی اسنپ‌شات‌ها'))
+        
+        return redirect('admin_panel:tenant_snapshots')
+
+
+class RestoreJobDetailView(SuperAdminRequiredMixin, TemplateView):
+    """
+    View to display detailed information about a restore job.
+    """
+    template_name = 'admin_panel/restore_job_detail.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        from .models import RestoreJob
+        from .tenant_restoration import tenant_restoration_manager
+        
+        job_id = kwargs.get('job_id')
+        
+        # Get restore job details
+        status_result = tenant_restoration_manager.get_restoration_status(job_id)
+        
+        if status_result['success']:
+            restore_job = RestoreJob.objects.get(job_id=job_id)
+            context['restore_job'] = restore_job
+            context['status_data'] = status_result
+        else:
+            context['error'] = status_result['error']
+        
+        return context
 
 
 class BackupJobDetailView(SuperAdminRequiredMixin, TemplateView):

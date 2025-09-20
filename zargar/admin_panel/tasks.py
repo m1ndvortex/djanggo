@@ -711,6 +711,407 @@ def cleanup_old_backups():
         logger.error(f"Error in backup cleanup task: {str(e)}")
 
 
+@shared_task(bind=True)
+def create_tenant_snapshot(self, tenant_schema, operation_description, created_by_id=None, created_by_username='system'):
+    """
+    Create a temporary snapshot backup before high-risk tenant operations.
+    
+    Args:
+        tenant_schema: Schema name of the tenant to snapshot
+        operation_description: Description of the operation requiring snapshot
+        created_by_id: ID of user creating snapshot
+        created_by_username: Username of user creating snapshot
+        
+    Returns:
+        dict: Result with success status, snapshot_id, or error
+    """
+    from .models import TenantSnapshot, BackupJob
+    from zargar.tenants.models import Tenant
+    
+    try:
+        logger.info(f"Creating tenant snapshot for schema: {tenant_schema}")
+        
+        # Get tenant information
+        try:
+            tenant = Tenant.objects.get(schema_name=tenant_schema)
+            tenant_domain = tenant.domain_url
+        except Tenant.DoesNotExist:
+            tenant_domain = ''
+        
+        # Create snapshot record
+        snapshot = TenantSnapshot.objects.create(
+            name=f"Pre-operation snapshot - {operation_description[:50]}",
+            snapshot_type='pre_operation',
+            tenant_schema=tenant_schema,
+            tenant_domain=tenant_domain,
+            operation_description=operation_description,
+            created_by_id=created_by_id,
+            created_by_username=created_by_username,
+            status='pending'
+        )
+        
+        snapshot.mark_as_creating()
+        
+        # Create associated backup job
+        backup_job = BackupJob.objects.create(
+            name=f"Snapshot backup for {tenant_schema}",
+            backup_type='tenant_only',
+            tenant_schema=tenant_schema,
+            frequency='manual',
+            created_by_id=created_by_id,
+            created_by_username=created_by_username,
+            status='pending'
+        )
+        
+        # Link snapshot to backup job
+        snapshot.backup_job = backup_job
+        snapshot.save(update_fields=['backup_job'])
+        
+        # Perform tenant backup for snapshot
+        result = perform_tenant_backup(backup_job)
+        
+        if result['success']:
+            snapshot.mark_as_completed(
+                file_path=result['file_path'],
+                file_size_bytes=result['file_size']
+            )
+            
+            logger.info(f"Tenant snapshot created successfully: {snapshot.snapshot_id}")
+            
+            return {
+                'success': True,
+                'snapshot_id': str(snapshot.snapshot_id),
+                'backup_id': str(backup_job.job_id),
+                'file_path': result['file_path'],
+                'file_size': result['file_size'],
+                'tenant_schema': tenant_schema
+            }
+        else:
+            snapshot.mark_as_failed(result['error'])
+            backup_job.mark_as_failed(result['error'])
+            
+            logger.error(f"Tenant snapshot failed for {tenant_schema}: {result['error']}")
+            
+            return {
+                'success': False,
+                'error': result['error'],
+                'snapshot_id': str(snapshot.snapshot_id),
+                'tenant_schema': tenant_schema
+            }
+            
+    except Exception as e:
+        logger.error(f"Error creating tenant snapshot for {tenant_schema}: {str(e)}")
+        
+        # Mark snapshot as failed if it was created
+        try:
+            if 'snapshot' in locals():
+                snapshot.mark_as_failed(str(e))
+        except:
+            pass
+        
+        return {
+            'success': False,
+            'error': str(e),
+            'tenant_schema': tenant_schema
+        }
+
+
+@shared_task(bind=True)
+def restore_tenant_from_backup(self, restore_job_id):
+    """
+    Restore a single tenant from a backup using pg_restore with schema-specific flags.
+    
+    Args:
+        restore_job_id: UUID of the restore job to execute
+        
+    Returns:
+        dict: Result with success status or error
+    """
+    from .models import RestoreJob
+    
+    try:
+        # Get the restore job
+        restore_job = RestoreJob.objects.get(job_id=restore_job_id)
+        restore_job.mark_as_running()
+        
+        logger.info(f"Starting tenant restoration job {restore_job_id}")
+        
+        # Validate restore job
+        if not restore_job.target_tenant_schema:
+            raise ValueError("Target tenant schema not specified")
+        
+        if restore_job.restore_type not in ['single_tenant', 'snapshot_restore']:
+            raise ValueError(f"Invalid restore type for tenant restoration: {restore_job.restore_type}")
+        
+        # Perform the restoration
+        result = perform_selective_tenant_restore(restore_job)
+        
+        if result['success']:
+            restore_job.mark_as_completed()
+            logger.info(f"Tenant restoration completed successfully: {restore_job_id}")
+        else:
+            restore_job.mark_as_failed(result['error'])
+            logger.error(f"Tenant restoration failed: {restore_job_id} - {result['error']}")
+        
+        return result
+        
+    except RestoreJob.DoesNotExist:
+        logger.error(f"Restore job {restore_job_id} not found")
+        return {'success': False, 'error': 'Restore job not found'}
+    except Exception as e:
+        logger.error(f"Error in tenant restoration job {restore_job_id}: {str(e)}")
+        try:
+            restore_job = RestoreJob.objects.get(job_id=restore_job_id)
+            restore_job.mark_as_failed(str(e))
+        except:
+            pass
+        return {'success': False, 'error': str(e)}
+
+
+def perform_selective_tenant_restore(restore_job):
+    """
+    Perform selective tenant restoration from main backup using pg_restore with specific schema flags.
+    
+    Args:
+        restore_job: RestoreJob instance
+        
+    Returns:
+        dict: Result with success status or error
+    """
+    try:
+        restore_job.update_progress(5, f"Starting selective restore for tenant: {restore_job.target_tenant_schema}")
+        
+        # Validate that other tenants won't be affected
+        from zargar.tenants.models import Tenant
+        
+        # Ensure target tenant exists
+        try:
+            target_tenant = Tenant.objects.get(schema_name=restore_job.target_tenant_schema)
+        except Tenant.DoesNotExist:
+            raise Exception(f"Target tenant schema '{restore_job.target_tenant_schema}' does not exist")
+        
+        restore_job.update_progress(10, "Downloading backup file from storage")
+        
+        # Download backup file from storage
+        backup_content = storage_manager.download_backup_file(restore_job.source_backup.file_path)
+        if not backup_content:
+            raise Exception("Failed to download backup file from storage")
+        
+        restore_job.update_progress(25, "Backup file downloaded, preparing for restoration")
+        
+        # Create temporary file for restore
+        with tempfile.NamedTemporaryFile(mode='w+b', delete=False, suffix='.sql') as temp_file:
+            temp_file.write(backup_content)
+            temp_path = temp_file.name
+        
+        restore_job.update_progress(35, "Creating pre-restoration snapshot for safety")
+        
+        # Create a safety snapshot before restoration (if not already a snapshot restore)
+        if restore_job.restore_type != 'snapshot_restore':
+            safety_snapshot_result = create_tenant_snapshot.apply(
+                args=[
+                    restore_job.target_tenant_schema,
+                    f"Safety snapshot before restore from {restore_job.source_backup.name}",
+                    restore_job.created_by_id,
+                    restore_job.created_by_username
+                ]
+            )
+            
+            if not safety_snapshot_result.get('success', False):
+                logger.warning(f"Failed to create safety snapshot: {safety_snapshot_result.get('error', 'Unknown error')}")
+                # Continue with restore despite snapshot failure
+        
+        restore_job.update_progress(50, "Dropping existing tenant schema")
+        
+        # Drop existing schema (WARNING: This is destructive!)
+        drop_schema_cmd = [
+            'psql',
+            '--host', settings.DATABASES['default']['HOST'],
+            '--port', str(settings.DATABASES['default']['PORT']),
+            '--username', settings.DATABASES['default']['USER'],
+            '--no-password',
+            '--dbname', settings.DATABASES['default']['NAME'],
+            '--command', f'DROP SCHEMA IF EXISTS "{restore_job.target_tenant_schema}" CASCADE;'
+        ]
+        
+        # Set password via environment variable
+        env = os.environ.copy()
+        env['PGPASSWORD'] = settings.DATABASES['default']['PASSWORD']
+        
+        restore_job.update_progress(60, "Executing schema drop command")
+        
+        # Execute schema drop
+        result = subprocess.run(
+            drop_schema_cmd,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=600  # 10 minutes timeout
+        )
+        
+        if result.returncode != 0:
+            raise Exception(f"Schema drop failed: {result.stderr}")
+        
+        restore_job.update_progress(70, "Restoring tenant data from backup using pg_restore")
+        
+        # Restore from backup using pg_restore with schema-specific flags
+        pg_restore_cmd = [
+            'pg_restore',
+            '--host', settings.DATABASES['default']['HOST'],
+            '--port', str(settings.DATABASES['default']['PORT']),
+            '--username', settings.DATABASES['default']['USER'],
+            '--no-password',
+            '--verbose',
+            '--clean',
+            '--no-acl',
+            '--no-owner',
+            '--schema', restore_job.target_tenant_schema,  # Only restore specific schema
+            '--dbname', settings.DATABASES['default']['NAME'],
+            temp_path
+        ]
+        
+        restore_job.update_progress(80, "Executing pg_restore command")
+        
+        # Execute pg_restore
+        result = subprocess.run(
+            pg_restore_cmd,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=3600  # 1 hour timeout
+        )
+        
+        if result.returncode != 0:
+            # pg_restore might return non-zero even on success due to warnings
+            # Check if it's a real error or just warnings
+            if "ERROR" in result.stderr and "already exists" not in result.stderr:
+                raise Exception(f"pg_restore failed: {result.stderr}")
+        
+        restore_job.update_progress(90, "Verifying restored data integrity")
+        
+        # Verify that the schema was restored correctly
+        verify_schema_cmd = [
+            'psql',
+            '--host', settings.DATABASES['default']['HOST'],
+            '--port', str(settings.DATABASES['default']['PORT']),
+            '--username', settings.DATABASES['default']['USER'],
+            '--no-password',
+            '--dbname', settings.DATABASES['default']['NAME'],
+            '--tuples-only',
+            '--command', f"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '{restore_job.target_tenant_schema}';"
+        ]
+        
+        # Execute verification
+        verify_result = subprocess.run(
+            verify_schema_cmd,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=60
+        )
+        
+        if verify_result.returncode == 0:
+            table_count = int(verify_result.stdout.strip())
+            if table_count == 0:
+                raise Exception("Restored schema appears to be empty - restoration may have failed")
+            restore_job.add_log_message('info', f'Verified {table_count} tables in restored schema')
+        else:
+            logger.warning(f"Schema verification failed: {verify_result.stderr}")
+        
+        restore_job.update_progress(95, "Restoration completed, cleaning up")
+        
+        # Clean up temporary file
+        os.unlink(temp_path)
+        
+        restore_job.update_progress(100, f"Tenant restoration completed successfully for {restore_job.target_tenant_schema}")
+        
+        # Mark snapshot as used if this was a snapshot restore
+        if restore_job.restore_type == 'snapshot_restore':
+            try:
+                from .models import TenantSnapshot
+                snapshot = TenantSnapshot.objects.get(backup_job=restore_job.source_backup)
+                snapshot.mark_as_restored(restore_job.created_by_id, restore_job.created_by_username)
+            except TenantSnapshot.DoesNotExist:
+                pass
+        
+        return {
+            'success': True,
+            'tenant_schema': restore_job.target_tenant_schema,
+            'message': f'Tenant {restore_job.target_tenant_schema} restored successfully'
+        }
+        
+    except Exception as e:
+        # Clean up temporary file if it exists
+        if 'temp_path' in locals() and os.path.exists(temp_path):
+            os.unlink(temp_path)
+        
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+
+@shared_task
+def cleanup_expired_snapshots():
+    """
+    Clean up expired tenant snapshots.
+    """
+    from .models import TenantSnapshot
+    
+    try:
+        logger.info("Starting cleanup of expired tenant snapshots")
+        
+        # Find expired snapshots
+        expired_snapshots = TenantSnapshot.objects.filter(
+            expires_at__lt=timezone.now(),
+            status__in=['completed', 'failed']
+        )
+        
+        cleanup_results = {
+            'total_expired': expired_snapshots.count(),
+            'deleted_successfully': 0,
+            'deletion_errors': 0,
+            'errors': []
+        }
+        
+        for snapshot in expired_snapshots:
+            try:
+                # Delete backup file from storage if it exists
+                if snapshot.file_path:
+                    delete_result = storage_manager.delete_backup_file(
+                        snapshot.file_path,
+                        from_all_backends=True
+                    )
+                    
+                    if not delete_result.get('success', False):
+                        logger.warning(f"Failed to delete snapshot file: {snapshot.file_path}")
+                
+                # Delete associated backup job if it exists
+                if snapshot.backup_job:
+                    snapshot.backup_job.delete()
+                
+                # Mark snapshot as deleted
+                snapshot.status = 'deleted'
+                snapshot.save(update_fields=['status'])
+                
+                cleanup_results['deleted_successfully'] += 1
+                logger.info(f"Deleted expired snapshot: {snapshot.snapshot_id}")
+                
+            except Exception as e:
+                cleanup_results['deletion_errors'] += 1
+                cleanup_results['errors'].append(f"Error deleting snapshot {snapshot.snapshot_id}: {str(e)}")
+                logger.error(f"Error deleting expired snapshot {snapshot.snapshot_id}: {str(e)}")
+        
+        logger.info(f"Snapshot cleanup completed: {cleanup_results['deleted_successfully']} deleted, "
+                   f"{cleanup_results['deletion_errors']} errors")
+        
+        return cleanup_results
+        
+    except Exception as e:
+        logger.error(f"Error in snapshot cleanup task: {str(e)}")
+        return {'success': False, 'error': str(e)}
+
+
 @shared_task
 def schedule_automatic_backups():
     """

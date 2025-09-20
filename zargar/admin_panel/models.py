@@ -720,6 +720,7 @@ class RestoreJob(models.Model):
         ('full_system', _('Full System Restore')),
         ('single_tenant', _('Single Tenant Restore')),
         ('configuration', _('Configuration Restore')),
+        ('snapshot_restore', _('Snapshot Restore')),
     ]
     
     STATUS_CHOICES = [
@@ -862,3 +863,275 @@ class RestoreJob(models.Model):
             self.add_log_message('info', message)
         if self.pk:
             self.save(update_fields=['progress_percentage'])
+    
+    def mark_as_running(self):
+        """Mark restore as running."""
+        self.status = 'running'
+        self.started_at = timezone.now()
+        self.progress_percentage = 0
+        self.add_log_message('info', 'Restore job started')
+        self.save(update_fields=['status', 'started_at', 'progress_percentage'])
+    
+    def mark_as_completed(self):
+        """Mark restore as completed."""
+        self.status = 'completed'
+        self.completed_at = timezone.now()
+        self.progress_percentage = 100
+        self.add_log_message('info', 'Restore job completed successfully')
+        self.save(update_fields=['status', 'completed_at', 'progress_percentage'])
+    
+    def mark_as_failed(self, error_message):
+        """Mark restore as failed."""
+        self.status = 'failed'
+        self.completed_at = timezone.now()
+        self.error_message = error_message
+        self.add_log_message('error', f'Restore job failed: {error_message}')
+        self.save(update_fields=['status', 'completed_at', 'error_message'])
+
+
+class TenantSnapshot(models.Model):
+    """
+    Model to track temporary snapshots created before high-risk operations.
+    """
+    SNAPSHOT_TYPES = [
+        ('pre_operation', _('Pre-Operation Snapshot')),
+        ('manual', _('Manual Snapshot')),
+        ('scheduled', _('Scheduled Snapshot')),
+    ]
+    
+    STATUS_CHOICES = [
+        ('pending', _('Pending')),
+        ('creating', _('Creating')),
+        ('completed', _('Completed')),
+        ('failed', _('Failed')),
+        ('expired', _('Expired')),
+        ('deleted', _('Deleted')),
+    ]
+    
+    # Snapshot identification
+    snapshot_id = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        verbose_name=_('Snapshot ID')
+    )
+    
+    name = models.CharField(
+        max_length=200,
+        verbose_name=_('Snapshot Name')
+    )
+    
+    snapshot_type = models.CharField(
+        max_length=20,
+        choices=SNAPSHOT_TYPES,
+        default='pre_operation',
+        verbose_name=_('Snapshot Type')
+    )
+    
+    # Tenant information
+    tenant_schema = models.CharField(
+        max_length=100,
+        verbose_name=_('Tenant Schema'),
+        help_text=_('Schema name of the tenant being snapshotted')
+    )
+    
+    tenant_domain = models.CharField(
+        max_length=253,
+        blank=True,
+        verbose_name=_('Tenant Domain'),
+        help_text=_('Domain of the tenant being snapshotted')
+    )
+    
+    # Operation context
+    operation_description = models.TextField(
+        verbose_name=_('Operation Description'),
+        help_text=_('Description of the high-risk operation requiring snapshot')
+    )
+    
+    operation_metadata = models.JSONField(
+        default=dict,
+        verbose_name=_('Operation Metadata'),
+        help_text=_('Additional metadata about the operation')
+    )
+    
+    # Status and timing
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending',
+        verbose_name=_('Status')
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Started At')
+    )
+    
+    completed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Completed At')
+    )
+    
+    expires_at = models.DateTimeField(
+        verbose_name=_('Expires At'),
+        help_text=_('When this snapshot will be automatically deleted')
+    )
+    
+    # Backup information
+    backup_job = models.OneToOneField(
+        BackupJob,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        verbose_name=_('Associated Backup Job')
+    )
+    
+    file_path = models.CharField(
+        max_length=500,
+        blank=True,
+        verbose_name=_('Snapshot File Path')
+    )
+    
+    file_size_bytes = models.BigIntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_('File Size (Bytes)')
+    )
+    
+    # Progress tracking
+    progress_percentage = models.PositiveIntegerField(
+        default=0,
+        verbose_name=_('Progress Percentage')
+    )
+    
+    # Audit fields
+    created_by_id = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_('Created By ID')
+    )
+    
+    created_by_username = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name=_('Created By Username')
+    )
+    
+    # Restoration tracking
+    restored_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Restored At'),
+        help_text=_('When this snapshot was used for restoration')
+    )
+    
+    restored_by_id = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_('Restored By ID')
+    )
+    
+    restored_by_username = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name=_('Restored By Username')
+    )
+    
+    class Meta:
+        verbose_name = _('Tenant Snapshot')
+        verbose_name_plural = _('Tenant Snapshots')
+        db_table = 'admin_tenant_snapshot'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['tenant_schema', 'created_at']),
+            models.Index(fields=['status', 'expires_at']),
+            models.Index(fields=['snapshot_type', 'created_at']),
+            models.Index(fields=['snapshot_id']),
+        ]
+    
+    def __str__(self):
+        return f"Snapshot {self.name} ({self.tenant_schema})"
+    
+    @property
+    def is_expired(self):
+        """Check if snapshot has expired."""
+        return timezone.now() > self.expires_at
+    
+    @property
+    def is_available_for_restore(self):
+        """Check if snapshot is available for restoration."""
+        return self.status == 'completed' and not self.is_expired
+    
+    @property
+    def file_size_human(self):
+        """Return human-readable file size."""
+        if not self.file_size_bytes:
+            return 'Unknown'
+        
+        size = self.file_size_bytes
+        for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+            if size < 1024.0:
+                return f"{size:.1f} {unit}"
+            size /= 1024.0
+        return f"{size:.1f} PB"
+    
+    def mark_as_creating(self):
+        """Mark snapshot as being created."""
+        self.status = 'creating'
+        self.started_at = timezone.now()
+        self.save(update_fields=['status', 'started_at'])
+    
+    def mark_as_completed(self, file_path, file_size_bytes):
+        """Mark snapshot as completed."""
+        self.status = 'completed'
+        self.completed_at = timezone.now()
+        self.progress_percentage = 100
+        self.file_path = file_path
+        self.file_size_bytes = file_size_bytes
+        self.save(update_fields=[
+            'status', 'completed_at', 'progress_percentage', 
+            'file_path', 'file_size_bytes'
+        ])
+    
+    def mark_as_failed(self, error_message):
+        """Mark snapshot as failed."""
+        self.status = 'failed'
+        self.completed_at = timezone.now()
+        # Store error in operation_metadata
+        if not self.operation_metadata:
+            self.operation_metadata = {}
+        self.operation_metadata['error'] = error_message
+        self.save(update_fields=['status', 'completed_at', 'operation_metadata'])
+    
+    def mark_as_restored(self, restored_by_id, restored_by_username):
+        """Mark snapshot as used for restoration."""
+        self.restored_at = timezone.now()
+        self.restored_by_id = restored_by_id
+        self.restored_by_username = restored_by_username
+        self.save(update_fields=['restored_at', 'restored_by_id', 'restored_by_username'])
+    
+    def update_progress(self, percentage):
+        """Update snapshot creation progress."""
+        self.progress_percentage = min(100, max(0, percentage))
+        self.save(update_fields=['progress_percentage'])
+    
+    def clean(self):
+        """Validate the snapshot."""
+        super().clean()
+        
+        # Validate expiration date
+        if self.expires_at and self.expires_at <= timezone.now():
+            raise ValidationError(_('Expiration date must be in the future'))
+    
+    def save(self, *args, **kwargs):
+        """Override save to set default expiration."""
+        if not self.expires_at:
+            # Default expiration: 7 days for pre-operation snapshots, 30 days for manual
+            if self.snapshot_type == 'pre_operation':
+                self.expires_at = timezone.now() + timezone.timedelta(days=7)
+            else:
+                self.expires_at = timezone.now() + timezone.timedelta(days=30)
+        
+        super().save(*args, **kwargs)
