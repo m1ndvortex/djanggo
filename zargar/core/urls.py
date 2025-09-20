@@ -61,12 +61,8 @@ urlpatterns = [
     # 2FA URLs
     path('2fa/verify/', Admin2FAVerifyView.as_view(), name='admin_2fa_verify'),
     
-    # Tenant management
-    path('tenants/', views.TenantListView.as_view(), name='tenant_list'),
-    path('tenants/<int:pk>/', views.TenantDetailView.as_view(), name='tenant_detail'),
-    path('tenants/create/', views.TenantCreateView.as_view(), name='tenant_create'),
-    path('tenants/<int:pk>/edit/', views.TenantUpdateView.as_view(), name='tenant_edit'),
-    path('tenants/<int:pk>/suspend/', views.TenantSuspendView.as_view(), name='tenant_suspend'),
+    # Tenant management - include tenant management URLs
+    path('tenants/', include('zargar.tenants.urls')),
     
     # User management
     path('users/', views.UserListView.as_view(), name='user_list'),
