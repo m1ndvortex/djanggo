@@ -1,5 +1,6 @@
 import os
 from celery import Celery
+from celery.schedules import crontab
 from decouple import config
 
 # Set the default Django settings module for the 'celery' program.
@@ -34,3 +35,47 @@ app.conf.update(
 @app.task(bind=True)
 def debug_task(self):
     print(f'Request: {self.request!r}')
+
+
+# Celery Beat Schedule for automated backups
+app.conf.beat_schedule = {
+    # Daily backup at 3:00 AM
+    'daily-system-backup': {
+        'task': 'zargar.core.backup_tasks.create_daily_backup',
+        'schedule': crontab(hour=3, minute=0),
+        'args': (None, 'celery_scheduled_daily'),
+    },
+    
+    # Weekly backup on Sunday at 2:00 AM
+    'weekly-system-backup': {
+        'task': 'zargar.core.backup_tasks.create_weekly_backup',
+        'schedule': crontab(hour=2, minute=0, day_of_week=0),
+        'args': (None, 'celery_scheduled_weekly'),
+    },
+    
+    # Process scheduled backups every minute
+    'process-scheduled-backups': {
+        'task': 'zargar.core.backup_tasks.process_scheduled_backups',
+        'schedule': crontab(minute='*'),
+    },
+    
+    # Cleanup old backups daily at 4:00 AM
+    'cleanup-old-backups': {
+        'task': 'zargar.core.backup_tasks.cleanup_old_backups',
+        'schedule': crontab(hour=4, minute=0),
+    },
+    
+    # Generate daily backup report at 6:00 AM
+    'daily-backup-report': {
+        'task': 'zargar.core.backup_tasks.generate_backup_report',
+        'schedule': crontab(hour=6, minute=0),
+        'args': ('daily',),
+    },
+    
+    # Generate weekly backup report on Monday at 7:00 AM
+    'weekly-backup-report': {
+        'task': 'zargar.core.backup_tasks.generate_backup_report',
+        'schedule': crontab(hour=7, minute=0, day_of_week=1),
+        'args': ('weekly',),
+    },
+}

@@ -45,6 +45,7 @@ SHARED_APPS = [
     'zargar.tenants',  # Tenant, Domain, and SuperAdmin models in shared schema
     'zargar.api',      # API endpoints can be shared
     'zargar.admin_panel',  # Super-admin panel for cross-tenant management
+    'zargar.system',   # System-wide models like backups
 ]
 
 TENANT_APPS = [
