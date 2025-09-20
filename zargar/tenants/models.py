@@ -2,7 +2,7 @@ from django.db import models
 from django_tenants.models import TenantMixin, DomainMixin
 
 # Import super admin models
-from .admin_models import SuperAdmin, SuperAdminSession
+from .admin_models import SuperAdmin, SuperAdminSession, SubscriptionPlan
 
 
 class Tenant(TenantMixin):
@@ -28,6 +28,16 @@ class Tenant(TenantMixin):
             ('enterprise', 'Enterprise'),
         ],
         default='basic'
+    )
+    
+    # New subscription plan foreign key (will replace the above field)
+    subscription_plan_fk = models.ForeignKey(
+        'SubscriptionPlan',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        verbose_name='Subscription Plan',
+        help_text='Current subscription plan for this tenant'
     )
     
     auto_create_schema = True

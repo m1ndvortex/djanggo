@@ -382,7 +382,12 @@
     - Write frontend tests for tenant management UI workflows
     - _Requirements: 5.1, 5.2_
 
-  - [ ] 8.4 Implement subscription and billing management backend (Backend)
+
+
+  - [x] 8.4 Implement subscription and billing management backend (Backend)
+
+
+
     - Create SubscriptionPlan model with Iranian market pricing
     - Build TenantInvoice model with Persian invoice generation
     - Implement manual billing workflow adapted for Iranian market
