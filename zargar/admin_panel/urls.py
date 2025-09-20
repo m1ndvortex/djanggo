@@ -29,5 +29,5 @@ urlpatterns = [
     path('hijack/', include('hijack.urls')),
     
     # Include tenant management URLs
-    path('', include('zargar.tenants.urls', namespace='tenants')),
+    path('tenants/', include('zargar.tenants.urls', namespace='tenants')),
 ]

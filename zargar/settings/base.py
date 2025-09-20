@@ -267,16 +267,37 @@ CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localho
 
 # Storage Configuration
 # Cloudflare R2
-CLOUDFLARE_R2_ACCESS_KEY = config('CLOUDFLARE_R2_ACCESS_KEY', default='')
-CLOUDFLARE_R2_SECRET_KEY = config('CLOUDFLARE_R2_SECRET_KEY', default='')
-CLOUDFLARE_R2_BUCKET = config('CLOUDFLARE_R2_BUCKET', default='')
-CLOUDFLARE_R2_ENDPOINT = config('CLOUDFLARE_R2_ENDPOINT', default='')
-CLOUDFLARE_R2_ACCOUNT_ID = config('CLOUDFLARE_R2_ACCOUNT_ID', default='')
+CLOUDFLARE_R2_ACCESS_KEY = config('CLOUDFLARE_R2_ACCESS_KEY', default='3f3dfdd35d139a687d4d00d75da96c76')
+CLOUDFLARE_R2_SECRET_KEY = config('CLOUDFLARE_R2_SECRET_KEY', default='2999aa7307448cadfebe63cce0e55f6f74726edfcc32e5de8881015a31c4c897')
+CLOUDFLARE_R2_BUCKET = config('CLOUDFLARE_R2_BUCKET', default='securesyntax')
+CLOUDFLARE_R2_ENDPOINT = config('CLOUDFLARE_R2_ENDPOINT', default='https://b7900eeee7c415345d86ea859c9dad47.r2.cloudflarestorage.com')
+CLOUDFLARE_R2_ACCOUNT_ID = config('CLOUDFLARE_R2_ACCOUNT_ID', default='b7900eeee7c415345d86ea859c9dad47')
 
 # Backblaze B2
-BACKBLAZE_B2_ACCESS_KEY = config('BACKBLAZE_B2_ACCESS_KEY', default='')
-BACKBLAZE_B2_SECRET_KEY = config('BACKBLAZE_B2_SECRET_KEY', default='')
-BACKBLAZE_B2_BUCKET = config('BACKBLAZE_B2_BUCKET', default='')
+BACKBLAZE_B2_ACCESS_KEY = config('BACKBLAZE_B2_ACCESS_KEY', default='005acba9882c2b80000000001')
+BACKBLAZE_B2_SECRET_KEY = config('BACKBLAZE_B2_SECRET_KEY', default='K005LzPhrovqG5Eq37oYWxIQiIKIHh8')
+BACKBLAZE_B2_BUCKET = config('BACKBLAZE_B2_BUCKET', default='securesyntax')
+BACKBLAZE_B2_ENDPOINT = config('BACKBLAZE_B2_ENDPOINT', default='https://s3.us-east-005.backblazeb2.com')
+BACKBLAZE_B2_BUCKET_ID = config('BACKBLAZE_B2_BUCKET_ID', default='2a0cfb4aa9f8f8f29c820b18')
+
+# Storage backends configuration
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+    "backup_primary": {
+        "BACKEND": "zargar.core.storage.CloudflareR2Storage",
+    },
+    "backup_secondary": {
+        "BACKEND": "zargar.core.storage.BackblazeB2Storage",
+    },
+    "backup_redundant": {
+        "BACKEND": "zargar.core.storage.RedundantBackupStorage",
+    },
+}
 
 # Django Tenants Configuration
 TENANT_MODEL = "tenants.Tenant"
