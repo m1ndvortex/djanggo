@@ -34,6 +34,7 @@ urlpatterns = [
     path('backup/restore/', views.TenantRestoreView.as_view(), name='tenant_restore'),
     path('backup/job/<uuid:job_id>/', views.BackupJobDetailView.as_view(), name='backup_job_detail'),
     path('backup/status/', views.BackupStatusAPIView.as_view(), name='backup_status_api'),
+    path('restore/status/', views.RestoreStatusAPIView.as_view(), name='restore_status_api'),
     
     # Disaster Recovery
     path('disaster-recovery/', disaster_recovery_views.DisasterRecoveryDashboardView.as_view(), name='disaster_recovery_dashboard'),

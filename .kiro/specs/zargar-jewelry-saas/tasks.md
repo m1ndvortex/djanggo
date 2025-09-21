@@ -519,7 +519,12 @@
     - Write integration tests for restoration process and data integrity
     - _Requirements: 5.15, 5.16, 5.17, 5.18_
 
-  - [ ] 9.7 Build tenant restoration UI interface (Frontend)
+  - [x] 9.7 Build tenant restoration UI interface (Frontend)
+
+
+
+
+
     - Create "Backup Management" dashboard in Super-Panel exactly as specified
     - Build backup selection interface to select specific full system backup snapshot (e.g., "Daily Backup - 2025-09-17-03:00")
     - Implement "Restore a Single Tenant" option with dropdown to select specific tenant

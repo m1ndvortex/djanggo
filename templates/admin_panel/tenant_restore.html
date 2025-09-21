@@ -2,7 +2,7 @@
 {% load static %}
 {% load i18n %}
 
-{% block title %}بازیابی تنانت{% endblock %}
+{% block title %}مدیریت پشتیبان‌گیری - بازیابی تنانت{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -42,6 +42,35 @@
         box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
     }
     
+    .progress-bar {
+        height: 8px;
+        background-color: #e5e7eb;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #3b82f6, #10b981);
+        transition: width 0.3s ease;
+        animation: progress-pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes progress-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+    
+    .modal-backdrop {
+        backdrop-filter: blur(8px);
+        background: rgba(0, 0, 0, 0.6);
+    }
+    
+    .modal-content {
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+    
     /* Dark mode cybersecurity theme */
     [data-theme="dark"] .backup-card {
         background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 100%);
@@ -68,234 +97,340 @@
         background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.1) 100%);
         border-color: #ef4444;
     }
+    
+    [data-theme="dark"] .progress-bar {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    [data-theme="dark"] .progress-fill {
+        background: linear-gradient(90deg, #00D4FF, #00FF88);
+    }
+    
+    [data-theme="dark"] .modal-backdrop {
+        background: rgba(11, 14, 26, 0.8);
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid px-4 py-6" x-data="tenantRestore()">
+<div class="container-fluid px-4 py-6" x-data="backupManagement()">
     <!-- Header -->
     <div class="flex justify-between items-center mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">بازیابی تنانت</h1>
-            <p class="text-gray-600 dark:text-gray-300 mt-2">بازیابی داده‌های یک تنانت خاص از پشتیبان</p>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">مدیریت پشتیبان‌گیری</h1>
+            <p class="text-gray-600 dark:text-gray-300 mt-2">مدیریت پشتیبان‌گیری و بازیابی سیستم</p>
         </div>
         <div class="flex gap-3">
-            <a href="{% url 'admin_panel:backup_management' %}" 
+            <a href="/super-panel/backup/" 
                class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                 </svg>
-                بازگشت
+                بازگشت به مدیریت پشتیبان
             </a>
         </div>
     </div>
 
-    <!-- Warning Notice -->
-    <div class="warning-box rounded-xl p-6 mb-8">
-        <div class="flex items-start gap-4">
-            <div class="flex-shrink-0">
-                <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"></path>
-                </svg>
-            </div>
-            <div>
-                <h3 class="text-lg font-bold text-yellow-800 dark:text-yellow-200 mb-2">هشدار مهم</h3>
-                <p class="text-yellow-700 dark:text-yellow-300 mb-2">
-                    بازیابی تنانت عملیاتی خطرناک است که تمام داده‌های فعلی تنانت را با داده‌های پشتیبان جایگزین می‌کند.
-                </p>
-                <ul class="list-disc list-inside text-yellow-700 dark:text-yellow-300 space-y-1">
-                    <li>تمام داده‌های فعلی تنانت حذف خواهد شد</li>
-                    <li>این عملیات قابل بازگشت نیست</li>
-                    <li>سایر تنانت‌ها تحت تأثیر قرار نخواهند گرفت</li>
-                    <li>عملیات ممکن است چند دقیقه طول بکشد</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
-    <!-- Step 1: Select Backup -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
-        <div class="flex items-center gap-3 mb-6">
-            <div class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">1</div>
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white">انتخاب پشتیبان</h2>
-        </div>
-        
-        <p class="text-gray-600 dark:text-gray-400 mb-6">
-            پشتیبانی را که می‌خواهید از آن بازیابی کنید انتخاب کنید:
-        </p>
-        
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {% for backup in available_backups %}
-            <div class="backup-card bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border-2 border-gray-200 dark:border-gray-600"
-                 @click="selectBackup({{ backup.id }}, '{{ backup.name }}', '{{ backup.created_at|date:"Y/m/d H:i" }}')"
-                 :class="{ 'selected': selectedBackup === {{ backup.id }} }">
+    <!-- Backup Management Dashboard -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        <!-- Available Backups -->
+        <div class="lg:col-span-2">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">پشتیبان‌های قابل استفاده</h2>
+                    <span class="text-sm text-gray-600 dark:text-gray-400">
+                        {{ available_backups|length }} پشتیبان موجود
+                    </span>
+                </div>
                 
-                <div class="flex items-start justify-between mb-3">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
-                            <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h6l2 2h6a2 2 0 012 2v4a2 2 0 01-2 2H5z"></path>
-                            </svg>
+                <div class="space-y-4 max-h-96 overflow-y-auto">
+                    {% for backup in available_backups %}
+                    <div class="backup-card bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border-2 border-gray-200 dark:border-gray-600"
+                         @click="selectBackup('{{ backup.job_id }}', '{{ backup.name }}', '{{ backup.created_at|date:"Y-m-d H:i" }}')"
+                         :class="{ 'selected': selectedBackup === '{{ backup.job_id }}' }">
+                        
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h6l2 2h6a2 2 0 012 2v4a2 2 0 01-2 2H5z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-gray-900 dark:text-white">{{ backup.name }}</h3>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                                        {% if backup.backup_type == 'full_system' %}پشتیبان کامل سیستم
+                                        {% elif backup.backup_type == 'tenant_only' %}پشتیبان تک تنانت
+                                        {% else %}{{ backup.get_backup_type_display }}{% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="text-left">
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ backup.created_at|date:"Y/m/d" }}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">{{ backup.created_at|date:"H:i" }}</p>
+                            </div>
                         </div>
+                        
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-600 dark:text-gray-400">
+                                {% if backup.file_size_human %}{{ backup.file_size_human }}{% else %}نامشخص{% endif %}
+                            </span>
+                            <span class="text-gray-600 dark:text-gray-400">
+                                {{ backup.created_at|timesince }} پیش
+                            </span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-12">
+                        <svg class="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h6l2 2h6a2 2 0 012 2v4a2 2 0 01-2 2H5z"></path>
+                        </svg>
+                        <p class="text-gray-600 dark:text-gray-400">هیچ پشتیبان قابل استفاده‌ای یافت نشد</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Restore Actions -->
+        <div class="space-y-6">
+            <!-- Restore Single Tenant -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">بازیابی تک تنانت</h2>
+                <p class="text-gray-600 dark:text-gray-400 mb-4 text-sm">
+                    بازیابی داده‌های یک تنانت خاص از پشتیبان انتخاب شده
+                </p>
+                
+                <button @click="showRestoreModal = true" 
+                        :disabled="!selectedBackup"
+                        :class="selectedBackup ? 'bg-orange-600 hover:bg-orange-700' : 'bg-gray-400 cursor-not-allowed'"
+                        class="w-full text-white px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    بازیابی تک تنانت
+                </button>
+            </div>
+
+            <!-- Recent Restores -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">بازیابی‌های اخیر</h2>
+                <div class="space-y-3">
+                    {% for restore in recent_restores %}
+                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         <div>
-                            <h3 class="font-bold text-gray-900 dark:text-white">{{ backup.name }}</h3>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">
-                                {% if backup.backup_type == 'full_system' %}پشتیبان کامل سیستم
-                                {% elif backup.backup_type == 'tenant_only' %}پشتیبان تک تنانت
-                                {% else %}{{ backup.get_backup_type_display }}{% endif %}
+                            <h3 class="font-medium text-gray-900 dark:text-white text-sm">
+                                {{ restore.get_restore_type_display }}
+                            </h3>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">
+                                {{ restore.created_at|date:"Y/m/d H:i" }}
                             </p>
                         </div>
+                        <span class="status-badge status-{{ restore.status }} text-xs px-2 py-1 rounded">
+                            {% if restore.status == 'completed' %}تکمیل شده
+                            {% elif restore.status == 'running' %}در حال اجرا
+                            {% elif restore.status == 'failed' %}ناموفق
+                            {% else %}در انتظار{% endif %}
+                        </span>
                     </div>
-                    
-                    <div class="text-left">
-                        <p class="text-sm font-medium text-gray-900 dark:text-white">{{ backup.created_at|date:"Y/m/d" }}</p>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">{{ backup.created_at|date:"H:i" }}</p>
-                    </div>
-                </div>
-                
-                <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">
-                        {% if backup.file_size_human %}{{ backup.file_size_human }}{% else %}نامشخص{% endif %}
-                    </span>
-                    <span class="text-gray-600 dark:text-gray-400">
-                        {{ backup.duration|default:"نامشخص" }}
-                    </span>
+                    {% empty %}
+                    <p class="text-gray-600 dark:text-gray-400 text-sm">بازیابی اخیری وجود ندارد</p>
+                    {% endfor %}
                 </div>
             </div>
-            {% empty %}
-            <div class="col-span-2 text-center py-12">
-                <svg class="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h6l2 2h6a2 2 0 012 2v4a2 2 0 01-2 2H5z"></path>
-                </svg>
-                <p class="text-gray-600 dark:text-gray-400">هیچ پشتیبان قابل استفاده‌ای یافت نشد</p>
-            </div>
-            {% endfor %}
         </div>
     </div>
 
-    <!-- Step 2: Select Target Tenant -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8" 
-         x-show="selectedBackup" 
+    <!-- Restore Single Tenant Modal -->
+    <div x-show="showRestoreModal" 
          x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0 transform translate-y-4"
-         x-transition:enter-end="opacity-100 transform translate-y-0">
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 modal-backdrop flex items-center justify-center z-50"
+         @click.away="closeRestoreModal()">
         
-        <div class="flex items-center gap-3 mb-6">
-            <div class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">2</div>
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white">انتخاب تنانت هدف</h2>
-        </div>
-        
-        <p class="text-gray-600 dark:text-gray-400 mb-6">
-            تنانتی را که می‌خواهید داده‌هایش بازیابی شود انتخاب کنید:
-        </p>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {% for tenant in tenants %}
-            <div class="p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 transition-colors"
-                 @click="selectTenant({{ tenant.id }}, '{{ tenant.name }}', '{{ tenant.domain_url }}')"
-                 :class="{ 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20': selectedTenant === {{ tenant.id }} }">
-                
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
-                        <svg class="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H9m0 0H7m2 0v-4a2 2 0 012-2h2a2 2 0 012 2v4"></path>
+        <div class="modal-content bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-2xl mx-4"
+             @click.stop>
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">بازیابی تک تنانت</h3>
+                <button @click="closeRestoreModal()" 
+                        class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Selected Backup Info -->
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6" x-show="selectedBackupName">
+                <h4 class="font-medium text-blue-900 dark:text-blue-200 mb-2">پشتیبان انتخاب شده:</h4>
+                <p class="text-blue-800 dark:text-blue-300 text-sm">
+                    <span x-text="selectedBackupName"></span> - <span x-text="selectedBackupDate"></span>
+                </p>
+            </div>
+            
+            <!-- Select Target Tenant -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    انتخاب تنانت هدف:
+                </label>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-48 overflow-y-auto">
+                    {% for tenant in tenants %}
+                    <div class="p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 transition-colors"
+                         @click="selectTenant('{{ tenant.id }}', '{{ tenant.name }}', '{{ tenant.get_primary_domain.domain }}')"
+                         :class="{ 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20': selectedTenant === '{{ tenant.id }}' }">
+                        
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
+                                <svg class="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H9m0 0H7m2 0v-4a2 2 0 012-2h2a2 2 0 012 2v4"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-900 dark:text-white text-sm">{{ tenant.name }}</h3>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">{{ tenant.get_primary_domain.domain }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Critical Warning -->
+            <div class="danger-box rounded-lg p-4 mb-6" x-show="selectedTenant">
+                <div class="flex items-start gap-3">
+                    <div class="flex-shrink-0">
+                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"></path>
                         </svg>
                     </div>
                     <div>
-                        <h3 class="font-bold text-gray-900 dark:text-white">{{ tenant.name }}</h3>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">{{ tenant.domain_url }}</p>
+                        <h4 class="font-bold text-red-800 dark:text-red-200 mb-1">هشدار بحرانی</h4>
+                        <p class="text-red-700 dark:text-red-300 text-sm" x-show="selectedTenantName && selectedBackupName">
+                            این عملیات تمام داده‌های فعلی تنانت "<span x-text="selectedTenantName" class="font-bold"></span>" را با داده‌های پشتیبان "<span x-text="selectedBackupName" class="font-bold"></span>" از تاریخ <span x-text="selectedBackupDate" class="font-bold"></span> جایگزین خواهد کرد. این عملیات قابل بازگشت نیست!
+                        </p>
                     </div>
                 </div>
             </div>
-            {% endfor %}
+            
+            <!-- Confirmation Form -->
+            <form method="post" @submit="confirmRestore" x-show="selectedTenant">
+                {% csrf_token %}
+                <input type="hidden" name="restore_type" value="from_backup">
+                <input type="hidden" name="backup_id" x-model="selectedBackup">
+                <input type="hidden" name="target_tenant_id" x-model="selectedTenant">
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-bold text-gray-900 dark:text-white mb-2">
+                        برای تأیید، دامنه تنانت را تایپ کنید:
+                    </label>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-2" x-show="selectedTenantDomain">
+                        لطفاً "<span x-text="selectedTenantDomain" class="font-mono font-bold"></span>" را در کادر زیر تایپ کنید:
+                    </p>
+                    <input type="text" 
+                           name="confirmation_text" 
+                           x-model="confirmationText"
+                           class="confirmation-input w-full px-3 py-2 rounded-lg focus:outline-none dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                           :placeholder="selectedTenantDomain"
+                           autocomplete="off">
+                </div>
+                
+                <div class="flex items-center mb-6">
+                    <input type="checkbox" 
+                           x-model="acknowledgeRisk" 
+                           id="acknowledge_risk_modal"
+                           class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded">
+                    <label for="acknowledge_risk_modal" class="mr-2 block text-sm text-gray-900 dark:text-white">
+                        من خطرات این عملیات را درک کرده‌ام و مسئولیت آن را می‌پذیرم
+                    </label>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button type="submit" 
+                            :disabled="!isConfirmationValid"
+                            :class="isConfirmationValid ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-400 cursor-not-allowed'"
+                            class="flex-1 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                        شروع بازیابی
+                    </button>
+                    
+                    <button type="button" 
+                            @click="closeRestoreModal()"
+                            class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        انصراف
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
-    <!-- Step 3: Confirmation -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6" 
-         x-show="selectedTenant" 
+    <!-- Progress Modal -->
+    <div x-show="showProgressModal" 
          x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0 transform translate-y-4"
-         x-transition:enter-end="opacity-100 transform translate-y-0">
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         class="fixed inset-0 modal-backdrop flex items-center justify-center z-50">
         
-        <div class="flex items-center gap-3 mb-6">
-            <div class="w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center font-bold">3</div>
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white">تأیید نهایی</h2>
-        </div>
-        
-        <!-- Critical Warning -->
-        <div class="danger-box rounded-xl p-6 mb-6">
-            <div class="flex items-start gap-4">
-                <div class="flex-shrink-0">
-                    <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"></path>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md mx-4">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-blue-600 dark:text-blue-400 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                     </svg>
                 </div>
-                <div>
-                    <h3 class="text-lg font-bold text-red-800 dark:text-red-200 mb-2">هشدار بحرانی</h3>
-                    <p class="text-red-700 dark:text-red-300" x-show="selectedTenantName && selectedBackupName">
-                        این عملیات تمام داده‌های فعلی تنانت "<span x-text="selectedTenantName" class="font-bold"></span>" را با داده‌های پشتیبان "<span x-text="selectedBackupName" class="font-bold"></span>" از تاریخ <span x-text="selectedBackupDate" class="font-bold"></span> جایگزین خواهد کرد.
-                    </p>
-                    <p class="text-red-700 dark:text-red-300 font-bold mt-2">
-                        این عملیات قابل بازگشت نیست!
-                    </p>
+                
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">در حال بازیابی تنانت</h3>
+                <p class="text-gray-600 dark:text-gray-400 mb-4" x-text="progressMessage"></p>
+                
+                <div class="progress-bar mb-4">
+                    <div class="progress-fill" :style="`width: ${progressPercentage}%`"></div>
                 </div>
+                
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    <span x-text="progressPercentage"></span>% تکمیل شده
+                </p>
             </div>
         </div>
+    </div>
+
+    <!-- Completion Notification -->
+    <div x-show="showCompletionModal" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         class="fixed inset-0 modal-backdrop flex items-center justify-center z-50">
         
-        <!-- Confirmation Form -->
-        <form method="post" @submit="confirmRestore">
-            {% csrf_token %}
-            <input type="hidden" name="backup_id" x-model="selectedBackup">
-            <input type="hidden" name="target_tenant_id" x-model="selectedTenant">
-            
-            <div class="mb-6">
-                <label class="block text-sm font-bold text-gray-900 dark:text-white mb-3">
-                    برای تأیید، دامنه تنانت را تایپ کنید:
-                </label>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mb-3" x-show="selectedTenantDomain">
-                    لطفاً "<span x-text="selectedTenantDomain" class="font-mono font-bold"></span>" را در کادر زیر تایپ کنید:
-                </p>
-                <input type="text" 
-                       name="confirmation_text" 
-                       x-model="confirmationText"
-                       class="confirmation-input w-full px-4 py-3 rounded-lg focus:outline-none dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                       :placeholder="selectedTenantDomain"
-                       autocomplete="off">
-            </div>
-            
-            <div class="flex items-center mb-6">
-                <input type="checkbox" 
-                       x-model="acknowledgeRisk" 
-                       id="acknowledge_risk"
-                       class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded">
-                <label for="acknowledge_risk" class="mr-3 block text-sm text-gray-900 dark:text-white">
-                    من خطرات این عملیات را درک کرده‌ام و مسئولیت آن را می‌پذیرم
-                </label>
-            </div>
-            
-            <div class="flex gap-4">
-                <button type="submit" 
-                        :disabled="!isConfirmationValid"
-                        :class="isConfirmationValid ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-400 cursor-not-allowed'"
-                        class="px-6 py-3 text-white rounded-lg font-bold transition-colors">
-                    شروع بازیابی
-                </button>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md mx-4">
+            <div class="text-center">
+                <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+                     :class="restoreSuccess ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'">
+                    <svg x-show="restoreSuccess" class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <svg x-show="!restoreSuccess" class="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </div>
                 
-                <button type="button" 
-                        @click="resetSelection()"
-                        class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                    انصراف
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2" x-text="restoreSuccess ? 'بازیابی موفقیت‌آمیز' : 'بازیابی ناموفق'"></h3>
+                <p class="text-gray-600 dark:text-gray-400 mb-4" x-text="completionMessage"></p>
+                
+                <button @click="closeCompletionModal()"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                    تأیید
                 </button>
             </div>
-        </form>
+        </div>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-function tenantRestore() {
+function backupManagement() {
     return {
         selectedBackup: null,
         selectedBackupName: '',
@@ -305,6 +440,14 @@ function tenantRestore() {
         selectedTenantDomain: '',
         confirmationText: '',
         acknowledgeRisk: false,
+        showRestoreModal: false,
+        showProgressModal: false,
+        showCompletionModal: false,
+        progressPercentage: 0,
+        progressMessage: 'آماده‌سازی بازیابی...',
+        completionMessage: '',
+        restoreSuccess: false,
+        restoreJobId: null,
         
         get isConfirmationValid() {
             return this.confirmationText === this.selectedTenantDomain && this.acknowledgeRisk;
@@ -316,11 +459,7 @@ function tenantRestore() {
             this.selectedBackupDate = backupDate;
             
             // Reset tenant selection when backup changes
-            this.selectedTenant = null;
-            this.selectedTenantName = '';
-            this.selectedTenantDomain = '';
-            this.confirmationText = '';
-            this.acknowledgeRisk = false;
+            this.resetTenantSelection();
         },
         
         selectTenant(tenantId, tenantName, tenantDomain) {
@@ -333,10 +472,7 @@ function tenantRestore() {
             this.acknowledgeRisk = false;
         },
         
-        resetSelection() {
-            this.selectedBackup = null;
-            this.selectedBackupName = '';
-            this.selectedBackupDate = '';
+        resetTenantSelection() {
             this.selectedTenant = null;
             this.selectedTenantName = '';
             this.selectedTenantDomain = '';
@@ -344,10 +480,29 @@ function tenantRestore() {
             this.acknowledgeRisk = false;
         },
         
-        confirmRestore(event) {
+        resetSelection() {
+            this.selectedBackup = null;
+            this.selectedBackupName = '';
+            this.selectedBackupDate = '';
+            this.resetTenantSelection();
+        },
+        
+        closeRestoreModal() {
+            this.showRestoreModal = false;
+            this.resetTenantSelection();
+        },
+        
+        closeCompletionModal() {
+            this.showCompletionModal = false;
+            // Reload page to show updated restore history
+            window.location.reload();
+        },
+        
+        async confirmRestore(event) {
+            event.preventDefault();
+            
             if (!this.isConfirmationValid) {
-                event.preventDefault();
-                alert('لطفاً تمام فیلدها را تکمیل کنید و خطرات را تأیید کنید.');
+                ZargarAdmin.showMessage('لطفاً تمام فیلدها را تکمیل کنید و خطرات را تأیید کنید.', 'error');
                 return false;
             }
             
@@ -358,12 +513,118 @@ function tenantRestore() {
             );
             
             if (!confirmed) {
-                event.preventDefault();
                 return false;
             }
             
-            // Form will be submitted normally
-            return true;
+            // Close restore modal and show progress
+            this.showRestoreModal = false;
+            this.showProgressModal = true;
+            this.progressPercentage = 0;
+            this.progressMessage = 'شروع بازیابی تنانت...';
+            
+            try {
+                // Submit form data
+                const formData = new FormData(event.target);
+                
+                const response = await fetch(window.location.href, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    this.restoreJobId = result.restore_job_id;
+                    this.progressMessage = 'بازیابی در حال انجام...';
+                    
+                    // Start monitoring progress
+                    this.monitorRestoreProgress();
+                } else {
+                    this.showProgressModal = false;
+                    this.showCompletionModal = true;
+                    this.restoreSuccess = false;
+                    this.completionMessage = result.error || 'خطا در شروع بازیابی';
+                }
+                
+            } catch (error) {
+                console.error('Error starting restore:', error);
+                this.showProgressModal = false;
+                this.showCompletionModal = true;
+                this.restoreSuccess = false;
+                this.completionMessage = 'خطا در ارتباط با سرور';
+            }
+            
+            return false;
+        },
+        
+        async monitorRestoreProgress() {
+            if (!this.restoreJobId) return;
+            
+            try {
+                const response = await fetch(`/super-panel/restore/status/?job_id=${this.restoreJobId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.progressPercentage = data.progress_percentage || 0;
+                    
+                    // Update progress message based on status
+                    if (data.status === 'running') {
+                        this.progressMessage = 'در حال بازیابی داده‌ها...';
+                        
+                        // Continue monitoring
+                        setTimeout(() => this.monitorRestoreProgress(), 2000);
+                        
+                    } else if (data.status === 'completed') {
+                        this.progressPercentage = 100;
+                        this.progressMessage = 'بازیابی تکمیل شد';
+                        
+                        // Show completion after a short delay
+                        setTimeout(() => {
+                            this.showProgressModal = false;
+                            this.showCompletionModal = true;
+                            this.restoreSuccess = true;
+                            this.completionMessage = `تنانت "${this.selectedTenantName}" با موفقیت بازیابی شد.`;
+                        }, 1000);
+                        
+                    } else if (data.status === 'failed') {
+                        this.showProgressModal = false;
+                        this.showCompletionModal = true;
+                        this.restoreSuccess = false;
+                        this.completionMessage = data.error_message || 'بازیابی با خطا مواجه شد';
+                        
+                    } else {
+                        // Continue monitoring for pending status
+                        setTimeout(() => this.monitorRestoreProgress(), 2000);
+                    }
+                } else {
+                    // Error getting status
+                    this.showProgressModal = false;
+                    this.showCompletionModal = true;
+                    this.restoreSuccess = false;
+                    this.completionMessage = 'خطا در دریافت وضعیت بازیابی';
+                }
+                
+            } catch (error) {
+                console.error('Error monitoring restore progress:', error);
+                // Continue trying
+                setTimeout(() => this.monitorRestoreProgress(), 5000);
+            }
+        },
+        
+        init() {
+            // Auto-refresh restore history every 30 seconds
+            setInterval(() => {
+                this.refreshRestoreHistory();
+            }, 30000);
+        },
+        
+        async refreshRestoreHistory() {
+            // This would refresh the recent restores section
+            // For now, we'll just log that we're checking
+            console.log('Checking for restore updates...');
         }
     }
 }

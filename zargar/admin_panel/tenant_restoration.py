@@ -423,7 +423,7 @@ class TenantRestorationManager:
                 }
             
             # Validate confirmation text
-            expected_confirmation = tenant.domain_url
+            expected_confirmation = tenant.get_primary_domain().domain
             if confirmation_text != expected_confirmation:
                 return {
                     'valid': False,

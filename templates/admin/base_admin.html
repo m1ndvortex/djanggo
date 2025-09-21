@@ -148,19 +148,19 @@
                 
                 <!-- Navigation Links -->
                 <div class="hidden md:flex items-center space-x-4 space-x-reverse">
-                    <a href="{% url 'core:super_panel_dashboard' %}" 
+                    <a href="/super-panel/" 
                        class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-cyber-text-secondary hover:text-gray-900 dark:hover:text-cyber-neon-primary transition-colors">
                         داشبورد
                     </a>
-                    <a href="{% url 'core:tenants:tenant_list' %}" 
+                    <a href="/super-panel/tenants/" 
                        class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-cyber-text-secondary hover:text-gray-900 dark:hover:text-cyber-neon-primary transition-colors">
                         مدیریت تنانت‌ها
                     </a>
-                    <a href="{% url 'core:user_list' %}" 
+                    <a href="/super-panel/impersonation/" 
                        class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-cyber-text-secondary hover:text-gray-900 dark:hover:text-cyber-neon-primary transition-colors">
                         کاربران
                     </a>
-                    <a href="{% url 'core:system_health' %}" 
+                    <a href="/super-panel/backup/" 
                        class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-cyber-text-secondary hover:text-gray-900 dark:hover:text-cyber-neon-primary transition-colors">
                         سلامت سیستم
                     </a>
@@ -204,7 +204,7 @@
                                 <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-cyber-text-secondary hover:bg-gray-100 dark:hover:bg-cyber-bg-elevated">
                                     تنظیمات
                                 </a>
-                                <a href="{% url 'core:admin_logout' %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-cyber-text-secondary hover:bg-gray-100 dark:hover:bg-cyber-bg-elevated">
+                                <a href="/super-panel/logout/" class="block px-4 py-2 text-sm text-gray-700 dark:text-cyber-text-secondary hover:bg-gray-100 dark:hover:bg-cyber-bg-elevated">
                                     خروج
                                 </a>
                             </div>
@@ -221,7 +221,7 @@
         {% if messages %}
             <div class="mb-6">
                 {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} bg-{{ message.tags == 'error' and 'red' or message.tags == 'success' and 'green' or 'blue' }}-100 dark:bg-cyber-bg-surface border border-{{ message.tags == 'error' and 'red' or message.tags == 'success' and 'green' or 'blue' }}-300 dark:border-cyber-neon-{{ message.tags == 'error' and 'danger' or message.tags == 'success' and 'secondary' or 'primary' }}/30 text-{{ message.tags == 'error' and 'red' or message.tags == 'success' and 'green' or 'blue' }}-800 dark:text-cyber-text-primary px-4 py-3 rounded-lg mb-4">
+                    <div class="alert alert-{{ message.tags }} {% if message.tags == 'error' %}bg-red-100 border-red-300 text-red-800{% elif message.tags == 'success' %}bg-green-100 border-green-300 text-green-800{% else %}bg-blue-100 border-blue-300 text-blue-800{% endif %} dark:bg-cyber-bg-surface dark:text-cyber-text-primary px-4 py-3 rounded-lg mb-4 border">
                         {{ message }}
                     </div>
                 {% endfor %}

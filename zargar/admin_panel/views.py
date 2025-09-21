@@ -726,8 +726,14 @@ class TenantRestoreView(SuperAdminRequiredMixin, TemplateView):
         target_tenant_id = request.POST.get('target_tenant_id')
         confirmation_text = request.POST.get('confirmation_text')
         
+        # Check if this is an AJAX request
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json'
+        
         if not backup_id or not target_tenant_id:
-            messages.error(request, _('پشتیبان و تنانت هدف الزامی است.'))
+            error_msg = 'پشتیبان و تنانت هدف الزامی است.'
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': error_msg})
+            messages.error(request, _(error_msg))
             return redirect('admin_panel:tenant_restore')
         
         try:
@@ -743,19 +749,35 @@ class TenantRestoreView(SuperAdminRequiredMixin, TemplateView):
             )
             
             if result['success']:
-                messages.success(
-                    request,
-                    _(f'بازیابی تنانت "{tenant.name}" شروع شد. شناسه کار: {result["restore_job_id"][:8]}...')
-                )
+                success_msg = f'بازیابی تنانت "{tenant.name}" شروع شد. شناسه کار: {result["restore_job_id"][:8]}...'
+                if is_ajax:
+                    return JsonResponse({
+                        'success': True,
+                        'restore_job_id': result['restore_job_id'],
+                        'message': success_msg,
+                        'tenant_name': tenant.name
+                    })
+                messages.success(request, _(success_msg))
             else:
-                messages.error(request, _(f'خطا در شروع بازیابی: {result["error"]}'))
+                error_msg = f'خطا در شروع بازیابی: {result["error"]}'
+                if is_ajax:
+                    return JsonResponse({'success': False, 'error': error_msg})
+                messages.error(request, _(error_msg))
             
         except Tenant.DoesNotExist:
-            messages.error(request, _('تنانت مورد نظر یافت نشد.'))
+            error_msg = 'تنانت مورد نظر یافت نشد.'
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': error_msg})
+            messages.error(request, _(error_msg))
         except Exception as e:
             logger.error(f"Error starting tenant restore: {str(e)}")
-            messages.error(request, _('خطا در شروع بازیابی تنانت'))
+            error_msg = 'خطا در شروع بازیابی تنانت'
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': error_msg})
+            messages.error(request, _(error_msg))
         
+        if is_ajax:
+            return JsonResponse({'success': False, 'error': 'خطای نامشخص'})
         return redirect('admin_panel:tenant_restore')
     
     def _handle_snapshot_restore(self, request):
@@ -1733,3 +1755,72 @@ class DisasterRecoveryDocumentationView(SuperAdminRequiredMixin, TemplateView):
         })
         
         return context
+
+cla
+ss RestoreStatusAPIView(SuperAdminRequiredMixin, View):
+    """
+    API view to get restore job status.
+    """
+    
+    def get(self, request):
+        """Get restore job status."""
+        from .models import RestoreJob
+        from .tenant_restoration import tenant_restoration_manager
+        
+        job_id = request.GET.get('job_id')
+        
+        if not job_id:
+            return JsonResponse({'success': False, 'error': 'Missing job_id parameter'})
+        
+        try:
+            # Use tenant restoration manager to get status
+            result = tenant_restoration_manager.get_restoration_status(job_id)
+            
+            return JsonResponse(result)
+            
+        except Exception as e:
+            logger.error(f"Error getting restore status: {str(e)}")
+            return JsonResponse({
+                'success': False,
+                'error': 'Error getting restore status'
+            })
+
+
+class BackupStatusAPIView(SuperAdminRequiredMixin, View):
+    """
+    API view to get backup job status.
+    """
+    
+    def get(self, request):
+        """Get backup job status."""
+        from .models import BackupJob
+        
+        job_id = request.GET.get('job_id')
+        
+        if not job_id:
+            return JsonResponse({'success': False, 'error': 'Missing job_id parameter'})
+        
+        try:
+            backup_job = BackupJob.objects.get(job_id=job_id)
+            
+            return JsonResponse({
+                'success': True,
+                'job_id': str(backup_job.job_id),
+                'status': backup_job.status,
+                'progress': backup_job.progress_percentage,
+                'started_at': backup_job.started_at.isoformat() if backup_job.started_at else None,
+                'completed_at': backup_job.completed_at.isoformat() if backup_job.completed_at else None,
+                'error_message': backup_job.error_message,
+            })
+            
+        except BackupJob.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': f'Backup job {job_id} not found'
+            })
+        except Exception as e:
+            logger.error(f"Error getting backup status: {str(e)}")
+            return JsonResponse({
+                'success': False,
+                'error': 'Error getting backup status'
+            })
