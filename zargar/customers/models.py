@@ -828,3 +828,13 @@ from .loyalty_models import (
     CustomerReferral,
     CustomerSpecialOffer
 )
+
+# Import layaway models to make them available
+from .layaway_models import (
+    LayawayPlan,
+    LayawayScheduledPayment,
+    LayawayPayment,
+    LayawayRefund,
+    LayawayContract,
+    LayawayReminder
+)

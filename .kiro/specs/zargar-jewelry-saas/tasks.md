@@ -739,7 +739,12 @@
     - Write tests for loyalty program UI workflows and customer engagement interface
     - _Requirements: 9.6, 9.9_
 
-  - [ ] 13.3 Build layaway and installment plan system backend (Backend)
+  - [x] 13.3 Build layaway and installment plan system backend (Backend)
+
+
+
+
+
     - Create LayawayPlan model for traditional payment plans
     - Implement flexible payment terms for expensive jewelry purchases
     - Build payment reminder and contract generation system backend
