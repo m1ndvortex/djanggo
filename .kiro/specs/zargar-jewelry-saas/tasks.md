@@ -727,7 +727,12 @@
     - Write tests for loyalty program functionality and engagement features
     - _Requirements: 9.6, 9.9_
 
-  - [ ] 13.2 Build customer loyalty and engagement UI (Frontend)
+  - [x] 13.2 Build customer loyalty and engagement UI (Frontend)
+
+
+
+
+
     - Build customer loyalty management interface with points tracking and tier management
     - Create customer engagement dashboard showing loyalty metrics and upcoming events
     - Build birthday and anniversary reminder interface with gift suggestions and Persian templates

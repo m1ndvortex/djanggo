@@ -1,0 +1,334 @@
+/* Customer Loyalty Dashboard Styles */
+
+/* Light Mode Styles */
+.metric-card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6 transition-all duration-300 hover:shadow-md;
+}
+
+.icon-container {
+    @apply p-3 rounded-lg;
+}
+
+.icon-container.primary {
+    @apply bg-blue-100 text-blue-600;
+}
+
+.icon-container.success {
+    @apply bg-green-100 text-green-600;
+}
+
+.icon-container.tertiary {
+    @apply bg-purple-100 text-purple-600;
+}
+
+.icon-container.warning {
+    @apply bg-yellow-100 text-yellow-600;
+}
+
+.nav-link {
+    @apply text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200;
+}
+
+.nav-link.active {
+    @apply text-blue-600 bg-blue-50;
+}
+
+.logout-btn {
+    @apply text-gray-600 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200;
+}
+
+/* Dark Mode - Cybersecurity Theme Styles */
+.cyber-glass-header {
+    backdrop-filter: blur(20px) saturate(180%);
+    background: linear-gradient(145deg, rgba(11, 14, 26, 0.9) 0%, rgba(26, 29, 41, 0.8) 100%);
+    border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.cyber-logo-container {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 255, 136, 0.05) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+    @apply p-2 rounded-lg;
+}
+
+.cyber-glow-text {
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+.cyber-nav-link {
+    @apply text-cyber-text-secondary hover:text-cyber-neon-primary px-3 py-2 rounded-md text-sm font-medium transition-all duration-300;
+    border: 1px solid transparent;
+}
+
+.cyber-nav-link:hover {
+    border-color: rgba(0, 212, 255, 0.2);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.1);
+}
+
+.cyber-nav-link.active {
+    @apply text-cyber-neon-primary;
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 255, 136, 0.05) 100%);
+    border-color: rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.15);
+}
+
+.cyber-logout-btn {
+    @apply text-cyber-text-secondary hover:text-cyber-neon-danger px-3 py-2 rounded-md text-sm font-medium transition-all duration-300;
+    border: 1px solid transparent;
+}
+
+.cyber-logout-btn:hover {
+    border-color: rgba(255, 71, 87, 0.2);
+    box-shadow: 0 0 15px rgba(255, 71, 87, 0.1);
+}
+
+.cyber-metric-card {
+    backdrop-filter: blur(16px) saturate(150%);
+    background: linear-gradient(145deg, 
+        rgba(37, 42, 58, 0.8) 0%, 
+        rgba(26, 29, 41, 0.9) 50%,
+        rgba(11, 14, 26, 0.95) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    @apply rounded-lg p-6 transition-all duration-300;
+}
+
+.cyber-metric-card:hover {
+    border-color: rgba(0, 212, 255, 0.2);
+    box-shadow: 0 16px 50px rgba(0, 0, 0, 0.7), 
+                0 0 30px rgba(0, 212, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.cyber-glass-card {
+    backdrop-filter: blur(16px) saturate(150%);
+    background: linear-gradient(145deg, 
+        rgba(37, 42, 58, 0.8) 0%, 
+        rgba(26, 29, 41, 0.9) 50%,
+        rgba(11, 14, 26, 0.95) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    @apply rounded-lg;
+}
+
+.cyber-glass-base {
+    backdrop-filter: blur(12px) saturate(140%);
+    background: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    @apply rounded-lg;
+}
+
+.cyber-icon-container {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 255, 136, 0.05) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+    @apply p-3 rounded-lg;
+}
+
+.cyber-icon-container.primary {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.15) 0%, rgba(0, 212, 255, 0.05) 100%);
+    border-color: rgba(0, 212, 255, 0.3);
+}
+
+.cyber-icon-container.success {
+    background: linear-gradient(145deg, rgba(0, 255, 136, 0.15) 0%, rgba(0, 255, 136, 0.05) 100%);
+    border-color: rgba(0, 255, 136, 0.3);
+}
+
+.cyber-icon-container.tertiary {
+    background: linear-gradient(145deg, rgba(255, 107, 53, 0.15) 0%, rgba(255, 107, 53, 0.05) 100%);
+    border-color: rgba(255, 107, 53, 0.3);
+}
+
+.cyber-icon-container.warning {
+    background: linear-gradient(145deg, rgba(255, 184, 0, 0.15) 0%, rgba(255, 184, 0, 0.05) 100%);
+    border-color: rgba(255, 184, 0, 0.3);
+}
+
+.cyber-number-glow {
+    text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor;
+    animation: cyber-glow 3s ease-in-out infinite;
+}
+
+.cyber-avatar {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 255, 136, 0.05) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.1);
+    @apply p-2 rounded-full;
+}
+
+.cyber-badge {
+    @apply px-3 py-1 rounded-full text-sm font-medium;
+    border: 1px solid;
+}
+
+.cyber-badge.primary {
+    @apply text-cyber-neon-primary;
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 212, 255, 0.05) 100%);
+    border-color: rgba(0, 212, 255, 0.3);
+}
+
+.cyber-badge.success {
+    @apply text-cyber-neon-success;
+    background: linear-gradient(145deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.05) 100%);
+    border-color: rgba(0, 255, 136, 0.3);
+}
+
+.cyber-badge.tertiary {
+    @apply text-cyber-neon-tertiary;
+    background: linear-gradient(145deg, rgba(255, 107, 53, 0.1) 0%, rgba(255, 107, 53, 0.05) 100%);
+    border-color: rgba(255, 107, 53, 0.3);
+}
+
+.cyber-badge.warning {
+    @apply text-cyber-neon-warning;
+    background: linear-gradient(145deg, rgba(255, 184, 0, 0.1) 0%, rgba(255, 184, 0, 0.05) 100%);
+    border-color: rgba(255, 184, 0, 0.3);
+}
+
+.cyber-badge.danger {
+    @apply text-cyber-neon-danger;
+    background: linear-gradient(145deg, rgba(255, 71, 87, 0.1) 0%, rgba(255, 71, 87, 0.05) 100%);
+    border-color: rgba(255, 71, 87, 0.3);
+}
+
+.cyber-button-primary {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.2) 0%, rgba(0, 255, 136, 0.1) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.4);
+    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.15), 0 0 20px rgba(0, 212, 255, 0.1);
+    @apply text-cyber-text-primary font-medium py-2 px-4 rounded-lg transition-all duration-300;
+}
+
+.cyber-button-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0, 212, 255, 0.25), 0 0 30px rgba(0, 212, 255, 0.2);
+}
+
+.cyber-button-secondary {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    @apply text-cyber-text-secondary font-medium py-2 px-4 rounded-lg transition-all duration-300;
+}
+
+.cyber-button-secondary:hover {
+    @apply text-cyber-text-primary;
+    border-color: rgba(0, 212, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 212, 255, 0.1);
+}
+
+.cyber-button-tertiary {
+    background: linear-gradient(145deg, rgba(255, 107, 53, 0.2) 0%, rgba(255, 107, 53, 0.1) 100%);
+    border: 1px solid rgba(255, 107, 53, 0.4);
+    box-shadow: 0 8px 32px rgba(255, 107, 53, 0.15), 0 0 20px rgba(255, 107, 53, 0.1);
+    @apply text-cyber-text-primary font-medium py-2 px-4 rounded-lg transition-all duration-300;
+}
+
+.cyber-button-tertiary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(255, 107, 53, 0.25), 0 0 30px rgba(255, 107, 53, 0.2);
+}
+
+.cyber-input {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+    @apply text-cyber-text-primary placeholder-cyber-text-muted rounded-lg px-3 py-2 transition-all duration-300;
+}
+
+.cyber-input:focus {
+    border-color: rgba(0, 212, 255, 0.4);
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 212, 255, 0.1);
+    outline: none;
+}
+
+/* Animations */
+@keyframes cyber-glow {
+    0%, 100% { 
+        text-shadow: 0 0 5px currentColor, 0 0 10px currentColor, 0 0 15px currentColor; 
+    }
+    50% { 
+        text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor, 0 0 40px currentColor; 
+    }
+}
+
+@keyframes fade-in-up {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in-up {
+    animation: fade-in-up 0.4s ease-out forwards;
+}
+
+/* Persian Number Styling */
+.persian-numbers {
+    font-feature-settings: "tnum" 1;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .cyber-metric-card,
+    .metric-card {
+        @apply p-4;
+    }
+    
+    .cyber-glass-card {
+        @apply p-4;
+    }
+}
+
+/* Scrollbar Styling for Dark Mode */
+.dark ::-webkit-scrollbar {
+    width: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+    background: rgba(11, 14, 26, 0.5);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.3) 0%, rgba(0, 255, 136, 0.2) 100%);
+    border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.5) 0%, rgba(0, 255, 136, 0.3) 100%);
+}
+
+/* Table Styling */
+.dark table {
+    @apply text-cyber-text-primary;
+}
+
+.dark table th {
+    @apply text-cyber-text-secondary;
+}
+
+.dark table td {
+    @apply text-cyber-text-primary;
+}
+
+/* Loading States */
+.loading-shimmer {
+    background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0.1) 25%, 
+        rgba(0, 212, 255, 0.1) 50%, 
+        rgba(255, 255, 255, 0.1) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}

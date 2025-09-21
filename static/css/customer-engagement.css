@@ -1,0 +1,387 @@
+/* Customer Engagement Dashboard Styles */
+
+/* Extends customer-loyalty.css with engagement-specific styles */
+
+/* Event Type Indicators */
+.event-type-birthday {
+    @apply bg-pink-100 text-pink-800;
+}
+
+.event-type-anniversary {
+    @apply bg-blue-100 text-blue-800;
+}
+
+.event-type-nowruz {
+    @apply bg-green-100 text-green-800;
+}
+
+.event-type-yalda {
+    @apply bg-purple-100 text-purple-800;
+}
+
+.event-type-vip-upgrade {
+    @apply bg-yellow-100 text-yellow-800;
+}
+
+/* Dark mode event type indicators */
+.dark .event-type-birthday {
+    background: linear-gradient(145deg, rgba(255, 20, 147, 0.1) 0%, rgba(255, 20, 147, 0.05) 100%);
+    border: 1px solid rgba(255, 20, 147, 0.3);
+    @apply text-pink-400;
+}
+
+.dark .event-type-anniversary {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 212, 255, 0.05) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    @apply text-cyber-neon-primary;
+}
+
+.dark .event-type-nowruz {
+    background: linear-gradient(145deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.05) 100%);
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    @apply text-cyber-neon-success;
+}
+
+.dark .event-type-yalda {
+    background: linear-gradient(145deg, rgba(165, 94, 234, 0.1) 0%, rgba(165, 94, 234, 0.05) 100%);
+    border: 1px solid rgba(165, 94, 234, 0.3);
+    @apply text-cyber-neon-purple;
+}
+
+.dark .event-type-vip-upgrade {
+    background: linear-gradient(145deg, rgba(255, 184, 0, 0.1) 0%, rgba(255, 184, 0, 0.05) 100%);
+    border: 1px solid rgba(255, 184, 0, 0.3);
+    @apply text-cyber-neon-warning;
+}
+
+/* Status Indicators */
+.status-pending {
+    @apply bg-yellow-100 text-yellow-800;
+}
+
+.status-sent {
+    @apply bg-blue-100 text-blue-800;
+}
+
+.status-delivered {
+    @apply bg-green-100 text-green-800;
+}
+
+.status-failed {
+    @apply bg-red-100 text-red-800;
+}
+
+/* Dark mode status indicators */
+.dark .status-pending {
+    background: linear-gradient(145deg, rgba(255, 184, 0, 0.1) 0%, rgba(255, 184, 0, 0.05) 100%);
+    border: 1px solid rgba(255, 184, 0, 0.3);
+    @apply text-cyber-neon-warning;
+}
+
+.dark .status-sent {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 212, 255, 0.05) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    @apply text-cyber-neon-primary;
+}
+
+.dark .status-delivered {
+    background: linear-gradient(145deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.05) 100%);
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    @apply text-cyber-neon-success;
+}
+
+.dark .status-failed {
+    background: linear-gradient(145deg, rgba(255, 71, 87, 0.1) 0%, rgba(255, 71, 87, 0.05) 100%);
+    border: 1px solid rgba(255, 71, 87, 0.3);
+    @apply text-cyber-neon-danger;
+}
+
+/* Engagement Rate Visualization */
+.engagement-rate-bar {
+    @apply bg-gray-200 rounded-full h-2 overflow-hidden;
+}
+
+.engagement-rate-fill {
+    @apply bg-green-500 h-full transition-all duration-500 ease-out;
+}
+
+.dark .engagement-rate-bar {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark .engagement-rate-fill {
+    background: linear-gradient(90deg, rgba(0, 255, 136, 0.8) 0%, rgba(0, 212, 255, 0.6) 100%);
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+}
+
+/* Event Timeline */
+.event-timeline {
+    position: relative;
+}
+
+.event-timeline::before {
+    content: '';
+    position: absolute;
+    left: 20px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    @apply bg-gray-300;
+}
+
+.dark .event-timeline::before {
+    background: linear-gradient(180deg, rgba(0, 212, 255, 0.3) 0%, rgba(0, 255, 136, 0.2) 100%);
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+}
+
+.event-timeline-item {
+    position: relative;
+    padding-left: 50px;
+    margin-bottom: 20px;
+}
+
+.event-timeline-dot {
+    position: absolute;
+    left: 12px;
+    top: 8px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    @apply bg-white border-4 border-blue-500;
+}
+
+.dark .event-timeline-dot {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.2) 0%, rgba(0, 255, 136, 0.1) 100%);
+    border-color: rgba(0, 212, 255, 0.5);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+}
+
+/* Customer Avatar Enhancements */
+.customer-avatar-large {
+    @apply w-12 h-12 rounded-full flex items-center justify-center;
+    background: linear-gradient(145deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+
+.dark .customer-avatar-large {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 255, 136, 0.05) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+}
+
+/* Birthday/Anniversary Cards */
+.birthday-card {
+    background: linear-gradient(145deg, #fdf2f8 0%, #fce7f3 100%);
+    border: 1px solid #f9a8d4;
+}
+
+.anniversary-card {
+    background: linear-gradient(145deg, #eff6ff 0%, #dbeafe 100%);
+    border: 1px solid #93c5fd;
+}
+
+.dark .birthday-card {
+    background: linear-gradient(145deg, rgba(255, 20, 147, 0.05) 0%, rgba(255, 20, 147, 0.02) 100%);
+    border: 1px solid rgba(255, 20, 147, 0.2);
+    box-shadow: 0 8px 32px rgba(255, 20, 147, 0.1);
+}
+
+.dark .anniversary-card {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.05) 0%, rgba(0, 212, 255, 0.02) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.1);
+}
+
+/* Cultural Event Cards */
+.cultural-event-card {
+    @apply transition-all duration-300 hover:shadow-lg;
+}
+
+.cultural-event-nowruz {
+    background: linear-gradient(145deg, #f0fdf4 0%, #dcfce7 100%);
+    border: 1px solid #86efac;
+}
+
+.cultural-event-yalda {
+    background: linear-gradient(145deg, #faf5ff 0%, #f3e8ff 100%);
+    border: 1px solid #c4b5fd;
+}
+
+.cultural-event-mehregan {
+    background: linear-gradient(145deg, #fffbeb 0%, #fef3c7 100%);
+    border: 1px solid #fcd34d;
+}
+
+.dark .cultural-event-nowruz {
+    background: linear-gradient(145deg, rgba(0, 255, 136, 0.05) 0%, rgba(0, 255, 136, 0.02) 100%);
+    border: 1px solid rgba(0, 255, 136, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 255, 136, 0.1);
+}
+
+.dark .cultural-event-yalda {
+    background: linear-gradient(145deg, rgba(165, 94, 234, 0.05) 0%, rgba(165, 94, 234, 0.02) 100%);
+    border: 1px solid rgba(165, 94, 234, 0.2);
+    box-shadow: 0 8px 32px rgba(165, 94, 234, 0.1);
+}
+
+.dark .cultural-event-mehregan {
+    background: linear-gradient(145deg, rgba(255, 184, 0, 0.05) 0%, rgba(255, 184, 0, 0.02) 100%);
+    border: 1px solid rgba(255, 184, 0, 0.2);
+    box-shadow: 0 8px 32px rgba(255, 184, 0, 0.1);
+}
+
+/* Live Indicator */
+.live-indicator {
+    @apply flex items-center text-sm font-medium text-green-600;
+}
+
+.live-indicator span {
+    @apply w-2 h-2 bg-green-500 rounded-full mr-2;
+}
+
+.dark .live-indicator {
+    @apply text-cyber-neon-success;
+}
+
+.dark .live-indicator span {
+    background: radial-gradient(circle, rgba(0, 255, 136, 0.8) 0%, rgba(0, 255, 136, 0.4) 100%);
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+}
+
+/* Engagement Metrics Visualization */
+.metric-progress {
+    @apply w-full bg-gray-200 rounded-full h-3 overflow-hidden;
+}
+
+.metric-progress-bar {
+    @apply h-full transition-all duration-700 ease-out;
+}
+
+.metric-progress-success {
+    @apply bg-green-500;
+}
+
+.metric-progress-warning {
+    @apply bg-yellow-500;
+}
+
+.metric-progress-danger {
+    @apply bg-red-500;
+}
+
+.dark .metric-progress {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark .metric-progress-success {
+    background: linear-gradient(90deg, rgba(0, 255, 136, 0.8) 0%, rgba(0, 255, 136, 0.6) 100%);
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+}
+
+.dark .metric-progress-warning {
+    background: linear-gradient(90deg, rgba(255, 184, 0, 0.8) 0%, rgba(255, 184, 0, 0.6) 100%);
+    box-shadow: 0 0 15px rgba(255, 184, 0, 0.3);
+}
+
+.dark .metric-progress-danger {
+    background: linear-gradient(90deg, rgba(255, 71, 87, 0.8) 0%, rgba(255, 71, 87, 0.6) 100%);
+    box-shadow: 0 0 15px rgba(255, 71, 87, 0.3);
+}
+
+/* Filter and Search Enhancements */
+.filter-dropdown {
+    @apply relative;
+}
+
+.filter-dropdown select {
+    @apply appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+}
+
+.dark .filter-dropdown select {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    @apply text-cyber-text-primary;
+}
+
+.dark .filter-dropdown select:focus {
+    border-color: rgba(0, 212, 255, 0.4);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+}
+
+/* Responsive Enhancements */
+@media (max-width: 640px) {
+    .event-timeline-item {
+        padding-left: 30px;
+    }
+    
+    .event-timeline::before {
+        left: 10px;
+    }
+    
+    .event-timeline-dot {
+        left: 2px;
+        width: 12px;
+        height: 12px;
+    }
+    
+    .customer-avatar-large {
+        @apply w-8 h-8;
+    }
+}
+
+/* Animation Enhancements */
+.engagement-card-hover {
+    @apply transition-all duration-300 hover:scale-105;
+}
+
+.dark .engagement-card-hover:hover {
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 
+                0 0 40px rgba(0, 212, 255, 0.15);
+}
+
+/* Loading States for Engagement */
+.engagement-loading {
+    @apply animate-pulse;
+}
+
+.engagement-skeleton {
+    @apply bg-gray-300 rounded;
+}
+
+.dark .engagement-skeleton {
+    background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0.05) 25%, 
+        rgba(0, 212, 255, 0.05) 50%, 
+        rgba(255, 255, 255, 0.05) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+}
+
+/* Event Priority Indicators */
+.priority-high {
+    @apply border-l-4 border-red-500;
+}
+
+.priority-medium {
+    @apply border-l-4 border-yellow-500;
+}
+
+.priority-low {
+    @apply border-l-4 border-green-500;
+}
+
+.dark .priority-high {
+    border-left-color: rgba(255, 71, 87, 0.8);
+    box-shadow: -4px 0 15px rgba(255, 71, 87, 0.2);
+}
+
+.dark .priority-medium {
+    border-left-color: rgba(255, 184, 0, 0.8);
+    box-shadow: -4px 0 15px rgba(255, 184, 0, 0.2);
+}
+
+.dark .priority-low {
+    border-left-color: rgba(0, 255, 136, 0.8);
+    box-shadow: -4px 0 15px rgba(0, 255, 136, 0.2);
+}
