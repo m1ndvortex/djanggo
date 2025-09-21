@@ -23,6 +23,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('health/', health_check, name='health_check'),
     path('api/', include('zargar.api.urls')),
+    path('pos/', include('zargar.pos.urls')),
     path('super-panel/', include('zargar.admin_panel.urls', namespace='admin_panel')),
 ]
 

@@ -25,8 +25,22 @@ def test_offline_pos_system():
     
     # Get tenant context
     from django_tenants.utils import get_tenant_model, tenant_context
+    from zargar.tenants.models import Domain
     Tenant = get_tenant_model()
-    tenant = Tenant.objects.exclude(schema_name='public').first()
+    
+    # Try to get existing tenant or create one
+    try:
+        tenant = Tenant.objects.get(schema_name='test_main')
+    except Tenant.DoesNotExist:
+        print("Creating test tenant...")
+        tenant = Tenant.objects.create(
+            schema_name='test_main',
+            name='Test Main Tenant',
+            owner_name='Test Owner',
+            owner_email='test@example.com'
+        )
+        tenant.create_schema(check_if_exists=True)
+        Domain.objects.create(domain='test.main.com', tenant=tenant, is_primary=True)
     
     if not tenant:
         print("No tenant found, skipping test")
@@ -126,9 +140,11 @@ def test_pos_offline_service():
     
     # Get tenant context
     Tenant = get_tenant_model()
-    tenant = Tenant.objects.exclude(schema_name='public').first()
     
-    if not tenant:
+    # Try to get existing tenant
+    try:
+        tenant = Tenant.objects.get(schema_name='test_main')
+    except Tenant.DoesNotExist:
         print("No tenant found, skipping test")
         return False
     

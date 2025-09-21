@@ -385,6 +385,26 @@
                         <span class="font-bold">انتخاب مشتری</span>
                     </div>
                 </button>
+                
+                <button @click="openSyncQueue()" 
+                        class="touch-btn large-touch rounded-xl transition-all duration-200 transform hover:scale-105
+                               {% if is_dark_mode %}
+                               bg-gradient-to-r from-cyber-neon-warning/20 to-cyber-neon-primary/20
+                               border-2 border-cyber-neon-warning/30 text-cyber-text-primary
+                               hover:border-cyber-neon-warning/50 hover:shadow-neon
+                               {% else %}
+                               bg-gradient-to-r from-yellow-50 to-blue-50
+                               border-2 border-yellow-200 text-gray-800
+                               hover:border-yellow-300 hover:shadow-lg
+                               {% endif %}">
+                    <div class="flex items-center justify-center space-x-3 space-x-reverse">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        <span class="font-bold">صف همگام‌سازی</span>
+                    </div>
+                </button>
             </div>
             
             <!-- Payment Section -->
@@ -497,6 +517,11 @@
 {% include "pos/components/customer_lookup_modal.html" %}
 {% include "pos/components/inventory_search_modal.html" %}
 {% include "pos/components/calculator_modal.html" %}
+
+<!-- Offline Sync Components -->
+{% include "pos/components/offline_sync_status.html" %}
+{% include "pos/components/sync_queue_modal.html" %}
+{% include "pos/components/conflict_resolution_modal.html" %}
 
 <style>
 .payment-method-btn.active {
@@ -743,6 +768,11 @@ function touchPOSInterface() {
             } else {
                 alert(message);
             }
+        },
+        
+        openSyncQueue() {
+            // Dispatch event to open sync queue modal
+            window.dispatchEvent(new CustomEvent('open-sync-queue-modal'));
         },
         
         formatCurrency(amount) {

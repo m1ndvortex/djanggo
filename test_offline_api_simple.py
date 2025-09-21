@@ -34,9 +34,11 @@ def test_offline_api():
     
     # Get tenant
     Tenant = get_tenant_model()
-    tenant = Tenant.objects.exclude(schema_name='public').first()
     
-    if not tenant:
+    # Try to get existing tenant
+    try:
+        tenant = Tenant.objects.get(schema_name='test_main')
+    except Tenant.DoesNotExist:
         print("No tenant found, skipping test")
         return False
     

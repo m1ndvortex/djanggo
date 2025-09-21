@@ -37,6 +37,9 @@ urlpatterns = [
     # Tenant dashboard
     path('', TenantDashboardView.as_view(), name='dashboard'),
     
+    # POS System URLs
+    path('pos/', include('zargar.pos.urls')),
+    
     # Authentication URLs
     path('login/', TenantLoginView.as_view(), name='login'),
     path('logout/', TenantLogoutView.as_view(), name='logout'),
