@@ -807,6 +807,284 @@ class POSOfflineExportAPIView(LoginRequiredMixin, TenantContextMixin, View):
             }, status=400)
 
 
+class POSCreateCustomerAPIView(LoginRequiredMixin, TenantContextMixin, View):
+    """API endpoint for creating new customers."""
+    
+    def post(self, request):
+        """Create new customer."""
+        try:
+            import json
+            from zargar.customers.models import Customer
+            
+            data = json.loads(request.body)
+            
+            # Validate required fields
+            if not data.get('persian_first_name') or not data.get('persian_last_name'):
+                return JsonResponse({
+                    'success': False,
+                    'errors': ['نام و نام خانوادگی فارسی الزامی است']
+                })
+            
+            if not data.get('phone_number'):
+                return JsonResponse({
+                    'success': False,
+                    'errors': ['شماره تلفن الزامی است']
+                })
+            
+            # Check if phone number already exists
+            if Customer.objects.filter(phone_number=data['phone_number']).exists():
+                return JsonResponse({
+                    'success': False,
+                    'errors': ['مشتری با این شماره تلفن قبلاً ثبت شده است']
+                })
+            
+            # Create customer
+            customer = Customer.objects.create(
+                persian_first_name=data['persian_first_name'],
+                persian_last_name=data['persian_last_name'],
+                first_name=data.get('first_name', ''),
+                last_name=data.get('last_name', ''),
+                phone_number=data['phone_number'],
+                email=data.get('email', ''),
+                birth_date_shamsi=data.get('birth_date_shamsi', ''),
+                national_id=data.get('national_id', ''),
+                address=data.get('address', ''),
+                customer_type=data.get('customer_type', 'individual'),
+                created_by=request.user
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'customer': {
+                    'id': customer.id,
+                    'full_name': customer.full_name,
+                    'full_persian_name': customer.full_persian_name,
+                    'phone_number': customer.phone_number,
+                    'email': customer.email,
+                    'is_vip': customer.is_vip,
+                    'loyalty_points': customer.loyalty_points,
+                    'total_purchases': float(customer.total_purchases),
+                    'last_purchase_date_shamsi': customer.last_purchase_date.strftime('%Y/%m/%d') if customer.last_purchase_date else None
+                }
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'errors': [str(e)]
+            }, status=400)
+
+
+class POSPaymentHistoryAPIView(LoginRequiredMixin, TenantContextMixin, View):
+    """API endpoint for customer payment history."""
+    
+    def get(self, request):
+        """Get customer payment history."""
+        try:
+            from zargar.customers.models import Customer
+            from django.core.paginator import Paginator
+            from datetime import datetime, timedelta
+            
+            customer_id = request.GET.get('customer_id')
+            if not customer_id:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Customer ID required'
+                })
+            
+            customer = get_object_or_404(Customer, id=customer_id)
+            
+            # Get filter parameters
+            period = request.GET.get('period', 'all')
+            payment_type = request.GET.get('type', 'all')
+            page = int(request.GET.get('page', 1))
+            page_size = int(request.GET.get('page_size', 10))
+            
+            # Build queryset
+            transactions = POSTransaction.objects.filter(
+                customer=customer,
+                status='completed'
+            ).select_related('invoice').order_by('-transaction_date')
+            
+            # Apply period filter
+            if period != 'all':
+                today = timezone.now().date()
+                if period == 'month':
+                    start_date = today.replace(day=1)
+                elif period == 'quarter':
+                    start_date = today - timedelta(days=90)
+                elif period == 'year':
+                    start_date = today.replace(month=1, day=1)
+                
+                transactions = transactions.filter(transaction_date__date__gte=start_date)
+            
+            # Apply payment type filter
+            if payment_type != 'all':
+                transactions = transactions.filter(payment_method=payment_type)
+            
+            # Calculate summary
+            summary = {
+                'total_payments': transactions.aggregate(
+                    total=models.Sum('total_amount')
+                )['total'] or 0,
+                'cash_payments': transactions.filter(payment_method='cash').aggregate(
+                    total=models.Sum('total_amount')
+                )['total'] or 0,
+                'card_payments': transactions.filter(payment_method='card').aggregate(
+                    total=models.Sum('total_amount')
+                )['total'] or 0,
+                'remaining_debt': customer.current_debt if hasattr(customer, 'current_debt') else 0
+            }
+            
+            # Paginate
+            paginator = Paginator(transactions, page_size)
+            page_obj = paginator.get_page(page)
+            
+            # Format payment data
+            payments = []
+            for transaction in page_obj:
+                from zargar.core.calendar_utils import PersianCalendarUtils
+                
+                shamsi_date = PersianCalendarUtils.gregorian_to_shamsi(transaction.transaction_date.date())
+                date_shamsi = f"{shamsi_date[0]:04d}/{shamsi_date[1]:02d}/{shamsi_date[2]:02d}"
+                
+                payments.append({
+                    'id': transaction.id,
+                    'date_shamsi': date_shamsi,
+                    'invoice_number': transaction.invoice.invoice_number if hasattr(transaction, 'invoice') else transaction.transaction_number,
+                    'invoice_url': f"/pos/invoice/{transaction.invoice.id}/" if hasattr(transaction, 'invoice') else '#',
+                    'invoice_pdf_url': f"/pos/invoice/{transaction.invoice.id}/pdf/" if hasattr(transaction, 'invoice') else '#',
+                    'payment_method': transaction.payment_method,
+                    'payment_method_display': transaction.get_payment_method_display(),
+                    'amount': float(transaction.total_amount),
+                    'status': transaction.status,
+                    'status_display': transaction.get_status_display()
+                })
+            
+            return JsonResponse({
+                'success': True,
+                'payments': payments,
+                'summary': {
+                    'total_payments': float(summary['total_payments']),
+                    'cash_payments': float(summary['cash_payments']),
+                    'card_payments': float(summary['card_payments']),
+                    'remaining_debt': float(summary['remaining_debt'])
+                },
+                'total_pages': paginator.num_pages,
+                'total_records': paginator.count,
+                'current_page': page
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=400)
+
+
+class POSPaymentHistoryExportAPIView(LoginRequiredMixin, TenantContextMixin, View):
+    """API endpoint for exporting payment history."""
+    
+    def get(self, request):
+        """Export payment history to Excel."""
+        try:
+            import openpyxl
+            from openpyxl.styles import Font, Alignment
+            from django.http import HttpResponse
+            from zargar.customers.models import Customer
+            from datetime import datetime, timedelta
+            
+            customer_id = request.GET.get('customer_id')
+            if not customer_id:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Customer ID required'
+                })
+            
+            customer = get_object_or_404(Customer, id=customer_id)
+            
+            # Get filter parameters
+            period = request.GET.get('period', 'all')
+            payment_type = request.GET.get('type', 'all')
+            
+            # Build queryset
+            transactions = POSTransaction.objects.filter(
+                customer=customer,
+                status='completed'
+            ).select_related('invoice').order_by('-transaction_date')
+            
+            # Apply filters (same logic as above)
+            if period != 'all':
+                today = timezone.now().date()
+                if period == 'month':
+                    start_date = today.replace(day=1)
+                elif period == 'quarter':
+                    start_date = today - timedelta(days=90)
+                elif period == 'year':
+                    start_date = today.replace(month=1, day=1)
+                
+                transactions = transactions.filter(transaction_date__date__gte=start_date)
+            
+            if payment_type != 'all':
+                transactions = transactions.filter(payment_method=payment_type)
+            
+            # Create Excel workbook
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "Payment History"
+            
+            # Headers
+            headers = ['تاریخ', 'شماره فاکتور', 'نوع پرداخت', 'مبلغ', 'وضعیت']
+            for col, header in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col, value=header)
+                cell.font = Font(bold=True)
+                cell.alignment = Alignment(horizontal='center')
+            
+            # Data rows
+            for row, transaction in enumerate(transactions, 2):
+                from zargar.core.calendar_utils import PersianCalendarUtils
+                
+                shamsi_date = PersianCalendarUtils.gregorian_to_shamsi(transaction.transaction_date.date())
+                date_shamsi = f"{shamsi_date[0]:04d}/{shamsi_date[1]:02d}/{shamsi_date[2]:02d}"
+                
+                ws.cell(row=row, column=1, value=date_shamsi)
+                ws.cell(row=row, column=2, value=transaction.invoice.invoice_number if hasattr(transaction, 'invoice') else transaction.transaction_number)
+                ws.cell(row=row, column=3, value=transaction.get_payment_method_display())
+                ws.cell(row=row, column=4, value=float(transaction.total_amount))
+                ws.cell(row=row, column=5, value=transaction.get_status_display())
+            
+            # Prepare response
+            response = HttpResponse(
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            response['Content-Disposition'] = f'attachment; filename="payment_history_{customer.phone_number}.xlsx"'
+            
+            wb.save(response)
+            return response
+            
+        except ImportError:
+            return JsonResponse({
+                'success': False,
+                'error': 'Excel export not available'
+            }, status=400)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=400)
+            
+            return JsonResponse({
+                'success': True,
+                'export_data': export_data
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=400)
+
+
 class PlaceholderView(TemplateView):
     """
     Placeholder view for POS module (backward compatibility).

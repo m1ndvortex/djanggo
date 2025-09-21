@@ -701,7 +701,11 @@
     - Write tests for invoice generation and customer management backend
     - _Requirements: 9.4, 3.13_
 
-  - [ ] 12.6 Build invoice and customer management UI (Frontend)
+  - [x] 12.6 Build invoice and customer management UI (Frontend)
+
+
+
+
     - Build customer lookup interface with search, selection, and quick customer creation
     - Implement customer credit/debt management with payment history display
     - Create Persian invoice templates and printing functionality

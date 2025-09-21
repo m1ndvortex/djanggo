@@ -51,6 +51,11 @@ urlpatterns = [
     path('api/offline/cleanup/', views.POSOfflineCleanupAPIView.as_view(), name='api_offline_cleanup'),
     path('api/offline/export/', views.POSOfflineExportAPIView.as_view(), name='api_offline_export'),
     
+    # Customer Management API endpoints
+    path('api/create-customer/', views.POSCreateCustomerAPIView.as_view(), name='api_create_customer'),
+    path('api/payment-history/', views.POSPaymentHistoryAPIView.as_view(), name='api_payment_history'),
+    path('api/payment-history/export/', views.POSPaymentHistoryExportAPIView.as_view(), name='api_payment_history_export'),
+    
     # Placeholder (for backward compatibility)
     path('placeholder/', views.PlaceholderView.as_view(), name='placeholder'),
 ]
