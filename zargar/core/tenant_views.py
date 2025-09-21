@@ -48,43 +48,50 @@ class TenantOwnerRequiredMixin(UserPassesTestMixin):
 
 class TenantDashboardView(LoginRequiredMixin, TenantContextMixin, TemplateView):
     """
-    Main dashboard for tenant portal.
+    Main dashboard for tenant portal with comprehensive business metrics.
     """
     template_name = 'tenant/dashboard.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        
+        # Get tenant schema for dashboard service
+        tenant_schema = getattr(self.request, 'tenant_context', {}).get('schema_name', 'default')
+        
+        # Initialize dashboard service
+        from .dashboard_services import TenantDashboardService
+        dashboard_service = TenantDashboardService(tenant_schema)
+        
+        # Get comprehensive dashboard data
+        dashboard_data = dashboard_service.get_comprehensive_dashboard_data()
+        
         context.update({
             'page_title': 'داشبورد فروشگاه',
             'is_tenant_dashboard': True,
+            'dashboard_data': dashboard_data,
+            
+            # Individual metric sections for template access
+            'sales_metrics': dashboard_data.get('sales_metrics', {}),
+            'inventory_metrics': dashboard_data.get('inventory_metrics', {}),
+            'customer_metrics': dashboard_data.get('customer_metrics', {}),
+            'gold_installment_metrics': dashboard_data.get('gold_installment_metrics', {}),
+            'gold_price_data': dashboard_data.get('gold_price_data', {}),
+            'financial_summary': dashboard_data.get('financial_summary', {}),
+            'recent_activities': dashboard_data.get('recent_activities', []),
+            'alerts_notifications': dashboard_data.get('alerts_and_notifications', {}),
+            'performance_trends': dashboard_data.get('performance_trends', {}),
+            
+            # Theme and display settings
+            'theme_mode': self.request.user.theme_preference if self.request.user.is_authenticated else 'light',
+            'show_cybersecurity_theme': self.request.user.theme_preference == 'dark' if self.request.user.is_authenticated else False,
+            
+            # Dashboard refresh settings
+            'auto_refresh_enabled': True,
+            'refresh_interval': 300000,  # 5 minutes in milliseconds
+            'last_updated': dashboard_data.get('generated_at'),
         })
         
-        # Add dashboard metrics
-        context['dashboard_metrics'] = self.get_dashboard_metrics()
-        
-        # Add recent activities
-        context['recent_activities'] = self.get_recent_activities()
-        
         return context
-    
-    def get_dashboard_metrics(self):
-        """
-        Get basic dashboard metrics for the tenant.
-        """
-        # TODO: Implement actual metrics from business modules
-        return {
-            'total_sales_today': 0,
-            'total_customers': 0,
-            'inventory_items': 0,
-            'pending_installments': 0,
-        }
-    
-    def get_recent_activities(self):
-        """
-        Get recent activities for the tenant.
-        """
-        # TODO: Implement actual activities from audit logs
-        return []
 
 
 class TenantLoginView(TenantContextMixin, auth_views.LoginView):

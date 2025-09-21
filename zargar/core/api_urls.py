@@ -19,6 +19,7 @@ from .api_views import (
     user_roles_api,
     validate_token_api,
 )
+from . import api_dashboard
 
 app_name = 'core_api'
 
@@ -45,4 +46,12 @@ urlpatterns = [
     
     # Utility endpoints
     path('roles/', user_roles_api, name='user_roles'),
+    
+    # Dashboard API endpoints
+    path('dashboard/', api_dashboard.dashboard_data_api, name='dashboard_data'),
+    path('dashboard/sales/', api_dashboard.sales_metrics_api, name='sales_metrics'),
+    path('dashboard/inventory/', api_dashboard.inventory_metrics_api, name='inventory_metrics'),
+    path('dashboard/gold-price/', api_dashboard.gold_price_api, name='gold_price'),
+    path('dashboard/alerts/', api_dashboard.alerts_api, name='alerts'),
+    path('dashboard/health/', api_dashboard.dashboard_health_check, name='dashboard_health'),
 ]

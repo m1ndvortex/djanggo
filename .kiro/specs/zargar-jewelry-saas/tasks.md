@@ -558,7 +558,12 @@
     - _Requirements: 5.3, 5.19_
 
 - [ ] 11. Tenant Portal Core Features
-  - [ ] 11.1 Build tenant dashboard backend (Backend)
+  - [x] 11.1 Build tenant dashboard backend (Backend)
+
+
+
+
+
     - Create TenantDashboardView with key business metrics calculation
     - Implement real-time gold price integration with trend analysis
     - Build customer insights and pending installment summaries backend logic
