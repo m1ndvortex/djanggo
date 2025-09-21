@@ -1,0 +1,593 @@
+/* Layaway Detail Styles */
+
+.layaway-detail {
+    padding: 20px 0;
+}
+
+/* Page Header */
+.page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px 0;
+    margin-bottom: 30px;
+    border-radius: 15px;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.page-title i {
+    font-size: 2.5rem;
+    opacity: 0.9;
+}
+
+.header-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* Status Banner */
+.status-banner {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 30px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    border-right: 5px solid #28a745;
+}
+
+.status-banner.status-active {
+    border-right-color: #28a745;
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+}
+
+.status-banner.status-completed {
+    border-right-color: #007bff;
+    background: linear-gradient(135deg, #cce7ff 0%, #b3d9ff 100%);
+}
+
+.status-banner.status-cancelled {
+    border-right-color: #dc3545;
+    background: linear-gradient(135deg, #f8d7da 0%, #f1b0b7 100%);
+}
+
+.status-banner.status-on_hold {
+    border-right-color: #ffc107;
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+}
+
+.status-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.status-info h4 {
+    margin: 0 0 10px 0;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.status-info p {
+    margin: 0;
+    font-weight: 600;
+}
+
+/* Progress Circle */
+.progress-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: conic-gradient(#28a745 0deg, #e9ecef 0deg);
+}
+
+.progress-circle::before {
+    content: '';
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: white;
+}
+
+.progress-text {
+    position: relative;
+    z-index: 1;
+    font-weight: 700;
+    font-size: 1rem;
+    color: #2c3e50;
+}
+
+/* Card Styles */
+.card {
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    border: none;
+    margin-bottom: 20px;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 1px solid #dee2e6;
+    border-radius: 15px 15px 0 0 !important;
+    padding: 20px;
+}
+
+.card-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #2c3e50;
+}
+
+.card-title i {
+    color: #6c757d;
+}
+
+.card-body {
+    padding: 25px;
+}
+
+/* Info Groups */
+.info-group {
+    margin-bottom: 20px;
+}
+
+.info-group label {
+    font-weight: 600;
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+    display: block;
+}
+
+.info-group p {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0;
+}
+
+/* Financial Summary */
+.financial-summary {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.financial-item {
+    text-align: center;
+    padding: 15px;
+}
+
+.financial-item label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-weight: 600;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.financial-item h4 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+/* Payment Progress */
+.payment-progress {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    border: 2px solid #e9ecef;
+}
+
+.progress-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    font-weight: 600;
+    color: #495057;
+}
+
+.progress {
+    border-radius: 15px;
+}
+
+.progress-bar {
+    border-radius: 15px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Table Styles */
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+    background-color: #f8f9fa;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.table-success {
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+.table-danger {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+/* Sidebar Items */
+.reminder-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.reminder-item:last-child {
+    border-bottom: none;
+}
+
+.reminder-info {
+    flex: 1;
+}
+
+.reminder-status {
+    min-width: 100px;
+    text-align: left;
+}
+
+.note-section {
+    margin-bottom: 20px;
+}
+
+.note-section:last-child {
+    margin-bottom: 0;
+}
+
+.note-section h6 {
+    color: #6c757d;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+/* Modal Styles */
+.modal-content {
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+    border-radius: 15px 15px 0 0;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.modal-title {
+    font-weight: 700;
+}
+
+.modal-body {
+    padding: 25px;
+}
+
+.modal-footer {
+    border-top: 1px solid #dee2e6;
+    border-radius: 0 0 15px 15px;
+}
+
+/* Form Styles in Modals */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.form-label.required::after {
+    content: " *";
+    color: #dc3545;
+}
+
+.form-control {
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    padding: 12px 15px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-right: none;
+    font-weight: 600;
+}
+
+/* Button Styles */
+.btn {
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.btn-block {
+    margin-bottom: 10px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+    }
+    
+    .header-actions {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .status-content {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+    }
+    
+    .financial-summary .row > div {
+        margin-bottom: 20px;
+    }
+    
+    .card-body {
+        padding: 20px;
+    }
+    
+    .table-responsive {
+        font-size: 0.9rem;
+    }
+    
+    .modal-body {
+        padding: 20px;
+    }
+}
+
+/* Dark Mode Support */
+[data-theme="dark"] .layaway-detail {
+    background-color: #0B0E1A;
+    color: #FFFFFF;
+}
+
+[data-theme="dark"] .page-header {
+    background: linear-gradient(135deg, #00D4FF 0%, #00FF88 100%);
+}
+
+[data-theme="dark"] .status-banner {
+    background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 100%);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .status-banner.status-active {
+    border-right: 3px solid #00FF88;
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.1);
+}
+
+[data-theme="dark"] .status-banner.status-completed {
+    border-right: 3px solid #00D4FF;
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+}
+
+[data-theme="dark"] .status-banner.status-cancelled {
+    border-right: 3px solid #FF4757;
+    box-shadow: 0 0 20px rgba(255, 71, 87, 0.1);
+}
+
+[data-theme="dark"] .status-banner.status-on_hold {
+    border-right: 3px solid #FFB800;
+    box-shadow: 0 0 20px rgba(255, 184, 0, 0.1);
+}
+
+[data-theme="dark"] .card {
+    background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 100%);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .card-header {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .card-title {
+    color: #FFFFFF;
+}
+
+[data-theme="dark"] .info-group label {
+    color: #B8BCC8;
+}
+
+[data-theme="dark"] .info-group p {
+    color: #FFFFFF;
+}
+
+[data-theme="dark"] .financial-summary {
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.08) 0%, rgba(0, 255, 136, 0.04) 100%);
+}
+
+[data-theme="dark"] .financial-item label {
+    color: #B8BCC8;
+}
+
+[data-theme="dark"] .financial-item h4 {
+    color: #FFFFFF;
+}
+
+[data-theme="dark"] .payment-progress {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .progress-info {
+    color: #B8BCC8;
+}
+
+[data-theme="dark"] .table th {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #B8BCC8;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .table td {
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #FFFFFF;
+}
+
+[data-theme="dark"] .table-success {
+    background-color: rgba(0, 255, 136, 0.1);
+}
+
+[data-theme="dark"] .table-danger {
+    background-color: rgba(255, 71, 87, 0.1);
+}
+
+[data-theme="dark"] .progress-circle::before {
+    background: #1A1D29;
+}
+
+[data-theme="dark"] .progress-text {
+    color: #FFFFFF;
+}
+
+[data-theme="dark"] .modal-content {
+    background: linear-gradient(145deg, rgba(37, 42, 58, 0.95) 0%, rgba(26, 29, 41, 0.98) 100%);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .modal-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .modal-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .modal-title {
+    color: #FFFFFF;
+}
+
+[data-theme="dark"] .form-label {
+    color: #B8BCC8;
+}
+
+[data-theme="dark"] .form-control {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #FFFFFF;
+}
+
+[data-theme="dark"] .form-control:focus {
+    border-color: #00D4FF;
+    box-shadow: 0 0 0 0.2rem rgba(0, 212, 255, 0.25);
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .input-group-text {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #B8BCC8;
+}
+
+/* Neon Button Effects for Dark Mode */
+[data-theme="dark"] .btn-success {
+    background: linear-gradient(145deg, rgba(0, 255, 136, 0.8) 0%, rgba(0, 212, 255, 0.6) 100%);
+    border: 1px solid rgba(0, 255, 136, 0.4);
+    box-shadow: 0 8px 32px rgba(0, 255, 136, 0.15);
+}
+
+[data-theme="dark"] .btn-success:hover {
+    background: linear-gradient(145deg, rgba(0, 255, 136, 0.9) 0%, rgba(0, 212, 255, 0.7) 100%);
+    box-shadow: 0 12px 40px rgba(0, 255, 136, 0.25);
+}
+
+[data-theme="dark"] .btn-danger {
+    background: linear-gradient(145deg, rgba(255, 71, 87, 0.8) 0%, rgba(255, 107, 53, 0.6) 100%);
+    border: 1px solid rgba(255, 71, 87, 0.4);
+    box-shadow: 0 8px 32px rgba(255, 71, 87, 0.15);
+}
+
+[data-theme="dark"] .btn-warning {
+    background: linear-gradient(145deg, rgba(255, 184, 0, 0.8) 0%, rgba(255, 107, 53, 0.6) 100%);
+    border: 1px solid rgba(255, 184, 0, 0.4);
+    box-shadow: 0 8px 32px rgba(255, 184, 0, 0.15);
+}
+
+[data-theme="dark"] .btn-info {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.8) 0%, rgba(0, 255, 136, 0.6) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.4);
+    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.15);
+}
+
+/* Animation for status banner */
+@keyframes statusPulse {
+    0%, 100% { box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6); }
+    50% { box-shadow: 0 15px 50px rgba(0, 212, 255, 0.15); }
+}
+
+[data-theme="dark"] .status-banner:hover {
+    animation: statusPulse 2s ease-in-out infinite;
+}

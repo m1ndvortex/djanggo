@@ -1,0 +1,356 @@
+/* Layaway Forms Styles */
+
+.layaway-create {
+    padding: 20px 0;
+}
+
+/* Page Header */
+.page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px 0;
+    margin-bottom: 30px;
+    border-radius: 15px;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.page-title i {
+    font-size: 2.5rem;
+    opacity: 0.9;
+}
+
+.header-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* Form Styles */
+.layaway-form {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.card {
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    border: none;
+    margin-bottom: 20px;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 1px solid #dee2e6;
+    border-radius: 15px 15px 0 0 !important;
+    padding: 20px;
+}
+
+.card-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #2c3e50;
+}
+
+.card-title i {
+    color: #6c757d;
+}
+
+.card-body {
+    padding: 25px;
+}
+
+/* Form Groups */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.form-label.required::after {
+    content: " *";
+    color: #dc3545;
+}
+
+.form-control {
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    padding: 12px 15px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.select2 {
+    border-radius: 8px;
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-right: none;
+    font-weight: 600;
+}
+
+/* Customer and Item Details */
+.customer-history,
+.item-details {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    border-right: 4px solid #007bff;
+}
+
+.history-stats,
+.details-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.history-stats small,
+.details-grid small {
+    background-color: white;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-weight: 600;
+}
+
+/* Calculation Results */
+.calculation-results {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.alert-info {
+    background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+    border: 1px solid #b6d4da;
+    border-radius: 10px;
+}
+
+.alert-heading {
+    color: #0c5460;
+    font-weight: 700;
+}
+
+/* Quick Actions */
+.btn {
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.btn-block {
+    margin-bottom: 10px;
+}
+
+.btn-lg {
+    padding: 15px 30px;
+    font-size: 1.1rem;
+}
+
+/* Validation Styles */
+.invalid-feedback {
+    display: block;
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 5px;
+}
+
+.form-control.is-invalid {
+    border-color: #dc3545;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+    }
+    
+    .header-actions {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .layaway-form {
+        padding: 0 15px;
+    }
+    
+    .card-body {
+        padding: 20px;
+    }
+    
+    .history-stats,
+    .details-grid {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .calculation-results .row > div {
+        margin-bottom: 15px;
+    }
+}
+
+/* Dark Mode Support */
+[data-theme="dark"] .layaway-create {
+    background-color: #0B0E1A;
+    color: #FFFFFF;
+}
+
+[data-theme="dark"] .page-header {
+    background: linear-gradient(135deg, #00D4FF 0%, #00FF88 100%);
+}
+
+[data-theme="dark"] .card {
+    background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 100%);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .card-header {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .card-title {
+    color: #FFFFFF;
+}
+
+[data-theme="dark"] .form-label {
+    color: #B8BCC8;
+}
+
+[data-theme="dark"] .form-control {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #FFFFFF;
+}
+
+[data-theme="dark"] .form-control:focus {
+    border-color: #00D4FF;
+    box-shadow: 0 0 0 0.2rem rgba(0, 212, 255, 0.25);
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .input-group-text {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #B8BCC8;
+}
+
+[data-theme="dark"] .customer-history,
+[data-theme="dark"] .item-details {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.08) 0%, rgba(0, 255, 136, 0.04) 100%);
+    border-right: 4px solid #00D4FF;
+}
+
+[data-theme="dark"] .history-stats small,
+[data-theme="dark"] .details-grid small {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    color: #FFFFFF;
+}
+
+[data-theme="dark"] .alert-info {
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 255, 136, 0.05) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    color: #FFFFFF;
+}
+
+[data-theme="dark"] .alert-heading {
+    color: #00D4FF;
+}
+
+/* Neon Button Effects for Dark Mode */
+[data-theme="dark"] .btn-primary {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.8) 0%, rgba(0, 255, 136, 0.6) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.4);
+    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.15);
+}
+
+[data-theme="dark"] .btn-primary:hover {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.9) 0%, rgba(0, 255, 136, 0.7) 100%);
+    box-shadow: 0 12px 40px rgba(0, 212, 255, 0.25);
+    transform: translateY(-3px);
+}
+
+[data-theme="dark"] .btn-success {
+    background: linear-gradient(145deg, rgba(0, 255, 136, 0.8) 0%, rgba(0, 212, 255, 0.6) 100%);
+    border: 1px solid rgba(0, 255, 136, 0.4);
+    box-shadow: 0 8px 32px rgba(0, 255, 136, 0.15);
+}
+
+[data-theme="dark"] .btn-success:hover {
+    background: linear-gradient(145deg, rgba(0, 255, 136, 0.9) 0%, rgba(0, 212, 255, 0.7) 100%);
+    box-shadow: 0 12px 40px rgba(0, 255, 136, 0.25);
+}
+
+[data-theme="dark"] .btn-outline-info {
+    border: 2px solid #00D4FF;
+    color: #00D4FF;
+    background: transparent;
+}
+
+[data-theme="dark"] .btn-outline-info:hover {
+    background: rgba(0, 212, 255, 0.1);
+    border-color: #00FF88;
+    color: #00FF88;
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+}
+
+/* Form Animation */
+[data-theme="dark"] .form-control:focus {
+    animation: neonGlow 0.3s ease-out;
+}
+
+@keyframes neonGlow {
+    0% { box-shadow: 0 0 5px rgba(0, 212, 255, 0.3); }
+    50% { box-shadow: 0 0 20px rgba(0, 212, 255, 0.6), 0 0 30px rgba(0, 255, 136, 0.3); }
+    100% { box-shadow: 0 0 0 0.2rem rgba(0, 212, 255, 0.25); }
+}

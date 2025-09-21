@@ -1,0 +1,592 @@
+{% extends 'base_rtl.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}جزئیات قرارداد {{ plan.plan_number }}{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/layaway-detail.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="layaway-detail" x-data="layawayDetail()">
+    <!-- Header -->
+    <div class="page-header">
+        <div class="header-content">
+            <h1 class="page-title">
+                <i class="fas fa-file-contract"></i>
+                قرارداد {{ plan.plan_number }}
+            </h1>
+            <div class="header-actions">
+                <a href="{% url 'customers:layaway_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-right"></i>
+                    بازگشت
+                </a>
+                {% if can_modify %}
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#paymentModal">
+                    <i class="fas fa-money-bill-wave"></i>
+                    ثبت پرداخت
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Banner -->
+    <div class="status-banner status-{{ plan.status }}">
+        <div class="status-content">
+            <div class="status-info">
+                <h4>
+                    {% if plan.status == 'active' %}
+                        <i class="fas fa-play-circle"></i>
+                        قرارداد فعال
+                    {% elif plan.status == 'completed' %}
+                        <i class="fas fa-check-circle"></i>
+                        قرارداد تکمیل شده
+                    {% elif plan.status == 'cancelled' %}
+                        <i class="fas fa-times-circle"></i>
+                        قرارداد لغو شده
+                    {% elif plan.status == 'on_hold' %}
+                        <i class="fas fa-pause-circle"></i>
+                        قرارداد در حالت تعلیق
+                    {% endif %}
+                </h4>
+                {% if plan.is_overdue %}
+                <p class="text-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    {{ plan.days_overdue }} روز معوق
+                </p>
+                {% endif %}
+            </div>
+            <div class="status-progress">
+                <div class="progress-circle" data-percentage="{{ statistics.completion_percentage }}">
+                    <span class="progress-text">{{ statistics.completion_percentage|floatformat:0 }}%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Plan Details -->
+        <div class="col-lg-8">
+            <!-- Basic Information -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-info-circle"></i>
+                        اطلاعات قرارداد
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-group">
+                                <label>مشتری:</label>
+                                <p>{{ plan.customer.full_persian_name }}</p>
+                            </div>
+                            <div class="info-group">
+                                <label>شماره تماس:</label>
+                                <p>{{ plan.customer.phone_number }}</p>
+                            </div>
+                            <div class="info-group">
+                                <label>کالا:</label>
+                                <p>{{ plan.jewelry_item.name }}</p>
+                            </div>
+                            <div class="info-group">
+                                <label>کد کالا:</label>
+                                <p>{{ plan.jewelry_item.sku }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-group">
+                                <label>تاریخ شروع:</label>
+                                <p>{{ plan.start_date_shamsi|default:plan.start_date }}</p>
+                            </div>
+                            <div class="info-group">
+                                <label>تاریخ تکمیل پیش‌بینی:</label>
+                                <p>{{ plan.expected_completion_date }}</p>
+                            </div>
+                            {% if plan.actual_completion_date %}
+                            <div class="info-group">
+                                <label>تاریخ تکمیل واقعی:</label>
+                                <p class="text-success">{{ plan.actual_completion_date }}</p>
+                            </div>
+                            {% endif %}
+                            <div class="info-group">
+                                <label>مهلت نسیه:</label>
+                                <p>{{ plan.grace_period_days }} روز</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Financial Summary -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-calculator"></i>
+                        خلاصه مالی
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="financial-summary">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="financial-item">
+                                    <label>مبلغ کل:</label>
+                                    <h4 class="text-primary">{{ plan.total_amount|floatformat:0 }} تومان</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="financial-item">
+                                    <label>پرداخت شده:</label>
+                                    <h4 class="text-success">{{ statistics.total_paid|floatformat:0 }} تومان</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="financial-item">
+                                    <label>مانده:</label>
+                                    <h4 class="text-warning">{{ statistics.remaining_balance|floatformat:0 }} تومان</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="financial-item">
+                                    <label>قسط بعدی:</label>
+                                    <h4 class="text-info">{{ statistics.next_payment_amount|floatformat:0 }} تومان</h4>
+                                    {% if statistics.next_payment_due %}
+                                    <small class="text-muted">{{ statistics.next_payment_due }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Progress -->
+                    <div class="payment-progress mt-4">
+                        <div class="progress-info">
+                            <span>پیشرفت پرداخت</span>
+                            <span>{{ statistics.payments_made }} از {{ plan.number_of_payments }} قسط</span>
+                        </div>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar bg-success" role="progressbar" 
+                                 style="width: {{ statistics.completion_percentage }}%"
+                                 aria-valuenow="{{ statistics.completion_percentage }}" 
+                                 aria-valuemin="0" aria-valuemax="100">
+                                {{ statistics.completion_percentage|floatformat:1 }}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Schedule -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-calendar-alt"></i>
+                        برنامه پرداخت
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if scheduled_payments %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>قسط</th>
+                                    <th>تاریخ سررسید</th>
+                                    <th>مبلغ</th>
+                                    <th>پرداخت شده</th>
+                                    <th>تاریخ پرداخت</th>
+                                    <th>وضعیت</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in scheduled_payments %}
+                                <tr class="{% if payment.is_overdue %}table-danger{% elif payment.is_paid %}table-success{% endif %}">
+                                    <td>{{ payment.payment_number }}</td>
+                                    <td>{{ payment.due_date }}</td>
+                                    <td>{{ payment.amount|floatformat:0 }} تومان</td>
+                                    <td>{{ payment.paid_amount|floatformat:0 }} تومان</td>
+                                    <td>
+                                        {% if payment.paid_date %}
+                                            {{ payment.paid_date }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if payment.is_paid %}
+                                            <span class="badge badge-success">پرداخت شده</span>
+                                        {% elif payment.is_overdue %}
+                                            <span class="badge badge-danger">معوق</span>
+                                        {% else %}
+                                            <span class="badge badge-warning">در انتظار</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">برنامه پرداختی تعریف نشده است.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Payment History -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-history"></i>
+                        تاریخچه پرداخت‌ها
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if payment_history %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>تاریخ</th>
+                                    <th>مبلغ</th>
+                                    <th>روش پرداخت</th>
+                                    <th>شماره مرجع</th>
+                                    <th>یادداشت</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in payment_history %}
+                                <tr>
+                                    <td>{{ payment.payment_date }}</td>
+                                    <td class="text-success">{{ payment.amount|floatformat:0 }} تومان</td>
+                                    <td>{{ payment.get_payment_method_display }}</td>
+                                    <td>{{ payment.reference_number|default:"-" }}</td>
+                                    <td>{{ payment.notes|default:"-" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">هیچ پرداختی ثبت نشده است.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            {% if can_modify %}
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title">
+                        <i class="fas fa-bolt"></i>
+                        عملیات سریع
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <button type="button" class="btn btn-success btn-block mb-2" 
+                            data-toggle="modal" data-target="#paymentModal">
+                        <i class="fas fa-money-bill-wave"></i>
+                        ثبت پرداخت
+                    </button>
+                    
+                    {% if can_cancel %}
+                    <button type="button" class="btn btn-warning btn-block mb-2" 
+                            data-toggle="modal" data-target="#holdModal">
+                        <i class="fas fa-pause"></i>
+                        تعلیق قرارداد
+                    </button>
+                    <button type="button" class="btn btn-danger btn-block mb-2" 
+                            data-toggle="modal" data-target="#cancelModal">
+                        <i class="fas fa-times"></i>
+                        لغو قرارداد
+                    </button>
+                    {% endif %}
+                    
+                    {% if plan.status == 'on_hold' %}
+                    <button type="button" class="btn btn-info btn-block mb-2" 
+                            data-toggle="modal" data-target="#reactivateModal">
+                        <i class="fas fa-play"></i>
+                        فعال‌سازی مجدد
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Reminders -->
+            {% if reminders %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="card-title">
+                        <i class="fas fa-bell"></i>
+                        یادآوری‌ها
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% for reminder in reminders %}
+                    <div class="reminder-item">
+                        <div class="reminder-info">
+                            <strong>{{ reminder.get_reminder_type_display }}</strong>
+                            <small class="text-muted d-block">{{ reminder.scheduled_date }}</small>
+                        </div>
+                        <div class="reminder-status">
+                            {% if reminder.is_sent %}
+                                <span class="badge badge-success">ارسال شده</span>
+                            {% else %}
+                                <span class="badge badge-warning">در انتظار</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Notes -->
+            {% if plan.notes or plan.internal_notes %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="card-title">
+                        <i class="fas fa-sticky-note"></i>
+                        یادداشت‌ها
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if plan.notes %}
+                    <div class="note-section">
+                        <h6>یادداشت عمومی:</h6>
+                        <p>{{ plan.notes }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if plan.internal_notes %}
+                    <div class="note-section">
+                        <h6>یادداشت داخلی:</h6>
+                        <p class="text-muted">{{ plan.internal_notes|linebreaks }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    {% if can_modify %}
+    <div class="modal fade" id="paymentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="process_payment">
+                    
+                    <div class="modal-header">
+                        <h5 class="modal-title">ثبت پرداخت جدید</h5>
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="{{ payment_form.amount.id_for_label }}" class="form-label required">
+                                {{ payment_form.amount.label }}
+                            </label>
+                            <div class="input-group">
+                                {{ payment_form.amount }}
+                                <div class="input-group-append">
+                                    <span class="input-group-text">تومان</span>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">
+                                مبلغ قسط بعدی: {{ statistics.next_payment_amount|floatformat:0 }} تومان
+                            </small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ payment_form.payment_method.id_for_label }}" class="form-label required">
+                                {{ payment_form.payment_method.label }}
+                            </label>
+                            {{ payment_form.payment_method }}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ payment_form.reference_number.id_for_label }}" class="form-label">
+                                {{ payment_form.reference_number.label }}
+                            </label>
+                            {{ payment_form.reference_number }}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ payment_form.notes.id_for_label }}" class="form-label">
+                                {{ payment_form.notes.label }}
+                            </label>
+                            {{ payment_form.notes }}
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">انصراف</button>
+                        <button type="submit" class="btn btn-success">ثبت پرداخت</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancel Modal -->
+    <div class="modal fade" id="cancelModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="cancel_plan">
+                    
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">لغو قرارداد</h5>
+                        <button type="button" class="close text-white" data-dismiss="modal">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            <strong>هشدار:</strong> لغو قرارداد غیرقابل بازگشت است.
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label required">دلیل لغو:</label>
+                            <textarea name="cancel_reason" class="form-control" rows="3" required></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">درصد بازگشت وجه:</label>
+                            <div class="input-group">
+                                <input type="number" name="refund_percentage" class="form-control" 
+                                       value="90" min="0" max="100" step="1">
+                                <div class="input-group-append">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">
+                                مبلغ بازگشتی: <span id="refundAmount">{{ statistics.total_paid|floatformat:0 }}</span> تومان
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">انصراف</button>
+                        <button type="submit" class="btn btn-danger">لغو قرارداد</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hold Modal -->
+    <div class="modal fade" id="holdModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="put_on_hold">
+                    
+                    <div class="modal-header bg-warning">
+                        <h5 class="modal-title">تعلیق قرارداد</h5>
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label class="form-label required">دلیل تعلیق:</label>
+                            <textarea name="hold_reason" class="form-control" rows="3" required></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">انصراف</button>
+                        <button type="submit" class="btn btn-warning">تعلیق قرارداد</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reactivate Modal -->
+    <div class="modal fade" id="reactivateModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="reactivate_plan">
+                    
+                    <div class="modal-header bg-info text-white">
+                        <h5 class="modal-title">فعال‌سازی مجدد قرارداد</h5>
+                        <button type="button" class="close text-white" data-dismiss="modal">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label class="form-label">دلیل فعال‌سازی:</label>
+                            <textarea name="reactivate_reason" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">انصراف</button>
+                        <button type="submit" class="btn btn-info">فعال‌سازی</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/layaway-detail.js' %}"></script>
+<script>
+function layawayDetail() {
+    return {
+        init() {
+            this.initProgressCircle();
+            this.initRefundCalculation();
+        },
+        
+        initProgressCircle() {
+            const circle = document.querySelector('.progress-circle');
+            if (circle) {
+                const percentage = circle.dataset.percentage;
+                circle.style.background = `conic-gradient(#28a745 ${percentage * 3.6}deg, #e9ecef 0deg)`;
+            }
+        },
+        
+        initRefundCalculation() {
+            const refundInput = document.querySelector('input[name="refund_percentage"]');
+            const refundAmount = document.getElementById('refundAmount');
+            const totalPaid = {{ statistics.total_paid }};
+            
+            if (refundInput && refundAmount) {
+                refundInput.addEventListener('input', function() {
+                    const percentage = parseFloat(this.value) || 0;
+                    const amount = (totalPaid * percentage) / 100;
+                    refundAmount.textContent = new Intl.NumberFormat('fa-IR').format(Math.round(amount));
+                });
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

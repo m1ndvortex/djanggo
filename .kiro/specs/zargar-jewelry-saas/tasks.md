@@ -751,7 +751,15 @@
     - Write tests for layaway plan management and payment processing
     - _Requirements: 9.7, 9.8_
 
-  - [ ] 13.4 Build layaway and installment plan UI (Frontend)
+  - [x] 13.4 Build layaway and installment plan UI (Frontend)
+
+
+
+
+
+
+
+
     - Build layaway plan creation interface with payment term configuration
     - Create layaway management dashboard with payment tracking and status updates
     - Build payment reminder interface with Persian templates

@@ -1,0 +1,356 @@
+/* Layaway Dashboard Styles */
+
+.layaway-dashboard {
+    padding: 20px 0;
+}
+
+/* Header Styles */
+.dashboard-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px 0;
+    margin-bottom: 30px;
+    border-radius: 15px;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.page-title i {
+    font-size: 2.5rem;
+    opacity: 0.9;
+}
+
+.header-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.header-actions .btn {
+    border-radius: 25px;
+    padding: 10px 20px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.header-actions .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+/* Summary Cards */
+.summary-cards {
+    margin-bottom: 30px;
+}
+
+.summary-card {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.summary-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+.summary-card.active-plans {
+    border-right: 5px solid #28a745;
+}
+
+.summary-card.total-value {
+    border-right: 5px solid #007bff;
+}
+
+.summary-card.outstanding-balance {
+    border-right: 5px solid #ffc107;
+}
+
+.summary-card.overdue-amount {
+    border-right: 5px solid #dc3545;
+}
+
+.card-icon {
+    font-size: 3rem;
+    opacity: 0.8;
+    min-width: 60px;
+}
+
+.active-plans .card-icon {
+    color: #28a745;
+}
+
+.total-value .card-icon {
+    color: #007bff;
+}
+
+.outstanding-balance .card-icon {
+    color: #ffc107;
+}
+
+.overdue-amount .card-icon {
+    color: #dc3545;
+}
+
+.card-content h3 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 0 5px 0;
+    color: #2c3e50;
+}
+
+.card-content p {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 5px 0;
+    color: #34495e;
+}
+
+.card-content small {
+    font-size: 0.9rem;
+}
+
+/* Dashboard Content */
+.dashboard-content .card {
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    border: none;
+    margin-bottom: 20px;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 1px solid #dee2e6;
+    border-radius: 15px 15px 0 0 !important;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #2c3e50;
+}
+
+.card-title i {
+    color: #6c757d;
+}
+
+/* Table Styles */
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+    background-color: #f8f9fa;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.plan-number {
+    font-weight: 600;
+    color: #007bff;
+    text-decoration: none;
+}
+
+.plan-number:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+.progress {
+    border-radius: 10px;
+}
+
+.progress-bar {
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6c757d;
+}
+
+.empty-state i {
+    margin-bottom: 20px;
+}
+
+.empty-state h5 {
+    margin-bottom: 15px;
+    color: #495057;
+}
+
+/* Sidebar Items */
+.overdue-item,
+.upcoming-payment,
+.recent-payment {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.overdue-item:last-child,
+.upcoming-payment:last-child,
+.recent-payment:last-child {
+    border-bottom: none;
+}
+
+.overdue-info,
+.payment-info {
+    flex: 1;
+}
+
+.overdue-amount,
+.payment-amount {
+    text-align: left;
+    min-width: 80px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+    }
+    
+    .header-actions {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .summary-card {
+        margin-bottom: 20px;
+    }
+    
+    .card-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .table-responsive {
+        font-size: 0.9rem;
+    }
+}
+
+/* Dark Mode Support */
+[data-theme="dark"] .layaway-dashboard {
+    background-color: #0B0E1A;
+    color: #FFFFFF;
+}
+
+[data-theme="dark"] .dashboard-header {
+    background: linear-gradient(135deg, #00D4FF 0%, #00FF88 100%);
+}
+
+[data-theme="dark"] .summary-card {
+    background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 100%);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .summary-card:hover {
+    box-shadow: 0 15px 50px rgba(0, 212, 255, 0.15);
+}
+
+[data-theme="dark"] .card {
+    background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 100%);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .card-header {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .table th {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #B8BCC8;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .table td {
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #FFFFFF;
+}
+
+[data-theme="dark"] .plan-number {
+    color: #00D4FF;
+}
+
+[data-theme="dark"] .plan-number:hover {
+    color: #00FF88;
+}
+
+/* Neon Effects for Dark Mode */
+[data-theme="dark"] .summary-card.active-plans {
+    border-right: 3px solid #00FF88;
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.1);
+}
+
+[data-theme="dark"] .summary-card.total-value {
+    border-right: 3px solid #00D4FF;
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+}
+
+[data-theme="dark"] .summary-card.outstanding-balance {
+    border-right: 3px solid #FFB800;
+    box-shadow: 0 0 20px rgba(255, 184, 0, 0.1);
+}
+
+[data-theme="dark"] .summary-card.overdue-amount {
+    border-right: 3px solid #FF4757;
+    box-shadow: 0 0 20px rgba(255, 71, 87, 0.1);
+}
+
+/* Animation for cards */
+@keyframes neonPulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(0, 212, 255, 0.1); }
+    50% { box-shadow: 0 0 30px rgba(0, 212, 255, 0.3), 0 0 60px rgba(0, 255, 136, 0.1); }
+}
+
+[data-theme="dark"] .summary-card:hover {
+    animation: neonPulse 2s ease-in-out infinite;
+}
