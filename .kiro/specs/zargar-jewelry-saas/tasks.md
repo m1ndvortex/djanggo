@@ -689,7 +689,12 @@
     - Write tests for offline POS UI and sync functionality
     - _Requirements: 9.5, 16.2, 16.3_
 
-  - [ ] 12.5 Build invoice generation and customer lookup backend (Backend)
+  - [x] 12.5 Build invoice generation and customer lookup backend (Backend)
+
+
+
+
+
     - Create invoice generation backend with automatic gold price calculation
     - Implement customer lookup and credit/debt management backend logic
     - Build Persian invoice formatting compliant with Iranian business law

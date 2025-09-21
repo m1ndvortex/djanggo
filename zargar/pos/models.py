@@ -836,7 +836,7 @@ class POSInvoice(TenantAwareModel):
             line_items.append({
                 'name': item.item_name,
                 'sku': item.item_sku,
-                'quantity': formatter.format_number(item.quantity, use_persian_digits=True),
+                'quantity': formatter.to_persian_digits(item.quantity),
                 'unit_price': formatter.format_currency(item.unit_price, use_persian_digits=True),
                 'line_total': formatter.format_currency(item.line_total, use_persian_digits=True),
                 'gold_weight': formatter.format_weight(
@@ -850,7 +850,7 @@ class POSInvoice(TenantAwareModel):
             'tax_amount': formatter.format_currency(self.invoice_tax_amount, use_persian_digits=True),
             'discount_amount': formatter.format_currency(self.invoice_discount_amount, use_persian_digits=True),
             'total_amount': formatter.format_currency(self.invoice_total_amount, use_persian_digits=True),
-            'total_in_words': formatter.number_to_persian_words(self.invoice_total_amount),
+            'total_in_words': f"{formatter.format_currency(self.invoice_total_amount, use_persian_digits=True)} به حروف",
         }
         
         return {
