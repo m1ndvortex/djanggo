@@ -818,3 +818,13 @@ class PurchaseOrderItem(TenantAwareModel):
         self.save()
         
         return True
+
+
+# Import loyalty models to make them available
+from .loyalty_models import (
+    CustomerLoyaltyProgram,
+    CustomerEngagementEvent,
+    CustomerVIPTier,
+    CustomerReferral,
+    CustomerSpecialOffer
+)
