@@ -595,6 +595,218 @@ class POSRecentTransactionsAPIView(LoginRequiredMixin, TenantContextMixin, View)
             return JsonResponse({'success': False, 'error': str(e)})
 
 
+class POSOfflineTransactionCreateAPIView(LoginRequiredMixin, TenantContextMixin, View):
+    """API endpoint for creating offline transactions."""
+    
+    def post(self, request):
+        """Create offline transaction."""
+        try:
+            from .models import OfflinePOSSystem
+            
+            data = json.loads(request.body)
+            
+            device_id = data.get('device_id', '')
+            device_name = data.get('device_name', '')
+            customer_id = data.get('customer_id')
+            line_items = data.get('line_items', [])
+            payment_method = data.get('payment_method', 'cash')
+            amount_paid = Decimal(str(data.get('amount_paid', '0.00')))
+            transaction_type = data.get('transaction_type', 'sale')
+            
+            # Initialize offline POS system
+            offline_pos = OfflinePOSSystem(
+                device_id=device_id,
+                device_name=device_name
+            )
+            
+            # Create offline transaction
+            offline_storage = offline_pos.create_offline_transaction(
+                customer_id=customer_id,
+                line_items=line_items,
+                payment_method=payment_method,
+                amount_paid=amount_paid,
+                transaction_type=transaction_type
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'storage_id': str(offline_storage.storage_id),
+                'transaction_data': offline_storage.transaction_data,
+                'sync_status': offline_storage.sync_status
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=400)
+
+
+class POSOfflineSyncAllAPIView(LoginRequiredMixin, TenantContextMixin, View):
+    """API endpoint for syncing all offline transactions."""
+    
+    def post(self, request):
+        """Sync all offline transactions for a device."""
+        try:
+            from .models import OfflinePOSSystem
+            
+            data = json.loads(request.body)
+            device_id = data.get('device_id', '')
+            device_name = data.get('device_name', '')
+            
+            # Initialize offline POS system
+            offline_pos = OfflinePOSSystem(
+                device_id=device_id,
+                device_name=device_name
+            )
+            
+            # Sync offline transactions
+            sync_results = offline_pos.sync_offline_transactions()
+            
+            return JsonResponse({
+                'success': True,
+                'sync_results': sync_results
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=400)
+
+
+class POSOfflineStatusAPIView(LoginRequiredMixin, TenantContextMixin, View):
+    """API endpoint for getting offline transaction status."""
+    
+    def get(self, request):
+        """Get offline transaction status for a device."""
+        try:
+            from .models import OfflinePOSSystem
+            
+            device_id = request.GET.get('device_id', '')
+            device_name = request.GET.get('device_name', '')
+            
+            # Initialize offline POS system
+            offline_pos = OfflinePOSSystem(
+                device_id=device_id,
+                device_name=device_name
+            )
+            
+            # Get summary
+            summary = offline_pos.get_offline_transaction_summary()
+            
+            return JsonResponse({
+                'success': True,
+                'summary': summary
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=400)
+
+
+class POSOfflineConflictResolveAPIView(LoginRequiredMixin, TenantContextMixin, View):
+    """API endpoint for resolving offline sync conflicts."""
+    
+    def post(self, request):
+        """Resolve offline sync conflicts."""
+        try:
+            from .models import OfflinePOSSystem
+            
+            data = json.loads(request.body)
+            device_id = data.get('device_id', '')
+            device_name = data.get('device_name', '')
+            resolution_actions = data.get('resolution_actions', {})
+            
+            # Initialize offline POS system
+            offline_pos = OfflinePOSSystem(
+                device_id=device_id,
+                device_name=device_name
+            )
+            
+            # Resolve conflicts
+            results = offline_pos.resolve_sync_conflicts(resolution_actions)
+            
+            return JsonResponse({
+                'success': True,
+                'resolution_results': results
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=400)
+
+
+class POSOfflineCleanupAPIView(LoginRequiredMixin, TenantContextMixin, View):
+    """API endpoint for cleaning up old offline transactions."""
+    
+    def post(self, request):
+        """Clean up old synced offline transactions."""
+        try:
+            from .models import OfflinePOSSystem
+            
+            data = json.loads(request.body)
+            device_id = data.get('device_id', '')
+            device_name = data.get('device_name', '')
+            days_old = int(data.get('days_old', 30))
+            
+            # Initialize offline POS system
+            offline_pos = OfflinePOSSystem(
+                device_id=device_id,
+                device_name=device_name
+            )
+            
+            # Clean up old transactions
+            cleaned_count = offline_pos.cleanup_old_transactions(days_old=days_old)
+            
+            return JsonResponse({
+                'success': True,
+                'cleaned_count': cleaned_count
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=400)
+
+
+class POSOfflineExportAPIView(LoginRequiredMixin, TenantContextMixin, View):
+    """API endpoint for exporting offline transaction data."""
+    
+    def get(self, request):
+        """Export offline transaction data for backup."""
+        try:
+            from .models import OfflinePOSSystem
+            
+            device_id = request.GET.get('device_id', '')
+            device_name = request.GET.get('device_name', '')
+            
+            # Initialize offline POS system
+            offline_pos = OfflinePOSSystem(
+                device_id=device_id,
+                device_name=device_name
+            )
+            
+            # Export data
+            export_data = offline_pos.export_offline_data()
+            
+            return JsonResponse({
+                'success': True,
+                'export_data': export_data
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=400)
+
+
 class PlaceholderView(TemplateView):
     """
     Placeholder view for POS module (backward compatibility).

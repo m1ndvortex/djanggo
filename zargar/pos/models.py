@@ -13,7 +13,11 @@ from zargar.core.persian_number_formatter import PersianNumberFormatter
 from zargar.core.calendar_utils import PersianCalendarUtils
 import uuid
 import json
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class POSTransaction(TenantAwareModel):
@@ -985,3 +989,629 @@ class POSOfflineStorage(models.Model):
             self.sync_error = str(e)
             self.save(update_fields=['sync_error'])
             return False
+
+
+class POSOfflineStorage(TenantAwareModel):
+    """
+    Model for storing POS transactions offline when internet connection is unavailable.
+    Supports automatic synchronization when connection is restored.
+    """
+    
+    SYNC_STATUS_CHOICES = [
+        ('pending', _('Pending Sync')),
+        ('syncing', _('Syncing')),
+        ('synced', _('Synced')),
+        ('failed', _('Sync Failed')),
+        ('conflict', _('Sync Conflict')),
+    ]
+    
+    # Storage identification
+    storage_id = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        verbose_name=_('Storage ID'),
+        help_text=_('Unique identifier for offline storage')
+    )
+    
+    # Device information
+    device_id = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name=_('Device ID'),
+        help_text=_('Identifier of the device that created this offline transaction')
+    )
+    device_name = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name=_('Device Name'),
+        help_text=_('Human-readable device name')
+    )
+    
+    # Transaction data
+    transaction_data = models.JSONField(
+        verbose_name=_('Transaction Data'),
+        help_text=_('Complete transaction data stored for offline processing')
+    )
+    
+    # Sync status
+    sync_status = models.CharField(
+        max_length=20,
+        choices=SYNC_STATUS_CHOICES,
+        default='pending',
+        verbose_name=_('Sync Status')
+    )
+    is_synced = models.BooleanField(
+        default=False,
+        verbose_name=_('Is Synced'),
+        help_text=_('Whether this transaction has been successfully synced')
+    )
+    
+    # Sync timestamps
+    sync_attempted_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Sync Attempted At')
+    )
+    synced_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Synced At')
+    )
+    
+    # Sync results
+    sync_error = models.TextField(
+        blank=True,
+        verbose_name=_('Sync Error'),
+        help_text=_('Error message if sync failed')
+    )
+    synced_transaction_id = models.UUIDField(
+        null=True,
+        blank=True,
+        verbose_name=_('Synced Transaction ID'),
+        help_text=_('ID of the transaction created after successful sync')
+    )
+    
+    # Conflict resolution
+    has_conflicts = models.BooleanField(
+        default=False,
+        verbose_name=_('Has Conflicts'),
+        help_text=_('Whether this transaction has sync conflicts')
+    )
+    conflict_data = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name=_('Conflict Data'),
+        help_text=_('Data about sync conflicts for resolution')
+    )
+    
+    # Retry information
+    sync_retry_count = models.PositiveIntegerField(
+        default=0,
+        verbose_name=_('Sync Retry Count')
+    )
+    max_retry_attempts = models.PositiveIntegerField(
+        default=3,
+        verbose_name=_('Max Retry Attempts')
+    )
+    
+    class Meta:
+        verbose_name = _('POS Offline Storage')
+        verbose_name_plural = _('POS Offline Storage')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['device_id']),
+            models.Index(fields=['sync_status']),
+            models.Index(fields=['is_synced']),
+            models.Index(fields=['created_at']),
+        ]
+    
+    def __str__(self):
+        return f"Offline Transaction {self.storage_id} - {self.sync_status}"
+    
+    def sync_to_database(self) -> bool:
+        """
+        Sync offline transaction to database.
+        
+        Returns:
+            True if sync successful, False otherwise
+        """
+        if self.is_synced:
+            return True
+        
+        self.sync_status = 'syncing'
+        self.sync_attempted_at = timezone.now()
+        self.sync_retry_count += 1
+        self.save(update_fields=['sync_status', 'sync_attempted_at', 'sync_retry_count'])
+        
+        try:
+            # Import here to avoid circular imports
+            from .services import POSTransactionService
+            from zargar.jewelry.models import JewelryItem
+            from zargar.customers.models import Customer
+            
+            # Extract transaction data
+            data = self.transaction_data
+            
+            # Create customer if specified
+            customer = None
+            if data.get('customer_id'):
+                try:
+                    customer = Customer.objects.get(id=data['customer_id'])
+                except Customer.DoesNotExist:
+                    # Customer might have been deleted, continue without customer
+                    pass
+            
+            # Create transaction
+            transaction = POSTransaction.objects.create(
+                customer=customer,
+                transaction_type=data.get('transaction_type', 'sale'),
+                payment_method=data.get('payment_method', 'cash'),
+                subtotal=Decimal(data.get('subtotal', '0.00')),
+                tax_amount=Decimal(data.get('tax_amount', '0.00')),
+                discount_amount=Decimal(data.get('discount_amount', '0.00')),
+                total_amount=Decimal(data.get('total_amount', '0.00')),
+                amount_paid=Decimal(data.get('amount_paid', '0.00')),
+                gold_price_18k_at_transaction=Decimal(data.get('gold_price_18k_at_transaction', '0.00')),
+                is_offline_transaction=True,
+                offline_data=data,
+                sync_status='synced'
+            )
+            
+            # Set original transaction date if provided
+            if data.get('transaction_date'):
+                try:
+                    original_date = datetime.fromisoformat(data['transaction_date'].replace('Z', '+00:00'))
+                    transaction.transaction_date = original_date
+                    transaction.save(update_fields=['transaction_date'])
+                except (ValueError, AttributeError):
+                    pass
+            
+            # Create line items
+            for item_data in data.get('line_items', []):
+                jewelry_item = None
+                if item_data.get('jewelry_item_id'):
+                    try:
+                        jewelry_item = JewelryItem.objects.get(id=item_data['jewelry_item_id'])
+                    except JewelryItem.DoesNotExist:
+                        # Item might have been deleted, create as custom item
+                        pass
+                
+                POSTransactionLineItem.objects.create(
+                    transaction=transaction,
+                    jewelry_item=jewelry_item,
+                    item_name=item_data.get('item_name', ''),
+                    item_sku=item_data.get('item_sku', ''),
+                    quantity=int(item_data.get('quantity', 1)),
+                    unit_price=Decimal(item_data.get('unit_price', '0.00')),
+                    gold_weight_grams=Decimal(item_data.get('gold_weight_grams', '0.000')),
+                    gold_karat=int(item_data.get('gold_karat', 0)),
+                    gold_price_per_gram_at_sale=Decimal(data.get('gold_price_18k_at_transaction', '0.00'))
+                )
+            
+            # Complete the transaction if payment was processed offline
+            if data.get('amount_paid') and Decimal(data['amount_paid']) >= Decimal(data.get('total_amount', '0.00')):
+                transaction.complete_transaction()
+            
+            # Mark as synced
+            self.sync_status = 'synced'
+            self.is_synced = True
+            self.synced_at = timezone.now()
+            self.synced_transaction_id = transaction.transaction_id
+            self.sync_error = ''
+            self.save(update_fields=[
+                'sync_status', 'is_synced', 'synced_at', 
+                'synced_transaction_id', 'sync_error'
+            ])
+            
+            return True
+            
+        except Exception as e:
+            # Handle sync failure
+            self.sync_status = 'failed'
+            self.sync_error = str(e)
+            
+            # Check if max retries exceeded
+            if self.sync_retry_count >= self.max_retry_attempts:
+                self.sync_status = 'conflict'
+                self.has_conflicts = True
+                self.conflict_data = {
+                    'error': str(e),
+                    'retry_count': self.sync_retry_count,
+                    'last_attempt': timezone.now().isoformat()
+                }
+            
+            self.save(update_fields=[
+                'sync_status', 'sync_error', 'has_conflicts', 'conflict_data'
+            ])
+            
+            return False
+    
+    def resolve_conflict(self, resolution_action: str, resolution_data: Optional[Dict] = None) -> bool:
+        """
+        Resolve sync conflict.
+        
+        Args:
+            resolution_action: Action to take ('retry', 'skip', 'manual_merge')
+            resolution_data: Additional data for resolution
+            
+        Returns:
+            True if conflict resolved, False otherwise
+        """
+        if not self.has_conflicts:
+            return True
+        
+        if resolution_action == 'retry':
+            # Reset for retry
+            self.sync_status = 'pending'
+            self.has_conflicts = False
+            self.conflict_data = {}
+            self.sync_retry_count = 0
+            self.sync_error = ''
+            self.save(update_fields=[
+                'sync_status', 'has_conflicts', 'conflict_data', 
+                'sync_retry_count', 'sync_error'
+            ])
+            return True
+            
+        elif resolution_action == 'skip':
+            # Mark as resolved but not synced
+            self.sync_status = 'failed'
+            self.has_conflicts = False
+            self.conflict_data['resolution'] = 'skipped'
+            self.save(update_fields=['sync_status', 'has_conflicts', 'conflict_data'])
+            return True
+            
+        elif resolution_action == 'manual_merge' and resolution_data:
+            # Update transaction data with manual resolution
+            self.transaction_data.update(resolution_data)
+            self.sync_status = 'pending'
+            self.has_conflicts = False
+            self.conflict_data = {}
+            self.sync_retry_count = 0
+            self.save(update_fields=[
+                'transaction_data', 'sync_status', 'has_conflicts', 
+                'conflict_data', 'sync_retry_count'
+            ])
+            return True
+        
+        return False
+    
+    def get_transaction_summary(self) -> Dict:
+        """
+        Get summary of offline transaction for display.
+        
+        Returns:
+            Dictionary with transaction summary
+        """
+        data = self.transaction_data
+        
+        return {
+            'storage_id': str(self.storage_id),
+            'device_name': self.device_name or self.device_id,
+            'transaction_date': data.get('offline_created_at', self.created_at.isoformat()),
+            'customer_id': data.get('customer_id'),
+            'total_amount': data.get('total_amount', '0.00'),
+            'payment_method': data.get('payment_method', ''),
+            'line_items_count': len(data.get('line_items', [])),
+            'sync_status': self.sync_status,
+            'has_conflicts': self.has_conflicts,
+            'retry_count': self.sync_retry_count,
+        }
+
+
+class OfflinePOSSystem:
+    """
+    Main class for handling offline POS operations.
+    Manages local storage, automatic sync, and conflict resolution.
+    """
+    
+    def __init__(self, device_id: str = '', device_name: str = ''):
+        """
+        Initialize offline POS system.
+        
+        Args:
+            device_id: Unique device identifier
+            device_name: Human-readable device name
+        """
+        self.device_id = device_id or self._generate_device_id()
+        self.device_name = device_name or f"POS Device {self.device_id[:8]}"
+        self.is_online = self._check_connection()
+        self.sync_in_progress = False
+    
+    def _generate_device_id(self) -> str:
+        """Generate unique device ID."""
+        import platform
+        import hashlib
+        
+        # Create device ID based on system info
+        system_info = f"{platform.node()}-{platform.system()}-{platform.processor()}"
+        device_hash = hashlib.md5(system_info.encode()).hexdigest()
+        return f"POS-{device_hash[:12]}"
+    
+    def _check_connection(self) -> bool:
+        """
+        Check if internet connection is available.
+        
+        Returns:
+            True if online, False if offline
+        """
+        try:
+            # Try to access a reliable endpoint
+            import requests
+            response = requests.get('https://www.google.com', timeout=5)
+            return response.status_code == 200
+        except:
+            return False
+    
+    def create_offline_transaction(self, customer_id: Optional[int] = None,
+                                  line_items: List[Dict] = None,
+                                  payment_method: str = 'cash',
+                                  amount_paid: Decimal = Decimal('0.00'),
+                                  transaction_type: str = 'sale') -> POSOfflineStorage:
+        """
+        Create offline transaction when internet is unavailable.
+        
+        Args:
+            customer_id: Customer ID (optional)
+            line_items: List of line item dictionaries
+            payment_method: Payment method
+            amount_paid: Amount paid by customer
+            transaction_type: Transaction type
+            
+        Returns:
+            Created POSOfflineStorage instance
+        """
+        if line_items is None:
+            line_items = []
+        
+        # Create offline transaction data
+        transaction_data = {
+            'transaction_id': str(uuid.uuid4()),
+            'customer_id': customer_id,
+            'transaction_date': timezone.now().isoformat(),
+            'transaction_type': transaction_type,
+            'payment_method': payment_method,
+            'amount_paid': str(amount_paid),
+            'line_items': line_items,
+            'offline_created_at': timezone.now().isoformat(),
+            'device_id': self.device_id,
+            'device_name': self.device_name
+        }
+        
+        # Calculate totals
+        subtotal = sum(
+            Decimal(str(item.get('unit_price', '0.00'))) * int(item.get('quantity', 1))
+            for item in line_items
+        )
+        
+        transaction_data.update({
+            'subtotal': str(subtotal),
+            'tax_amount': '0.00',  # Can be calculated later
+            'discount_amount': '0.00',
+            'total_amount': str(subtotal)
+        })
+        
+        # Get current gold price if available
+        try:
+            from zargar.gold_installments.services import GoldPriceService
+            gold_price_data = GoldPriceService.get_current_gold_price(18)
+            transaction_data['gold_price_18k_at_transaction'] = str(gold_price_data['price_per_gram'])
+        except:
+            transaction_data['gold_price_18k_at_transaction'] = '0.00'
+        
+        # Store offline transaction
+        offline_storage = POSOfflineStorage.objects.create(
+            device_id=self.device_id,
+            device_name=self.device_name,
+            transaction_data=transaction_data
+        )
+        
+        logger.info(f"Created offline transaction {offline_storage.storage_id} on device {self.device_id}")
+        return offline_storage
+    
+    def sync_offline_transactions(self) -> Dict:
+        """
+        Sync all pending offline transactions for this device.
+        
+        Returns:
+            Dictionary with sync results
+        """
+        if self.sync_in_progress:
+            return {'success': False, 'error': 'Sync already in progress'}
+        
+        # Check connection
+        self.is_online = self._check_connection()
+        if not self.is_online:
+            return {'success': False, 'error': 'No internet connection available'}
+        
+        self.sync_in_progress = True
+        
+        try:
+            # Get pending transactions for this device
+            pending_transactions = POSOfflineStorage.objects.filter(
+                device_id=self.device_id,
+                is_synced=False,
+                sync_status__in=['pending', 'failed']
+            ).order_by('created_at')
+            
+            sync_results = {
+                'success': True,
+                'total_pending': pending_transactions.count(),
+                'synced_successfully': 0,
+                'sync_failed': 0,
+                'conflicts': 0,
+                'errors': []
+            }
+            
+            for offline_transaction in pending_transactions:
+                try:
+                    success = offline_transaction.sync_to_database()
+                    if success:
+                        sync_results['synced_successfully'] += 1
+                        logger.info(f"Successfully synced offline transaction {offline_transaction.storage_id}")
+                    else:
+                        if offline_transaction.has_conflicts:
+                            sync_results['conflicts'] += 1
+                        else:
+                            sync_results['sync_failed'] += 1
+                        
+                        sync_results['errors'].append({
+                            'storage_id': str(offline_transaction.storage_id),
+                            'error': offline_transaction.sync_error,
+                            'has_conflicts': offline_transaction.has_conflicts
+                        })
+                        
+                except Exception as e:
+                    sync_results['sync_failed'] += 1
+                    sync_results['errors'].append({
+                        'storage_id': str(offline_transaction.storage_id),
+                        'error': str(e),
+                        'has_conflicts': False
+                    })
+                    logger.error(f"Failed to sync offline transaction {offline_transaction.storage_id}: {e}")
+            
+            logger.info(f"Offline sync completed for device {self.device_id}: "
+                       f"{sync_results['synced_successfully']} successful, "
+                       f"{sync_results['sync_failed']} failed, "
+                       f"{sync_results['conflicts']} conflicts")
+            
+            return sync_results
+            
+        finally:
+            self.sync_in_progress = False
+    
+    def get_offline_transaction_summary(self) -> Dict:
+        """
+        Get summary of offline transactions for this device.
+        
+        Returns:
+            Dictionary with offline transaction summary
+        """
+        device_transactions = POSOfflineStorage.objects.filter(device_id=self.device_id)
+        
+        total_count = device_transactions.count()
+        pending_count = device_transactions.filter(is_synced=False).count()
+        synced_count = device_transactions.filter(is_synced=True).count()
+        conflicts_count = device_transactions.filter(has_conflicts=True).count()
+        
+        # Calculate total value of pending transactions
+        pending_transactions = device_transactions.filter(is_synced=False)
+        total_pending_value = Decimal('0.00')
+        
+        for offline_transaction in pending_transactions:
+            try:
+                data = offline_transaction.transaction_data
+                total_pending_value += Decimal(data.get('total_amount', '0.00'))
+            except (ValueError, KeyError):
+                continue
+        
+        return {
+            'device_id': self.device_id,
+            'device_name': self.device_name,
+            'is_online': self.is_online,
+            'sync_in_progress': self.sync_in_progress,
+            'total_transactions': total_count,
+            'pending_sync': pending_count,
+            'synced': synced_count,
+            'conflicts': conflicts_count,
+            'total_pending_value': total_pending_value,
+            'oldest_pending': pending_transactions.order_by('created_at').first().created_at if pending_count > 0 else None
+        }
+    
+    def resolve_sync_conflicts(self, resolution_actions: Dict[str, str]) -> Dict:
+        """
+        Resolve multiple sync conflicts.
+        
+        Args:
+            resolution_actions: Dictionary mapping storage_id to resolution action
+            
+        Returns:
+            Dictionary with resolution results
+        """
+        conflict_transactions = POSOfflineStorage.objects.filter(
+            device_id=self.device_id,
+            has_conflicts=True
+        )
+        
+        results = {
+            'total_conflicts': conflict_transactions.count(),
+            'resolved': 0,
+            'failed': 0,
+            'errors': []
+        }
+        
+        for offline_transaction in conflict_transactions:
+            storage_id = str(offline_transaction.storage_id)
+            action = resolution_actions.get(storage_id, 'skip')
+            
+            try:
+                success = offline_transaction.resolve_conflict(action)
+                if success:
+                    results['resolved'] += 1
+                else:
+                    results['failed'] += 1
+                    results['errors'].append({
+                        'storage_id': storage_id,
+                        'error': f'Failed to resolve with action: {action}'
+                    })
+            except Exception as e:
+                results['failed'] += 1
+                results['errors'].append({
+                    'storage_id': storage_id,
+                    'error': str(e)
+                })
+        
+        return results
+    
+    def cleanup_old_transactions(self, days_old: int = 30) -> int:
+        """
+        Clean up old synced transactions to save storage space.
+        
+        Args:
+            days_old: Number of days after which to clean up synced transactions
+            
+        Returns:
+            Number of transactions cleaned up
+        """
+        cutoff_date = timezone.now() - timedelta(days=days_old)
+        
+        old_transactions = POSOfflineStorage.objects.filter(
+            device_id=self.device_id,
+            is_synced=True,
+            synced_at__lt=cutoff_date
+        )
+        
+        count = old_transactions.count()
+        old_transactions.delete()
+        
+        logger.info(f"Cleaned up {count} old offline transactions for device {self.device_id}")
+        return count
+    
+    def export_offline_data(self) -> Dict:
+        """
+        Export all offline transaction data for backup or migration.
+        
+        Returns:
+            Dictionary with all offline transaction data
+        """
+        device_transactions = POSOfflineStorage.objects.filter(device_id=self.device_id)
+        
+        export_data = {
+            'device_id': self.device_id,
+            'device_name': self.device_name,
+            'export_timestamp': timezone.now().isoformat(),
+            'transactions': []
+        }
+        
+        for offline_transaction in device_transactions:
+            export_data['transactions'].append({
+                'storage_id': str(offline_transaction.storage_id),
+                'created_at': offline_transaction.created_at.isoformat(),
+                'sync_status': offline_transaction.sync_status,
+                'is_synced': offline_transaction.is_synced,
+                'has_conflicts': offline_transaction.has_conflicts,
+                'transaction_data': offline_transaction.transaction_data,
+                'conflict_data': offline_transaction.conflict_data
+            })
+        
+        return export_data

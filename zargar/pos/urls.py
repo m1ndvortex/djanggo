@@ -43,6 +43,14 @@ urlpatterns = [
     path('api/today-stats/', views.POSTodayStatsAPIView.as_view(), name='api_today_stats'),
     path('api/recent-transactions/', views.POSRecentTransactionsAPIView.as_view(), name='api_recent_transactions'),
     
+    # Offline POS API endpoints
+    path('api/offline/create/', views.POSOfflineTransactionCreateAPIView.as_view(), name='api_offline_create'),
+    path('api/offline/sync/', views.POSOfflineSyncAllAPIView.as_view(), name='api_offline_sync'),
+    path('api/offline/status/', views.POSOfflineStatusAPIView.as_view(), name='api_offline_status'),
+    path('api/offline/resolve-conflicts/', views.POSOfflineConflictResolveAPIView.as_view(), name='api_offline_resolve_conflicts'),
+    path('api/offline/cleanup/', views.POSOfflineCleanupAPIView.as_view(), name='api_offline_cleanup'),
+    path('api/offline/export/', views.POSOfflineExportAPIView.as_view(), name='api_offline_export'),
+    
     # Placeholder (for backward compatibility)
     path('placeholder/', views.PlaceholderView.as_view(), name='placeholder'),
 ]

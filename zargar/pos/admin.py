@@ -253,7 +253,7 @@ class POSOfflineStorageAdmin(admin.ModelAdmin):
     list_filter = ['is_synced', 'created_at', 'device_id']
     search_fields = ['storage_id', 'device_id']
     readonly_fields = [
-        'storage_id', 'created_at', 'synced_at', 'synced_transaction'
+        'storage_id', 'created_at', 'synced_at', 'synced_transaction_id'
     ]
     
     fieldsets = (
@@ -264,7 +264,7 @@ class POSOfflineStorageAdmin(admin.ModelAdmin):
         }),
         (_('Sync Status'), {
             'fields': (
-                'is_synced', 'synced_at', 'synced_transaction', 'sync_error'
+                'is_synced', 'synced_at', 'synced_transaction_id', 'sync_error'
             )
         }),
         (_('Transaction Data'), {
@@ -277,9 +277,13 @@ class POSOfflineStorageAdmin(admin.ModelAdmin):
     
     def synced_transaction_link(self, obj):
         """Display link to synced transaction."""
-        if obj.synced_transaction:
-            url = reverse('admin:pos_postransaction_change', args=[obj.synced_transaction.pk])
-            return format_html('<a href="{}">{}</a>', url, obj.synced_transaction.transaction_number)
+        if obj.synced_transaction_id:
+            try:
+                transaction = POSTransaction.objects.get(transaction_id=obj.synced_transaction_id)
+                url = reverse('admin:pos_postransaction_change', args=[transaction.pk])
+                return format_html('<a href="{}">{}</a>', url, transaction.transaction_number)
+            except POSTransaction.DoesNotExist:
+                return format_html('<span style="color: red;">Transaction not found</span>')
         return '-'
     synced_transaction_link.short_description = _('Synced Transaction')
     
