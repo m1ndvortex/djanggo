@@ -1,0 +1,564 @@
+{% extends "admin_panel/base.html" %}
+
+{% block title %}مانیتورینگ سلامت سیستم - پنل مدیریت زرگر{% endblock %}
+
+{% block nav_title %}مانیتورینگ سلامت سیستم{% endblock %}
+
+{% block extra_css %}
+<style>
+    .metric-card {
+        @apply bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl border dark:border-cyber-neon-primary/20 p-6 transition-all duration-300;
+    }
+    
+    .metric-card:hover {
+        @apply transform scale-105 shadow-xl dark:shadow-cyber-neon-primary/20;
+    }
+    
+    .status-healthy {
+        @apply text-green-600 dark:text-cyber-neon-secondary;
+    }
+    
+    .status-warning {
+        @apply text-yellow-600 dark:text-cyber-neon-warning;
+    }
+    
+    .status-error {
+        @apply text-red-600 dark:text-cyber-neon-danger;
+    }
+    
+    .cyber-glass {
+        backdrop-filter: blur(16px) saturate(150%);
+        background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 50%, rgba(11, 14, 26, 0.95) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
+    
+    .neon-border {
+        border-image: linear-gradient(90deg, #00D4FF, #00FF88, #FF6B35) 1;
+        animation: neon-pulse 2s ease-in-out infinite alternate;
+    }
+    
+    @keyframes neon-pulse {
+        from { box-shadow: 0 0 20px rgba(0, 212, 255, 0.1); }
+        to { box-shadow: 0 0 30px rgba(0, 212, 255, 0.3), 0 0 60px rgba(0, 255, 136, 0.1); }
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+</style>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-8">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-cyber-text-primary">
+                مانیتورینگ سلامت سیستم
+            </h1>
+            <p class="mt-2 text-gray-600 dark:text-cyber-text-secondary">
+                نظارت بر عملکرد و سلامت سیستم در زمان واقعی
+            </p>
+        </div>
+        
+        <div class="flex space-x-4 space-x-reverse">
+            <button onclick="refreshMetrics()" 
+                    class="bg-primary-600 dark:bg-cyber-neon-primary hover:bg-primary-700 dark:hover:bg-cyber-neon-primary/80 text-white px-4 py-2 rounded-lg transition-colors">
+                <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                بروزرسانی
+            </button>
+            
+            <a href="{% url 'admin_panel:system_health_alerts' %}" 
+               class="bg-gray-600 dark:bg-cyber-bg-elevated hover:bg-gray-700 dark:hover:bg-cyber-bg-surface text-white px-4 py-2 rounded-lg transition-colors">
+                <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+                هشدارها ({{ alert_stats.total_active }})
+            </a>
+            
+            <a href="{% url 'admin_panel:system_health_reports' %}" 
+               class="bg-gray-600 dark:bg-cyber-bg-elevated hover:bg-gray-700 dark:hover:bg-cyber-bg-surface text-white px-4 py-2 rounded-lg transition-colors">
+                <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+                گزارشات
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- System Status Overview -->
+<div class="mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <!-- Overall Status -->
+        <div class="metric-card dark:cyber-glass">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">وضعیت کلی سیستم</p>
+                    <p class="text-2xl font-bold status-{{ system_status.overall }}">
+                        {% if system_status.overall == 'healthy' %}
+                            سالم
+                        {% elif system_status.overall == 'warning' %}
+                            هشدار
+                        {% else %}
+                            خطا
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="p-3 rounded-full bg-{{ system_status.overall == 'healthy' and 'green' or system_status.overall == 'warning' and 'yellow' or 'red' }}-100 dark:bg-cyber-bg-elevated">
+                    {% if system_status.overall == 'healthy' %}
+                        <svg class="w-8 h-8 text-green-600 dark:text-cyber-neon-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    {% elif system_status.overall == 'warning' %}
+                        <svg class="w-8 h-8 text-yellow-600 dark:text-cyber-neon-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                    {% else %}
+                        <svg class="w-8 h-8 text-red-600 dark:text-cyber-neon-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Active Alerts -->
+        <div class="metric-card dark:cyber-glass">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">هشدارهای فعال</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary">{{ alert_stats.total_active }}</p>
+                    <p class="text-xs text-red-600 dark:text-cyber-neon-danger">بحرانی: {{ alert_stats.critical }}</p>
+                </div>
+                <div class="p-3 rounded-full bg-red-100 dark:bg-cyber-bg-elevated">
+                    <svg class="w-8 h-8 text-red-600 dark:text-cyber-neon-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <!-- CPU Usage -->
+        <div class="metric-card dark:cyber-glass">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">استفاده از پردازنده</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary">
+                        {{ current_metrics.cpu.usage_percent|floatformat:1 }}%
+                    </p>
+                </div>
+                <div class="p-3 rounded-full bg-blue-100 dark:bg-cyber-bg-elevated">
+                    <svg class="w-8 h-8 text-blue-600 dark:text-cyber-neon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Memory Usage -->
+        <div class="metric-card dark:cyber-glass">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">استفاده از حافظه</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary">
+                        {{ current_metrics.memory.usage_percent|floatformat:1 }}%
+                    </p>
+                </div>
+                <div class="p-3 rounded-full bg-purple-100 dark:bg-cyber-bg-elevated">
+                    <svg class="w-8 h-8 text-purple-600 dark:text-cyber-neon-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Service Status -->
+<div class="mb-8">
+    <h2 class="text-xl font-bold text-gray-900 dark:text-cyber-text-primary mb-4">وضعیت سرویس‌ها</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Database Status -->
+        <div class="metric-card dark:cyber-glass">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">پایگاه داده</h3>
+                <span class="px-3 py-1 rounded-full text-sm font-medium 
+                           {% if current_metrics.database.default.status == 'healthy' %}
+                               bg-green-100 text-green-800 dark:bg-cyber-neon-secondary/20 dark:text-cyber-neon-secondary
+                           {% else %}
+                               bg-red-100 text-red-800 dark:bg-cyber-neon-danger/20 dark:text-cyber-neon-danger
+                           {% endif %}">
+                    {% if current_metrics.database.default.status == 'healthy' %}سالم{% else %}خطا{% endif %}
+                </span>
+            </div>
+            <div class="space-y-2">
+                <div class="flex justify-between">
+                    <span class="text-sm text-gray-600 dark:text-cyber-text-secondary">زمان پاسخ:</span>
+                    <span class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary">
+                        {{ current_metrics.database.default.response_time_ms|floatformat:1 }} ms
+                    </span>
+                </div>
+                {% if current_metrics.database.connections %}
+                <div class="flex justify-between">
+                    <span class="text-sm text-gray-600 dark:text-cyber-text-secondary">اتصالات فعال:</span>
+                    <span class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary">
+                        {{ current_metrics.database.connections.active_connections }}
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Redis Status -->
+        <div class="metric-card dark:cyber-glass">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">Redis Cache</h3>
+                <span class="px-3 py-1 rounded-full text-sm font-medium 
+                           {% if current_metrics.redis.status == 'healthy' %}
+                               bg-green-100 text-green-800 dark:bg-cyber-neon-secondary/20 dark:text-cyber-neon-secondary
+                           {% else %}
+                               bg-red-100 text-red-800 dark:bg-cyber-neon-danger/20 dark:text-cyber-neon-danger
+                           {% endif %}">
+                    {% if current_metrics.redis.status == 'healthy' %}سالم{% else %}خطا{% endif %}
+                </span>
+            </div>
+            {% if current_metrics.redis.status == 'healthy' %}
+            <div class="space-y-2">
+                <div class="flex justify-between">
+                    <span class="text-sm text-gray-600 dark:text-cyber-text-secondary">استفاده از حافظه:</span>
+                    <span class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary">
+                        {{ current_metrics.redis.memory_usage_percent|floatformat:1 }}%
+                    </span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-sm text-gray-600 dark:text-cyber-text-secondary">کلاینت‌های متصل:</span>
+                    <span class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary">
+                        {{ current_metrics.redis.connected_clients }}
+                    </span>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Celery Status -->
+        <div class="metric-card dark:cyber-glass">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">Celery Workers</h3>
+                <span class="px-3 py-1 rounded-full text-sm font-medium 
+                           {% if current_metrics.celery.status == 'healthy' %}
+                               bg-green-100 text-green-800 dark:bg-cyber-neon-secondary/20 dark:text-cyber-neon-secondary
+                           {% else %}
+                               bg-yellow-100 text-yellow-800 dark:bg-cyber-neon-warning/20 dark:text-cyber-neon-warning
+                           {% endif %}">
+                    {% if current_metrics.celery.status == 'healthy' %}سالم{% else %}هشدار{% endif %}
+                </span>
+            </div>
+            <div class="space-y-2">
+                <div class="flex justify-between">
+                    <span class="text-sm text-gray-600 dark:text-cyber-text-secondary">Worker های فعال:</span>
+                    <span class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary">
+                        {{ current_metrics.celery.total_workers }}
+                    </span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-sm text-gray-600 dark:text-cyber-text-secondary">تسک‌های فعال:</span>
+                    <span class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary">
+                        {{ current_metrics.celery.active_tasks.total }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Performance Charts -->
+<div class="mb-8">
+    <h2 class="text-xl font-bold text-gray-900 dark:text-cyber-text-primary mb-4">نمودارهای عملکرد</h2>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- CPU and Memory Chart -->
+        <div class="metric-card dark:cyber-glass">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">پردازنده و حافظه (۲۴ ساعت گذشته)</h3>
+            <div class="chart-container">
+                <canvas id="cpuMemoryChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Disk Usage Chart -->
+        <div class="metric-card dark:cyber-glass">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">استفاده از دیسک</h3>
+            <div class="chart-container">
+                <canvas id="diskChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Alerts -->
+{% if active_alerts %}
+<div class="mb-8">
+    <h2 class="text-xl font-bold text-gray-900 dark:text-cyber-text-primary mb-4">هشدارهای اخیر</h2>
+    <div class="metric-card dark:cyber-glass">
+        <div class="space-y-4">
+            {% for alert in active_alerts %}
+            <div class="flex items-center justify-between p-4 border-r-4 border-{{ alert.severity == 'critical' and 'red' or alert.severity == 'warning' and 'yellow' or 'blue' }}-500 dark:border-cyber-neon-{{ alert.severity == 'critical' and 'danger' or alert.severity == 'warning' and 'warning' or 'primary' }} bg-{{ alert.severity == 'critical' and 'red' or alert.severity == 'warning' and 'yellow' or 'blue' }}-50 dark:bg-cyber-bg-elevated rounded-lg">
+                <div class="flex-1">
+                    <h4 class="font-semibold text-gray-900 dark:text-cyber-text-primary">{{ alert.title }}</h4>
+                    <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">{{ alert.description }}</p>
+                    <p class="text-xs text-gray-500 dark:text-cyber-text-muted mt-1">{{ alert.created_at|timesince }} پیش</p>
+                </div>
+                <div class="flex space-x-2 space-x-reverse">
+                    <button onclick="acknowledgeAlert('{{ alert.alert_id }}')" 
+                            class="px-3 py-1 text-sm bg-gray-600 dark:bg-cyber-bg-surface text-white rounded hover:bg-gray-700 dark:hover:bg-cyber-bg-primary transition-colors">
+                        تایید
+                    </button>
+                    <button onclick="resolveAlert('{{ alert.alert_id }}')" 
+                            class="px-3 py-1 text-sm bg-green-600 dark:bg-cyber-neon-secondary text-white rounded hover:bg-green-700 dark:hover:bg-cyber-neon-secondary/80 transition-colors">
+                        حل شده
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        {% if active_alerts|length >= 5 %}
+        <div class="mt-4 text-center">
+            <a href="{% url 'admin_panel:system_health_alerts' %}" 
+               class="text-primary-600 dark:text-cyber-neon-primary hover:text-primary-700 dark:hover:text-cyber-neon-primary/80 font-medium">
+                مشاهده همه هشدارها
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Auto-refresh indicator -->
+<div class="fixed bottom-4 left-4 bg-white dark:bg-cyber-bg-surface shadow-lg dark:shadow-2xl rounded-lg p-3 border dark:border-cyber-neon-primary/20">
+    <div class="flex items-center space-x-2 space-x-reverse">
+        <div class="w-2 h-2 bg-green-500 dark:bg-cyber-neon-secondary rounded-full animate-pulse"></div>
+        <span class="text-sm text-gray-600 dark:text-cyber-text-secondary">بروزرسانی خودکار</span>
+        <span id="refreshTimer" class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary">30s</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let refreshInterval;
+let timerInterval;
+let timeLeft = 30;
+
+// Initialize charts
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+    startAutoRefresh();
+});
+
+function initializeCharts() {
+    // CPU and Memory Chart
+    const cpuMemoryCtx = document.getElementById('cpuMemoryChart').getContext('2d');
+    
+    // Fetch historical data and create chart
+    fetch('{% url "admin_panel:system_health_historical_api" %}?metric_type=cpu_usage&hours=24')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                createCpuMemoryChart(cpuMemoryCtx, data.data);
+            }
+        });
+    
+    // Disk Usage Chart (Pie Chart)
+    const diskCtx = document.getElementById('diskChart').getContext('2d');
+    createDiskChart(diskCtx);
+}
+
+function createCpuMemoryChart(ctx, cpuData) {
+    // Also fetch memory data
+    fetch('{% url "admin_panel:system_health_historical_api" %}?metric_type=memory_usage&hours=24')
+        .then(response => response.json())
+        .then(memoryResponse => {
+            const memoryData = memoryResponse.success ? memoryResponse.data : [];
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: cpuData.map(d => new Date(d.timestamp).toLocaleTimeString('fa-IR')),
+                    datasets: [{
+                        label: 'پردازنده (%)',
+                        data: cpuData.map(d => d.value),
+                        borderColor: document.documentElement.classList.contains('dark') ? '#00D4FF' : '#3b82f6',
+                        backgroundColor: document.documentElement.classList.contains('dark') ? 'rgba(0, 212, 255, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4
+                    }, {
+                        label: 'حافظه (%)',
+                        data: memoryData.map(d => d.value),
+                        borderColor: document.documentElement.classList.contains('dark') ? '#00FF88' : '#10b981',
+                        backgroundColor: document.documentElement.classList.contains('dark') ? 'rgba(0, 255, 136, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: document.documentElement.classList.contains('dark') ? '#FFFFFF' : '#374151'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                color: document.documentElement.classList.contains('dark') ? '#B8BCC8' : '#6B7280'
+                            },
+                            grid: {
+                                color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: document.documentElement.classList.contains('dark') ? '#B8BCC8' : '#6B7280'
+                            },
+                            grid: {
+                                color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+        });
+}
+
+function createDiskChart(ctx) {
+    const diskUsed = {{ current_metrics.disk.usage_percent|default:0 }};
+    const diskFree = 100 - diskUsed;
+    
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['استفاده شده', 'آزاد'],
+            datasets: [{
+                data: [diskUsed, diskFree],
+                backgroundColor: [
+                    document.documentElement.classList.contains('dark') ? '#FF6B35' : '#ef4444',
+                    document.documentElement.classList.contains('dark') ? '#252A3A' : '#e5e7eb'
+                ],
+                borderColor: [
+                    document.documentElement.classList.contains('dark') ? '#FF6B35' : '#ef4444',
+                    document.documentElement.classList.contains('dark') ? '#252A3A' : '#e5e7eb'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: document.documentElement.classList.contains('dark') ? '#FFFFFF' : '#374151',
+                        padding: 20
+                    }
+                }
+            }
+        }
+    });
+}
+
+function refreshMetrics() {
+    fetch('{% url "admin_panel:system_health_metrics_api" %}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Reload the page to update all metrics
+                window.location.reload();
+            } else {
+                ZargarAdmin.showMessage('خطا در بروزرسانی متریک‌ها', 'error');
+            }
+        })
+        .catch(error => {
+            ZargarAdmin.showMessage('خطا در ارتباط با سرور', 'error');
+        });
+}
+
+function acknowledgeAlert(alertId) {
+    fetch('{% url "admin_panel:alert_action" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: `alert_id=${alertId}&action=acknowledge&notes=تایید شده از داشبورد`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            ZargarAdmin.showMessage('هشدار تایید شد', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            ZargarAdmin.showMessage('خطا در تایید هشدار', 'error');
+        }
+    });
+}
+
+function resolveAlert(alertId) {
+    fetch('{% url "admin_panel:alert_action" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: `alert_id=${alertId}&action=resolve&notes=حل شده از داشبورد`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            ZargarAdmin.showMessage('هشدار حل شد', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            ZargarAdmin.showMessage('خطا در حل هشدار', 'error');
+        }
+    });
+}
+
+function startAutoRefresh() {
+    // Auto-refresh every 30 seconds
+    refreshInterval = setInterval(refreshMetrics, 30000);
+    
+    // Update timer display
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        document.getElementById('refreshTimer').textContent = timeLeft + 's';
+        
+        if (timeLeft <= 0) {
+            timeLeft = 30;
+        }
+    }, 1000);
+}
+
+// Stop auto-refresh when page is hidden
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        clearInterval(refreshInterval);
+        clearInterval(timerInterval);
+    } else {
+        startAutoRefresh();
+        timeLeft = 30;
+    }
+});
+</script>
+
+<!-- CSRF Token for AJAX requests -->
+{% csrf_token %}
+{% endblock %}

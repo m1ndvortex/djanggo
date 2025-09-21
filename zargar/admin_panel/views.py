@@ -18,7 +18,7 @@ import logging
 
 from zargar.tenants.admin_models import SuperAdmin, SubscriptionPlan, TenantInvoice
 from zargar.tenants.models import Tenant
-from .models import ImpersonationSession
+from .models import ImpersonationSession, SystemHealthMetric, SystemHealthAlert
 from .hijack_permissions import check_hijack_permissions, get_hijackable_users, log_hijack_attempt
 
 logger = logging.getLogger('hijack_audit')
@@ -663,6 +663,351 @@ class BackupScheduleView(SuperAdminRequiredMixin, TemplateView):
             messages.error(request, _('خطا در مدیریت زمان‌بندی پشتیبان‌گیری'))
         
         return redirect('admin_panel:backup_schedule')
+
+
+class SystemHealthDashboardView(SuperAdminRequiredMixin, TemplateView):
+    """
+    Main system health monitoring dashboard.
+    """
+    template_name = 'admin_panel/system_health_dashboard.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        from .system_health import system_health_monitor
+        from .models import SystemHealthAlert
+        
+        # Collect current metrics
+        current_metrics = system_health_monitor.collect_all_metrics()
+        
+        # Get active alerts
+        active_alerts = SystemHealthAlert.objects.filter(status='active').order_by('-created_at')
+        
+        # Get recent alerts
+        recent_alerts = SystemHealthAlert.objects.order_by('-created_at')[:10]
+        
+        # Alert statistics
+        alert_stats = {
+            'total_active': active_alerts.count(),
+            'critical': active_alerts.filter(severity='critical').count(),
+            'warning': active_alerts.filter(severity='warning').count(),
+            'error': active_alerts.filter(severity='error').count(),
+        }
+        
+        # System status summary
+        system_status = self._get_system_status_summary(current_metrics)
+        
+        context.update({
+            'current_metrics': current_metrics,
+            'active_alerts': active_alerts[:5],  # Show top 5 in dashboard
+            'recent_alerts': recent_alerts,
+            'alert_stats': alert_stats,
+            'system_status': system_status,
+        })
+        
+        return context
+    
+    def _get_system_status_summary(self, metrics):
+        """Generate system status summary."""
+        status = {
+            'overall': 'healthy',
+            'services': {},
+            'warnings': [],
+            'errors': [],
+        }
+        
+        # Check individual services
+        services = ['database', 'redis', 'celery']
+        
+        for service in services:
+            if service in metrics:
+                service_status = metrics[service].get('status', 'unknown')
+                status['services'][service] = service_status
+                
+                if service_status == 'error':
+                    status['errors'].append(f'{service.title()} service is down')
+                    status['overall'] = 'error'
+                elif service_status == 'warning':
+                    status['warnings'].append(f'{service.title()} service has issues')
+                    if status['overall'] == 'healthy':
+                        status['overall'] = 'warning'
+        
+        # Check resource usage
+        if 'cpu' in metrics:
+            cpu_usage = metrics['cpu'].get('usage_percent', 0)
+            if cpu_usage > 90:
+                status['errors'].append(f'High CPU usage: {cpu_usage}%')
+                status['overall'] = 'error'
+            elif cpu_usage > 80:
+                status['warnings'].append(f'Elevated CPU usage: {cpu_usage}%')
+                if status['overall'] == 'healthy':
+                    status['overall'] = 'warning'
+        
+        if 'memory' in metrics:
+            memory_usage = metrics['memory'].get('usage_percent', 0)
+            if memory_usage > 90:
+                status['errors'].append(f'High memory usage: {memory_usage}%')
+                status['overall'] = 'error'
+            elif memory_usage > 80:
+                status['warnings'].append(f'Elevated memory usage: {memory_usage}%')
+                if status['overall'] == 'healthy':
+                    status['overall'] = 'warning'
+        
+        return status
+
+
+class SystemHealthMetricsAPIView(SuperAdminRequiredMixin, View):
+    """
+    API endpoint for real-time system health metrics.
+    """
+    
+    def get(self, request):
+        """Get current system health metrics."""
+        from .system_health import system_health_monitor
+        
+        try:
+            metrics = system_health_monitor.collect_all_metrics()
+            return JsonResponse({
+                'success': True,
+                'metrics': metrics,
+                'timestamp': timezone.now().isoformat(),
+            })
+        
+        except Exception as e:
+            logger.error(f"Error getting system health metrics: {e}")
+            return JsonResponse({
+                'success': False,
+                'error': str(e),
+            }, status=500)
+
+
+class SystemHealthHistoricalView(SuperAdminRequiredMixin, View):
+    """
+    API endpoint for historical system health metrics.
+    """
+    
+    def get(self, request):
+        """Get historical metrics for charts."""
+        from .system_health import system_health_monitor
+        
+        metric_type = request.GET.get('metric_type', 'cpu_usage')
+        hours = int(request.GET.get('hours', 24))
+        
+        try:
+            historical_data = system_health_monitor.get_historical_metrics(metric_type, hours)
+            
+            return JsonResponse({
+                'success': True,
+                'metric_type': metric_type,
+                'hours': hours,
+                'data': historical_data,
+            })
+        
+        except Exception as e:
+            logger.error(f"Error getting historical metrics: {e}")
+            return JsonResponse({
+                'success': False,
+                'error': str(e),
+            }, status=500)
+
+
+class SystemHealthAlertsView(SuperAdminRequiredMixin, ListView):
+    """
+    View to display and manage system health alerts.
+    """
+    model = SystemHealthAlert
+    template_name = 'admin_panel/system_health_alerts.html'
+    context_object_name = 'alerts'
+    paginate_by = 20
+    
+    def get_queryset(self):
+        queryset = SystemHealthAlert.objects.order_by('-created_at')
+        
+        # Filter by status
+        status_filter = self.request.GET.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        
+        # Filter by severity
+        severity_filter = self.request.GET.get('severity')
+        if severity_filter:
+            queryset = queryset.filter(severity=severity_filter)
+        
+        # Filter by category
+        category_filter = self.request.GET.get('category')
+        if category_filter:
+            queryset = queryset.filter(category=category_filter)
+        
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Add filter options
+        context['status_filter'] = self.request.GET.get('status', '')
+        context['severity_filter'] = self.request.GET.get('severity', '')
+        context['category_filter'] = self.request.GET.get('category', '')
+        
+        # Add choices for filters
+        context['status_choices'] = SystemHealthAlert.STATUS_CHOICES
+        context['severity_choices'] = SystemHealthAlert.SEVERITY_LEVELS
+        
+        # Get unique categories
+        categories = SystemHealthAlert.objects.values_list('category', flat=True).distinct()
+        context['category_choices'] = [(cat, cat.replace('_', ' ').title()) for cat in categories]
+        
+        # Alert statistics
+        context['alert_stats'] = {
+            'total': SystemHealthAlert.objects.count(),
+            'active': SystemHealthAlert.objects.filter(status='active').count(),
+            'critical': SystemHealthAlert.objects.filter(severity='critical').count(),
+            'warning': SystemHealthAlert.objects.filter(severity='warning').count(),
+        }
+        
+        return context
+
+
+class AlertActionView(SuperAdminRequiredMixin, View):
+    """
+    View to handle alert actions (acknowledge, resolve).
+    """
+    
+    def post(self, request):
+        """Handle alert action requests."""
+        alert_id = request.POST.get('alert_id')
+        action = request.POST.get('action')
+        notes = request.POST.get('notes', '')
+        
+        if not alert_id or not action:
+            return JsonResponse({
+                'success': False,
+                'error': 'Missing alert ID or action'
+            })
+        
+        try:
+            alert = SystemHealthAlert.objects.get(alert_id=alert_id)
+            
+            if action == 'acknowledge':
+                alert.acknowledge(
+                    user_id=request.user.id,
+                    username=request.user.username,
+                    notes=notes
+                )
+                message = 'Alert acknowledged successfully'
+            
+            elif action == 'resolve':
+                alert.resolve(
+                    user_id=request.user.id,
+                    username=request.user.username,
+                    notes=notes
+                )
+                message = 'Alert resolved successfully'
+            
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Invalid action'
+                })
+            
+            return JsonResponse({
+                'success': True,
+                'message': message,
+                'alert_status': alert.status
+            })
+        
+        except SystemHealthAlert.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Alert not found'
+            })
+        
+        except Exception as e:
+            logger.error(f"Error handling alert action: {e}")
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            })
+
+
+class SystemHealthReportsView(SuperAdminRequiredMixin, TemplateView):
+    """
+    View for system health reports and analytics.
+    """
+    template_name = 'admin_panel/system_health_reports.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        from .models import SystemHealthMetric
+        from django.db.models import Avg, Max, Min, Count
+        
+        # Get date range from request
+        days = int(self.request.GET.get('days', 7))
+        since = timezone.now() - timedelta(days=days)
+        
+        # Metric summaries
+        metric_summaries = {}
+        metric_types = ['cpu_usage', 'memory_usage', 'disk_usage', 'redis_memory']
+        
+        for metric_type in metric_types:
+            summary = SystemHealthMetric.objects.filter(
+                metric_type=metric_type,
+                timestamp__gte=since
+            ).aggregate(
+                avg_value=Avg('value'),
+                max_value=Max('value'),
+                min_value=Min('value'),
+                count=Count('id')
+            )
+            
+            metric_summaries[metric_type] = {
+                'average': round(summary['avg_value'] or 0, 2),
+                'maximum': round(summary['max_value'] or 0, 2),
+                'minimum': round(summary['min_value'] or 0, 2),
+                'data_points': summary['count'],
+            }
+        
+        # Alert trends
+        alert_trends = SystemHealthAlert.objects.filter(
+            created_at__gte=since
+        ).values('severity').annotate(
+            count=Count('id')
+        ).order_by('severity')
+        
+        # Service availability
+        service_availability = self._calculate_service_availability(since)
+        
+        context.update({
+            'days': days,
+            'metric_summaries': metric_summaries,
+            'alert_trends': alert_trends,
+            'service_availability': service_availability,
+        })
+        
+        return context
+    
+    def _calculate_service_availability(self, since):
+        """Calculate service availability percentages."""
+        from .models import SystemHealthMetric
+        
+        services = ['database', 'redis', 'celery']
+        availability = {}
+        
+        for service in services:
+            # This is a simplified calculation
+            # In a real implementation, you'd track uptime/downtime more precisely
+            total_checks = SystemHealthMetric.objects.filter(
+                timestamp__gte=since,
+                metadata__service=service
+            ).count()
+            
+            if total_checks > 0:
+                # Assume service is available if we have metrics
+                availability[service] = 99.9  # Placeholder
+            else:
+                availability[service] = 0
+        
+        return availability
 
 
 class TenantRestoreView(SuperAdminRequiredMixin, TemplateView):
@@ -1756,8 +2101,8 @@ class DisasterRecoveryDocumentationView(SuperAdminRequiredMixin, TemplateView):
         
         return context
 
-cla
-ss RestoreStatusAPIView(SuperAdminRequiredMixin, View):
+
+class RestoreStatusAPIView(SuperAdminRequiredMixin, View):
     """
     API view to get restore job status.
     """

@@ -1,11 +1,11 @@
 """
-Celery tasks for backup and restore operations.
+Celery tasks for backup, restore, and system health monitoring operations.
 """
 import os
 import subprocess
 import tempfile
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from celery import shared_task
 from django.conf import settings
 from django.utils import timezone
@@ -1202,3 +1202,283 @@ def should_run_schedule(schedule, current_time):
         )
     
     return False
+
+# System Health Monitoring Tasks
+
+@shared_task(bind=True)
+def collect_system_health_metrics(self):
+    """
+    Periodic task to collect system health metrics.
+    This task should be scheduled to run every 1-5 minutes.
+    """
+    try:
+        from .system_health import system_health_monitor
+        
+        logger.info("Starting system health metrics collection")
+        
+        # Collect all metrics
+        metrics = system_health_monitor.collect_all_metrics()
+        
+        # Log summary
+        if 'error' not in metrics:
+            logger.info(f"Successfully collected system health metrics: "
+                       f"CPU: {metrics.get('cpu', {}).get('usage_percent', 'N/A')}%, "
+                       f"Memory: {metrics.get('memory', {}).get('usage_percent', 'N/A')}%, "
+                       f"Disk: {metrics.get('disk', {}).get('usage_percent', 'N/A')}%")
+        else:
+            logger.error(f"Error collecting system health metrics: {metrics['error']}")
+        
+        return {
+            'success': True,
+            'metrics_collected': len(metrics),
+            'timestamp': timezone.now().isoformat()
+        }
+    
+    except Exception as e:
+        logger.error(f"Error in collect_system_health_metrics task: {e}")
+        return {
+            'success': False,
+            'error': str(e),
+            'timestamp': timezone.now().isoformat()
+        }
+
+
+@shared_task(bind=True)
+def cleanup_old_health_metrics(self):
+    """
+    Periodic task to clean up old health metrics.
+    This task should be scheduled to run daily.
+    """
+    try:
+        from .system_health import system_health_monitor
+        
+        logger.info("Starting cleanup of old health metrics")
+        
+        # Clean up metrics older than 30 days
+        system_health_monitor.cleanup_old_metrics(days=30)
+        
+        logger.info("Successfully cleaned up old health metrics")
+        
+        return {
+            'success': True,
+            'timestamp': timezone.now().isoformat()
+        }
+    
+    except Exception as e:
+        logger.error(f"Error in cleanup_old_health_metrics task: {e}")
+        return {
+            'success': False,
+            'error': str(e),
+            'timestamp': timezone.now().isoformat()
+        }
+
+
+@shared_task(bind=True)
+def check_system_health_alerts(self):
+    """
+    Periodic task to check for system health issues and create alerts.
+    This task should be scheduled to run every 5-10 minutes.
+    """
+    try:
+        from .system_health import system_health_monitor
+        from .models import SystemHealthAlert
+        
+        logger.info("Starting system health alert check")
+        
+        # Get current metrics
+        metrics = system_health_monitor.collect_all_metrics()
+        
+        # Count active alerts before check
+        active_alerts_before = SystemHealthAlert.objects.filter(status='active').count()
+        
+        # Alert checking is handled in collect_all_metrics via _check_alert_thresholds
+        
+        # Count active alerts after check
+        active_alerts_after = SystemHealthAlert.objects.filter(status='active').count()
+        
+        new_alerts = active_alerts_after - active_alerts_before
+        
+        if new_alerts > 0:
+            logger.warning(f"Created {new_alerts} new system health alerts")
+        
+        return {
+            'success': True,
+            'active_alerts': active_alerts_after,
+            'new_alerts': new_alerts,
+            'timestamp': timezone.now().isoformat()
+        }
+    
+    except Exception as e:
+        logger.error(f"Error in check_system_health_alerts task: {e}")
+        return {
+            'success': False,
+            'error': str(e),
+            'timestamp': timezone.now().isoformat()
+        }
+
+
+@shared_task(bind=True)
+def send_health_alert_notifications(self):
+    """
+    Periodic task to send notifications for critical health alerts.
+    This task should be scheduled to run every 15-30 minutes.
+    """
+    try:
+        from .models import SystemHealthAlert
+        from django.core.mail import send_mail
+        
+        logger.info("Starting health alert notifications check")
+        
+        # Get critical alerts that haven't been notified recently
+        critical_alerts = SystemHealthAlert.objects.filter(
+            status='active',
+            severity='critical',
+            created_at__gte=timezone.now() - timedelta(hours=1)  # Only recent alerts
+        )
+        
+        notifications_sent = 0
+        
+        for alert in critical_alerts:
+            # Check if notification was already sent recently
+            recent_notifications = [
+                n for n in alert.notifications_sent 
+                if n.get('type') == 'email' and 
+                datetime.fromisoformat(n.get('timestamp', '1970-01-01T00:00:00')) > 
+                timezone.now() - timedelta(hours=1)
+            ]
+            
+            if not recent_notifications:
+                # Send email notification
+                try:
+                    admin_emails = getattr(settings, 'ADMIN_NOTIFICATION_EMAILS', [])
+                    if admin_emails:
+                        subject = f"[ZARGAR] Critical System Alert: {alert.title}"
+                        message = f"""
+Critical system alert detected:
+
+Title: {alert.title}
+Description: {alert.description}
+Severity: {alert.severity}
+Category: {alert.category}
+Created: {alert.created_at}
+
+Current Value: {alert.current_value}
+Threshold: {alert.threshold_value}
+
+Please check the admin panel for more details.
+                        """
+                        
+                        send_mail(
+                            subject=subject,
+                            message=message,
+                            from_email=settings.DEFAULT_FROM_EMAIL,
+                            recipient_list=admin_emails,
+                            fail_silently=False
+                        )
+                        
+                        # Record notification
+                        alert.add_notification('email', admin_emails, 'sent')
+                        notifications_sent += 1
+                        
+                        logger.info(f"Sent critical alert notification for: {alert.title}")
+                
+                except Exception as e:
+                    logger.error(f"Error sending notification for alert {alert.alert_id}: {e}")
+                    alert.add_notification('email', 'admin', 'failed')
+        
+        return {
+            'success': True,
+            'notifications_sent': notifications_sent,
+            'critical_alerts_checked': critical_alerts.count(),
+            'timestamp': timezone.now().isoformat()
+        }
+    
+    except Exception as e:
+        logger.error(f"Error in send_health_alert_notifications task: {e}")
+        return {
+            'success': False,
+            'error': str(e),
+            'timestamp': timezone.now().isoformat()
+        }
+
+
+@shared_task(bind=True)
+def generate_health_report(self, report_type='daily'):
+    """
+    Generate system health reports.
+    
+    Args:
+        report_type: Type of report ('daily', 'weekly', 'monthly')
+    """
+    try:
+        from .models import SystemHealthMetric, SystemHealthAlert
+        from django.db.models import Avg, Max, Min, Count
+        
+        logger.info(f"Generating {report_type} health report")
+        
+        # Determine time range
+        if report_type == 'daily':
+            since = timezone.now() - timedelta(days=1)
+        elif report_type == 'weekly':
+            since = timezone.now() - timedelta(days=7)
+        elif report_type == 'monthly':
+            since = timezone.now() - timedelta(days=30)
+        else:
+            raise ValueError(f"Invalid report type: {report_type}")
+        
+        # Collect metrics summary
+        metrics_summary = {}
+        metric_types = ['cpu_usage', 'memory_usage', 'disk_usage', 'redis_memory']
+        
+        for metric_type in metric_types:
+            summary = SystemHealthMetric.objects.filter(
+                metric_type=metric_type,
+                timestamp__gte=since
+            ).aggregate(
+                avg_value=Avg('value'),
+                max_value=Max('value'),
+                min_value=Min('value'),
+                count=Count('id')
+            )
+            
+            metrics_summary[metric_type] = {
+                'average': round(summary['avg_value'] or 0, 2),
+                'maximum': round(summary['max_value'] or 0, 2),
+                'minimum': round(summary['min_value'] or 0, 2),
+                'data_points': summary['count']
+            }
+        
+        # Alert summary
+        alert_summary = SystemHealthAlert.objects.filter(
+            created_at__gte=since
+        ).values('severity').annotate(
+            count=Count('id')
+        )
+        
+        # Generate report content
+        report_content = {
+            'report_type': report_type,
+            'period_start': since.isoformat(),
+            'period_end': timezone.now().isoformat(),
+            'metrics_summary': metrics_summary,
+            'alert_summary': list(alert_summary),
+            'generated_at': timezone.now().isoformat()
+        }
+        
+        # Store report (you could save to file or database)
+        logger.info(f"Generated {report_type} health report with {len(metrics_summary)} metric types")
+        
+        return {
+            'success': True,
+            'report_type': report_type,
+            'report_content': report_content,
+            'timestamp': timezone.now().isoformat()
+        }
+    
+    except Exception as e:
+        logger.error(f"Error generating {report_type} health report: {e}")
+        return {
+            'success': False,
+            'error': str(e),
+            'timestamp': timezone.now().isoformat()
+        }

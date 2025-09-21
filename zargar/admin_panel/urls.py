@@ -36,6 +36,14 @@ urlpatterns = [
     path('backup/status/', views.BackupStatusAPIView.as_view(), name='backup_status_api'),
     path('restore/status/', views.RestoreStatusAPIView.as_view(), name='restore_status_api'),
     
+    # System Health Monitoring
+    path('health/', views.SystemHealthDashboardView.as_view(), name='system_health_dashboard'),
+    path('health/metrics/api/', views.SystemHealthMetricsAPIView.as_view(), name='system_health_metrics_api'),
+    path('health/historical/api/', views.SystemHealthHistoricalView.as_view(), name='system_health_historical_api'),
+    path('health/alerts/', views.SystemHealthAlertsView.as_view(), name='system_health_alerts'),
+    path('health/alerts/action/', views.AlertActionView.as_view(), name='alert_action'),
+    path('health/reports/', views.SystemHealthReportsView.as_view(), name='system_health_reports'),
+    
     # Disaster Recovery
     path('disaster-recovery/', disaster_recovery_views.DisasterRecoveryDashboardView.as_view(), name='disaster_recovery_dashboard'),
     path('disaster-recovery/test/', disaster_recovery_views.DisasterRecoveryTestView.as_view(), name='disaster_recovery_test'),

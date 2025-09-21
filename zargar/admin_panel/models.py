@@ -923,34 +923,14 @@ class TenantSnapshot(models.Model):
     snapshot_type = models.CharField(
         max_length=20,
         choices=SNAPSHOT_TYPES,
-        default='pre_operation',
         verbose_name=_('Snapshot Type')
     )
     
-    # Tenant information
+    # Target information
     tenant_schema = models.CharField(
         max_length=100,
         verbose_name=_('Tenant Schema'),
         help_text=_('Schema name of the tenant being snapshotted')
-    )
-    
-    tenant_domain = models.CharField(
-        max_length=253,
-        blank=True,
-        verbose_name=_('Tenant Domain'),
-        help_text=_('Domain of the tenant being snapshotted')
-    )
-    
-    # Operation context
-    operation_description = models.TextField(
-        verbose_name=_('Operation Description'),
-        help_text=_('Description of the high-risk operation requiring snapshot')
-    )
-    
-    operation_metadata = models.JSONField(
-        default=dict,
-        verbose_name=_('Operation Metadata'),
-        help_text=_('Additional metadata about the operation')
     )
     
     # Status and timing
@@ -962,32 +942,12 @@ class TenantSnapshot(models.Model):
     )
     
     created_at = models.DateTimeField(auto_now_add=True)
-    started_at = models.DateTimeField(
-        null=True,
-        blank=True,
-        verbose_name=_('Started At')
-    )
-    
-    completed_at = models.DateTimeField(
-        null=True,
-        blank=True,
-        verbose_name=_('Completed At')
-    )
-    
     expires_at = models.DateTimeField(
         verbose_name=_('Expires At'),
-        help_text=_('When this snapshot will be automatically deleted')
+        help_text=_('When this snapshot expires and can be deleted')
     )
     
-    # Backup information
-    backup_job = models.OneToOneField(
-        BackupJob,
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        verbose_name=_('Associated Backup Job')
-    )
-    
+    # File information
     file_path = models.CharField(
         max_length=500,
         blank=True,
@@ -1000,10 +960,10 @@ class TenantSnapshot(models.Model):
         verbose_name=_('File Size (Bytes)')
     )
     
-    # Progress tracking
-    progress_percentage = models.PositiveIntegerField(
-        default=0,
-        verbose_name=_('Progress Percentage')
+    # Metadata
+    metadata = models.JSONField(
+        default=dict,
+        verbose_name=_('Snapshot Metadata')
     )
     
     # Audit fields
@@ -1019,119 +979,253 @@ class TenantSnapshot(models.Model):
         verbose_name=_('Created By Username')
     )
     
-    # Restoration tracking
-    restored_at = models.DateTimeField(
-        null=True,
-        blank=True,
-        verbose_name=_('Restored At'),
-        help_text=_('When this snapshot was used for restoration')
-    )
-    
-    restored_by_id = models.IntegerField(
-        null=True,
-        blank=True,
-        verbose_name=_('Restored By ID')
-    )
-    
-    restored_by_username = models.CharField(
-        max_length=150,
-        blank=True,
-        verbose_name=_('Restored By Username')
-    )
-    
     class Meta:
         verbose_name = _('Tenant Snapshot')
         verbose_name_plural = _('Tenant Snapshots')
         db_table = 'admin_tenant_snapshot'
         ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.name} ({self.get_status_display()})"
+
+
+class SystemHealthMetric(models.Model):
+    """
+    Model to store system health metrics over time.
+    """
+    METRIC_TYPES = [
+        ('cpu_usage', _('CPU Usage')),
+        ('memory_usage', _('Memory Usage')),
+        ('disk_usage', _('Disk Usage')),
+        ('database_connections', _('Database Connections')),
+        ('redis_memory', _('Redis Memory Usage')),
+        ('celery_workers', _('Celery Workers')),
+        ('response_time', _('Response Time')),
+        ('error_rate', _('Error Rate')),
+    ]
+    
+    # Metric identification
+    metric_type = models.CharField(
+        max_length=30,
+        choices=METRIC_TYPES,
+        verbose_name=_('Metric Type')
+    )
+    
+    # Metric values
+    value = models.FloatField(
+        verbose_name=_('Metric Value'),
+        help_text=_('Numeric value of the metric')
+    )
+    
+    unit = models.CharField(
+        max_length=20,
+        verbose_name=_('Unit'),
+        help_text=_('Unit of measurement (%, MB, ms, etc.)')
+    )
+    
+    # Timing
+    timestamp = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_('Timestamp')
+    )
+    
+    # Additional context
+    hostname = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name=_('Hostname'),
+        help_text=_('Server hostname where metric was collected')
+    )
+    
+    metadata = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name=_('Additional Metadata')
+    )
+    
+    class Meta:
+        verbose_name = _('System Health Metric')
+        verbose_name_plural = _('System Health Metrics')
+        db_table = 'admin_system_health_metric'
+        ordering = ['-timestamp']
         indexes = [
-            models.Index(fields=['tenant_schema', 'created_at']),
-            models.Index(fields=['status', 'expires_at']),
-            models.Index(fields=['snapshot_type', 'created_at']),
-            models.Index(fields=['snapshot_id']),
+            models.Index(fields=['metric_type', 'timestamp']),
+            models.Index(fields=['timestamp']),
         ]
     
     def __str__(self):
-        return f"Snapshot {self.name} ({self.tenant_schema})"
+        return f"{self.get_metric_type_display()}: {self.value}{self.unit} at {self.timestamp}"
+
+
+class SystemHealthAlert(models.Model):
+    """
+    Model to track system health alerts and notifications.
+    """
+    SEVERITY_LEVELS = [
+        ('info', _('Info')),
+        ('warning', _('Warning')),
+        ('error', _('Error')),
+        ('critical', _('Critical')),
+    ]
     
-    @property
-    def is_expired(self):
-        """Check if snapshot has expired."""
-        return timezone.now() > self.expires_at
+    STATUS_CHOICES = [
+        ('active', _('Active')),
+        ('acknowledged', _('Acknowledged')),
+        ('resolved', _('Resolved')),
+        ('suppressed', _('Suppressed')),
+    ]
     
-    @property
-    def is_available_for_restore(self):
-        """Check if snapshot is available for restoration."""
-        return self.status == 'completed' and not self.is_expired
+    # Alert identification
+    alert_id = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        verbose_name=_('Alert ID')
+    )
     
-    @property
-    def file_size_human(self):
-        """Return human-readable file size."""
-        if not self.file_size_bytes:
-            return 'Unknown'
-        
-        size = self.file_size_bytes
-        for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
-            if size < 1024.0:
-                return f"{size:.1f} {unit}"
-            size /= 1024.0
-        return f"{size:.1f} PB"
+    title = models.CharField(
+        max_length=200,
+        verbose_name=_('Alert Title')
+    )
     
-    def mark_as_creating(self):
-        """Mark snapshot as being created."""
-        self.status = 'creating'
-        self.started_at = timezone.now()
-        self.save(update_fields=['status', 'started_at'])
+    description = models.TextField(
+        verbose_name=_('Alert Description')
+    )
     
-    def mark_as_completed(self, file_path, file_size_bytes):
-        """Mark snapshot as completed."""
-        self.status = 'completed'
-        self.completed_at = timezone.now()
-        self.progress_percentage = 100
-        self.file_path = file_path
-        self.file_size_bytes = file_size_bytes
+    # Alert classification
+    severity = models.CharField(
+        max_length=20,
+        choices=SEVERITY_LEVELS,
+        verbose_name=_('Severity Level')
+    )
+    
+    category = models.CharField(
+        max_length=50,
+        verbose_name=_('Alert Category'),
+        help_text=_('Category like database, redis, celery, etc.')
+    )
+    
+    # Status and timing
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='active',
+        verbose_name=_('Status')
+    )
+    
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_('Created At')
+    )
+    
+    acknowledged_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Acknowledged At')
+    )
+    
+    resolved_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Resolved At')
+    )
+    
+    # Alert details
+    source_metric = models.ForeignKey(
+        SystemHealthMetric,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name=_('Source Metric'),
+        help_text=_('Metric that triggered this alert')
+    )
+    
+    threshold_value = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name=_('Threshold Value'),
+        help_text=_('Threshold value that was exceeded')
+    )
+    
+    current_value = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name=_('Current Value'),
+        help_text=_('Current value when alert was triggered')
+    )
+    
+    # Notification tracking
+    notifications_sent = models.JSONField(
+        default=list,
+        verbose_name=_('Notifications Sent'),
+        help_text=_('List of notifications sent for this alert')
+    )
+    
+    # Resolution information
+    acknowledged_by_id = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_('Acknowledged By ID')
+    )
+    
+    acknowledged_by_username = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name=_('Acknowledged By Username')
+    )
+    
+    resolution_notes = models.TextField(
+        blank=True,
+        verbose_name=_('Resolution Notes')
+    )
+    
+    class Meta:
+        verbose_name = _('System Health Alert')
+        verbose_name_plural = _('System Health Alerts')
+        db_table = 'admin_system_health_alert'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status', 'severity', 'created_at']),
+            models.Index(fields=['category', 'status']),
+            models.Index(fields=['alert_id']),
+        ]
+    
+    def __str__(self):
+        return f"{self.title} ({self.get_severity_display()})"
+    
+    def acknowledge(self, user_id, username, notes=''):
+        """Acknowledge the alert."""
+        self.status = 'acknowledged'
+        self.acknowledged_at = timezone.now()
+        self.acknowledged_by_id = user_id
+        self.acknowledged_by_username = username
+        if notes:
+            self.resolution_notes = notes
         self.save(update_fields=[
-            'status', 'completed_at', 'progress_percentage', 
-            'file_path', 'file_size_bytes'
+            'status', 'acknowledged_at', 'acknowledged_by_id', 
+            'acknowledged_by_username', 'resolution_notes'
         ])
     
-    def mark_as_failed(self, error_message):
-        """Mark snapshot as failed."""
-        self.status = 'failed'
-        self.completed_at = timezone.now()
-        # Store error in operation_metadata
-        if not self.operation_metadata:
-            self.operation_metadata = {}
-        self.operation_metadata['error'] = error_message
-        self.save(update_fields=['status', 'completed_at', 'operation_metadata'])
+    def resolve(self, user_id, username, notes=''):
+        """Resolve the alert."""
+        self.status = 'resolved'
+        self.resolved_at = timezone.now()
+        self.acknowledged_by_id = user_id
+        self.acknowledged_by_username = username
+        if notes:
+            self.resolution_notes = notes
+        self.save(update_fields=[
+            'status', 'resolved_at', 'acknowledged_by_id', 
+            'acknowledged_by_username', 'resolution_notes'
+        ])
     
-    def mark_as_restored(self, restored_by_id, restored_by_username):
-        """Mark snapshot as used for restoration."""
-        self.restored_at = timezone.now()
-        self.restored_by_id = restored_by_id
-        self.restored_by_username = restored_by_username
-        self.save(update_fields=['restored_at', 'restored_by_id', 'restored_by_username'])
-    
-    def update_progress(self, percentage):
-        """Update snapshot creation progress."""
-        self.progress_percentage = min(100, max(0, percentage))
-        self.save(update_fields=['progress_percentage'])
-    
-    def clean(self):
-        """Validate the snapshot."""
-        super().clean()
-        
-        # Validate expiration date
-        if self.expires_at and self.expires_at <= timezone.now():
-            raise ValidationError(_('Expiration date must be in the future'))
-    
-    def save(self, *args, **kwargs):
-        """Override save to set default expiration."""
-        if not self.expires_at:
-            # Default expiration: 7 days for pre-operation snapshots, 30 days for manual
-            if self.snapshot_type == 'pre_operation':
-                self.expires_at = timezone.now() + timezone.timedelta(days=7)
-            else:
-                self.expires_at = timezone.now() + timezone.timedelta(days=30)
-        
-        super().save(*args, **kwargs)
+    def add_notification(self, notification_type, recipient, status='sent'):
+        """Add a notification record."""
+        notification = {
+            'timestamp': timezone.now().isoformat(),
+            'type': notification_type,
+            'recipient': recipient,
+            'status': status
+        }
+        self.notifications_sent.append(notification)
+        if self.pk:
+            self.save(update_fields=['notifications_sent'])
