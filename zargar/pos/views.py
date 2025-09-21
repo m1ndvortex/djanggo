@@ -498,6 +498,103 @@ class JewelryItemSearchAPIView(LoginRequiredMixin, TenantContextMixin, View):
             return JsonResponse({'success': False, 'error': str(e)})
 
 
+class POSTouchInterfaceView(LoginRequiredMixin, TenantContextMixin, TemplateView):
+    """
+    Touch-optimized POS interface for tablet use.
+    """
+    template_name = 'pos/touch_interface.html'
+    
+    def get_context_data(self, **kwargs):
+        """Add context for touch interface."""
+        context = super().get_context_data(**kwargs)
+        
+        # Get current gold price for display
+        try:
+            current_gold_price = GoldPriceService.get_current_gold_price(18)
+            context['current_gold_price'] = current_gold_price
+        except Exception:
+            context['current_gold_price'] = None
+        
+        # Get today's stats
+        today = timezone.now().date()
+        today_transactions = POSTransaction.objects.filter(
+            transaction_date__date=today,
+            status='completed'
+        )
+        
+        context['today_stats'] = {
+            'sales_count': today_transactions.count(),
+            'total_sales': today_transactions.aggregate(
+                total=models.Sum('total_amount')
+            )['total'] or 0,
+            'gold_weight': today_transactions.aggregate(
+                weight=models.Sum('total_gold_weight_grams')
+            )['weight'] or 0,
+        }
+        
+        return context
+
+
+class POSTodayStatsAPIView(LoginRequiredMixin, TenantContextMixin, View):
+    """API endpoint for today's sales statistics."""
+    
+    def get(self, request):
+        """Get today's sales statistics."""
+        try:
+            today = timezone.now().date()
+            today_transactions = POSTransaction.objects.filter(
+                transaction_date__date=today,
+                status='completed'
+            )
+            
+            stats = {
+                'sales_count': today_transactions.count(),
+                'total_sales': float(today_transactions.aggregate(
+                    total=models.Sum('total_amount')
+                )['total'] or 0),
+                'gold_weight': float(today_transactions.aggregate(
+                    weight=models.Sum('total_gold_weight_grams')
+                )['weight'] or 0),
+            }
+            
+            return JsonResponse({
+                'success': True,
+                'stats': stats
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+
+class POSRecentTransactionsAPIView(LoginRequiredMixin, TenantContextMixin, View):
+    """API endpoint for recent transactions."""
+    
+    def get(self, request):
+        """Get recent transactions."""
+        try:
+            recent_transactions = POSTransaction.objects.select_related('customer').order_by(
+                '-transaction_date'
+            )[:10]
+            
+            transactions_data = []
+            for transaction in recent_transactions:
+                transactions_data.append({
+                    'transaction_number': transaction.transaction_number,
+                    'customer_name': str(transaction.customer) if transaction.customer else None,
+                    'total_amount': float(transaction.total_amount),
+                    'transaction_date_shamsi': transaction.transaction_date_shamsi,
+                    'status': transaction.status,
+                })
+            
+            return JsonResponse({
+                'success': True,
+                'transactions': transactions_data
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+
 class PlaceholderView(TemplateView):
     """
     Placeholder view for POS module (backward compatibility).

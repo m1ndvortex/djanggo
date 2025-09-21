@@ -1,0 +1,442 @@
+/* POS Interface Styles */
+
+/* Touch-optimized base styles */
+.pos-interface {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Touch button base styles */
+.touch-btn {
+    min-height: 44px; /* iOS minimum touch target */
+    min-width: 44px;
+    touch-action: manipulation;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.touch-btn:active {
+    transform: scale(0.95);
+}
+
+.touch-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Large touch targets for primary actions */
+.large-touch {
+    min-height: 60px;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .large-touch {
+        min-height: 70px;
+        font-size: 1.2rem;
+    }
+}
+
+/* High contrast styling for better visibility */
+.high-contrast {
+    border-width: 2px;
+    font-weight: 600;
+}
+
+/* POS specific layouts */
+.pos-main {
+    padding-top: 64px; /* Account for fixed navbar */
+}
+
+.pos-grid {
+    display: grid;
+    gap: 1rem;
+    padding: 1rem;
+    min-height: calc(100vh - 64px);
+}
+
+/* Responsive grid layouts */
+@media (max-width: 768px) {
+    .pos-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        padding: 0.75rem;
+    }
+    
+    .touch-btn {
+        min-height: 50px;
+        font-size: 1rem;
+    }
+    
+    .large-touch {
+        min-height: 60px;
+        font-size: 1.1rem;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .pos-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (min-width: 1025px) {
+    .pos-grid {
+        grid-template-columns: 2fr 1fr;
+    }
+}
+
+/* Transaction panel styles */
+.transaction-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.transaction-items {
+    flex: 1;
+    min-height: 300px;
+}
+
+/* Actions panel styles */
+.actions-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Persian number display */
+.persian-display {
+    font-family: 'Vazirmatn', 'Tahoma', sans-serif;
+    font-variant-numeric: tabular-nums;
+    direction: ltr;
+    text-align: right;
+}
+
+.persian-numbers {
+    font-family: 'Vazirmatn', 'Tahoma', sans-serif;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Card styles with glassmorphism effect */
+.pos-card {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+/* Animation classes */
+.animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-bounce-subtle {
+    animation: bounce-subtle 2s infinite;
+}
+
+@keyframes bounce-subtle {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-2px);
+    }
+}
+
+/* Loading states */
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Modal overlay improvements */
+.modal-overlay {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+/* Touch feedback for buttons */
+.touch-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.3s, height 0.3s;
+}
+
+.touch-btn:active::before {
+    width: 100%;
+    height: 100%;
+}
+
+/* Scrollbar styling for webkit browsers */
+.pos-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.pos-scrollbar::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+}
+
+.pos-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 3px;
+}
+
+.pos-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+/* Dark mode scrollbar */
+.dark .pos-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.dark .pos-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.dark .pos-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* Input field improvements for touch */
+input[type="number"], 
+input[type="text"], 
+input[type="tel"] {
+    font-size: 16px; /* Prevents zoom on iOS */
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Focus styles for accessibility */
+.touch-btn:focus,
+input:focus,
+button:focus {
+    outline: 2px solid #00D4FF;
+    outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+    .pos-navbar,
+    .actions-panel,
+    .touch-btn {
+        display: none !important;
+    }
+    
+    .transaction-panel {
+        width: 100% !important;
+    }
+}
+
+/* Landscape orientation optimizations */
+@media screen and (orientation: landscape) and (max-height: 600px) {
+    .pos-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        padding: 0.5rem;
+    }
+    
+    .large-touch {
+        min-height: 50px;
+        font-size: 1rem;
+    }
+    
+    .pos-navbar {
+        height: 48px;
+    }
+    
+    .pos-main {
+        padding-top: 48px;
+    }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+    .touch-btn,
+    .pos-card,
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .touch-btn {
+        border-width: 3px;
+    }
+    
+    .high-contrast {
+        border-width: 4px;
+    }
+}
+
+/* Custom button variants */
+.btn-primary-touch {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    border: 2px solid #2563eb;
+}
+
+.btn-primary-touch:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+    border-color: #1d4ed8;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-success-touch {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: 2px solid #047857;
+}
+
+.btn-success-touch:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    border-color: #065f46;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-warning-touch {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    border: 2px solid #b45309;
+}
+
+.btn-warning-touch:hover {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    border-color: #92400e;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.btn-danger-touch {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border: 2px solid #b91c1c;
+}
+
+.btn-danger-touch:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    border-color: #991b1b;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* Dark mode button variants */
+.dark .btn-primary-touch {
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.3) 0%, rgba(0, 212, 255, 0.5) 100%);
+    border-color: rgba(0, 212, 255, 0.5);
+    color: #00D4FF;
+}
+
+.dark .btn-success-touch {
+    background: linear-gradient(135deg, rgba(0, 255, 136, 0.3) 0%, rgba(0, 255, 136, 0.5) 100%);
+    border-color: rgba(0, 255, 136, 0.5);
+    color: #00FF88;
+}
+
+.dark .btn-warning-touch {
+    background: linear-gradient(135deg, rgba(255, 184, 0, 0.3) 0%, rgba(255, 184, 0, 0.5) 100%);
+    border-color: rgba(255, 184, 0, 0.5);
+    color: #FFB800;
+}
+
+.dark .btn-danger-touch {
+    background: linear-gradient(135deg, rgba(255, 71, 87, 0.3) 0%, rgba(255, 71, 87, 0.5) 100%);
+    border-color: rgba(255, 71, 87, 0.5);
+    color: #FF4757;
+}
+
+/* Utility classes for POS interface */
+.pos-shadow {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.pos-shadow-lg {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.pos-border-radius {
+    border-radius: 0.75rem;
+}
+
+.pos-border-radius-lg {
+    border-radius: 1rem;
+}
+
+/* Status indicators */
+.status-online {
+    background-color: #10b981;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+}
+
+.status-offline {
+    background-color: #ef4444;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+}
+
+.status-syncing {
+    background-color: #f59e0b;
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);
+    animation: pulse 2s infinite;
+}
+
+/* Responsive text sizing */
+@media (max-width: 480px) {
+    .text-responsive-sm {
+        font-size: 0.875rem;
+    }
+    
+    .text-responsive-base {
+        font-size: 1rem;
+    }
+    
+    .text-responsive-lg {
+        font-size: 1.125rem;
+    }
+}
+
+@media (min-width: 481px) {
+    .text-responsive-sm {
+        font-size: 1rem;
+    }
+    
+    .text-responsive-base {
+        font-size: 1.125rem;
+    }
+    
+    .text-responsive-lg {
+        font-size: 1.25rem;
+    }
+}
