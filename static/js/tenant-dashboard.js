@@ -58,6 +58,44 @@ function getCurrentPersianTime() {
     return toPersianNumbers(timeStr);
 }
 
+// Persian calendar utilities
+function getCurrentPersianDate() {
+    const now = new Date();
+    
+    // Simple Persian date conversion (approximation)
+    // In production, use a proper Persian calendar library
+    const gregorianYear = now.getFullYear();
+    const gregorianMonth = now.getMonth() + 1;
+    const gregorianDay = now.getDate();
+    
+    // Approximate conversion to Persian calendar
+    let persianYear = gregorianYear - 621;
+    let persianMonth = gregorianMonth;
+    let persianDay = gregorianDay;
+    
+    // Adjust for Persian calendar differences
+    if (gregorianMonth <= 3) {
+        persianYear--;
+        persianMonth += 9;
+    } else {
+        persianMonth -= 3;
+    }
+    
+    // Format with Persian numbers
+    const formattedYear = toPersianNumbers(persianYear.toString());
+    const formattedMonth = toPersianNumbers(persianMonth.toString().padStart(2, '0'));
+    const formattedDay = toPersianNumbers(persianDay.toString().padStart(2, '0'));
+    
+    return `${formattedYear}/${formattedMonth}/${formattedDay}`;
+}
+
+function updatePersianDate() {
+    const dateElement = document.getElementById('persian-date-display');
+    if (dateElement) {
+        dateElement.textContent = getCurrentPersianDate();
+    }
+}
+
 function updatePersianTime() {
     const timeElement = document.getElementById('current-persian-time');
     if (timeElement) {
@@ -140,8 +178,9 @@ function tenantDashboard() {
         init() {
             console.log('Initializing Tenant Dashboard...');
             
-            // Initialize Persian time updates
+            // Initialize Persian time and date updates
             this.startTimeUpdates();
+            this.startDateUpdates();
             
             // Initialize auto-refresh
             if (this.autoRefresh) {
@@ -152,7 +191,11 @@ function tenantDashboard() {
             this.formatPersianNumbers();
             
             // Initialize cybersecurity animations if in dark mode
-            if (document.body.classList.contains('dark')) {
+            const isDarkMode = document.documentElement.classList.contains('dark') || 
+                              document.body.classList.contains('dark') ||
+                              localStorage.getItem('theme') === 'dark';
+            
+            if (isDarkMode) {
                 this.initCyberAnimations();
             }
             
@@ -160,13 +203,24 @@ function tenantDashboard() {
             document.addEventListener('themeChanged', (event) => {
                 if (event.detail.theme === 'dark') {
                     this.initCyberAnimations();
+                } else {
+                    this.removeCyberAnimations();
                 }
             });
+            
+            // Initialize theme detection
+            this.detectThemeChanges();
         },
         
         startTimeUpdates() {
             updatePersianTime();
             setInterval(updatePersianTime, 1000);
+        },
+        
+        startDateUpdates() {
+            updatePersianDate();
+            // Update date every minute
+            setInterval(updatePersianDate, 60000);
         },
         
         startAutoRefresh() {
@@ -235,12 +289,49 @@ function tenantDashboard() {
         },
         
         initCyberAnimations() {
-            // Initialize Framer Motion animations for cybersecurity theme
-            if (typeof Motion !== 'undefined') {
-                this.initCardAnimations();
-                this.initGlowEffects();
-                this.initNeonBorders();
-            }
+            // Initialize cybersecurity theme animations
+            console.log('Initializing cybersecurity animations...');
+            
+            this.initCardAnimations();
+            this.initGlowEffects();
+            this.initNeonBorders();
+            this.initGradientEffects();
+        },
+        
+        removeCyberAnimations() {
+            // Remove cybersecurity animations when switching to light mode
+            const animatedElements = document.querySelectorAll('[style*="animation"]');
+            animatedElements.forEach(el => {
+                el.style.animation = '';
+            });
+        },
+        
+        detectThemeChanges() {
+            // Watch for theme changes using MutationObserver
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                        const isDark = document.documentElement.classList.contains('dark') ||
+                                      document.body.classList.contains('dark');
+                        
+                        if (isDark) {
+                            setTimeout(() => this.initCyberAnimations(), 100);
+                        } else {
+                            this.removeCyberAnimations();
+                        }
+                    }
+                });
+            });
+            
+            observer.observe(document.documentElement, {
+                attributes: true,
+                attributeFilter: ['class']
+            });
+            
+            observer.observe(document.body, {
+                attributes: true,
+                attributeFilter: ['class']
+            });
         },
         
         initCardAnimations() {
@@ -276,12 +367,38 @@ function tenantDashboard() {
             const neonElements = document.querySelectorAll('.cyber-metric-card, .cyber-gold-price-card');
             
             neonElements.forEach(element => {
-                // Add animated neon border
-                const borderElement = element.querySelector('::before');
-                if (borderElement) {
-                    borderElement.style.animation = 'neon-pulse 2s ease-in-out infinite alternate';
-                }
+                // Add neon border class for CSS animation
+                element.classList.add('neon-border-gradient');
             });
+        },
+        
+        initGradientEffects() {
+            // Initialize inventory cards with gradient effects
+            const inventoryCards = document.querySelectorAll('.cyber-metric-card');
+            
+            inventoryCards.forEach((card, index) => {
+                // Add staggered hover effects
+                card.addEventListener('mouseenter', () => {
+                    card.style.transform = 'translateY(-4px) scale(1.02)';
+                    card.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+                });
+                
+                card.addEventListener('mouseleave', () => {
+                    card.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+            
+            // Initialize gold price widget with special effects
+            const goldPriceCard = document.querySelector('.cyber-gold-price-card');
+            if (goldPriceCard) {
+                goldPriceCard.addEventListener('mouseenter', () => {
+                    goldPriceCard.style.boxShadow = '0 20px 60px rgba(255, 184, 0, 0.3), 0 0 40px rgba(255, 184, 0, 0.2)';
+                });
+                
+                goldPriceCard.addEventListener('mouseleave', () => {
+                    goldPriceCard.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(255, 184, 0, 0.1)';
+                });
+            }
         },
         
         showNotification(message, type = 'info', duration = 5000) {

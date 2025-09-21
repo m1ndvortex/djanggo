@@ -82,7 +82,8 @@ class TenantDashboardView(LoginRequiredMixin, TenantContextMixin, TemplateView):
             'performance_trends': dashboard_data.get('performance_trends', {}),
             
             # Theme and display settings
-            'theme_mode': self.request.user.theme_preference if self.request.user.is_authenticated else 'light',
+            'current_theme': self.request.user.theme_preference if self.request.user.is_authenticated else 'light',
+            'is_dark_mode': self.request.user.theme_preference == 'dark' if self.request.user.is_authenticated else False,
             'show_cybersecurity_theme': self.request.user.theme_preference == 'dark' if self.request.user.is_authenticated else False,
             
             # Dashboard refresh settings

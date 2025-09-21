@@ -576,6 +576,11 @@
 
 
 
+
+
+
+
+
     - Create tenant dashboard interface with Persian layout and RTL design for light mode
     - Build cybersecurity-themed tenant dashboard with glassmorphism effects and neon accents for dark mode
     - Build dashboard widgets for sales, inventory, and real-time gold price display with theme-aware styling
@@ -586,7 +591,24 @@
     - Write tests for dashboard UI functionality, Persian formatting, and theme switching
     - _Requirements: 11.1, 11.2, 1.5_
 
-  - [ ] 11.3 Implement comprehensive reporting engine backend (Backend)
+  - [x] 11.3 Implement comprehensive reporting engine backend (Backend)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     - Create ComprehensiveReportingEngine with Persian financial reports
     - Build Trial Balance, Profit & Loss, and Balance Sheet generation logic
     - Implement inventory valuation and customer aging reports backend
@@ -594,7 +616,17 @@
     - Write tests for report generation and Persian formatting
     - _Requirements: 11.3, 11.4, 11.5, 11.6_
 
-  - [ ] 11.4 Build reporting engine UI (Frontend)
+  - [x] 11.4 Build reporting engine UI (Frontend)
+
+
+
+
+
+
+
+
+
+
     - Build reporting interface with report selection, date range picker, and export options
     - Create report viewing interface with Persian templates and formatting
     - Build report export functionality in multiple formats (PDF, Excel, CSV) with Persian support

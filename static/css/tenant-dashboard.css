@@ -416,6 +416,92 @@
     box-shadow: 0 0 20px rgba(255, 107, 53, 0.3);
 }
 
+/* Additional Cybersecurity Theme Styles */
+.dark .cyber-neon-primary {
+    color: #00D4FF;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+.dark .cyber-neon-secondary {
+    color: #00FF88;
+    text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+}
+
+.dark .cyber-neon-tertiary {
+    color: #FF6B35;
+    text-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+}
+
+.dark .cyber-neon-warning {
+    color: #FFB800;
+    text-shadow: 0 0 10px rgba(255, 184, 0, 0.5);
+}
+
+.dark .cyber-neon-danger {
+    color: #FF4757;
+    text-shadow: 0 0 10px rgba(255, 71, 87, 0.5);
+}
+
+.dark .cyber-text-muted {
+    color: #6B7280;
+}
+
+/* Enhanced Glassmorphism Effects */
+.dark .cyber-glass-base {
+    backdrop-filter: blur(20px) saturate(180%);
+    background: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Neon Border Gradient Animation */
+.dark .neon-border-gradient {
+    border-image: linear-gradient(90deg, #00D4FF, #00FF88, #FF6B35) 1;
+    animation: neon-pulse 2s ease-in-out infinite alternate;
+}
+
+/* Enhanced Gold Price Card Styling */
+.dark .cyber-gold-price-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(255, 184, 0, 0.6), transparent);
+    animation: neon-pulse 3s ease-in-out infinite alternate;
+}
+
+/* Inventory Cards with Gradient Effects */
+.dark .cyber-metric-card::after {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    right: -1px;
+    bottom: -1px;
+    background: linear-gradient(45deg, rgba(0, 212, 255, 0.1), rgba(0, 255, 136, 0.1), rgba(255, 107, 53, 0.1));
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.dark .cyber-metric-card:hover::after {
+    opacity: 1;
+}
+
+/* Persian Date Display Enhancement */
+#persian-date-display {
+    font-family: 'Vazirmatn', 'Tahoma', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.dark #persian-date-display {
+    text-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+}
+
 /* Animations */
 @keyframes neon-pulse {
     from {
