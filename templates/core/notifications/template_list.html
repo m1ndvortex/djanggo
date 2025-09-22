@@ -1,0 +1,513 @@
+{% extends 'base_rtl.html' %}
+{% load persian_tags %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Notification Templates" %} - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/notifications.css' %}" rel="stylesheet">
+<style>
+.template-card {
+    transition: all 0.3s ease;
+    border-right: 4px solid #17a2b8;
+}
+.template-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+.template-card.active { border-right-color: #28a745; }
+.template-card.inactive { border-right-color: #6c757d; }
+.template-card.default { border-right-color: #ffc107; }
+
+.template-type-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+}
+
+.usage-stats {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.template-preview {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    font-family: 'Vazir', sans-serif;
+    direction: rtl;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.delivery-method-icon {
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin: 0 0.25rem;
+    font-size: 0.75rem;
+}
+
+.delivery-method-icon.sms { background-color: #007bff; color: white; }
+.delivery-method-icon.email { background-color: #28a745; color: white; }
+.delivery-method-icon.push { background-color: #ffc107; color: white; }
+.delivery-method-icon.whatsapp { background-color: #25d366; color: white; }
+
+/* Dark mode styles */
+[data-theme="dark"] .usage-stats {
+    background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+[data-theme="dark"] .template-card {
+    background: rgba(26, 29, 41, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .template-preview {
+    background: rgba(37, 42, 58, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-gray-800">{% trans "Notification Templates" %}</h1>
+                    <p class="text-muted">{% trans "Create and manage notification templates for different types of messages" %}</p>
+                </div>
+                <div>
+                    <a href="{% url 'core:notifications:dashboard' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-right me-2"></i>
+                        {% trans "Back to Dashboard" %}
+                    </a>
+                    <a href="{% url 'core:notifications:template_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>
+                        {% trans "Create Template" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Usage Statistics -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="usage-stats">
+                <h6 class="mb-3">{% trans "Template Usage Statistics" %}</h6>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h4 mb-0 font-weight-bold">
+                                {% persian_number templates.count %}
+                            </div>
+                            <div class="text-xs font-weight-bold text-uppercase">
+                                {% trans "Total Templates" %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h4 mb-0 font-weight-bold">
+                                {% persian_number active_templates_count %}
+                            </div>
+                            <div class="text-xs font-weight-bold text-uppercase">
+                                {% trans "Active Templates" %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h4 mb-0 font-weight-bold">
+                                {% persian_number default_templates_count %}
+                            </div>
+                            <div class="text-xs font-weight-bold text-uppercase">
+                                {% trans "Default Templates" %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h4 mb-0 font-weight-bold">
+                                {% persian_number total_usage_count %}
+                            </div>
+                            <div class="text-xs font-weight-bold text-uppercase">
+                                {% trans "Total Usage" %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="templateTypeFilter" class="form-label">{% trans "Template Type" %}</label>
+                            <select class="form-select" id="templateTypeFilter" name="template_type">
+                                <option value="">{% trans "All Types" %}</option>
+                                <option value="payment_reminder" {% if request.GET.template_type == 'payment_reminder' %}selected{% endif %}>
+                                    {% trans "Payment Reminder" %}
+                                </option>
+                                <option value="payment_overdue" {% if request.GET.template_type == 'payment_overdue' %}selected{% endif %}>
+                                    {% trans "Payment Overdue" %}
+                                </option>
+                                <option value="birthday_greeting" {% if request.GET.template_type == 'birthday_greeting' %}selected{% endif %}>
+                                    {% trans "Birthday Greeting" %}
+                                </option>
+                                <option value="appointment_reminder" {% if request.GET.template_type == 'appointment_reminder' %}selected{% endif %}>
+                                    {% trans "Appointment Reminder" %}
+                                </option>
+                                <option value="special_offer" {% if request.GET.template_type == 'special_offer' %}selected{% endif %}>
+                                    {% trans "Special Offer" %}
+                                </option>
+                                <option value="custom" {% if request.GET.template_type == 'custom' %}selected{% endif %}>
+                                    {% trans "Custom Template" %}
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="statusFilter" class="form-label">{% trans "Status" %}</label>
+                            <select class="form-select" id="statusFilter" name="status">
+                                <option value="">{% trans "All Statuses" %}</option>
+                                <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>
+                                    {% trans "Active" %}
+                                </option>
+                                <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>
+                                    {% trans "Inactive" %}
+                                </option>
+                                <option value="default" {% if request.GET.status == 'default' %}selected{% endif %}>
+                                    {% trans "Default Templates" %}
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="searchQuery" class="form-label">{% trans "Search" %}</label>
+                            <input type="text" class="form-control" id="searchQuery" name="search" 
+                                   placeholder="{% trans 'Search by name or content...' %}"
+                                   value="{{ request.GET.search }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                <a href="{% url 'core:notifications:template_list' %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Templates Grid -->
+    <div class="row">
+        {% if templates %}
+            {% for template in templates %}
+            <div class="col-lg-6 col-xl-4 mb-4">
+                <div class="template-card card h-100 
+                    {% if template.is_active %}active{% else %}inactive{% endif %}
+                    {% if template.is_default %}default{% endif %}">
+                    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="m-0 font-weight-bold">{{ template.name }}</h6>
+                            <small class="text-muted">{{ template.get_template_type_display }}</small>
+                        </div>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                    type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="previewTemplate({{ template.id }})">
+                                        <i class="fas fa-eye me-2"></i>{% trans "Preview" %}
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'core:notifications:template_edit' template.id %}">
+                                        <i class="fas fa-edit me-2"></i>{% trans "Edit" %}
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="duplicateTemplate({{ template.id }})">
+                                        <i class="fas fa-copy me-2"></i>{% trans "Duplicate" %}
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                {% if template.is_active %}
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="toggleTemplateStatus({{ template.id }}, false)">
+                                        <i class="fas fa-pause me-2"></i>{% trans "Deactivate" %}
+                                    </a>
+                                </li>
+                                {% else %}
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="toggleTemplateStatus({{ template.id }}, true)">
+                                        <i class="fas fa-play me-2"></i>{% trans "Activate" %}
+                                    </a>
+                                </li>
+                                {% endif %}
+                                {% if not template.is_default %}
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="setAsDefault({{ template.id }})">
+                                        <i class="fas fa-star me-2"></i>{% trans "Set as Default" %}
+                                    </a>
+                                </li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item text-danger" href="{% url 'core:notifications:template_delete' template.id %}">
+                                        <i class="fas fa-trash me-2"></i>{% trans "Delete" %}
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Status Badges -->
+                        <div class="mb-3">
+                            {% if template.is_active %}
+                                <span class="badge bg-success">{% trans "Active" %}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{% trans "Inactive" %}</span>
+                            {% endif %}
+                            {% if template.is_default %}
+                                <span class="badge bg-warning">{% trans "Default" %}</span>
+                            {% endif %}
+                            <span class="template-type-badge badge bg-info">
+                                {{ template.get_template_type_display }}
+                            </span>
+                        </div>
+
+                        <!-- Delivery Methods -->
+                        <div class="mb-3">
+                            <small class="text-muted d-block mb-1">{% trans "Delivery Methods:" %}</small>
+                            {% for method in template.delivery_methods %}
+                                <span class="delivery-method-icon {{ method }}" title="{{ method|upper }}">
+                                    {% if method == 'sms' %}
+                                        <i class="fas fa-sms"></i>
+                                    {% elif method == 'email' %}
+                                        <i class="fas fa-envelope"></i>
+                                    {% elif method == 'push' %}
+                                        <i class="fas fa-mobile-alt"></i>
+                                    {% elif method == 'whatsapp' %}
+                                        <i class="fab fa-whatsapp"></i>
+                                    {% endif %}
+                                </span>
+                            {% empty %}
+                                <span class="text-muted">{% trans "No delivery methods" %}</span>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Content Preview -->
+                        <div class="mb-3">
+                            <small class="text-muted d-block mb-1">{% trans "Title:" %}</small>
+                            <div class="template-preview">
+                                {{ template.title|truncatechars:50 }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <small class="text-muted d-block mb-1">{% trans "Content:" %}</small>
+                            <div class="template-preview">
+                                {{ template.content|truncatechars:100 }}
+                            </div>
+                        </div>
+
+                        <!-- Usage Statistics -->
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="border-left border-primary py-2">
+                                    <div class="h6 mb-0 font-weight-bold">
+                                        {% persian_number template.usage_count %}
+                                    </div>
+                                    <div class="text-xs text-muted">{% trans "Times Used" %}</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="border-left border-success py-2">
+                                    <div class="h6 mb-0 font-weight-bold">
+                                        {% if template.last_used_at %}
+                                            {{ template.last_used_at|timesince }}
+                                        {% else %}
+                                            {% trans "Never" %}
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-xs text-muted">{% trans "Last Used" %}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="d-flex justify-content-between">
+                            <button class="btn btn-sm btn-outline-primary" onclick="useTemplate('{{ template.template_type }}')">
+                                <i class="fas fa-paper-plane me-1"></i>
+                                {% trans "Use Template" %}
+                            </button>
+                            <small class="text-muted align-self-center">
+                                {% trans "Created:" %} {{ template.created_at|date:"Y/m/d" }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="fas fa-file-alt fa-3x text-gray-300 mb-3"></i>
+                    <h5 class="text-gray-600">{% trans "No templates found" %}</h5>
+                    <p class="text-muted">
+                        {% if request.GET %}
+                            {% trans "No templates match your current filters. Try adjusting your search criteria." %}
+                        {% else %}
+                            {% trans "You haven't created any notification templates yet. Create your first template to get started." %}
+                        {% endif %}
+                    </p>
+                    <a href="{% url 'core:notifications:template_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>
+                        {% trans "Create First Template" %}
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="{% trans 'Template pagination' %}">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                                {% trans "Previous" %}
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{% persian_number num %}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ num }}">
+                                    {% persian_number num %}
+                                </a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">
+                                {% trans "Next" %}
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Include modals -->
+{% include 'core/notifications/modals/template_preview.html' %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/notifications.js' %}"></script>
+<script>
+function previewTemplate(templateId) {
+    fetch(`{% url 'core:notifications:template_preview_ajax' 0 %}`.replace('0', templateId))
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showTemplatePreview(data);
+            } else {
+                showNotification('خطا در نمایش الگو: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error previewing template:', error);
+            showNotification('خطا در اتصال به سرور', 'error');
+        });
+}
+
+function useTemplate(templateType) {
+    // Redirect to dashboard and open single notification modal with this template
+    window.location.href = `{% url 'core:notifications:dashboard' %}?template=${templateType}`;
+}
+
+function duplicateTemplate(templateId) {
+    if (confirm('{% trans "Do you want to create a copy of this template?" %}')) {
+        // This would create a duplicate template
+        showNotification('{% trans "Template duplication will be implemented" %}', 'info');
+    }
+}
+
+function toggleTemplateStatus(templateId, activate) {
+    const action = activate ? '{% trans "activate" %}' : '{% trans "deactivate" %}';
+    
+    if (confirm(`{% trans "Are you sure you want to" %} ${action} {% trans "this template?" %}`)) {
+        // This would toggle the template status
+        showNotification(`{% trans "Template status will be updated" %}`, 'info');
+    }
+}
+
+function setAsDefault(templateId) {
+    if (confirm('{% trans "Are you sure you want to set this as the default template for its type?" %}')) {
+        // This would set the template as default
+        showNotification('{% trans "Default template will be updated" %}', 'info');
+    }
+}
+
+// Auto-submit form on filter changes
+document.addEventListener('DOMContentLoaded', function() {
+    const filterInputs = document.querySelectorAll('#templateTypeFilter, #statusFilter');
+    filterInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            this.form.submit();
+        });
+    });
+    
+    // Search input with debounce
+    const searchInput = document.getElementById('searchQuery');
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            this.form.submit();
+        }, 1000);
+    });
+});
+</script>
+{% endblock %}

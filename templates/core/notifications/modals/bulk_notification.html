@@ -1,0 +1,548 @@
+{% load i18n %}
+
+<!-- Bulk Notification Modal -->
+<div class="modal fade" id="bulkNotificationModal" tabindex="-1" aria-labelledby="bulkNotificationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkNotificationModalLabel">{% trans "Send Bulk Notifications" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="bulkNotificationForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="bulkTemplateType" class="form-label">{% trans "Template Type" %}</label>
+                                <select class="form-select" id="bulkTemplateType" name="template_type" required>
+                                    <option value="">{% trans "Select template type" %}</option>
+                                    <option value="payment_reminder">{% trans "Payment Reminder" %}</option>
+                                    <option value="payment_overdue">{% trans "Payment Overdue" %}</option>
+                                    <option value="birthday_greeting">{% trans "Birthday Greeting" %}</option>
+                                    <option value="special_offer">{% trans "Special Offer" %}</option>
+                                    <option value="welcome_message">{% trans "Welcome Message" %}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="bulkTargetType" class="form-label">{% trans "Target Audience" %}</label>
+                                <select class="form-select" id="bulkTargetType" name="target_type" required>
+                                    <option value="">{% trans "Select target audience" %}</option>
+                                    <option value="all_customers">{% trans "All Active Customers" %}</option>
+                                    <option value="vip_customers">{% trans "VIP Customers Only" %}</option>
+                                    <option value="recent_customers">{% trans "Recent Customers (Last 30 days)" %}</option>
+                                    <option value="birthday_customers">{% trans "Customers with Birthdays Today" %}</option>
+                                    <option value="overdue_customers">{% trans "Customers with Overdue Payments" %}</option>
+                                    <option value="selected_customers">{% trans "Selected Customers" %}</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Customer Selection (for selected_customers option) -->
+                    <div id="customerSelectionSection" style="display: none;">
+                        <div class="mb-3">
+                            <label class="form-label">{% trans "Select Customers" %}</label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <input type="text" class="form-control mb-2" id="customerSearch" 
+                                           placeholder="{% trans 'Search customers...' %}">
+                                    <div class="border rounded p-2" style="height: 200px; overflow-y: auto;">
+                                        <div id="availableCustomers">
+                                            <!-- Available customers will be loaded here -->
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{% trans "Selected Customers" %}</label>
+                                    <div class="border rounded p-2" style="height: 226px; overflow-y: auto;">
+                                        <div id="selectedCustomers">
+                                            <!-- Selected customers will appear here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Delivery Methods -->
+                    <div class="mb-3">
+                        <label class="form-label">{% trans "Delivery Methods" %}</label>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="bulkSms" name="delivery_methods" value="sms" checked>
+                                    <label class="form-check-label" for="bulkSms">
+                                        <i class="fas fa-sms me-2"></i>{% trans "SMS" %}
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="bulkEmail" name="delivery_methods" value="email">
+                                    <label class="form-check-label" for="bulkEmail">
+                                        <i class="fas fa-envelope me-2"></i>{% trans "Email" %}
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="bulkPush" name="delivery_methods" value="push">
+                                    <label class="form-check-label" for="bulkPush">
+                                        <i class="fas fa-mobile-alt me-2"></i>{% trans "Push" %}
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="bulkWhatsapp" name="delivery_methods" value="whatsapp">
+                                    <label class="form-check-label" for="bulkWhatsapp">
+                                        <i class="fab fa-whatsapp me-2"></i>{% trans "WhatsApp" %}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Message Context Variables -->
+                    <div id="bulkContextVariables" class="mb-3" style="display: none;">
+                        <label class="form-label">{% trans "Message Variables" %}</label>
+                        <div class="row" id="bulkContextFields">
+                            <!-- Dynamic context fields will be added here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Scheduling Options -->
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="bulkSendImmediately" name="send_immediately" checked>
+                            <label class="form-check-label" for="bulkSendImmediately">
+                                {% trans "Send immediately" %}
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div id="bulkScheduleFields" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="bulkScheduledDateTime" class="form-label">{% trans "Schedule for" %}</label>
+                                    <input type="datetime-local" class="form-control" id="bulkScheduledDateTime" name="scheduled_datetime">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="bulkTimeZone" class="form-label">{% trans "Time Zone" %}</label>
+                                    <select class="form-select" id="bulkTimeZone" name="timezone">
+                                        <option value="Asia/Tehran">{% trans "Tehran Time (IRST)" %}</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Preview and Summary -->
+                    <div class="mb-3">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">{% trans "Summary" %}</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <strong>{% trans "Template:" %}</strong>
+                                        <span id="summaryTemplate">{% trans "Not selected" %}</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>{% trans "Recipients:" %}</strong>
+                                        <span id="summaryRecipients">0</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>{% trans "Delivery:" %}</strong>
+                                        <span id="summaryDelivery">{% trans "Not selected" %}</span>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <strong>{% trans "Estimated Cost:" %}</strong>
+                                    <span id="estimatedCost">{% trans "Calculating..." %}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Confirmation -->
+                    <div class="alert alert-warning">
+                        <h6>{% trans "Important Notice" %}</h6>
+                        <p class="mb-0">
+                            {% trans "Bulk notifications will be sent to all selected recipients. Please review your selection carefully before proceeding." %}
+                        </p>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                <button type="button" class="btn btn-warning" onclick="previewBulkNotification()">
+                    <i class="fas fa-eye me-2"></i>
+                    {% trans "Preview" %}
+                </button>
+                <button type="button" class="btn btn-primary" onclick="sendBulkNotifications()">
+                    <i class="fas fa-paper-plane me-2"></i>
+                    <span id="bulkSendButtonText">{% trans "Send Notifications" %}</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Template type change handler
+    document.getElementById('bulkTemplateType').addEventListener('change', function() {
+        updateBulkContextFields(this.value);
+        updateBulkSummary();
+    });
+    
+    // Target type change handler
+    document.getElementById('bulkTargetType').addEventListener('change', function() {
+        handleTargetTypeChange(this.value);
+        updateBulkSummary();
+    });
+    
+    // Send immediately checkbox handler
+    document.getElementById('bulkSendImmediately').addEventListener('change', function() {
+        const scheduleFields = document.getElementById('bulkScheduleFields');
+        const sendButtonText = document.getElementById('bulkSendButtonText');
+        
+        if (this.checked) {
+            scheduleFields.style.display = 'none';
+            sendButtonText.textContent = '{% trans "Send Notifications" %}';
+        } else {
+            scheduleFields.style.display = 'block';
+            sendButtonText.textContent = '{% trans "Schedule Notifications" %}';
+        }
+    });
+    
+    // Delivery method change handlers
+    document.querySelectorAll('input[name="delivery_methods"]').forEach(checkbox => {
+        checkbox.addEventListener('change', updateBulkSummary);
+    });
+    
+    // Customer search
+    document.getElementById('customerSearch').addEventListener('input', function() {
+        searchCustomers(this.value);
+    });
+});
+
+function updateBulkContextFields(templateType) {
+    const contextVariables = document.getElementById('bulkContextVariables');
+    const contextFields = document.getElementById('bulkContextFields');
+    
+    // Clear existing fields
+    contextFields.innerHTML = '';
+    
+    const fieldConfigs = {
+        'special_offer': [
+            { name: 'offer_title', label: '{% trans "Offer Title" %}', placeholder: '{% trans "Special Gold Discount" %}' },
+            { name: 'discount_percentage', label: '{% trans "Discount %" %}', placeholder: '20' },
+            { name: 'expiry_date', label: '{% trans "Expiry Date" %}', placeholder: '1403/08/01' },
+            { name: 'offer_description', label: '{% trans "Offer Description" %}', placeholder: '{% trans "Limited time offer on all gold jewelry" %}' }
+        ],
+        'welcome_message': [
+            { name: 'shop_name', label: '{% trans "Shop Name" %}', placeholder: '{% trans "Zargar Jewelry" %}' },
+            { name: 'welcome_bonus', label: '{% trans "Welcome Bonus" %}', placeholder: '{% trans "10% discount on first purchase" %}' }
+        ]
+    };
+    
+    const fields = fieldConfigs[templateType] || [];
+    
+    if (fields.length > 0) {
+        contextVariables.style.display = 'block';
+        
+        fields.forEach(field => {
+            const colDiv = document.createElement('div');
+            colDiv.className = 'col-md-6 mb-3';
+            
+            colDiv.innerHTML = `
+                <label for="bulk_context_${field.name}" class="form-label">${field.label}</label>
+                <input type="text" class="form-control" id="bulk_context_${field.name}" 
+                       name="bulk_context_${field.name}" placeholder="${field.placeholder}">
+            `;
+            
+            contextFields.appendChild(colDiv);
+        });
+    } else {
+        contextVariables.style.display = 'none';
+    }
+}
+
+function handleTargetTypeChange(targetType) {
+    const customerSelectionSection = document.getElementById('customerSelectionSection');
+    
+    if (targetType === 'selected_customers') {
+        customerSelectionSection.style.display = 'block';
+        loadAvailableCustomers();
+    } else {
+        customerSelectionSection.style.display = 'none';
+    }
+}
+
+function loadAvailableCustomers() {
+    const availableCustomers = document.getElementById('availableCustomers');
+    
+    // In a real implementation, this would fetch from the server
+    // For now, we'll simulate with sample data
+    const customers = [
+        { id: 1, name: 'احمد رضایی', phone: '09123456789', type: 'vip' },
+        { id: 2, name: 'مریم حسینی', phone: '09987654321', type: 'regular' },
+        { id: 3, name: 'علی محمدی', phone: '09111222333', type: 'regular' },
+        { id: 4, name: 'فاطمه احمدی', phone: '09444555666', type: 'vip' },
+        { id: 5, name: 'حسن کریمی', phone: '09777888999', type: 'regular' }
+    ];
+    
+    availableCustomers.innerHTML = '';
+    
+    customers.forEach(customer => {
+        const customerDiv = document.createElement('div');
+        customerDiv.className = 'form-check mb-2';
+        customerDiv.innerHTML = `
+            <input class="form-check-input" type="checkbox" id="customer_${customer.id}" 
+                   value="${customer.id}" onchange="toggleCustomerSelection(${customer.id}, '${customer.name}', '${customer.phone}')">
+            <label class="form-check-label" for="customer_${customer.id}">
+                <div>
+                    <strong>${customer.name}</strong>
+                    ${customer.type === 'vip' ? '<span class="badge bg-warning ms-2">VIP</span>' : ''}
+                </div>
+                <small class="text-muted">${customer.phone}</small>
+            </label>
+        `;
+        
+        availableCustomers.appendChild(customerDiv);
+    });
+}
+
+function searchCustomers(query) {
+    const customerCheckboxes = document.querySelectorAll('#availableCustomers .form-check');
+    
+    customerCheckboxes.forEach(checkbox => {
+        const label = checkbox.querySelector('label').textContent.toLowerCase();
+        if (label.includes(query.toLowerCase())) {
+            checkbox.style.display = 'block';
+        } else {
+            checkbox.style.display = 'none';
+        }
+    });
+}
+
+function toggleCustomerSelection(customerId, customerName, customerPhone) {
+    const checkbox = document.getElementById(`customer_${customerId}`);
+    const selectedCustomers = document.getElementById('selectedCustomers');
+    
+    if (checkbox.checked) {
+        // Add to selected
+        const selectedDiv = document.createElement('div');
+        selectedDiv.id = `selected_${customerId}`;
+        selectedDiv.className = 'mb-2 p-2 bg-light rounded';
+        selectedDiv.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>${customerName}</strong>
+                    <br><small class="text-muted">${customerPhone}</small>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger" 
+                        onclick="removeCustomerSelection(${customerId})">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        
+        selectedCustomers.appendChild(selectedDiv);
+    } else {
+        // Remove from selected
+        const selectedDiv = document.getElementById(`selected_${customerId}`);
+        if (selectedDiv) {
+            selectedDiv.remove();
+        }
+    }
+    
+    updateBulkSummary();
+}
+
+function removeCustomerSelection(customerId) {
+    // Uncheck the checkbox
+    const checkbox = document.getElementById(`customer_${customerId}`);
+    if (checkbox) {
+        checkbox.checked = false;
+    }
+    
+    // Remove from selected
+    const selectedDiv = document.getElementById(`selected_${customerId}`);
+    if (selectedDiv) {
+        selectedDiv.remove();
+    }
+    
+    updateBulkSummary();
+}
+
+function updateBulkSummary() {
+    const templateType = document.getElementById('bulkTemplateType').value;
+    const targetType = document.getElementById('bulkTargetType').value;
+    const deliveryMethods = Array.from(document.querySelectorAll('input[name="delivery_methods"]:checked'))
+                                .map(cb => cb.value);
+    
+    // Update template display
+    const summaryTemplate = document.getElementById('summaryTemplate');
+    if (templateType) {
+        const templateSelect = document.getElementById('bulkTemplateType');
+        summaryTemplate.textContent = templateSelect.options[templateSelect.selectedIndex].text;
+    } else {
+        summaryTemplate.textContent = '{% trans "Not selected" %}';
+    }
+    
+    // Update recipients count
+    const summaryRecipients = document.getElementById('summaryRecipients');
+    let recipientCount = 0;
+    
+    if (targetType === 'selected_customers') {
+        recipientCount = document.querySelectorAll('#selectedCustomers > div').length;
+    } else if (targetType) {
+        // Simulate recipient counts for different target types
+        const counts = {
+            'all_customers': 150,
+            'vip_customers': 25,
+            'recent_customers': 45,
+            'birthday_customers': 3,
+            'overdue_customers': 12
+        };
+        recipientCount = counts[targetType] || 0;
+    }
+    
+    summaryRecipients.textContent = recipientCount;
+    
+    // Update delivery methods
+    const summaryDelivery = document.getElementById('summaryDelivery');
+    if (deliveryMethods.length > 0) {
+        summaryDelivery.textContent = deliveryMethods.join(', ').toUpperCase();
+    } else {
+        summaryDelivery.textContent = '{% trans "Not selected" %}';
+    }
+    
+    // Calculate estimated cost
+    const estimatedCost = document.getElementById('estimatedCost');
+    if (recipientCount > 0 && deliveryMethods.length > 0) {
+        // Simulate cost calculation (SMS: 500 Toman, Email: 100 Toman per message)
+        const costs = { sms: 500, email: 100, push: 0, whatsapp: 300 };
+        let totalCost = 0;
+        
+        deliveryMethods.forEach(method => {
+            totalCost += (costs[method] || 0) * recipientCount;
+        });
+        
+        estimatedCost.textContent = `${totalCost.toLocaleString('fa-IR')} تومان`;
+    } else {
+        estimatedCost.textContent = '{% trans "Calculating..." %}';
+    }
+}
+
+function previewBulkNotification() {
+    // Show preview modal or expand preview section
+    showNotification('{% trans "Preview functionality will be implemented" %}', 'info');
+}
+
+function sendBulkNotifications() {
+    const form = document.getElementById('bulkNotificationForm');
+    const formData = new FormData(form);
+    
+    // Validate form
+    const templateType = formData.get('template_type');
+    const targetType = formData.get('target_type');
+    const deliveryMethods = formData.getAll('delivery_methods');
+    
+    if (!templateType || !targetType || deliveryMethods.length === 0) {
+        showNotification('{% trans "Please fill in all required fields" %}', 'error');
+        return;
+    }
+    
+    // Validate selected customers if needed
+    if (targetType === 'selected_customers') {
+        const selectedCustomers = document.querySelectorAll('#selectedCustomers > div');
+        if (selectedCustomers.length === 0) {
+            showNotification('{% trans "Please select at least one customer" %}', 'error');
+            return;
+        }
+    }
+    
+    // Confirm before sending
+    const recipientCount = document.getElementById('summaryRecipients').textContent;
+    if (!confirm(`{% trans "Are you sure you want to send notifications to" %} ${recipientCount} {% trans "recipients?" %}`)) {
+        return;
+    }
+    
+    // Prepare data
+    const data = {
+        template_type: templateType,
+        target_type: targetType,
+        delivery_methods: deliveryMethods,
+        context: {}
+    };
+    
+    // Add context variables
+    const contextInputs = document.querySelectorAll('#bulkContextFields input');
+    contextInputs.forEach(input => {
+        const fieldName = input.name.replace('bulk_context_', '');
+        if (input.value) {
+            data.context[fieldName] = input.value;
+        }
+    });
+    
+    // Add selected customer IDs if applicable
+    if (targetType === 'selected_customers') {
+        const selectedIds = Array.from(document.querySelectorAll('#selectedCustomers > div'))
+                                .map(div => parseInt(div.id.replace('selected_', '')));
+        data.selected_ids = selectedIds;
+    }
+    
+    // Add scheduling if not immediate
+    if (!formData.get('send_immediately')) {
+        const scheduledDateTime = formData.get('scheduled_datetime');
+        if (scheduledDateTime) {
+            data.scheduled_datetime = new Date(scheduledDateTime).toISOString();
+        }
+    }
+    
+    // Send request
+    const button = document.querySelector('#bulkNotificationModal .btn-primary');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>{% trans "Sending..." %}';
+    button.disabled = true;
+    
+    fetch('{% url "core:notifications:send_bulk_ajax" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(`{% trans "Bulk notifications sent successfully" %}: ${data.stats.created} {% trans "created" %}, ${data.stats.sent} {% trans "sent" %}`, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('bulkNotificationModal')).hide();
+            form.reset();
+            // Refresh the page to show new notifications
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            showNotification(data.error, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error sending bulk notifications:', error);
+        showNotification('{% trans "Error connecting to server" %}', 'error');
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+</script>

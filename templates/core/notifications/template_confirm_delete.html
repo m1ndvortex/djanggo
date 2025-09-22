@@ -1,0 +1,399 @@
+{% extends 'base_rtl.html' %}
+{% load persian_tags %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Delete Template" %} - {{ object.name }} - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/notifications.css' %}" rel="stylesheet">
+<style>
+.delete-warning-card {
+    border-right: 4px solid #dc3545;
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.1) 0%, rgba(220, 53, 69, 0.05) 100%);
+}
+
+.template-info-card {
+    border-right: 4px solid #17a2b8;
+}
+
+.usage-warning {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.template-preview {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    font-family: 'Vazir', sans-serif;
+    direction: rtl;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.delivery-method-icon {
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin: 0 0.25rem;
+    font-size: 0.75rem;
+}
+
+.delivery-method-icon.sms { background-color: #007bff; color: white; }
+.delivery-method-icon.email { background-color: #28a745; color: white; }
+.delivery-method-icon.push { background-color: #ffc107; color: white; }
+.delivery-method-icon.whatsapp { background-color: #25d366; color: white; }
+
+.confirmation-input {
+    border: 2px solid #dc3545;
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.confirmation-input:focus {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+/* Dark mode styles */
+[data-theme="dark"] .delete-warning-card {
+    background: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+[data-theme="dark"] .template-info-card {
+    background: rgba(26, 29, 41, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .usage-warning {
+    background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+[data-theme="dark"] .template-preview {
+    background: rgba(37, 42, 58, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .confirmation-input {
+    background: rgba(37, 42, 58, 0.8);
+    border: 2px solid #dc3545;
+    color: #ffffff;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        {% trans "Delete Template" %}
+                    </h1>
+                    <p class="text-muted">{{ object.name }}</p>
+                </div>
+                <div>
+                    <a href="{% url 'core:notifications:template_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-right me-2"></i>
+                        {% trans "Back to Templates" %}
+                    </a>
+                    <a href="{% url 'core:notifications:template_edit' object.pk %}" class="btn btn-primary">
+                        <i class="fas fa-edit me-2"></i>
+                        {% trans "Edit Instead" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Delete Warning -->
+        <div class="col-lg-8">
+            <div class="card delete-warning-card shadow mb-4">
+                <div class="card-header py-3 bg-danger text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        {% trans "Warning: Permanent Deletion" %}
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <h5 class="alert-heading">{% trans "This action cannot be undone!" %}</h5>
+                        <p class="mb-0">
+                            {% trans "You are about to permanently delete the notification template" %} 
+                            <strong>"{{ object.name }}"</strong>. 
+                            {% trans "This will:" %}
+                        </p>
+                    </div>
+                    
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-times text-danger me-2"></i>
+                            {% trans "Remove the template from the system permanently" %}
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-times text-danger me-2"></i>
+                            {% trans "Make it unavailable for future notifications" %}
+                        </li>
+                        {% if object.is_default %}
+                        <li class="mb-2">
+                            <i class="fas fa-exclamation text-warning me-2"></i>
+                            {% trans "Remove the default template for this type (you'll need to set a new default)" %}
+                        </li>
+                        {% endif %}
+                        <li class="mb-2">
+                            <i class="fas fa-info text-info me-2"></i>
+                            {% trans "Keep existing notifications that used this template (they won't be affected)" %}
+                        </li>
+                    </ul>
+                    
+                    {% if object.usage_count > 0 %}
+                    <div class="usage-warning">
+                        <h6 class="mb-2">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            {% trans "Template Usage Statistics" %}
+                        </h6>
+                        <p class="mb-0">
+                            {% trans "This template has been used" %} 
+                            <strong>{% persian_number object.usage_count %}</strong> 
+                            {% trans "times" %}
+                            {% if object.last_used_at %}
+                                {% trans "and was last used" %} {{ object.last_used_at|timesince }} {% trans "ago" %}.
+                            {% endif %}
+                            {% trans "Consider deactivating instead of deleting if you might need it again." %}
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Confirmation Form -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Confirm Deletion" %}</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="deleteForm">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label for="confirmationInput" class="form-label">
+                                {% trans "Type the template name to confirm deletion:" %}
+                            </label>
+                            <input type="text" 
+                                   class="form-control confirmation-input" 
+                                   id="confirmationInput" 
+                                   placeholder="{{ object.name }}"
+                                   autocomplete="off">
+                            <div class="form-text text-danger">
+                                {% trans "You must type" %} <strong>"{{ object.name }}"</strong> {% trans "exactly to enable deletion" %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="confirmUnderstand">
+                                <label class="form-check-label" for="confirmUnderstand">
+                                    {% trans "I understand that this action cannot be undone" %}
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <a href="{% url 'core:notifications:template_list' %}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-right me-2"></i>
+                                    {% trans "Cancel" %}
+                                </a>
+                                <button type="button" class="btn btn-outline-warning" onclick="deactivateInstead()">
+                                    <i class="fas fa-pause me-2"></i>
+                                    {% trans "Deactivate Instead" %}
+                                </button>
+                            </div>
+                            <button type="submit" class="btn btn-danger" id="deleteButton" disabled>
+                                <i class="fas fa-trash me-2"></i>
+                                {% trans "Delete Template Permanently" %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Template Information -->
+        <div class="col-lg-4">
+            <div class="card template-info-card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Template Information" %}</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless table-sm">
+                        <tr>
+                            <td><strong>{% trans "Name:" %}</strong></td>
+                            <td>{{ object.name }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>{% trans "Type:" %}</strong></td>
+                            <td>{{ object.get_template_type_display }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>{% trans "Status:" %}</strong></td>
+                            <td>
+                                {% if object.is_active %}
+                                    <span class="badge bg-success">{% trans "Active" %}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{% trans "Inactive" %}</span>
+                                {% endif %}
+                                {% if object.is_default %}
+                                    <span class="badge bg-warning">{% trans "Default" %}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>{% trans "Created:" %}</strong></td>
+                            <td>{{ object.created_at|date:"Y/m/d H:i" }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>{% trans "Updated:" %}</strong></td>
+                            <td>{{ object.updated_at|date:"Y/m/d H:i" }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>{% trans "Usage:" %}</strong></td>
+                            <td>{% persian_number object.usage_count %} {% trans "times" %}</td>
+                        </tr>
+                        {% if object.last_used_at %}
+                        <tr>
+                            <td><strong>{% trans "Last Used:" %}</strong></td>
+                            <td>{{ object.last_used_at|date:"Y/m/d H:i" }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+
+            <!-- Delivery Methods -->
+            <div class="card template-info-card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Delivery Methods" %}</h6>
+                </div>
+                <div class="card-body">
+                    {% for method in object.delivery_methods %}
+                        <span class="delivery-method-icon {{ method }}" title="{{ method|upper }}">
+                            {% if method == 'sms' %}
+                                <i class="fas fa-sms"></i>
+                            {% elif method == 'email' %}
+                                <i class="fas fa-envelope"></i>
+                            {% elif method == 'push' %}
+                                <i class="fas fa-mobile-alt"></i>
+                            {% elif method == 'whatsapp' %}
+                                <i class="fab fa-whatsapp"></i>
+                            {% endif %}
+                        </span>
+                        {{ method|upper }}
+                        {% if not forloop.last %}<br>{% endif %}
+                    {% empty %}
+                        <span class="text-muted">{% trans "No delivery methods configured" %}</span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Content Preview -->
+            <div class="card template-info-card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Content Preview" %}</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label"><strong>{% trans "Title:" %}</strong></label>
+                        <div class="template-preview">
+                            {{ object.title }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><strong>{% trans "Content:" %}</strong></label>
+                        <div class="template-preview">
+                            {{ object.content|truncatewords:30 }}
+                        </div>
+                    </div>
+                    {% if object.available_variables %}
+                    <div class="mb-3">
+                        <label class="form-label"><strong>{% trans "Variables:" %}</strong></label>
+                        <div>
+                            {% for var, desc in object.available_variables.items %}
+                                <small class="badge bg-secondary me-1">{{{ var }}}</small>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/notifications.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmationInput = document.getElementById('confirmationInput');
+    const confirmCheckbox = document.getElementById('confirmUnderstand');
+    const deleteButton = document.getElementById('deleteButton');
+    const templateName = '{{ object.name }}';
+    
+    function updateDeleteButton() {
+        const nameMatches = confirmationInput.value === templateName;
+        const checkboxChecked = confirmCheckbox.checked;
+        
+        deleteButton.disabled = !(nameMatches && checkboxChecked);
+        
+        if (nameMatches) {
+            confirmationInput.classList.remove('is-invalid');
+            confirmationInput.classList.add('is-valid');
+        } else if (confirmationInput.value.length > 0) {
+            confirmationInput.classList.remove('is-valid');
+            confirmationInput.classList.add('is-invalid');
+        } else {
+            confirmationInput.classList.remove('is-valid', 'is-invalid');
+        }
+    }
+    
+    confirmationInput.addEventListener('input', updateDeleteButton);
+    confirmCheckbox.addEventListener('change', updateDeleteButton);
+    
+    // Form submission confirmation
+    document.getElementById('deleteForm').addEventListener('submit', function(e) {
+        if (!confirm('{% trans "Are you absolutely sure you want to delete this template? This action cannot be undone!" %}')) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // Show loading state
+        deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>{% trans "Deleting..." %}';
+        deleteButton.disabled = true;
+        
+        return true;
+    });
+});
+
+function deactivateInstead() {
+    if (confirm('{% trans "Do you want to deactivate this template instead of deleting it? You can reactivate it later." %}')) {
+        // This would deactivate the template instead of deleting it
+        showNotification('{% trans "Template deactivation will be implemented" %}', 'info');
+    }
+}
+</script>
+{% endblock %}

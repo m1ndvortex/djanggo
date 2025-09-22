@@ -1,0 +1,608 @@
+{% extends 'base_rtl.html' %}
+{% load persian_tags %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Notification History" %} - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/notifications.css' %}" rel="stylesheet">
+<style>
+.notification-history-card {
+    transition: all 0.3s ease;
+    border-right: 4px solid #17a2b8;
+}
+.notification-history-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+.notification-history-card.pending { border-right-color: #ffc107; }
+.notification-history-card.sent { border-right-color: #28a745; }
+.notification-history-card.failed { border-right-color: #dc3545; }
+.notification-history-card.delivered { border-right-color: #007bff; }
+.notification-history-card.cancelled { border-right-color: #6c757d; }
+
+.filter-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.status-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+}
+
+.delivery-method-icon {
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin-left: 0.5rem;
+}
+
+.delivery-method-icon.sms { background-color: #007bff; color: white; }
+.delivery-method-icon.email { background-color: #28a745; color: white; }
+.delivery-method-icon.push { background-color: #ffc107; color: white; }
+.delivery-method-icon.whatsapp { background-color: #25d366; color: white; }
+
+/* Dark mode styles */
+[data-theme="dark"] .filter-card {
+    background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+[data-theme="dark"] .notification-history-card {
+    background: rgba(26, 29, 41, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-gray-800">{% trans "Notification History" %}</h1>
+                    <p class="text-muted">{% trans "View and manage all sent notifications and their delivery status" %}</p>
+                </div>
+                <div>
+                    <a href="{% url 'core:notifications:dashboard' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-right me-2"></i>
+                        {% trans "Back to Dashboard" %}
+                    </a>
+                    <button class="btn btn-primary" onclick="exportHistory()">
+                        <i class="fas fa-download me-2"></i>
+                        {% trans "Export History" %}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="filter-card">
+                <h6 class="mb-3">{% trans "Filter Notifications" %}</h6>
+                <form method="GET" id="filterForm">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="statusFilter" class="form-label">{% trans "Status" %}</label>
+                                <select class="form-select" id="statusFilter" name="status">
+                                    <option value="">{% trans "All Statuses" %}</option>
+                                    {% for value, label in status_choices %}
+                                    <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="methodFilter" class="form-label">{% trans "Delivery Method" %}</label>
+                                <select class="form-select" id="methodFilter" name="method">
+                                    <option value="">{% trans "All Methods" %}</option>
+                                    {% for value, label in method_choices %}
+                                    <option value="{{ value }}" {% if request.GET.method == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="dateFrom" class="form-label">{% trans "From Date" %}</label>
+                                <input type="date" class="form-control" id="dateFrom" name="date_from" 
+                                       value="{{ request.GET.date_from }}">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="dateTo" class="form-label">{% trans "To Date" %}</label>
+                                <input type="date" class="form-control" id="dateTo" name="date_to" 
+                                       value="{{ request.GET.date_to }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="searchQuery" class="form-label">{% trans "Search" %}</label>
+                                <input type="text" class="form-control" id="searchQuery" name="search" 
+                                       placeholder="{% trans 'Search by recipient name, title, or content...' %}"
+                                       value="{{ request.GET.search }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">&nbsp;</label>
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-light">
+                                        <i class="fas fa-search me-2"></i>
+                                        {% trans "Apply Filters" %}
+                                    </button>
+                                    <a href="{% url 'core:notifications:history' %}" class="btn btn-outline-light">
+                                        <i class="fas fa-times me-2"></i>
+                                        {% trans "Clear" %}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        {% trans "Notification History" %}
+                        <span class="badge bg-secondary ms-2">
+                            {% persian_number page_obj.paginator.count %} {% trans "total" %}
+                        </span>
+                    </h6>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button class="btn btn-outline-primary" onclick="selectAll()">
+                            {% trans "Select All" %}
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="bulkCancel()" disabled id="bulkCancelBtn">
+                            {% trans "Cancel Selected" %}
+                        </button>
+                        <button class="btn btn-outline-warning" onclick="bulkRetry()" disabled id="bulkRetryBtn">
+                            {% trans "Retry Selected" %}
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if notifications %}
+                        <div class="row">
+                            {% for notification in notifications %}
+                            <div class="col-12 mb-3">
+                                <div class="notification-history-card card {{ notification.status }}" 
+                                     data-notification-id="{{ notification.id }}">
+                                    <div class="card-body">
+                                        <div class="row align-items-center">
+                                            <div class="col-md-1">
+                                                <div class="form-check">
+                                                    <input class="form-check-input notification-checkbox" 
+                                                           type="checkbox" 
+                                                           value="{{ notification.id }}"
+                                                           data-status="{{ notification.status }}"
+                                                           onchange="updateBulkActions()">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-1">
+                                                <div class="delivery-method-icon {{ notification.delivery_method }}">
+                                                    {% if notification.delivery_method == 'sms' %}
+                                                        <i class="fas fa-sms"></i>
+                                                    {% elif notification.delivery_method == 'email' %}
+                                                        <i class="fas fa-envelope"></i>
+                                                    {% elif notification.delivery_method == 'push' %}
+                                                        <i class="fas fa-mobile-alt"></i>
+                                                    {% elif notification.delivery_method == 'whatsapp' %}
+                                                        <i class="fab fa-whatsapp"></i>
+                                                    {% else %}
+                                                        <i class="fas fa-bell"></i>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div>
+                                                    <h6 class="mb-1">{{ notification.title }}</h6>
+                                                    <p class="mb-1 text-muted small">
+                                                        {% trans "To:" %} {{ notification.recipient_name }}
+                                                        {% if notification.recipient_phone %}
+                                                            ({{ notification.recipient_phone }})
+                                                        {% endif %}
+                                                    </p>
+                                                    <small class="text-muted">
+                                                        {% if notification.template %}
+                                                            {% trans "Template:" %} {{ notification.template.name }}
+                                                        {% else %}
+                                                            {% trans "Custom message" %}
+                                                        {% endif %}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <small class="text-muted d-block">{% trans "Created:" %}</small>
+                                                <span>{{ notification.created_at|date:"Y/m/d H:i" }}</span>
+                                                {% if notification.sent_at %}
+                                                    <small class="text-muted d-block mt-1">{% trans "Sent:" %}</small>
+                                                    <span>{{ notification.sent_at|date:"Y/m/d H:i" }}</span>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-md-2">
+                                                <span class="status-badge badge 
+                                                    {% if notification.status == 'pending' %}bg-warning
+                                                    {% elif notification.status == 'queued' %}bg-info
+                                                    {% elif notification.status == 'sending' %}bg-primary
+                                                    {% elif notification.status == 'sent' %}bg-success
+                                                    {% elif notification.status == 'delivered' %}bg-info
+                                                    {% elif notification.status == 'failed' %}bg-danger
+                                                    {% elif notification.status == 'cancelled' %}bg-secondary
+                                                    {% else %}bg-secondary{% endif %}">
+                                                    {{ notification.get_status_display }}
+                                                </span>
+                                                {% if notification.retry_count > 0 %}
+                                                    <small class="d-block text-muted mt-1">
+                                                        {% trans "Retries:" %} {{ notification.retry_count }}
+                                                    </small>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <a href="{% url 'core:notifications:detail' notification.id %}" 
+                                                       class="btn btn-outline-info" 
+                                                       title="{% trans 'View Details' %}">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    {% if notification.status == 'pending' or notification.status == 'queued' %}
+                                                    <button class="btn btn-outline-danger" 
+                                                            onclick="cancelNotification({{ notification.id }})"
+                                                            title="{% trans 'Cancel' %}">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                    {% elif notification.status == 'failed' and notification.can_retry %}
+                                                    <button class="btn btn-outline-warning" 
+                                                            onclick="retryNotification({{ notification.id }})"
+                                                            title="{% trans 'Retry' %}">
+                                                        <i class="fas fa-redo"></i>
+                                                    </button>
+                                                    {% endif %}
+                                                    <button class="btn btn-outline-secondary" 
+                                                            onclick="duplicateNotification({{ notification.id }})"
+                                                            title="{% trans 'Duplicate' %}">
+                                                        <i class="fas fa-copy"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Error Message -->
+                                        {% if notification.error_message %}
+                                        <div class="row mt-2">
+                                            <div class="col-12">
+                                                <div class="alert alert-danger alert-sm mb-0">
+                                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                                    <strong>{% trans "Error:" %}</strong> {{ notification.error_message }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        <!-- Content Preview -->
+                                        <div class="row mt-2">
+                                            <div class="col-12">
+                                                <div class="collapse" id="content{{ notification.id }}">
+                                                    <div class="card card-body bg-light">
+                                                        <h6>{% trans "Message Content:" %}</h6>
+                                                        <p class="mb-0">{{ notification.content|truncatewords:50 }}</p>
+                                                        {% if notification.context_data %}
+                                                        <hr>
+                                                        <h6>{% trans "Context Data:" %}</h6>
+                                                        <pre class="mb-0"><code>{{ notification.context_data|pprint }}</code></pre>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                <button class="btn btn-sm btn-outline-secondary mt-2" 
+                                                        type="button" 
+                                                        data-bs-toggle="collapse" 
+                                                        data-bs-target="#content{{ notification.id }}" 
+                                                        aria-expanded="false">
+                                                    <i class="fas fa-eye me-1"></i>
+                                                    {% trans "Show/Hide Content" %}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Pagination -->
+                        {% if page_obj.has_other_pages %}
+                        <nav aria-label="{% trans 'Notification history pagination' %}">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                                            {% trans "Previous" %}
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{% persian_number num %}</span>
+                                        </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ num }}">
+                                                {% persian_number num %}
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">
+                                            {% trans "Next" %}
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                        
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-history fa-3x text-gray-300 mb-3"></i>
+                            <h5 class="text-gray-600">{% trans "No notifications found" %}</h5>
+                            <p class="text-muted">
+                                {% if request.GET %}
+                                    {% trans "No notifications match your current filters. Try adjusting your search criteria." %}
+                                {% else %}
+                                    {% trans "No notifications have been sent yet. Start by creating and sending your first notification." %}
+                                {% endif %}
+                            </p>
+                            {% if not request.GET %}
+                            <a href="{% url 'core:notifications:dashboard' %}" class="btn btn-primary">
+                                {% trans "Send First Notification" %}
+                            </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/notifications.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-submit form on filter changes
+    const filterInputs = document.querySelectorAll('#filterForm select, #filterForm input[type="date"]');
+    filterInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            if (this.type !== 'text') {  // Don't auto-submit on text input changes
+                document.getElementById('filterForm').submit();
+            }
+        });
+    });
+    
+    // Search input with debounce
+    const searchInput = document.getElementById('searchQuery');
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            document.getElementById('filterForm').submit();
+        }, 1000);
+    });
+});
+
+function filterNotifications(status) {
+    const notifications = document.querySelectorAll('.notification-item');
+    notifications.forEach(notification => {
+        if (status === '' || notification.dataset.status === status) {
+            notification.style.display = 'block';
+        } else {
+            notification.style.display = 'none';
+        }
+    });
+}
+
+function selectAll() {
+    const checkboxes = document.querySelectorAll('.notification-checkbox');
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = !allChecked;
+    });
+    
+    updateBulkActions();
+}
+
+function updateBulkActions() {
+    const checkboxes = document.querySelectorAll('.notification-checkbox:checked');
+    const cancelBtn = document.getElementById('bulkCancelBtn');
+    const retryBtn = document.getElementById('bulkRetryBtn');
+    
+    const hasSelected = checkboxes.length > 0;
+    const hasPending = Array.from(checkboxes).some(cb => 
+        ['pending', 'queued'].includes(cb.dataset.status)
+    );
+    const hasFailed = Array.from(checkboxes).some(cb => 
+        cb.dataset.status === 'failed'
+    );
+    
+    cancelBtn.disabled = !hasPending;
+    retryBtn.disabled = !hasFailed;
+}
+
+function bulkCancel() {
+    const checkboxes = document.querySelectorAll('.notification-checkbox:checked');
+    const pendingIds = Array.from(checkboxes)
+        .filter(cb => ['pending', 'queued'].includes(cb.dataset.status))
+        .map(cb => cb.value);
+    
+    if (pendingIds.length === 0) {
+        showNotification('{% trans "No pending notifications selected" %}', 'warning');
+        return;
+    }
+    
+    if (!confirm(`{% trans "Are you sure you want to cancel" %} ${pendingIds.length} {% trans "notifications?" %}`)) {
+        return;
+    }
+    
+    // Cancel notifications one by one
+    let completed = 0;
+    pendingIds.forEach(id => {
+        fetch(`{% url 'core:notifications:cancel_ajax' 0 %}`.replace('0', id), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            completed++;
+            if (completed === pendingIds.length) {
+                showNotification(`{% trans "Cancelled" %} ${pendingIds.length} {% trans "notifications" %}`, 'success');
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error cancelling notification:', error);
+        });
+    });
+}
+
+function bulkRetry() {
+    const checkboxes = document.querySelectorAll('.notification-checkbox:checked');
+    const failedIds = Array.from(checkboxes)
+        .filter(cb => cb.dataset.status === 'failed')
+        .map(cb => cb.value);
+    
+    if (failedIds.length === 0) {
+        showNotification('{% trans "No failed notifications selected" %}', 'warning');
+        return;
+    }
+    
+    if (!confirm(`{% trans "Are you sure you want to retry" %} ${failedIds.length} {% trans "notifications?" %}`)) {
+        return;
+    }
+    
+    // Retry notifications one by one
+    let completed = 0;
+    failedIds.forEach(id => {
+        fetch(`{% url 'core:notifications:retry_ajax' 0 %}`.replace('0', id), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            completed++;
+            if (completed === failedIds.length) {
+                showNotification(`{% trans "Retried" %} ${failedIds.length} {% trans "notifications" %}`, 'success');
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error retrying notification:', error);
+        });
+    });
+}
+
+function cancelNotification(notificationId) {
+    if (confirm('{% trans "Are you sure you want to cancel this notification?" %}')) {
+        fetch(`{% url 'core:notifications:cancel_ajax' 0 %}`.replace('0', notificationId), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(data.message, 'success');
+                location.reload();
+            } else {
+                showNotification(data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error cancelling notification:', error);
+            showNotification('{% trans "Error connecting to server" %}', 'error');
+        });
+    }
+}
+
+function retryNotification(notificationId) {
+    if (confirm('{% trans "Do you want to retry sending this notification?" %}')) {
+        fetch(`{% url 'core:notifications:retry_ajax' 0 %}`.replace('0', notificationId), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(data.message, 'success');
+                location.reload();
+            } else {
+                showNotification(data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error retrying notification:', error);
+            showNotification('{% trans "Error connecting to server" %}', 'error');
+        });
+    }
+}
+
+function duplicateNotification(notificationId) {
+    // This would open the single notification modal with pre-filled data
+    showNotification('{% trans "Duplicate functionality will be implemented" %}', 'info');
+}
+
+function exportHistory() {
+    // Export current filtered results
+    const params = new URLSearchParams(window.location.search);
+    params.set('export', 'csv');
+    
+    const exportUrl = window.location.pathname + '?' + params.toString();
+    window.open(exportUrl, '_blank');
+}
+</script>
+{% endblock %}

@@ -562,4 +562,13 @@ class TOTPDevice(TenantAwareModel):
 # Import security models to make them available
 from .security_models import SecurityEvent, AuditLog, RateLimitAttempt, SuspiciousActivity
 
+# Import notification models to make them available
+from .notification_models import (
+    NotificationTemplate,
+    NotificationSchedule,
+    Notification,
+    NotificationDeliveryLog,
+    NotificationProvider
+)
+
 # Backup models are now in the system app (public schema)

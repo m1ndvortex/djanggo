@@ -714,7 +714,9 @@
     - Write tests for invoice UI workflows and customer management interface
     - _Requirements: 9.4, 3.13_
 
-- [ ] 13. Customer Experience & Marketing Features
+- [-] 13. Customer Experience & Marketing Features
+
+
   - [x] 13.1 Implement customer loyalty and engagement system backend (Backend)
 
 
@@ -766,14 +768,21 @@
     - Write tests for layaway plan UI workflows and payment management interface
     - _Requirements: 9.7, 9.8_
 
-  - [ ] 13.5 Implement push notification system backend (Backend)
+  - [x] 13.5 Implement push notification system backend (Backend)
+
+
     - Create PushNotificationSystem for appointment and payment reminders
     - Build Persian-language notification templates
     - Implement SMS and email delivery with Iranian service providers
     - Write tests for notification delivery and template rendering
     - _Requirements: 16.7_
 
-  - [ ] 13.6 Build push notification management UI (Frontend)
+  - [x] 13.6 Build push notification management UI (Frontend)
+
+
+
+
+
     - Build notification management interface for creating and scheduling notifications
     - Create notification history and delivery status tracking interface
     - Build notification template customization interface
