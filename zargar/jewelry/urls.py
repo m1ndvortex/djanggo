@@ -34,8 +34,15 @@ urlpatterns = [
     path('valuation/', views.InventoryValuationView.as_view(), name='inventory_valuation'),
     
     # Barcode and QR code endpoints
+    path('barcode/', views.BarcodeManagementView.as_view(), name='barcode_management'),
+    path('barcode/mobile/', views.MobileScannerView.as_view(), name='mobile_scanner'),
+    path('barcode/history/', views.BarcodeHistoryView.as_view(), name='barcode_history'),
     path('barcode/scan/', BarcodeScanView.as_view(), name='barcode_scan'),
     path('api/barcode/', include(router.urls)),
+    
+    # Barcode API endpoints
+    path('api/barcode/items/', views.barcode_items_api, name='barcode_items_api'),
+    path('api/barcode/statistics/', views.barcode_statistics_api, name='barcode_statistics_api'),
     
     # AJAX endpoints
     path('api/search/', views.inventory_search_api, name='inventory_search_api'),

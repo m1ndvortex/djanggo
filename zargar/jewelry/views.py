@@ -24,14 +24,17 @@ from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
 from django.urls import reverse_lazy, reverse
 from django.conf import settings
+from django.utils import timezone
 
 from zargar.core.mixins import TenantContextMixin
 from .models import JewelryItem, Category, Gemstone, JewelryItemPhoto
+from .barcode_models import BarcodeGeneration, BarcodeScanHistory
 from .services import (
     SerialNumberTrackingService, 
     StockAlertService, 
     InventoryValuationService
 )
+from .barcode_services import BarcodeGenerationService, BarcodeScanningService
 
 logger = logging.getLogger(__name__)
 
@@ -721,3 +724,271 @@ def create_category(request):
             'success': False,
             'message': _('خطا در ایجاد دسته‌بندی')
         })
+
+
+class BarcodeManagementView(LoginRequiredMixin, TenantContextMixin, TemplateView):
+    """
+    Barcode management interface with generation, printing, and scanning capabilities.
+    """
+    template_name = 'jewelry/barcode_management.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        try:
+            # Get barcode statistics
+            total_barcodes = BarcodeGeneration.objects.filter(is_active=True).count()
+            today_scans = BarcodeScanHistory.objects.filter(
+                scan_timestamp__date=timezone.now().date()
+            ).count()
+            qr_codes = BarcodeGeneration.objects.filter(
+                barcode_type='qr_code', 
+                is_active=True
+            ).count()
+            items_without_barcode = JewelryItem.objects.filter(
+                barcode__isnull=True
+            ).count()
+            
+            context.update({
+                'barcode_stats': {
+                    'total_barcodes': total_barcodes,
+                    'today_scans': today_scans,
+                    'qr_codes': qr_codes,
+                    'items_without_barcode': items_without_barcode,
+                }
+            })
+            
+        except Exception as e:
+            logger.error(f"Error loading barcode management data: {e}")
+            context.update({
+                'barcode_stats': {
+                    'total_barcodes': 0,
+                    'today_scans': 0,
+                    'qr_codes': 0,
+                    'items_without_barcode': 0,
+                }
+            })
+        
+        return context
+
+
+class MobileScannerView(LoginRequiredMixin, TenantContextMixin, TemplateView):
+    """
+    Mobile-optimized barcode scanning interface.
+    """
+    template_name = 'jewelry/mobile_scanner.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        try:
+            # Get recent scans for this user/tenant
+            recent_scans = BarcodeScanHistory.objects.select_related(
+                'jewelry_item'
+            ).order_by('-scan_timestamp')[:10]
+            
+            context.update({
+                'recent_scans': recent_scans,
+            })
+            
+        except Exception as e:
+            logger.error(f"Error loading mobile scanner data: {e}")
+            context.update({
+                'recent_scans': [],
+            })
+        
+        return context
+
+
+class BarcodeHistoryView(LoginRequiredMixin, TenantContextMixin, TemplateView):
+    """
+    Barcode scanning history and tracking interface.
+    """
+    template_name = 'jewelry/barcode_history.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        try:
+            # Get scan statistics
+            total_scans = BarcodeScanHistory.objects.count()
+            today_scans = BarcodeScanHistory.objects.filter(
+                scan_timestamp__date=timezone.now().date()
+            ).count()
+            
+            # Get recent scans
+            recent_scans = BarcodeScanHistory.objects.select_related(
+                'jewelry_item'
+            ).order_by('-scan_timestamp')[:20]
+            
+            context.update({
+                'scan_stats': {
+                    'total_scans': total_scans,
+                    'today_scans': today_scans,
+                },
+                'recent_scans': recent_scans,
+            })
+            
+        except Exception as e:
+            logger.error(f"Error loading barcode history data: {e}")
+            context.update({
+                'scan_stats': {
+                    'total_scans': 0,
+                    'today_scans': 0,
+                },
+                'recent_scans': [],
+            })
+        
+        return context
+
+
+# Barcode API Endpoints
+
+@login_required
+def barcode_items_api(request):
+    """
+    API endpoint to get jewelry items with barcode information.
+    """
+    try:
+        # Get all jewelry items with barcode information
+        items = JewelryItem.objects.select_related('category').prefetch_related(
+            'barcodegeneration_set'
+        ).all()
+        
+        # Apply search filter if provided
+        search_query = request.GET.get('search', '').strip()
+        if search_query:
+            items = items.filter(
+                Q(name__icontains=search_query) |
+                Q(sku__icontains=search_query) |
+                Q(barcode__icontains=search_query)
+            )
+        
+        # Apply barcode type filter
+        barcode_type = request.GET.get('barcode_type', '').strip()
+        if barcode_type:
+            items = items.filter(barcodegeneration__barcode_type=barcode_type)
+        
+        # Apply status filter
+        status_filter = request.GET.get('status', '').strip()
+        if status_filter == 'has_barcode':
+            items = items.exclude(barcode__isnull=True).exclude(barcode='')
+        elif status_filter == 'no_barcode':
+            items = items.filter(Q(barcode__isnull=True) | Q(barcode=''))
+        
+        # Prepare response data
+        results = []
+        for item in items:
+            # Get active barcode generation
+            active_barcode = item.barcodegeneration_set.filter(is_active=True).first()
+            
+            item_data = {
+                'id': item.id,
+                'name': item.name,
+                'sku': item.sku,
+                'category': item.category.name_persian if item.category else '',
+                'barcode': item.barcode,
+                'barcode_type': active_barcode.barcode_type if active_barcode else None,
+                'barcode_type_display': active_barcode.get_barcode_type_display() if active_barcode else None,
+                'barcode_image': active_barcode.barcode_image.url if active_barcode and active_barcode.barcode_image else None,
+                'status': item.get_status_display(),
+                'quantity': item.quantity,
+                'selling_price': str(item.selling_price) if item.selling_price else '0',
+                'weight_grams': str(item.weight_grams),
+                'karat': item.karat,
+            }
+            results.append(item_data)
+        
+        return JsonResponse({
+            'success': True,
+            'results': results,
+            'total_count': len(results)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in barcode items API: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': 'خطا در بارگذاری اطلاعات اقلام'
+        }, status=500)
+
+
+@login_required
+def barcode_statistics_api(request):
+    """
+    API endpoint to get barcode statistics and analytics.
+    """
+    try:
+        from datetime import timedelta
+        from django.db.models import Count
+        
+        # Basic statistics
+        total_barcodes = BarcodeGeneration.objects.filter(is_active=True).count()
+        today = timezone.now().date()
+        today_scans = BarcodeScanHistory.objects.filter(
+            scan_timestamp__date=today
+        ).count()
+        qr_codes = BarcodeGeneration.objects.filter(
+            barcode_type='qr_code',
+            is_active=True
+        ).count()
+        items_without_barcode = JewelryItem.objects.filter(
+            Q(barcode__isnull=True) | Q(barcode='')
+        ).count()
+        
+        # Daily activity for the last 7 days
+        daily_activity = []
+        for i in range(7):
+            date = today - timedelta(days=i)
+            scans_count = BarcodeScanHistory.objects.filter(
+                scan_timestamp__date=date
+            ).count()
+            daily_activity.append({
+                'date': date.strftime('%Y-%m-%d'),
+                'scans': scans_count
+            })
+        
+        # Scan types distribution
+        scan_types = BarcodeScanHistory.objects.values('scan_action').annotate(
+            count=Count('scan_action')
+        ).order_by('-count')
+        
+        scan_types_data = []
+        for scan_type in scan_types:
+            scan_types_data.append({
+                'action': scan_type['scan_action'],
+                'count': scan_type['count']
+            })
+        
+        # Active users (users who scanned in the last 7 days)
+        week_ago = timezone.now() - timedelta(days=7)
+        active_users = BarcodeScanHistory.objects.filter(
+            scan_timestamp__gte=week_ago
+        ).values('jewelry_item__created_by').distinct().count()
+        
+        # Daily average
+        total_days = 7
+        daily_average = round(
+            BarcodeScanHistory.objects.filter(
+                scan_timestamp__gte=week_ago
+            ).count() / total_days, 1
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'total_barcodes': total_barcodes,
+            'today_scans': today_scans,
+            'qr_codes': qr_codes,
+            'items_without_barcode': items_without_barcode,
+            'active_users': active_users,
+            'daily_average': daily_average,
+            'daily_activity': daily_activity,
+            'scan_types': scan_types_data
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in barcode statistics API: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': 'خطا در بارگذاری آمار بارکد'
+        }, status=500)

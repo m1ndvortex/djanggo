@@ -1,0 +1,1141 @@
+{% extends 'base_rtl.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "مدیریت بارکد و QR کد" %}{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/barcode-management.css' %}" rel="stylesheet">
+<style>
+    .barcode-card {
+        transition: all 0.3s ease;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .barcode-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .dark .barcode-card {
+        background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 100%);
+        border: 1px solid rgba(0, 212, 255, 0.2);
+        backdrop-filter: blur(16px);
+    }
+    
+    .dark .barcode-card:hover {
+        box-shadow: 0 8px 32px rgba(0, 212, 255, 0.15);
+        border-color: rgba(0, 212, 255, 0.4);
+    }
+    
+    .barcode-image {
+        max-width: 200px;
+        max-height: 200px;
+        border: 2px solid #f3f4f6;
+        border-radius: 8px;
+    }
+    
+    .dark .barcode-image {
+        border-color: rgba(0, 212, 255, 0.3);
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+    }
+    
+    .scan-button {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        transition: all 0.3s ease;
+    }
+    
+    .scan-button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+    }
+    
+    .dark .scan-button {
+        background: linear-gradient(135deg, #00FF88 0%, #00D4FF 100%);
+        color: #0B0E1A;
+    }
+    
+    .dark .scan-button:hover {
+        box-shadow: 0 8px 25px rgba(0, 255, 136, 0.4);
+    }
+    
+    .print-button {
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    }
+    
+    .dark .print-button {
+        background: linear-gradient(135deg, #00D4FF 0%, #FF6B35 100%);
+        color: #0B0E1A;
+    }
+    
+    .generate-button {
+        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    }
+    
+    .dark .generate-button {
+        background: linear-gradient(135deg, #A55EEA 0%, #00FF88 100%);
+        color: #0B0E1A;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6" x-data="barcodeManagement()">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+                {% trans "مدیریت بارکد و QR کد" %}
+            </h1>
+            <p class="text-gray-600 dark:text-gray-300 mt-2">
+                {% trans "تولید، چاپ و اسکن بارکد برای اقلام طلا و جواهرات" %}
+            </p>
+        </div>
+        
+        <div class="flex space-x-3 space-x-reverse">
+            <!-- Mobile Scanner Button -->
+            <button @click="openMobileScanner()" 
+                    class="scan-button text-white px-6 py-3 rounded-lg font-medium flex items-center">
+                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M12 4v1m6 11h2m-6 0h-2v4m-2 0h-2m3-4h2m-6 0h2v-4m0 0V9a2 2 0 012-2h2a2 2 0 012 2v2m-6 4V9a2 2 0 012-2h2a2 2 0 012 2v2m-6 4h2m6-4h2"></path>
+                </svg>
+                {% trans "اسکن موبایل" %}
+            </button>
+            
+            <!-- Bulk Generate Button -->
+            <button @click="openBulkGenerate()" 
+                    class="generate-button text-white px-6 py-3 rounded-lg font-medium flex items-center">
+                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                {% trans "تولید گروهی" %}
+            </button>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="barcode-card bg-white dark:bg-gray-800 p-6 rounded-lg">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 dark:bg-blue-900">
+                    <svg class="w-6 h-6 text-blue-600 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                </div>
+                <div class="mr-4">
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">{% trans "کل بارکدها" %}</p>
+                    <p class="text-2xl font-semibold text-gray-900 dark:text-white" x-text="stats.total_barcodes">0</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="barcode-card bg-white dark:bg-gray-800 p-6 rounded-lg">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 dark:bg-green-900">
+                    <svg class="w-6 h-6 text-green-600 dark:text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m-2 0h-2m3-4h2m-6 0h2v-4m0 0V9a2 2 0 012-2h2a2 2 0 012 2v2m-6 4V9a2 2 0 012-2h2a2 2 0 012 2v2m-6 4h2m6-4h2"></path>
+                    </svg>
+                </div>
+                <div class="mr-4">
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">{% trans "اسکن امروز" %}</p>
+                    <p class="text-2xl font-semibold text-gray-900 dark:text-white" x-text="stats.today_scans">0</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="barcode-card bg-white dark:bg-gray-800 p-6 rounded-lg">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-purple-100 dark:bg-purple-900">
+                    <svg class="w-6 h-6 text-purple-600 dark:text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2h4a1 1 0 110 2h-1v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6H3a1 1 0 110-2h4z"></path>
+                    </svg>
+                </div>
+                <div class="mr-4">
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">{% trans "QR کدها" %}</p>
+                    <p class="text-2xl font-semibold text-gray-900 dark:text-white" x-text="stats.qr_codes">0</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="barcode-card bg-white dark:bg-gray-800 p-6 rounded-lg">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-orange-100 dark:bg-orange-900">
+                    <svg class="w-6 h-6 text-orange-600 dark:text-orange-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                </div>
+                <div class="mr-4">
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">{% trans "اقلام بدون بارکد" %}</p>
+                    <p class="text-2xl font-semibold text-gray-900 dark:text-white" x-text="stats.items_without_barcode">0</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="barcode-card bg-white dark:bg-gray-800 p-6 rounded-lg mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {% trans "جستجو" %}
+                </label>
+                <input type="text" x-model="searchQuery" @input="searchItems()"
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md 
+                              bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                       placeholder="{% trans 'نام، SKU یا بارکد...' %}">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {% trans "نوع بارکد" %}
+                </label>
+                <select x-model="filterBarcodeType" @change="filterItems()"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md 
+                               bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="">{% trans "همه" %}</option>
+                    <option value="qr_code">{% trans "QR کد" %}</option>
+                    <option value="ean13">{% trans "EAN-13" %}</option>
+                    <option value="code128">{% trans "Code 128" %}</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {% trans "وضعیت" %}
+                </label>
+                <select x-model="filterStatus" @change="filterItems()"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md 
+                               bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="">{% trans "همه" %}</option>
+                    <option value="has_barcode">{% trans "دارای بارکد" %}</option>
+                    <option value="no_barcode">{% trans "بدون بارکد" %}</option>
+                </select>
+            </div>
+            
+            <div class="flex items-end">
+                <button @click="resetFilters()" 
+                        class="w-full px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-md">
+                    {% trans "پاک کردن فیلتر" %}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Items List -->
+    <div class="barcode-card bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+                {% trans "اقلام طلا و جواهرات" %}
+            </h3>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-900">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            {% trans "انتخاب" %}
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            {% trans "نام کالا" %}
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            {% trans "SKU" %}
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            {% trans "بارکد" %}
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            {% trans "نوع بارکد" %}
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            {% trans "تصویر" %}
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            {% trans "عملیات" %}
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    <template x-for="item in filteredItems" :key="item.id">
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <input type="checkbox" :value="item.id" x-model="selectedItems"
+                                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900 dark:text-white" x-text="item.name"></div>
+                                <div class="text-sm text-gray-500 dark:text-gray-400" x-text="item.category"></div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" x-text="item.sku"></td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span x-show="item.barcode" class="text-sm text-gray-900 dark:text-white" x-text="item.barcode"></span>
+                                <span x-show="!item.barcode" class="text-sm text-red-500">{% trans "بدون بارکد" %}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span x-show="item.barcode_type" 
+                                      class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                      x-text="item.barcode_type_display"></span>
+                                <span x-show="!item.barcode_type" class="text-sm text-gray-400">-</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <img x-show="item.barcode_image" :src="item.barcode_image" 
+                                     class="barcode-image w-16 h-16 object-contain">
+                                <span x-show="!item.barcode_image" class="text-sm text-gray-400">{% trans "بدون تصویر" %}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2 space-x-reverse">
+                                <button @click="generateBarcode(item.id)" 
+                                        class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
+                                    {% trans "تولید" %}
+                                </button>
+                                <button x-show="item.barcode_image" @click="printBarcode(item.id)" 
+                                        class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
+                                    {% trans "چاپ" %}
+                                </button>
+                                <button @click="viewScanHistory(item.id)" 
+                                        class="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300">
+                                    {% trans "تاریخچه" %}
+                                </button>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-700 dark:text-gray-300">
+                    {% trans "نمایش" %} <span x-text="paginationInfo.start"></span> {% trans "تا" %} 
+                    <span x-text="paginationInfo.end"></span> {% trans "از" %} 
+                    <span x-text="paginationInfo.total"></span> {% trans "مورد" %}
+                </div>
+                <div class="flex space-x-2 space-x-reverse">
+                    <button @click="previousPage()" :disabled="currentPage === 1"
+                            class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm 
+                                   disabled:opacity-50 disabled:cursor-not-allowed">
+                        {% trans "قبلی" %}
+                    </button>
+                    <button @click="nextPage()" :disabled="currentPage === totalPages"
+                            class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm 
+                                   disabled:opacity-50 disabled:cursor-not-allowed">
+                        {% trans "بعدی" %}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Scanner Modal -->
+    <div x-show="showMobileScanner" x-cloak
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+         @click.self="closeMobileScanner()">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+                    {% trans "اسکن بارکد موبایل" %}
+                </h3>
+                <button @click="closeMobileScanner()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div id="mobile-scanner-container" class="mb-4">
+                <!-- Camera preview will be inserted here -->
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        {% trans "یا بارکد را وارد کنید" %}
+                    </label>
+                    <input type="text" x-model="manualBarcodeInput"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md 
+                                  bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                           placeholder="{% trans 'بارکد را اینجا وارد کنید...' %}">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        {% trans "نوع عملیات" %}
+                    </label>
+                    <select x-model="scanAction"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md 
+                                   bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <option value="lookup">{% trans "جستجو" %}</option>
+                        <option value="inventory_check">{% trans "بررسی موجودی" %}</option>
+                        <option value="sale">{% trans "فروش" %}</option>
+                        <option value="audit">{% trans "حسابرسی" %}</option>
+                    </select>
+                </div>
+                
+                <div class="flex space-x-3 space-x-reverse">
+                    <button @click="processScan()" 
+                            class="flex-1 scan-button text-white px-4 py-2 rounded-md">
+                        {% trans "پردازش اسکن" %}
+                    </button>
+                    <button @click="startCamera()" 
+                            class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-md">
+                        {% trans "شروع دوربین" %}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Generate Modal -->
+    <div x-show="showBulkGenerate" x-cloak
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+         @click.self="closeBulkGenerate()">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-lg mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+                    {% trans "تولید گروهی بارکد" %}
+                </h3>
+                <button @click="closeBulkGenerate()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                        {% trans "تعداد اقلام انتخاب شده:" %} <span x-text="selectedItems.length" class="font-medium"></span>
+                    </p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        {% trans "نوع بارکد" %}
+                    </label>
+                    <select x-model="bulkBarcodeType"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md 
+                                   bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <option value="qr_code">{% trans "QR کد" %}</option>
+                        <option value="ean13">{% trans "EAN-13" %}</option>
+                        <option value="code128">{% trans "Code 128" %}</option>
+                    </select>
+                </div>
+                
+                <div class="flex space-x-3 space-x-reverse">
+                    <button @click="processBulkGenerate()" :disabled="selectedItems.length === 0"
+                            class="flex-1 generate-button text-white px-4 py-2 rounded-md disabled:opacity-50">
+                        {% trans "تولید بارکد" %}
+                    </button>
+                    <button @click="closeBulkGenerate()" 
+                            class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-md">
+                        {% trans "انصراف" %}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scan History Modal -->
+    <div x-show="showScanHistory" x-cloak
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+         @click.self="closeScanHistory()">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+                    {% trans "تاریخچه اسکن بارکد" %}
+                </h3>
+                <button @click="closeScanHistory()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div x-show="selectedItemForHistory" class="mb-4">
+                <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 dark:text-white" x-text="selectedItemForHistory?.name"></h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        SKU: <span x-text="selectedItemForHistory?.sku"></span>
+                    </p>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-900">
+                        <tr>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                                {% trans "تاریخ و زمان" %}
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                                {% trans "نوع عملیات" %}
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                                {% trans "دستگاه" %}
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                                {% trans "مکان" %}
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                                {% trans "یادداشت" %}
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        <template x-for="scan in scanHistory" :key="scan.id">
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" 
+                                    x-text="formatDateTime(scan.scan_timestamp)"></td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                                          x-text="scan.scan_action"></span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" 
+                                    x-text="scan.scanner_device || '-'"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" 
+                                    x-text="scan.location || '-'"></td>
+                                <td class="px-6 py-4 text-sm text-gray-900 dark:text-white" 
+                                    x-text="scan.notes || '-'"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function barcodeManagement() {
+    return {
+        // Data
+        items: [],
+        filteredItems: [],
+        selectedItems: [],
+        searchQuery: '',
+        filterBarcodeType: '',
+        filterStatus: '',
+        currentPage: 1,
+        itemsPerPage: 20,
+        totalPages: 1,
+        
+        // Modals
+        showMobileScanner: false,
+        showBulkGenerate: false,
+        showScanHistory: false,
+        
+        // Scanner
+        manualBarcodeInput: '',
+        scanAction: 'lookup',
+        bulkBarcodeType: 'qr_code',
+        
+        // History
+        selectedItemForHistory: null,
+        scanHistory: [],
+        
+        // Stats
+        stats: {
+            total_barcodes: 0,
+            today_scans: 0,
+            qr_codes: 0,
+            items_without_barcode: 0
+        },
+        
+        // Computed
+        get paginationInfo() {
+            const start = (this.currentPage - 1) * this.itemsPerPage + 1;
+            const end = Math.min(this.currentPage * this.itemsPerPage, this.filteredItems.length);
+            return {
+                start: start,
+                end: end,
+                total: this.filteredItems.length
+            };
+        },
+        
+        // Methods
+        init() {
+            this.loadItems();
+            this.loadStats();
+        },
+        
+        async loadItems() {
+            try {
+                const response = await fetch('/jewelry/api/items/');
+                const data = await response.json();
+                this.items = data.results || data;
+                this.filterItems();
+            } catch (error) {
+                console.error('Error loading items:', error);
+            }
+        },
+        
+        async loadStats() {
+            try {
+                const response = await fetch('/jewelry/api/barcode/statistics/');
+                const data = await response.json();
+                this.stats = data;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        },
+        
+        searchItems() {
+            this.filterItems();
+        },
+        
+        filterItems() {
+            let filtered = this.items;
+            
+            // Apply search filter
+            if (this.searchQuery) {
+                const query = this.searchQuery.toLowerCase();
+                filtered = filtered.filter(item => 
+                    item.name.toLowerCase().includes(query) ||
+                    item.sku.toLowerCase().includes(query) ||
+                    (item.barcode && item.barcode.toLowerCase().includes(query))
+                );
+            }
+            
+            // Apply barcode type filter
+            if (this.filterBarcodeType) {
+                filtered = filtered.filter(item => 
+                    item.barcode_type === this.filterBarcodeType
+                );
+            }
+            
+            // Apply status filter
+            if (this.filterStatus === 'has_barcode') {
+                filtered = filtered.filter(item => item.barcode);
+            } else if (this.filterStatus === 'no_barcode') {
+                filtered = filtered.filter(item => !item.barcode);
+            }
+            
+            this.filteredItems = filtered;
+            this.currentPage = 1;
+            this.totalPages = Math.ceil(this.filteredItems.length / this.itemsPerPage);
+        },
+        
+        resetFilters() {
+            this.searchQuery = '';
+            this.filterBarcodeType = '';
+            this.filterStatus = '';
+            this.filterItems();
+        },
+        
+        previousPage() {
+            if (this.currentPage > 1) {
+                this.currentPage--;
+            }
+        },
+        
+        nextPage() {
+            if (this.currentPage < this.totalPages) {
+                this.currentPage++;
+            }
+        },
+        
+        // Modal functions
+        openMobileScanner() {
+            this.showMobileScanner = true;
+            this.manualBarcodeInput = '';
+            this.scanAction = 'lookup';
+        },
+        
+        closeMobileScanner() {
+            this.showMobileScanner = false;
+            this.stopCamera();
+        },
+        
+        openBulkGenerate() {
+            this.showBulkGenerate = true;
+            this.bulkBarcodeType = 'qr_code';
+        },
+        
+        closeBulkGenerate() {
+            this.showBulkGenerate = false;
+        },
+        
+        openScanHistory() {
+            this.showScanHistory = true;
+        },
+        
+        closeScanHistory() {
+            this.showScanHistory = false;
+        },
+        
+        // Barcode operations
+        async generateBarcode(itemId) {
+            try {
+                const response = await fetch('/jewelry/api/barcode/barcode-generations/generate_for_item/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        item_id: itemId,
+                        barcode_type: 'qr_code'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.showNotification('بارکد با موفقیت تولید شد', 'success');
+                    this.loadItems(); // Refresh items
+                    this.loadStats(); // Refresh stats
+                } else {
+                    this.showNotification(data.error || 'خطا در تولید بارکد', 'error');
+                }
+            } catch (error) {
+                console.error('Error generating barcode:', error);
+                this.showNotification('خطا در تولید بارکد', 'error');
+            }
+        },
+        
+        async processBulkGenerate() {
+            if (this.selectedItems.length === 0) {
+                this.showNotification('لطفاً حداقل یک کالا انتخاب کنید', 'warning');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/jewelry/api/barcode/barcode-generations/bulk_generate/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        item_ids: this.selectedItems,
+                        barcode_type: this.bulkBarcodeType
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.showNotification(`${data.generated_count} بارکد با موفقیت تولید شد`, 'success');
+                    this.selectedItems = [];
+                    this.closeBulkGenerate();
+                    this.loadItems(); // Refresh items
+                    this.loadStats(); // Refresh stats
+                } else {
+                    this.showNotification(data.error || 'خطا در تولید گروهی بارکد', 'error');
+                }
+            } catch (error) {
+                console.error('Error bulk generating barcodes:', error);
+                this.showNotification('خطا در تولید گروهی بارکد', 'error');
+            }
+        },
+        
+        async printBarcode(itemId) {
+            try {
+                // Find the item's barcode generation
+                const item = this.items.find(i => i.id === itemId);
+                if (!item || !item.barcode_image) {
+                    this.showNotification('تصویر بارکد یافت نشد', 'error');
+                    return;
+                }
+                
+                // Open print window
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(`
+                    <html>
+                        <head>
+                            <title>چاپ بارکد - ${item.name}</title>
+                            <style>
+                                body { 
+                                    font-family: 'Vazir', Arial, sans-serif; 
+                                    text-align: center; 
+                                    padding: 20px; 
+                                    direction: rtl;
+                                }
+                                .barcode-container { 
+                                    border: 1px solid #ccc; 
+                                    padding: 20px; 
+                                    margin: 20px auto; 
+                                    width: fit-content; 
+                                }
+                                .barcode-image { 
+                                    max-width: 200px; 
+                                    height: auto; 
+                                }
+                                .item-info { 
+                                    margin-top: 10px; 
+                                    font-size: 14px; 
+                                }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="barcode-container">
+                                <img src="${item.barcode_image}" alt="بارکد" class="barcode-image">
+                                <div class="item-info">
+                                    <div><strong>${item.name}</strong></div>
+                                    <div>SKU: ${item.sku}</div>
+                                    <div>بارکد: ${item.barcode}</div>
+                                </div>
+                            </div>
+                        </body>
+                    </html>
+                `);
+                printWindow.document.close();
+                printWindow.print();
+            } catch (error) {
+                console.error('Error printing barcode:', error);
+                this.showNotification('خطا در چاپ بارکد', 'error');
+            }
+        },
+        
+        async viewScanHistory(itemId) {
+            try {
+                const response = await fetch(`/jewelry/api/barcode/scan-history/by_item/?item_id=${itemId}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    this.selectedItemForHistory = data.jewelry_item;
+                    this.scanHistory = data.scan_history;
+                    this.openScanHistory();
+                } else {
+                    this.showNotification(data.error || 'خطا در بارگذاری تاریخچه', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading scan history:', error);
+                this.showNotification('خطا در بارگذاری تاریخچه', 'error');
+            }
+        },
+        
+        // Mobile scanner functions
+        async startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' } 
+                });
+                
+                const video = document.querySelector('#mobile-scanner-container video');
+                if (video) {
+                    video.srcObject = stream;
+                }
+                
+                this.showNotification('دوربین راه‌اندازی شد', 'success');
+            } catch (error) {
+                console.error('Error starting camera:', error);
+                this.showNotification('خطا در راه‌اندازی دوربین', 'error');
+            }
+        },
+        
+        stopCamera() {
+            const video = document.querySelector('#mobile-scanner-container video');
+            if (video && video.srcObject) {
+                const tracks = video.srcObject.getTracks();
+                tracks.forEach(track => track.stop());
+                video.srcObject = null;
+            }
+        },
+        
+        async processScan() {
+            if (!this.manualBarcodeInput.trim()) {
+                this.showNotification('لطفاً بارکد را وارد کنید', 'warning');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/jewelry/barcode/scan/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        scanned_data: this.manualBarcodeInput.trim(),
+                        scan_action: this.scanAction,
+                        scanner_device: 'web_interface',
+                        location: 'barcode_management'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.showNotification(`کالا یافت شد: ${data.jewelry_item.name}`, 'success');
+                    this.manualBarcodeInput = '';
+                    this.loadStats(); // Refresh stats
+                } else {
+                    this.showNotification(data.error || 'کالا یافت نشد', 'error');
+                }
+            } catch (error) {
+                console.error('Error processing scan:', error);
+                this.showNotification('خطا در پردازش اسکن', 'error');
+            }
+        },
+        
+        // Utility functions
+        formatDateTime(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('fa-IR') + ' ' + date.toLocaleTimeString('fa-IR');
+        },
+        
+        showNotification(message, type = 'info') {
+            // Simple notification system - you can enhance this
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 p-4 rounded-lg text-white z-50 ${
+                type === 'success' ? 'bg-green-500' : 
+                type === 'error' ? 'bg-red-500' : 
+                type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
+            }`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+    }
+}
+            let filtered = this.items;
+            
+            // Search filter
+            if (this.searchQuery) {
+                const query = this.searchQuery.toLowerCase();
+                filtered = filtered.filter(item => 
+                    item.name.toLowerCase().includes(query) ||
+                    item.sku.toLowerCase().includes(query) ||
+                    (item.barcode && item.barcode.toLowerCase().includes(query))
+                );
+            }
+            
+            // Barcode type filter
+            if (this.filterBarcodeType) {
+                filtered = filtered.filter(item => item.barcode_type === this.filterBarcodeType);
+            }
+            
+            // Status filter
+            if (this.filterStatus === 'has_barcode') {
+                filtered = filtered.filter(item => item.barcode);
+            } else if (this.filterStatus === 'no_barcode') {
+                filtered = filtered.filter(item => !item.barcode);
+            }
+            
+            this.filteredItems = filtered;
+            this.totalPages = Math.ceil(filtered.length / this.itemsPerPage);
+            this.currentPage = 1;
+        },
+        
+        resetFilters() {
+            this.searchQuery = '';
+            this.filterBarcodeType = '';
+            this.filterStatus = '';
+            this.filterItems();
+        },
+        
+        previousPage() {
+            if (this.currentPage > 1) {
+                this.currentPage--;
+            }
+        },
+        
+        nextPage() {
+            if (this.currentPage < this.totalPages) {
+                this.currentPage++;
+            }
+        },
+        
+        // Barcode operations
+        async generateBarcode(itemId) {
+            try {
+                const response = await fetch('/jewelry/api/barcode-generations/generate_for_item/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        item_id: itemId,
+                        barcode_type: 'qr_code'
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    this.loadItems(); // Refresh items
+                    this.showNotification('بارکد با موفقیت تولید شد', 'success');
+                } else {
+                    this.showNotification(data.error || 'خطا در تولید بارکد', 'error');
+                }
+            } catch (error) {
+                console.error('Error generating barcode:', error);
+                this.showNotification('خطا در تولید بارکد', 'error');
+            }
+        },
+        
+        async processBulkGenerate() {
+            if (this.selectedItems.length === 0) return;
+            
+            try {
+                const response = await fetch('/jewelry/api/barcode-generations/bulk_generate/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        item_ids: this.selectedItems,
+                        barcode_type: this.bulkBarcodeType
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    this.loadItems(); // Refresh items
+                    this.selectedItems = [];
+                    this.closeBulkGenerate();
+                    this.showNotification(`${data.generated_count} بارکد با موفقیت تولید شد`, 'success');
+                } else {
+                    this.showNotification(data.error || 'خطا در تولید گروهی بارکد', 'error');
+                }
+            } catch (error) {
+                console.error('Error bulk generating barcodes:', error);
+                this.showNotification('خطا در تولید گروهی بارکد', 'error');
+            }
+        },
+        
+        printBarcode(itemId) {
+            const item = this.items.find(i => i.id === itemId);
+            if (item && item.barcode_image) {
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(`
+                    <html>
+                        <head><title>چاپ بارکد - ${item.name}</title></head>
+                        <body style="text-align: center; font-family: Arial;">
+                            <h3>${item.name}</h3>
+                            <p>SKU: ${item.sku}</p>
+                            <img src="${item.barcode_image}" style="max-width: 300px;">
+                            <script>window.print(); window.close();</script>
+                        </body>
+                    </html>
+                `);
+            }
+        },
+        
+        // Mobile scanner
+        openMobileScanner() {
+            this.showMobileScanner = true;
+            this.manualBarcodeInput = '';
+        },
+        
+        closeMobileScanner() {
+            this.showMobileScanner = false;
+            this.stopCamera();
+        },
+        
+        async processScan() {
+            if (!this.manualBarcodeInput) return;
+            
+            try {
+                const response = await fetch('/jewelry/barcode/scan/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        scanned_data: this.manualBarcodeInput,
+                        scan_action: this.scanAction,
+                        scanner_device: 'mobile_web',
+                        location: 'shop_counter'
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    this.showScanResult(data.jewelry_item);
+                    this.manualBarcodeInput = '';
+                } else {
+                    this.showNotification(data.error || 'کالا یافت نشد', 'error');
+                }
+            } catch (error) {
+                console.error('Error processing scan:', error);
+                this.showNotification('خطا در پردازش اسکن', 'error');
+            }
+        },
+        
+        showScanResult(item) {
+            alert(`کالا یافت شد:\n${item.name}\nSKU: ${item.sku}\nوضعیت: ${item.status}`);
+        },
+        
+        startCamera() {
+            // Camera functionality would be implemented here
+            this.showNotification('دوربین در حال توسعه است', 'info');
+        },
+        
+        stopCamera() {
+            // Stop camera functionality
+        },
+        
+        // Scan history
+        async viewScanHistory(itemId) {
+            const item = this.items.find(i => i.id === itemId);
+            this.selectedItemForHistory = item;
+            
+            try {
+                const response = await fetch(`/jewelry/api/scan-history/by_item/?item_id=${itemId}`);
+                const data = await response.json();
+                this.scanHistory = data.scan_history || [];
+                this.showScanHistory = true;
+            } catch (error) {
+                console.error('Error loading scan history:', error);
+                this.showNotification('خطا در بارگذاری تاریخچه', 'error');
+            }
+        },
+        
+        closeScanHistory() {
+            this.showScanHistory = false;
+            this.selectedItemForHistory = null;
+            this.scanHistory = [];
+        },
+        
+        // Bulk operations
+        openBulkGenerate() {
+            if (this.selectedItems.length === 0) {
+                this.showNotification('لطفاً ابتدا اقلام مورد نظر را انتخاب کنید', 'warning');
+                return;
+            }
+            this.showBulkGenerate = true;
+        },
+        
+        closeBulkGenerate() {
+            this.showBulkGenerate = false;
+        },
+        
+        // Utilities
+        formatDateTime(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('fa-IR') + ' ' + date.toLocaleTimeString('fa-IR');
+        },
+        
+        showNotification(message, type = 'info') {
+            // Simple notification - could be enhanced with a proper notification system
+            const colors = {
+                success: 'green',
+                error: 'red',
+                warning: 'yellow',
+                info: 'blue'
+            };
+            
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 bg-${colors[type]}-500 text-white px-6 py-3 rounded-lg shadow-lg z-50`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+    }
+}
+</script>
+{% endblock %}

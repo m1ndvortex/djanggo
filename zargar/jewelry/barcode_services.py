@@ -106,6 +106,26 @@ class BarcodeGenerationService:
             jewelry_item.save(update_fields=['barcode', 'updated_at'])
             
             return barcode_gen
+    
+    def bulk_generate_barcodes(self, jewelry_items, barcode_type=None, template=None):
+        """Generate barcodes for multiple jewelry items."""
+        if not barcode_type:
+            barcode_type = 'qr_code'
+        
+        generated_barcodes = []
+        
+        for jewelry_item in jewelry_items:
+            try:
+                barcode_gen = self.generate_barcode_for_item(
+                    jewelry_item, barcode_type, template
+                )
+                generated_barcodes.append(barcode_gen)
+            except Exception as e:
+                # Log error but continue with other items
+                print(f"Error generating barcode for item {jewelry_item.id}: {e}")
+                continue
+        
+        return generated_barcodes
 
 
 class BarcodeScanningService:
@@ -262,4 +282,22 @@ class BarcodeSettingsService:
                 'barcode_height': 100
             }
         )
+        return settings_obj
+    
+    def update_settings(self, **kwargs):
+        """Update barcode settings."""
+        settings_obj = self.get_or_create_settings()
+        
+        # Update allowed fields
+        allowed_fields = [
+            'auto_generate_on_create', 'default_barcode_type', 
+            'include_tenant_prefix', 'tenant_prefix', 'qr_code_size',
+            'barcode_width', 'barcode_height'
+        ]
+        
+        for field, value in kwargs.items():
+            if field in allowed_fields and hasattr(settings_obj, field):
+                setattr(settings_obj, field, value)
+        
+        settings_obj.save()
         return settings_obj
