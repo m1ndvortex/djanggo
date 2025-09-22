@@ -1,0 +1,830 @@
+{% extends "base_rtl.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{{ form_title }} - زرگر{% endblock %}
+
+{% block extra_head %}
+<style>
+    .form-card {
+        backdrop-filter: blur(16px) saturate(150%);
+        background: linear-gradient(145deg, 
+            rgba(37, 42, 58, 0.8) 0%, 
+            rgba(26, 29, 41, 0.9) 50%,
+            rgba(11, 14, 26, 0.95) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
+    
+    .form-input {
+        transition: all 0.3s ease;
+    }
+    
+    .form-input:focus {
+        transform: scale(1.02);
+    }
+    
+    .photo-upload-area {
+        border: 2px dashed;
+        transition: all 0.3s ease;
+        min-height: 200px;
+    }
+    
+    .photo-upload-area:hover {
+        transform: scale(1.02);
+    }
+    
+    .photo-upload-area.dragover {
+        transform: scale(1.05);
+    }
+    
+    .photo-preview {
+        position: relative;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .photo-preview:hover {
+        transform: scale(1.05);
+    }
+    
+    .photo-preview img {
+        width: 100%;
+        height: 120px;
+        object-fit: cover;
+    }
+    
+    .photo-remove-btn {
+        position: absolute;
+        top: 0.25rem;
+        right: 0.25rem;
+        width: 1.5rem;
+        height: 1.5rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .photo-remove-btn:hover {
+        transform: scale(1.1);
+    }
+    
+    .existing-photo {
+        position: relative;
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+    
+    .existing-photo img {
+        width: 100%;
+        height: 120px;
+        object-fit: cover;
+    }
+    
+    .primary-badge {
+        position: absolute;
+        top: 0.25rem;
+        left: 0.25rem;
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        <div>
+            <nav class="flex items-center space-x-2 space-x-reverse text-sm mb-4
+                       {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                <a href="{% url 'jewelry:dashboard' %}" 
+                   class="{% if is_dark_mode %}hover:text-cyber-neon-primary{% else %}hover:text-blue-600{% endif %}">
+                    داشبورد موجودی
+                </a>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                <a href="{% url 'jewelry:inventory_list' %}" 
+                   class="{% if is_dark_mode %}hover:text-cyber-neon-primary{% else %}hover:text-blue-600{% endif %}">
+                    فهرست موجودی
+                </a>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                <span>{{ form_title }}</span>
+            </nav>
+            
+            <h1 class="text-3xl font-bold mb-2
+                       {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                {{ form_title }}
+            </h1>
+            <p class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                {% if object %}
+                ویرایش اطلاعات کالا و مدیریت تصاویر
+                {% else %}
+                اطلاعات کالای جدید را وارد کنید
+                {% endif %}
+            </p>
+        </div>
+        
+        <div class="flex flex-wrap gap-3 mt-4 md:mt-0">
+            <a href="{% if object %}{% url 'jewelry:inventory_detail' object.pk %}{% else %}{% url 'jewelry:inventory_list' %}{% endif %}" 
+               class="inline-flex items-center px-4 py-2 rounded-lg font-medium transition-all duration-300
+                      {% if is_dark_mode %}
+                      bg-cyber-bg-surface/50 border border-cyber-text-muted/30 text-cyber-text-secondary
+                      hover:border-cyber-text-secondary/50
+                      {% else %}
+                      bg-white text-gray-700 border border-gray-300
+                      hover:bg-gray-50 hover:border-gray-400
+                      {% endif %}">
+                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+                انصراف
+            </a>
+        </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" id="inventoryForm">
+        {% csrf_token %}
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Main Form -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Basic Information -->
+                <div class="{% if is_dark_mode %}form-card{% else %}bg-white border border-gray-200 shadow-sm{% endif %} 
+                            rounded-xl p-6">
+                    <h3 class="text-lg font-bold mb-6
+                             {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        اطلاعات پایه
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Name -->
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium mb-2
+                                         {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                                نام کالا <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" 
+                                   name="name" 
+                                   value="{{ form.name.value|default:'' }}"
+                                   required
+                                   class="form-input w-full px-4 py-3 rounded-lg border transition-all duration-300
+                                          {% if is_dark_mode %}
+                                          bg-cyber-bg-surface/50 border-cyber-text-muted/30 text-cyber-text-primary
+                                          placeholder-cyber-text-muted focus:border-cyber-neon-primary/50
+                                          {% else %}
+                                          bg-white border-gray-300 text-gray-900
+                                          placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500
+                                          {% endif %}"
+                                   placeholder="نام کالا را وارد کنید">
+                            {% if form.name.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.name.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- SKU -->
+                        <div>
+                            <label class="block text-sm font-medium mb-2
+                                         {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                                کد کالا (SKU) <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" 
+                                   name="sku" 
+                                   value="{{ form.sku.value|default:'' }}"
+                                   required
+                                   class="form-input w-full px-4 py-3 rounded-lg border transition-all duration-300
+                                          {% if is_dark_mode %}
+                                          bg-cyber-bg-surface/50 border-cyber-text-muted/30 text-cyber-text-primary
+                                          placeholder-cyber-text-muted focus:border-cyber-neon-primary/50
+                                          {% else %}
+                                          bg-white border-gray-300 text-gray-900
+                                          placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500
+                                          {% endif %}"
+                                   placeholder="کد یکتای کالا">
+                            {% if form.sku.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.sku.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Category -->
+                        <div>
+                            <label class="block text-sm font-medium mb-2
+                                         {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                                دسته‌بندی <span class="text-red-500">*</span>
+                            </label>
+                            <select name="category" 
+                                    required
+                                    class="form-input w-full px-4 py-3 rounded-lg border transition-all duration-300
+                                           {% if is_dark_mode %}
+                                           bg-cyber-bg-surface/50 border-cyber-text-muted/30 text-cyber-text-primary
+                                           {% else %}
+                                           bg-white border-gray-300 text-gray-900
+                                           {% endif %}">
+                                <option value="">انتخاب دسته‌بندی</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}" 
+                                        {% if form.category.value == category.id %}selected{% endif %}>
+                                    {{ category.name_persian|default:category.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            {% if form.category.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.category.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Physical Properties -->
+                <div class="{% if is_dark_mode %}form-card{% else %}bg-white border border-gray-200 shadow-sm{% endif %} 
+                            rounded-xl p-6">
+                    <h3 class="text-lg font-bold mb-6
+                             {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        مشخصات فیزیکی
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Weight -->
+                        <div>
+                            <label class="block text-sm font-medium mb-2
+                                         {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                                وزن (گرم) <span class="text-red-500">*</span>
+                            </label>
+                            <input type="number" 
+                                   name="weight_grams" 
+                                   value="{{ form.weight_grams.value|default:'' }}"
+                                   step="0.001"
+                                   min="0.001"
+                                   required
+                                   class="form-input w-full px-4 py-3 rounded-lg border transition-all duration-300
+                                          {% if is_dark_mode %}
+                                          bg-cyber-bg-surface/50 border-cyber-text-muted/30 text-cyber-text-primary
+                                          placeholder-cyber-text-muted focus:border-cyber-neon-primary/50
+                                          {% else %}
+                                          bg-white border-gray-300 text-gray-900
+                                          placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500
+                                          {% endif %}"
+                                   placeholder="0.000">
+                            {% if form.weight_grams.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.weight_grams.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Karat -->
+                        <div>
+                            <label class="block text-sm font-medium mb-2
+                                         {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                                عیار <span class="text-red-500">*</span>
+                            </label>
+                            <select name="karat" 
+                                    required
+                                    class="form-input w-full px-4 py-3 rounded-lg border transition-all duration-300
+                                           {% if is_dark_mode %}
+                                           bg-cyber-bg-surface/50 border-cyber-text-muted/30 text-cyber-text-primary
+                                           {% else %}
+                                           bg-white border-gray-300 text-gray-900
+                                           {% endif %}">
+                                <option value="">انتخاب عیار</option>
+                                <option value="14" {% if form.karat.value == 14 %}selected{% endif %}>14 عیار</option>
+                                <option value="18" {% if form.karat.value == 18 %}selected{% endif %}>18 عیار</option>
+                                <option value="21" {% if form.karat.value == 21 %}selected{% endif %}>21 عیار</option>
+                                <option value="22" {% if form.karat.value == 22 %}selected{% endif %}>22 عیار</option>
+                                <option value="24" {% if form.karat.value == 24 %}selected{% endif %}>24 عیار</option>
+                            </select>
+                            {% if form.karat.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.karat.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pricing -->
+                <div class="{% if is_dark_mode %}form-card{% else %}bg-white border border-gray-200 shadow-sm{% endif %} 
+                            rounded-xl p-6">
+                    <h3 class="text-lg font-bold mb-6
+                             {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        قیمت‌گذاری
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Manufacturing Cost -->
+                        <div>
+                            <label class="block text-sm font-medium mb-2
+                                         {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                                اجرت ساخت (تومان) <span class="text-red-500">*</span>
+                            </label>
+                            <input type="number" 
+                                   name="manufacturing_cost" 
+                                   value="{{ form.manufacturing_cost.value|default:'' }}"
+                                   min="0"
+                                   required
+                                   class="form-input w-full px-4 py-3 rounded-lg border transition-all duration-300
+                                          {% if is_dark_mode %}
+                                          bg-cyber-bg-surface/50 border-cyber-text-muted/30 text-cyber-text-primary
+                                          placeholder-cyber-text-muted focus:border-cyber-neon-primary/50
+                                          {% else %}
+                                          bg-white border-gray-300 text-gray-900
+                                          placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500
+                                          {% endif %}"
+                                   placeholder="0">
+                            {% if form.manufacturing_cost.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.manufacturing_cost.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Gemstone Value -->
+                        <div>
+                            <label class="block text-sm font-medium mb-2
+                                         {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                                ارزش سنگ (تومان)
+                            </label>
+                            <input type="number" 
+                                   name="gemstone_value" 
+                                   value="{{ form.gemstone_value.value|default:'' }}"
+                                   min="0"
+                                   class="form-input w-full px-4 py-3 rounded-lg border transition-all duration-300
+                                          {% if is_dark_mode %}
+                                          bg-cyber-bg-surface/50 border-cyber-text-muted/30 text-cyber-text-primary
+                                          placeholder-cyber-text-muted focus:border-cyber-neon-primary/50
+                                          {% else %}
+                                          bg-white border-gray-300 text-gray-900
+                                          placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500
+                                          {% endif %}"
+                                   placeholder="0">
+                            {% if form.gemstone_value.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.gemstone_value.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Selling Price -->
+                        <div>
+                            <label class="block text-sm font-medium mb-2
+                                         {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                                قیمت فروش (تومان)
+                            </label>
+                            <input type="number" 
+                                   name="selling_price" 
+                                   value="{{ form.selling_price.value|default:'' }}"
+                                   min="0"
+                                   class="form-input w-full px-4 py-3 rounded-lg border transition-all duration-300
+                                          {% if is_dark_mode %}
+                                          bg-cyber-bg-surface/50 border-cyber-text-muted/30 text-cyber-text-primary
+                                          placeholder-cyber-text-muted focus:border-cyber-neon-primary/50
+                                          {% else %}
+                                          bg-white border-gray-300 text-gray-900
+                                          placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500
+                                          {% endif %}"
+                                   placeholder="0">
+                            {% if form.selling_price.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.selling_price.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inventory -->
+                <div class="{% if is_dark_mode %}form-card{% else %}bg-white border border-gray-200 shadow-sm{% endif %} 
+                            rounded-xl p-6">
+                    <h3 class="text-lg font-bold mb-6
+                             {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        موجودی
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Quantity -->
+                        <div>
+                            <label class="block text-sm font-medium mb-2
+                                         {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                                تعداد <span class="text-red-500">*</span>
+                            </label>
+                            <input type="number" 
+                                   name="quantity" 
+                                   value="{{ form.quantity.value|default:'1' }}"
+                                   min="0"
+                                   required
+                                   class="form-input w-full px-4 py-3 rounded-lg border transition-all duration-300
+                                          {% if is_dark_mode %}
+                                          bg-cyber-bg-surface/50 border-cyber-text-muted/30 text-cyber-text-primary
+                                          placeholder-cyber-text-muted focus:border-cyber-neon-primary/50
+                                          {% else %}
+                                          bg-white border-gray-300 text-gray-900
+                                          placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500
+                                          {% endif %}"
+                                   placeholder="1">
+                            {% if form.quantity.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.quantity.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Minimum Stock -->
+                        <div>
+                            <label class="block text-sm font-medium mb-2
+                                         {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                                حداقل موجودی <span class="text-red-500">*</span>
+                            </label>
+                            <input type="number" 
+                                   name="minimum_stock" 
+                                   value="{{ form.minimum_stock.value|default:'1' }}"
+                                   min="0"
+                                   required
+                                   class="form-input w-full px-4 py-3 rounded-lg border transition-all duration-300
+                                          {% if is_dark_mode %}
+                                          bg-cyber-bg-surface/50 border-cyber-text-muted/30 text-cyber-text-primary
+                                          placeholder-cyber-text-muted focus:border-cyber-neon-primary/50
+                                          {% else %}
+                                          bg-white border-gray-300 text-gray-900
+                                          placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500
+                                          {% endif %}"
+                                   placeholder="1">
+                            {% if form.minimum_stock.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.minimum_stock.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Status (only for edit) -->
+                        {% if object %}
+                        <div>
+                            <label class="block text-sm font-medium mb-2
+                                         {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                                وضعیت
+                            </label>
+                            <select name="status" 
+                                    class="form-input w-full px-4 py-3 rounded-lg border transition-all duration-300
+                                           {% if is_dark_mode %}
+                                           bg-cyber-bg-surface/50 border-cyber-text-muted/30 text-cyber-text-primary
+                                           {% else %}
+                                           bg-white border-gray-300 text-gray-900
+                                           {% endif %}">
+                                <option value="in_stock" {% if form.status.value == 'in_stock' %}selected{% endif %}>موجود</option>
+                                <option value="sold" {% if form.status.value == 'sold' %}selected{% endif %}>فروخته شده</option>
+                                <option value="reserved" {% if form.status.value == 'reserved' %}selected{% endif %}>رزرو شده</option>
+                                <option value="repair" {% if form.status.value == 'repair' %}selected{% endif %}>در تعمیر</option>
+                                <option value="consignment" {% if form.status.value == 'consignment' %}selected{% endif %}>امانی</option>
+                            </select>
+                            {% if form.status.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.status.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Description and Notes -->
+                <div class="{% if is_dark_mode %}form-card{% else %}bg-white border border-gray-200 shadow-sm{% endif %} 
+                            rounded-xl p-6">
+                    <h3 class="text-lg font-bold mb-6
+                             {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        توضیحات
+                    </h3>
+                    
+                    <div class="space-y-6">
+                        <!-- Description -->
+                        <div>
+                            <label class="block text-sm font-medium mb-2
+                                         {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                                توضیحات کالا
+                            </label>
+                            <textarea name="description" 
+                                      rows="4"
+                                      class="form-input w-full px-4 py-3 rounded-lg border transition-all duration-300
+                                             {% if is_dark_mode %}
+                                             bg-cyber-bg-surface/50 border-cyber-text-muted/30 text-cyber-text-primary
+                                             placeholder-cyber-text-muted focus:border-cyber-neon-primary/50
+                                             {% else %}
+                                             bg-white border-gray-300 text-gray-900
+                                             placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500
+                                             {% endif %}"
+                                      placeholder="توضیحات تکمیلی در مورد کالا...">{{ form.description.value|default:'' }}</textarea>
+                            {% if form.description.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.description.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Notes -->
+                        <div>
+                            <label class="block text-sm font-medium mb-2
+                                         {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                                یادداشت‌های داخلی
+                            </label>
+                            <textarea name="notes" 
+                                      rows="3"
+                                      class="form-input w-full px-4 py-3 rounded-lg border transition-all duration-300
+                                             {% if is_dark_mode %}
+                                             bg-cyber-bg-surface/50 border-cyber-text-muted/30 text-cyber-text-primary
+                                             placeholder-cyber-text-muted focus:border-cyber-neon-primary/50
+                                             {% else %}
+                                             bg-white border-gray-300 text-gray-900
+                                             placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500
+                                             {% endif %}"
+                                      placeholder="یادداشت‌های داخلی (فقط برای کارکنان قابل مشاهده)...">{{ form.notes.value|default:'' }}</textarea>
+                            {% if form.notes.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.notes.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Photo Management -->
+            <div class="space-y-6">
+                <!-- Existing Photos (Edit Mode) -->
+                {% if existing_photos %}
+                <div class="{% if is_dark_mode %}form-card{% else %}bg-white border border-gray-200 shadow-sm{% endif %} 
+                            rounded-xl p-6">
+                    <h3 class="text-lg font-bold mb-6
+                             {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        تصاویر موجود
+                    </h3>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        {% for photo in existing_photos %}
+                        <div class="existing-photo" data-photo-id="{{ photo.id }}">
+                            <img src="{{ photo.image.url }}" alt="{{ photo.caption|default:object.name }}">
+                            
+                            {% if photo.is_primary %}
+                            <div class="primary-badge
+                                       {% if is_dark_mode %}bg-cyber-neon-primary/20 text-cyber-neon-primary border border-cyber-neon-primary/30{% else %}bg-blue-100 text-blue-800 border border-blue-200{% endif %}">
+                                اصلی
+                            </div>
+                            {% endif %}
+                            
+                            <button type="button" 
+                                    onclick="deletePhoto({{ photo.id }})"
+                                    class="photo-remove-btn
+                                           {% if is_dark_mode %}bg-cyber-neon-danger/80 text-white{% else %}bg-red-500 text-white{% endif %}">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Photo Upload -->
+                <div class="{% if is_dark_mode %}form-card{% else %}bg-white border border-gray-200 shadow-sm{% endif %} 
+                            rounded-xl p-6">
+                    <h3 class="text-lg font-bold mb-6
+                             {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        {% if object %}افزودن تصاویر جدید{% else %}تصاویر کالا{% endif %}
+                    </h3>
+                    
+                    <!-- Upload Area -->
+                    <div class="photo-upload-area rounded-lg flex flex-col items-center justify-center p-6 text-center
+                                {% if is_dark_mode %}
+                                border-cyber-text-muted/30 bg-cyber-bg-surface/20
+                                hover:border-cyber-neon-primary/50 hover:bg-cyber-bg-surface/40
+                                {% else %}
+                                border-gray-300 bg-gray-50
+                                hover:border-blue-400 hover:bg-blue-50
+                                {% endif %}"
+                         id="photoUploadArea">
+                        
+                        <svg class="w-12 h-12 mb-4 {% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-400{% endif %}" 
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        
+                        <p class="mb-2 text-sm
+                                 {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            <span class="font-semibold">برای آپلود کلیک کنید</span> یا فایل‌ها را اینجا بکشید
+                        </p>
+                        <p class="text-xs
+                                 {% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">
+                            PNG، JPG یا JPEG (حداکثر 10MB)
+                        </p>
+                        
+                        <input type="file" 
+                               name="{% if object %}new_photos{% else %}photos{% endif %}" 
+                               multiple 
+                               accept="image/*"
+                               class="hidden" 
+                               id="photoInput">
+                    </div>
+                    
+                    <!-- Photo Previews -->
+                    <div id="photoPreviewContainer" class="mt-6 grid grid-cols-2 gap-4 hidden"></div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="{% if is_dark_mode %}form-card{% else %}bg-white border border-gray-200 shadow-sm{% endif %} 
+                            rounded-xl p-6">
+                    <div class="space-y-4">
+                        <button type="submit" 
+                                class="w-full flex items-center justify-center px-6 py-3 rounded-lg font-medium transition-all duration-300
+                                       {% if is_dark_mode %}
+                                       bg-gradient-to-r from-cyber-neon-primary/20 to-cyber-neon-secondary/20 
+                                       border border-cyber-neon-primary/30 text-cyber-neon-primary
+                                       hover:border-cyber-neon-primary/50 hover:shadow-lg hover:shadow-cyber-neon-primary/20
+                                       {% else %}
+                                       bg-blue-600 text-white border border-blue-600
+                                       hover:bg-blue-700 hover:border-blue-700
+                                       {% endif %}">
+                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            {{ submit_text }}
+                        </button>
+                        
+                        <a href="{% if object %}{% url 'jewelry:inventory_detail' object.pk %}{% else %}{% url 'jewelry:inventory_list' %}{% endif %}" 
+                           class="w-full flex items-center justify-center px-6 py-3 rounded-lg font-medium transition-all duration-300
+                                  {% if is_dark_mode %}
+                                  bg-cyber-bg-surface/50 border border-cyber-text-muted/30 text-cyber-text-secondary
+                                  hover:border-cyber-text-secondary/50
+                                  {% else %}
+                                  bg-white text-gray-700 border border-gray-300
+                                  hover:bg-gray-50 hover:border-gray-400
+                                  {% endif %}">
+                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            انصراف
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const photoInput = document.getElementById('photoInput');
+    const photoUploadArea = document.getElementById('photoUploadArea');
+    const photoPreviewContainer = document.getElementById('photoPreviewContainer');
+    let selectedFiles = [];
+
+    // Click to upload
+    photoUploadArea.addEventListener('click', () => {
+        photoInput.click();
+    });
+
+    // Drag and drop
+    photoUploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        photoUploadArea.classList.add('dragover');
+    });
+
+    photoUploadArea.addEventListener('dragleave', () => {
+        photoUploadArea.classList.remove('dragover');
+    });
+
+    photoUploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        photoUploadArea.classList.remove('dragover');
+        
+        const files = Array.from(e.dataTransfer.files).filter(file => 
+            file.type.startsWith('image/')
+        );
+        
+        handleFiles(files);
+    });
+
+    // File input change
+    photoInput.addEventListener('change', (e) => {
+        handleFiles(Array.from(e.target.files));
+    });
+
+    function handleFiles(files) {
+        selectedFiles = [...selectedFiles, ...files];
+        updatePhotoPreview();
+        updateFileInput();
+    }
+
+    function updatePhotoPreview() {
+        if (selectedFiles.length === 0) {
+            photoPreviewContainer.classList.add('hidden');
+            return;
+        }
+
+        photoPreviewContainer.classList.remove('hidden');
+        photoPreviewContainer.innerHTML = '';
+
+        selectedFiles.forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const previewDiv = document.createElement('div');
+                previewDiv.className = 'photo-preview';
+                previewDiv.innerHTML = `
+                    <img src="${e.target.result}" alt="Preview">
+                    <button type="button" 
+                            onclick="removePhoto(${index})"
+                            class="photo-remove-btn {% if is_dark_mode %}bg-cyber-neon-danger/80 text-white{% else %}bg-red-500 text-white{% endif %}">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                `;
+                photoPreviewContainer.appendChild(previewDiv);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function updateFileInput() {
+        const dt = new DataTransfer();
+        selectedFiles.forEach(file => dt.items.add(file));
+        photoInput.files = dt.files;
+    }
+
+    window.removePhoto = function(index) {
+        selectedFiles.splice(index, 1);
+        updatePhotoPreview();
+        updateFileInput();
+    };
+
+    // Auto-generate SKU
+    const nameInput = document.querySelector('input[name="name"]');
+    const skuInput = document.querySelector('input[name="sku"]');
+    
+    if (nameInput && skuInput && !skuInput.value) {
+        nameInput.addEventListener('input', function() {
+            if (!skuInput.value) {
+                const sku = generateSKU(this.value);
+                skuInput.value = sku;
+            }
+        });
+    }
+
+    function generateSKU(name) {
+        // Simple SKU generation
+        const timestamp = Date.now().toString().slice(-6);
+        const nameCode = name.replace(/\s+/g, '').substring(0, 3).toUpperCase();
+        return `${nameCode}${timestamp}`;
+    }
+
+    // Form validation
+    const form = document.getElementById('inventoryForm');
+    form.addEventListener('submit', function(e) {
+        const requiredFields = form.querySelectorAll('[required]');
+        let isValid = true;
+
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                isValid = false;
+                field.classList.add('border-red-500');
+            } else {
+                field.classList.remove('border-red-500');
+            }
+        });
+
+        if (!isValid) {
+            e.preventDefault();
+            showNotification('لطفاً تمام فیلدهای اجباری را پر کنید', 'error');
+        }
+    });
+});
+
+// Delete existing photo
+async function deletePhoto(photoId) {
+    if (!confirm('آیا از حذف این تصویر اطمینان دارید؟')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/jewelry/api/delete-photo/${photoId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': window.zargarConfig.csrfToken,
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            document.querySelector(`[data-photo-id="${photoId}"]`).remove();
+            showNotification(data.message, 'success');
+        } else {
+            showNotification(data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Error deleting photo:', error);
+        showNotification('خطا در حذف تصویر', 'error');
+    }
+}
+
+function showNotification(message, type) {
+    // Use Alpine.js notification system if available
+    if (window.Alpine && document.querySelector('[x-data]').__x) {
+        document.querySelector('[x-data]').__x.$data.showNotification(message, type);
+    } else {
+        // Fallback to alert
+        alert(message);
+    }
+}
+</script>
+{% endblock %}
