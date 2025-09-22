@@ -308,3 +308,10 @@ class JewelryItemPhoto(TenantAwareModel):
             ).exclude(pk=self.pk).update(is_primary=False)
         
         super().save(*args, **kwargs)
+
+
+# Import barcode models to make them available
+from .barcode_models import (
+    BarcodeGeneration, BarcodeScanHistory, BarcodeTemplate, 
+    BarcodeSettings, BarcodeType
+)

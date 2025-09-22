@@ -8,78 +8,91 @@
 {% block extra_css %}
 <link href="{% static 'css/notifications.css' %}" rel="stylesheet">
 <style>
-.notification-card {
-    transition: all 0.3s ease;
-    border-right: 4px solid #17a2b8;
-}
-.notification-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-.notification-card.pending { border-right-color: #ffc107; }
-.notification-card.sent { border-right-color: #28a745; }
-.notification-card.failed { border-right-color: #dc3545; }
-.notification-card.delivered { border-right-color: #007bff; }
+    .notification-card {
+        transition: all 0.3s ease;
+        border-right: 4px solid #17a2b8;
+    }
 
-.stats-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-radius: 15px;
-    padding: 1.5rem;
-    margin-bottom: 1rem;
-}
+    .notification-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
 
-.stats-card.warning {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-}
+    .notification-card.pending {
+        border-right-color: #ffc107;
+    }
 
-.stats-card.success {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-}
+    .notification-card.sent {
+        border-right-color: #28a745;
+    }
 
-.stats-card.danger {
-    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-}
+    .notification-card.failed {
+        border-right-color: #dc3545;
+    }
 
-.notification-status-badge {
-    font-size: 0.75rem;
-    padding: 0.25rem 0.5rem;
-    border-radius: 12px;
-}
+    .notification-card.delivered {
+        border-right-color: #007bff;
+    }
 
-.template-preview {
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 0.375rem;
-    padding: 1rem;
-    font-family: 'Vazir', sans-serif;
-    direction: rtl;
-    max-height: 200px;
-    overflow-y: auto;
-}
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+    }
 
-.quick-action-btn {
-    margin: 0.25rem;
-    border-radius: 20px;
-    padding: 0.5rem 1rem;
-}
+    .stats-card.warning {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
 
-/* Dark mode styles */
-[data-theme="dark"] .stats-card {
-    background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
-    border: 1px solid rgba(0, 212, 255, 0.2);
-}
+    .stats-card.success {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
 
-[data-theme="dark"] .notification-card {
-    background: rgba(26, 29, 41, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-}
+    .stats-card.danger {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
 
-[data-theme="dark"] .template-preview {
-    background: rgba(37, 42, 58, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    color: #ffffff;
-}
+    .notification-status-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+    }
+
+    .template-preview {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        font-family: 'Vazir', sans-serif;
+        direction: rtl;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .quick-action-btn {
+        margin: 0.25rem;
+        border-radius: 20px;
+        padding: 0.5rem 1rem;
+    }
+
+    /* Dark mode styles */
+    [data-theme="dark"] .stats-card {
+        background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+        border: 1px solid rgba(0, 212, 255, 0.2);
+    }
+
+    [data-theme="dark"] .notification-card {
+        background: rgba(26, 29, 41, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    [data-theme="dark"] .template-preview {
+        background: rgba(37, 42, 58, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        color: #ffffff;
+    }
 </style>
 {% endblock %}
 
@@ -91,7 +104,8 @@
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h1 class="h3 mb-0 text-gray-800">{% trans "Notification Management" %}</h1>
-                    <p class="text-muted">{% trans "Manage customer notifications, templates, and delivery status" %} - Persian RTL Interface</p>
+                    <p class="text-muted">{% trans "Manage customer notifications, templates, and delivery status" %} -
+                        Persian RTL Interface</p>
                 </div>
                 <div>
                     <div class="btn-group" role="group">
@@ -197,7 +211,8 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <button class="btn btn-outline-primary quick-action-btn" onclick="showSingleNotificationModal()">
+                        <button class="btn btn-outline-primary quick-action-btn"
+                            onclick="showSingleNotificationModal()">
                             <i class="fas fa-bell me-2"></i>
                             {% trans "Send Single Notification" %}
                         </button>
@@ -214,7 +229,8 @@
                             {% trans "Send Special Offers" %}
                         </button>
                         <hr>
-                        <a href="{% url 'core:notifications:history' %}" class="btn btn-outline-secondary quick-action-btn">
+                        <a href="{% url 'core:notifications:history' %}"
+                            class="btn btn-outline-secondary quick-action-btn">
                             <i class="fas fa-history me-2"></i>
                             {% trans "View History" %}
                         </a>
@@ -244,23 +260,26 @@
                                     <small class="text-muted">{{ template.get_template_type_display }}</small>
                                 </div>
                                 <div class="dropdown">
-                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
-                                            data-bs-toggle="dropdown" aria-expanded="false">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
                                         <i class="fas fa-ellipsis-v"></i>
                                     </button>
                                     <ul class="dropdown-menu">
                                         <li>
-                                            <a class="dropdown-item" href="#" onclick="previewTemplate({{ template.id }})">
+                                            <a class="dropdown-item" href="#"
+                                                onclick="previewTemplate({{ template.id }})">
                                                 <i class="fas fa-eye me-2"></i>{% trans "Preview" %}
                                             </a>
                                         </li>
                                         <li>
-                                            <a class="dropdown-item" href="{% url 'core:notifications:template_edit' template.id %}">
+                                            <a class="dropdown-item"
+                                                href="{% url 'core:notifications:template_edit' template.id %}">
                                                 <i class="fas fa-edit me-2"></i>{% trans "Edit" %}
                                             </a>
                                         </li>
                                         <li>
-                                            <a class="dropdown-item" href="#" onclick="useTemplate('{{ template.template_type }}')">
+                                            <a class="dropdown-item" href="#"
+                                                onclick="useTemplate('{{ template.template_type }}')">
                                                 <i class="fas fa-paper-plane me-2"></i>{% trans "Use Template" %}
                                             </a>
                                         </li>
@@ -290,13 +309,13 @@
                     <div class="btn-group btn-group-sm" role="group">
                         <input type="radio" class="btn-check" name="statusFilter" id="all" value="" checked>
                         <label class="btn btn-outline-secondary" for="all">{% trans "All" %}</label>
-                        
+
                         <input type="radio" class="btn-check" name="statusFilter" id="pending" value="pending">
                         <label class="btn btn-outline-warning" for="pending">{% trans "Pending" %}</label>
-                        
+
                         <input type="radio" class="btn-check" name="statusFilter" id="sent" value="sent">
                         <label class="btn btn-outline-success" for="sent">{% trans "Sent" %}</label>
-                        
+
                         <input type="radio" class="btn-check" name="statusFilter" id="failed" value="failed">
                         <label class="btn btn-outline-danger" for="failed">{% trans "Failed" %}</label>
                     </div>
@@ -311,13 +330,13 @@
                                         <div class="d-flex align-items-center">
                                             <div class="me-3">
                                                 {% if notification.delivery_method == 'sms' %}
-                                                    <i class="fas fa-sms fa-lg text-primary"></i>
+                                                <i class="fas fa-sms fa-lg text-primary"></i>
                                                 {% elif notification.delivery_method == 'email' %}
-                                                    <i class="fas fa-envelope fa-lg text-info"></i>
+                                                <i class="fas fa-envelope fa-lg text-info"></i>
                                                 {% elif notification.delivery_method == 'push' %}
-                                                    <i class="fas fa-mobile-alt fa-lg text-success"></i>
+                                                <i class="fas fa-mobile-alt fa-lg text-success"></i>
                                                 {% else %}
-                                                    <i class="fas fa-bell fa-lg text-secondary"></i>
+                                                <i class="fas fa-bell fa-lg text-secondary"></i>
                                                 {% endif %}
                                             </div>
                                             <div>
@@ -341,20 +360,20 @@
                                     </div>
                                     <div class="col-md-2">
                                         <div class="btn-group btn-group-sm" role="group">
-                                            <a href="{% url 'core:notifications:detail' notification.id %}" 
-                                               class="btn btn-outline-info" title="{% trans 'View Details' %}">
+                                            <a href="{% url 'core:notifications:detail' notification.id %}"
+                                                class="btn btn-outline-info" title="{% trans 'View Details' %}">
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                             {% if notification.status == 'pending' %}
-                                            <button class="btn btn-outline-danger" 
-                                                    onclick="cancelNotification({{ notification.id }})"
-                                                    title="{% trans 'Cancel' %}">
+                                            <button class="btn btn-outline-danger"
+                                                onclick="cancelNotification({{ notification.id }})"
+                                                title="{% trans 'Cancel' %}">
                                                 <i class="fas fa-times"></i>
                                             </button>
                                             {% elif notification.status == 'failed' and notification.can_retry %}
-                                            <button class="btn btn-outline-warning" 
-                                                    onclick="retryNotification({{ notification.id }})"
-                                                    title="{% trans 'Retry' %}">
+                                            <button class="btn btn-outline-warning"
+                                                onclick="retryNotification({{ notification.id }})"
+                                                title="{% trans 'Retry' %}">
                                                 <i class="fas fa-redo"></i>
                                             </button>
                                             {% endif %}
@@ -367,41 +386,44 @@
                         <div class="text-center py-5">
                             <i class="fas fa-bell fa-3x text-gray-300 mb-3"></i>
                             <h5 class="text-gray-600">{% trans "No notifications yet" %}</h5>
-                            <p class="text-muted">{% trans "Start by sending your first notification or creating a template." %}</p>
+                            <p class="text-muted">{% trans "Start by sending your first notification or creating a
+                                template." %}</p>
                             <button class="btn btn-primary" onclick="showSingleNotificationModal()">
                                 {% trans "Send First Notification" %}
                             </button>
                         </div>
                         {% endfor %}
                     </div>
-                    
+
                     <!-- Pagination -->
                     {% if page_obj.has_other_pages %}
                     <nav aria-label="{% trans 'Notifications pagination' %}">
                         <ul class="pagination justify-content-center">
                             {% if page_obj.has_previous %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">{% trans "Previous" %}</a>
-                                </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">{% trans
+                                    "Previous" %}</a>
+                            </li>
                             {% endif %}
-                            
+
                             {% for num in page_obj.paginator.page_range %}
-                                {% if page_obj.number == num %}
-                                    <li class="page-item active">
-                                        <span class="page-link">{{ num }}</span>
-                                    </li>
-                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                                    </li>
-                                {% endif %}
-                            {% endfor %}
-                            
-                            {% if page_obj.has_next %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">{% trans "Next" %}</a>
+                            {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %} <li
+                                class="page-item">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
                                 </li>
-                            {% endif %}
+                                {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">{% trans "Next"
+                                        %}</a>
+                                </li>
+                                {% endif %}
                         </ul>
                     </nav>
                     {% endif %}
@@ -448,16 +470,16 @@
                                     <td>{{ log.provider_name|default:"-" }}</td>
                                     <td>
                                         {% if log.success %}
-                                            <span class="badge bg-success">{% trans "Success" %}</span>
+                                        <span class="badge bg-success">{% trans "Success" %}</span>
                                         {% else %}
-                                            <span class="badge bg-danger">{% trans "Failed" %}</span>
+                                        <span class="badge bg-danger">{% trans "Failed" %}</span>
                                         {% endif %}
                                     </td>
                                     <td>
                                         {% if log.error_message %}
-                                            <small class="text-danger">{{ log.error_message|truncatechars:50 }}</small>
+                                        <small class="text-danger">{{ log.error_message|truncatechars:50 }}</small>
                                         {% else %}
-                                            <small class="text-muted">-</small>
+                                        <small class="text-muted">-</small>
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -487,204 +509,204 @@
 {% block extra_js %}
 <script src="{% static 'js/notifications.js' %}"></script>
 <script>
-// Initialize notification management
-document.addEventListener('DOMContentLoaded', function() {
-    // Status filter functionality
-    const statusFilters = document.querySelectorAll('input[name="statusFilter"]');
-    statusFilters.forEach(filter => {
-        filter.addEventListener('change', function() {
-            filterNotifications(this.value);
+    // Initialize notification management
+    document.addEventListener('DOMContentLoaded', function () {
+        // Status filter functionality
+        const statusFilters = document.querySelectorAll('input[name="statusFilter"]');
+        statusFilters.forEach(filter => {
+            filter.addEventListener('change', function () {
+                filterNotifications(this.value);
+            });
         });
+
+        // Auto-refresh statistics every 30 seconds
+        setInterval(refreshStatistics, 30000);
     });
-    
-    // Auto-refresh statistics every 30 seconds
-    setInterval(refreshStatistics, 30000);
-});
 
-function filterNotifications(status) {
-    const notifications = document.querySelectorAll('.notification-item');
-    notifications.forEach(notification => {
-        if (status === '' || notification.dataset.status === status) {
-            notification.style.display = 'block';
-        } else {
-            notification.style.display = 'none';
-        }
-    });
-}
-
-function refreshStatistics() {
-    fetch('{% url "core:notifications:statistics_ajax" %}')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                updateStatisticsCards(data.stats);
-            }
-        })
-        .catch(error => {
-            console.error('Error refreshing statistics:', error);
-        });
-}
-
-function updateStatisticsCards(stats) {
-    // Update statistics cards with new data
-    const cards = document.querySelectorAll('#statisticsCards .h4');
-    if (cards.length >= 4) {
-        cards[0].textContent = persianNumber(stats.total_notifications);
-        cards[1].textContent = persianNumber(stats.pending_notifications);
-        cards[2].textContent = persianNumber(stats.sent_today);
-        cards[3].textContent = persianNumber(stats.failed_today);
-    }
-}
-
-function persianNumber(num) {
-    const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
-    return num.toString().replace(/\d/g, (digit) => persianDigits[digit]);
-}
-
-function showSingleNotificationModal() {
-    const modal = new bootstrap.Modal(document.getElementById('singleNotificationModal'));
-    modal.show();
-}
-
-function showBulkNotificationModal() {
-    const modal = new bootstrap.Modal(document.getElementById('bulkNotificationModal'));
-    modal.show();
-}
-
-function showScheduleModal() {
-    const modal = new bootstrap.Modal(document.getElementById('scheduleNotificationModal'));
-    modal.show();
-}
-
-function previewTemplate(templateId) {
-    fetch(`{% url 'core:notifications:template_preview_ajax' 0 %}`.replace('0', templateId))
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                document.getElementById('previewTitle').textContent = data.title;
-                document.getElementById('previewContent').textContent = data.content;
-                document.getElementById('previewType').textContent = data.template_type;
-                
-                const modal = new bootstrap.Modal(document.getElementById('templatePreviewModal'));
-                modal.show();
+    function filterNotifications(status) {
+        const notifications = document.querySelectorAll('.notification-item');
+        notifications.forEach(notification => {
+            if (status === '' || notification.dataset.status === status) {
+                notification.style.display = 'block';
             } else {
-                showNotification('خطا در نمایش الگو: ' + data.error, 'error');
+                notification.style.display = 'none';
             }
-        })
-        .catch(error => {
-            console.error('Error previewing template:', error);
-            showNotification('خطا در اتصال به سرور', 'error');
-        });
-}
-
-function useTemplate(templateType) {
-    document.getElementById('singleTemplateType').value = templateType;
-    showSingleNotificationModal();
-}
-
-function cancelNotification(notificationId) {
-    if (confirm('{% trans "Are you sure you want to cancel this notification?" %}')) {
-        fetch(`{% url 'core:notifications:cancel_ajax' 0 %}`.replace('0', notificationId), {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showNotification(data.message, 'success');
-                location.reload();
-            } else {
-                showNotification(data.error, 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error cancelling notification:', error);
-            showNotification('خطا در لغو اعلان', 'error');
         });
     }
-}
 
-function retryNotification(notificationId) {
-    if (confirm('{% trans "Do you want to retry sending this notification?" %}')) {
-        fetch(`{% url 'core:notifications:retry_ajax' 0 %}`.replace('0', notificationId), {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showNotification(data.message, 'success');
-                location.reload();
-            } else {
-                showNotification(data.error, 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error retrying notification:', error);
-            showNotification('خطا در تلاش مجدد', 'error');
-        });
+    function refreshStatistics() {
+        fetch('{% url "core:notifications:statistics_ajax" %}')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateStatisticsCards(data.stats);
+                }
+            })
+            .catch(error => {
+                console.error('Error refreshing statistics:', error);
+            });
     }
-}
 
-// Quick action functions
-function sendPaymentReminders() {
-    if (confirm('{% trans "Send payment reminders to all customers with overdue payments?" %}')) {
-        // Implementation for payment reminders
-        showNotification('{% trans "Payment reminders will be sent shortly" %}', 'info');
-    }
-}
-
-function sendBirthdayGreetings() {
-    if (confirm('{% trans "Send birthday greetings to customers with birthdays today?" %}')) {
-        // Implementation for birthday greetings
-        showNotification('{% trans "Birthday greetings will be sent shortly" %}', 'info');
-    }
-}
-
-function sendSpecialOffers() {
-    // Show special offer modal or form
-    showNotification('{% trans "Special offer feature coming soon" %}', 'info');
-}
-
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
+    function updateStatisticsCards(stats) {
+        // Update statistics cards with new data
+        const cards = document.querySelectorAll('#statisticsCards .h4');
+        if (cards.length >= 4) {
+            cards[0].textContent = persianNumber(stats.total_notifications);
+            cards[1].textContent = persianNumber(stats.pending_notifications);
+            cards[2].textContent = persianNumber(stats.sent_today);
+            cards[3].textContent = persianNumber(stats.failed_today);
         }
     }
-    return cookieValue;
-}
 
-function showNotification(message, type = 'info') {
-    // Create notification toast
-    const toast = document.createElement('div');
-    toast.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
-    toast.style.cssText = 'top: 20px; left: 20px; z-index: 9999; min-width: 300px;';
-    toast.innerHTML = `
+    function persianNumber(num) {
+        const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+        return num.toString().replace(/\d/g, (digit) => persianDigits[digit]);
+    }
+
+    function showSingleNotificationModal() {
+        const modal = new bootstrap.Modal(document.getElementById('singleNotificationModal'));
+        modal.show();
+    }
+
+    function showBulkNotificationModal() {
+        const modal = new bootstrap.Modal(document.getElementById('bulkNotificationModal'));
+        modal.show();
+    }
+
+    function showScheduleModal() {
+        const modal = new bootstrap.Modal(document.getElementById('scheduleNotificationModal'));
+        modal.show();
+    }
+
+    function previewTemplate(templateId) {
+        fetch(`{% url 'core:notifications:template_preview_ajax' 0 %}`.replace('0', templateId))
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('previewTitle').textContent = data.title;
+                    document.getElementById('previewContent').textContent = data.content;
+                    document.getElementById('previewType').textContent = data.template_type;
+
+                    const modal = new bootstrap.Modal(document.getElementById('templatePreviewModal'));
+                    modal.show();
+                } else {
+                    showNotification('خطا در نمایش الگو: ' + data.error, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error previewing template:', error);
+                showNotification('خطا در اتصال به سرور', 'error');
+            });
+    }
+
+    function useTemplate(templateType) {
+        document.getElementById('singleTemplateType').value = templateType;
+        showSingleNotificationModal();
+    }
+
+    function cancelNotification(notificationId) {
+        if (confirm('{% trans "Are you sure you want to cancel this notification?" %}')) {
+            fetch(`{% url 'core:notifications:cancel_ajax' 0 %}`.replace('0', notificationId), {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message, 'success');
+                        location.reload();
+                    } else {
+                        showNotification(data.error, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error cancelling notification:', error);
+                    showNotification('خطا در لغو اعلان', 'error');
+                });
+        }
+    }
+
+    function retryNotification(notificationId) {
+        if (confirm('{% trans "Do you want to retry sending this notification?" %}')) {
+            fetch(`{% url 'core:notifications:retry_ajax' 0 %}`.replace('0', notificationId), {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message, 'success');
+                        location.reload();
+                    } else {
+                        showNotification(data.error, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error retrying notification:', error);
+                    showNotification('خطا در تلاش مجدد', 'error');
+                });
+        }
+    }
+
+    // Quick action functions
+    function sendPaymentReminders() {
+        if (confirm('{% trans "Send payment reminders to all customers with overdue payments?" %}')) {
+            // Implementation for payment reminders
+            showNotification('{% trans "Payment reminders will be sent shortly" %}', 'info');
+        }
+    }
+
+    function sendBirthdayGreetings() {
+        if (confirm('{% trans "Send birthday greetings to customers with birthdays today?" %}')) {
+            // Implementation for birthday greetings
+            showNotification('{% trans "Birthday greetings will be sent shortly" %}', 'info');
+        }
+    }
+
+    function sendSpecialOffers() {
+        // Show special offer modal or form
+        showNotification('{% trans "Special offer feature coming soon" %}', 'info');
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function showNotification(message, type = 'info') {
+        // Create notification toast
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
+        toast.style.cssText = 'top: 20px; left: 20px; z-index: 9999; min-width: 300px;';
+        toast.innerHTML = `
         ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
-    
-    document.body.appendChild(toast);
-    
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-        if (toast.parentNode) {
-            toast.parentNode.removeChild(toast);
-        }
-    }, 5000);
-}
+
+        document.body.appendChild(toast);
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 5000);
+    }
 </script>
 {% endblock %}
