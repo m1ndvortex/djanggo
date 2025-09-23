@@ -1,0 +1,333 @@
+{% extends 'admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}حذف {{ tenant.name }} - پنل مدیریت زرگر{% endblock %}
+
+{% block nav_title %}حذف تنانت: {{ tenant.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .danger-card {
+        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+        border: 2px solid #f87171;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .dark .danger-card {
+        background: linear-gradient(135deg, rgba(255, 71, 87, 0.1) 0%, rgba(255, 71, 87, 0.05) 100%);
+        border-color: var(--cyber-neon-danger);
+    }
+    .warning-list {
+        list-style: none;
+        padding: 0;
+        margin: 1rem 0;
+    }
+    .warning-list li {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem 0;
+        color: #dc2626;
+    }
+    .dark .warning-list li {
+        color: var(--cyber-neon-danger);
+    }
+    .warning-list li svg {
+        margin-left: 0.5rem;
+        flex-shrink: 0;
+    }
+    .confirmation-input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px solid #f87171;
+        border-radius: 0.375rem;
+        font-size: 1rem;
+        font-family: monospace;
+        background: white;
+        color: #dc2626;
+    }
+    .dark .confirmation-input {
+        background: var(--cyber-bg-elevated);
+        border-color: var(--cyber-neon-danger);
+        color: var(--cyber-neon-danger);
+    }
+    .confirmation-input:focus {
+        outline: none;
+        border-color: #dc2626;
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+    }
+    .dark .confirmation-input:focus {
+        border-color: var(--cyber-neon-danger);
+        box-shadow: 0 0 0 3px rgba(255, 71, 87, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block page_header %}
+<div class="bg-white dark:bg-cyber-bg-secondary rounded-lg shadow-lg dark:shadow-2xl p-6 mb-6 cyber-glass">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-4 space-x-reverse">
+            <div class="h-12 w-12 rounded-full bg-red-100 dark:bg-cyber-neon-danger/10 flex items-center justify-center">
+                <svg class="w-6 h-6 text-red-600 dark:text-cyber-neon-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-red-600 dark:text-cyber-neon-danger">حذف {{ tenant.name }}</h1>
+                <p class="text-gray-600 dark:text-cyber-text-secondary mt-1">این عمل غیرقابل بازگشت است</p>
+            </div>
+        </div>
+        <div class="flex space-x-3 space-x-reverse">
+            <a href="{% url 'core:tenants:tenant_detail' tenant.pk %}" 
+               class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                بازگشت
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <!-- Danger Warning -->
+    <div class="danger-card">
+        <div class="flex items-center mb-4">
+            <svg class="w-8 h-8 text-red-600 dark:text-cyber-neon-danger ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            </svg>
+            <h2 class="text-xl font-bold text-red-800 dark:text-cyber-neon-danger">هشدار خطرناک</h2>
+        </div>
+        
+        <p class="text-red-800 dark:text-cyber-neon-danger mb-4">
+            شما در حال حذف تنانت <strong>{{ tenant.name }}</strong> هستید. این عمل باعث حذف کامل و غیرقابل بازگشت اطلاعات زیر خواهد شد:
+        </p>
+        
+        <ul class="warning-list">
+            <li>
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                </svg>
+                تمام اطلاعات فروشگاه و موجودی
+            </li>
+            <li>
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                </svg>
+                تمام اطلاعات مشتریان و تراکنش‌ها
+            </li>
+            <li>
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                </svg>
+                تمام حساب‌های کاربری و دسترسی‌ها
+            </li>
+            <li>
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                </svg>
+                اسکیمای کامل پایگاه داده ({{ tenant.schema_name }})
+            </li>
+            <li>
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                </svg>
+                تمام دامنه‌ها و تنظیمات مربوطه
+            </li>
+        </ul>
+        
+        <div class="bg-red-100 dark:bg-cyber-neon-danger/10 border border-red-300 dark:border-cyber-neon-danger/30 rounded-lg p-4 mt-4">
+            <p class="text-red-800 dark:text-cyber-neon-danger font-medium">
+                <svg class="w-5 h-5 inline-block ml-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                </svg>
+                توجه: پیش از حذف، حتماً از تهیه نسخه پشتیبان اطمینان حاصل کنید.
+            </p>
+        </div>
+    </div>
+    
+    <!-- Tenant Information -->
+    <div class="bg-white dark:bg-cyber-bg-secondary rounded-lg shadow-lg dark:shadow-2xl p-6 mb-6 cyber-glass">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-cyber-text-primary mb-4">اطلاعات تنانت</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-600 dark:text-cyber-text-secondary mb-1">نام فروشگاه</label>
+                <p class="text-gray-900 dark:text-cyber-text-primary">{{ tenant.name }}</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-600 dark:text-cyber-text-secondary mb-1">مالک</label>
+                <p class="text-gray-900 dark:text-cyber-text-primary">{{ tenant.owner_name }}</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-600 dark:text-cyber-text-secondary mb-1">ایمیل</label>
+                <p class="text-gray-900 dark:text-cyber-text-primary">{{ tenant.owner_email }}</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-600 dark:text-cyber-text-secondary mb-1">اسکیما</label>
+                <p class="text-gray-900 dark:text-cyber-text-primary font-mono">{{ tenant.schema_name }}</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-600 dark:text-cyber-text-secondary mb-1">تاریخ ایجاد</label>
+                <p class="text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ tenant.created_on|date:"Y/m/d H:i" }}</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-600 dark:text-cyber-text-secondary mb-1">وضعیت</label>
+                <p class="text-gray-900 dark:text-cyber-text-primary">
+                    {% if tenant.is_active %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-cyber-neon-secondary/10 text-green-800 dark:text-cyber-neon-secondary">
+                            فعال
+                        </span>
+                    {% else %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-cyber-neon-danger/10 text-red-800 dark:text-cyber-neon-danger">
+                            غیرفعال
+                        </span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confirmation Form -->
+    <form method="post" id="delete-form">
+        {% csrf_token %}
+        
+        <div class="bg-white dark:bg-cyber-bg-secondary rounded-lg shadow-lg dark:shadow-2xl p-6 cyber-glass">
+            <h3 class="text-lg font-medium text-red-600 dark:text-cyber-neon-danger mb-4 flex items-center">
+                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+                تأیید حذف
+            </h3>
+            
+            <p class="text-gray-700 dark:text-cyber-text-secondary mb-4">
+                برای تأیید حذف، نام دقیق تنانت را در کادر زیر وارد کنید:
+            </p>
+            
+            <div class="mb-4">
+                <label for="confirmation-input" class="block text-sm font-medium text-red-600 dark:text-cyber-neon-danger mb-2">
+                    نام تنانت برای تأیید: <strong>{{ tenant.name }}</strong>
+                </label>
+                <input type="text" 
+                       id="confirmation-input" 
+                       name="confirmation" 
+                       class="confirmation-input"
+                       placeholder="نام تنانت را وارد کنید..."
+                       autocomplete="off"
+                       required>
+                <p class="text-xs text-red-600 dark:text-cyber-neon-danger mt-1">
+                    دقیقاً همان نامی که بالا نمایش داده شده را وارد کنید.
+                </p>
+            </div>
+            
+            <div class="flex items-center mb-6">
+                <input type="checkbox" 
+                       id="final-confirmation" 
+                       name="final_confirmation" 
+                       class="h-4 w-4 text-red-600 dark:text-cyber-neon-danger focus:ring-red-500 dark:focus:ring-cyber-neon-danger border-red-300 dark:border-cyber-neon-danger/30 rounded"
+                       required>
+                <label for="final-confirmation" class="mr-2 block text-sm text-red-600 dark:text-cyber-neon-danger">
+                    من از عواقب این عمل آگاهم و می‌خواهم این تنانت را برای همیشه حذف کنم.
+                </label>
+            </div>
+            
+            <div class="flex items-center justify-end space-x-4 space-x-reverse">
+                <a href="{% url 'core:tenants:tenant_detail' tenant.pk %}" 
+                   class="bg-gray-300 dark:bg-cyber-bg-surface hover:bg-gray-400 dark:hover:bg-cyber-bg-elevated text-gray-700 dark:text-cyber-text-secondary px-6 py-2 rounded-lg font-medium transition-colors">
+                    انصراف
+                </a>
+                <button type="submit" 
+                        class="bg-red-600 dark:bg-cyber-neon-danger hover:bg-red-700 dark:hover:bg-cyber-neon-danger/80 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        id="delete-btn"
+                        disabled>
+                    <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                    حذف دائمی تنانت
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('delete-form');
+    const confirmationInput = document.getElementById('confirmation-input');
+    const finalConfirmation = document.getElementById('final-confirmation');
+    const deleteBtn = document.getElementById('delete-btn');
+    const tenantName = '{{ tenant.name }}';
+    
+    function checkFormValidity() {
+        const nameMatches = confirmationInput.value.trim() === tenantName;
+        const checkboxChecked = finalConfirmation.checked;
+        
+        if (nameMatches && checkboxChecked) {
+            deleteBtn.disabled = false;
+            deleteBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        } else {
+            deleteBtn.disabled = true;
+            deleteBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+        
+        // Update input styling
+        if (confirmationInput.value.trim() === '') {
+            confirmationInput.classList.remove('border-green-500', 'border-red-500');
+        } else if (nameMatches) {
+            confirmationInput.classList.remove('border-red-500');
+            confirmationInput.classList.add('border-green-500');
+        } else {
+            confirmationInput.classList.remove('border-green-500');
+            confirmationInput.classList.add('border-red-500');
+        }
+    }
+    
+    confirmationInput.addEventListener('input', checkFormValidity);
+    finalConfirmation.addEventListener('change', checkFormValidity);
+    
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Final confirmation dialog
+        const confirmed = confirm(
+            `آیا واقعاً می‌خواهید تنانت "${tenantName}" را برای همیشه حذف کنید؟\n\n` +
+            'این عمل غیرقابل بازگشت است و تمام اطلاعات مربوط به این تنانت از بین خواهد رفت.\n\n' +
+            'برای ادامه "تأیید" را کلیک کنید.'
+        );
+        
+        if (!confirmed) {
+            return;
+        }
+        
+        // Show loading state
+        deleteBtn.disabled = true;
+        deleteBtn.innerHTML = `
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            در حال حذف...
+        `;
+        
+        ZargarAdmin.showLoading();
+        
+        // Submit the form
+        this.submit();
+    });
+    
+    // Prevent accidental navigation
+    window.addEventListener('beforeunload', function(e) {
+        if (confirmationInput.value.trim() !== '' || finalConfirmation.checked) {
+            e.preventDefault();
+            e.returnValue = 'آیا مطمئن هستید که می‌خواهید این صفحه را ترک کنید؟';
+        }
+    });
+    
+    // Auto-focus on confirmation input
+    confirmationInput.focus();
+});
+</script>
+{% endblock %}

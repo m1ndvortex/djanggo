@@ -1,0 +1,510 @@
+{% extends "admin_panel/base_admin.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Impersonation Session Details" %} - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.detail-card {
+    background: white;
+    dark:bg-cyber-bg-surface;
+    border: 1px solid #e5e7eb;
+    dark:border-cyber-neon-primary/20;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.detail-item {
+    padding: 1rem;
+    background: #f9fafb;
+    dark:bg-cyber-bg-elevated;
+    border-radius: 6px;
+    border: 1px solid #f3f4f6;
+    dark:border-cyber-bg-surface;
+}
+
+.detail-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #6b7280;
+    dark:color: #B8BCC8;
+    margin-bottom: 0.25rem;
+}
+
+.detail-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #111827;
+    dark:color: #FFFFFF;
+}
+
+.timeline-item {
+    border-left: 2px solid #e5e7eb;
+    dark:border-cyber-neon-primary/30;
+    padding-left: 1rem;
+    margin-bottom: 1rem;
+    position: relative;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -5px;
+    top: 0.5rem;
+    width: 8px;
+    height: 8px;
+    background: #3b82f6;
+    dark:background: #00D4FF;
+    border-radius: 50%;
+}
+
+.timeline-item.action::before {
+    background: #10b981;
+    dark:background: #00FF88;
+}
+
+.timeline-item.page::before {
+    background: #8b5cf6;
+    dark:background: #A55EEA;
+}
+
+.timeline-item.security::before {
+    background: #ef4444;
+    dark:background: #FF4757;
+}
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.status-active {
+    background: #dcfce7;
+    color: #166534;
+    dark:bg-rgba(0, 255, 136, 0.1);
+    dark:color: #00FF88;
+}
+
+.status-ended {
+    background: #e5e7eb;
+    color: #374151;
+    dark:bg-cyber-bg-elevated;
+    dark:color: #B8BCC8;
+}
+
+.status-expired {
+    background: #fef3c7;
+    color: #92400e;
+    dark:bg-rgba(255, 183, 0, 0.1);
+    dark:color: #FFB800;
+}
+
+.status-terminated {
+    background: #fee2e2;
+    color: #991b1b;
+    dark:bg-rgba(255, 71, 87, 0.1);
+    dark:color: #FF4757;
+}
+
+.cyber-card-detail {
+    background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.cyber-neon-text {
+    color: #00D4FF;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+.security-alert {
+    background: linear-gradient(145deg, rgba(255, 71, 87, 0.1) 0%, rgba(255, 107, 53, 0.05) 100%);
+    border: 1px solid rgba(255, 71, 87, 0.2);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Page Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary">
+                {% trans "Impersonation Session Details" %}
+            </h1>
+            <p class="text-gray-600 dark:text-cyber-text-secondary mt-1">
+                {% trans "Session ID:" %} <code class="bg-gray-100 dark:bg-cyber-bg-elevated px-2 py-1 rounded text-sm">{{ session.session_id }}</code>
+            </p>
+        </div>
+        <div class="flex space-x-4 space-x-reverse">
+            <a href="{% url 'admin_panel:impersonation_audit' %}" 
+               class="bg-gray-600 dark:bg-cyber-bg-elevated text-white px-4 py-2 rounded hover:bg-gray-700 dark:hover:bg-cyber-bg-surface transition-colors">
+                {% trans "Back to Audit Log" %}
+            </a>
+            {% if session.is_active %}
+            <button onclick="terminateSession('{{ session.session_id }}')" 
+                    class="bg-red-600 dark:bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700 dark:hover:bg-red-600 transition-colors">
+                {% trans "Terminate Session" %}
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Security Alert -->
+    {% if session.is_suspicious %}
+    <div class="security-alert">
+        <div class="flex items-center">
+            <svg class="w-5 h-5 text-red-500 dark:text-red-400 ml-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+            <h3 class="text-lg font-medium text-red-800 dark:text-red-400">{% trans "Security Alert" %}</h3>
+        </div>
+        <p class="mt-2 text-red-700 dark:text-red-300">
+            {% trans "This session has been flagged as suspicious. Please review the activity carefully." %}
+        </p>
+        {% if session.security_notes %}
+        <div class="mt-3 p-3 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-500/30">
+            <p class="text-sm text-red-800 dark:text-red-300 font-medium">{% trans "Security Notes:" %}</p>
+            <p class="text-sm text-red-700 dark:text-red-400 mt-1">{{ session.security_notes }}</p>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Session Overview -->
+    <div class="detail-card dark:cyber-card-detail">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">{% trans "Session Overview" %}</h2>
+        
+        <div class="detail-grid">
+            <div class="detail-item">
+                <div class="detail-label">{% trans "Admin User" %}</div>
+                <div class="detail-value">{{ session.admin_username }}</div>
+                <div class="text-xs text-gray-500 dark:text-cyber-text-muted mt-1">ID: {{ session.admin_user_id }}</div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-label">{% trans "Target User" %}</div>
+                <div class="detail-value">{{ session.target_username }}</div>
+                <div class="text-xs text-gray-500 dark:text-cyber-text-muted mt-1">ID: {{ session.target_user_id }}</div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-label">{% trans "Tenant" %}</div>
+                <div class="detail-value">{{ session.tenant_domain }}</div>
+                <div class="text-xs text-gray-500 dark:text-cyber-text-muted mt-1">Schema: {{ session.tenant_schema }}</div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-label">{% trans "Status" %}</div>
+                <div class="detail-value">
+                    <span class="status-badge status-{{ session.status }}">
+                        {% if session.status == 'active' %}{% trans "Active" %}
+                        {% elif session.status == 'ended' %}{% trans "Ended" %}
+                        {% elif session.status == 'expired' %}{% trans "Expired" %}
+                        {% elif session.status == 'terminated' %}{% trans "Terminated" %}
+                        {% else %}{{ session.status }}{% endif %}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-label">{% trans "Start Time" %}</div>
+                <div class="detail-value">{{ session.start_time|date:"Y-m-d H:i:s" }}</div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-label">{% trans "End Time" %}</div>
+                <div class="detail-value">
+                    {% if session.end_time %}
+                        {{ session.end_time|date:"Y-m-d H:i:s" }}
+                    {% else %}
+                        <span class="text-gray-500 dark:text-cyber-text-muted">{% trans "Still active" %}</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-label">{% trans "Duration" %}</div>
+                <div class="detail-value">
+                    {% if session.duration %}
+                        {{ session.duration }}
+                    {% else %}
+                        <span class="text-gray-500 dark:text-cyber-text-muted">-</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-label">{% trans "IP Address" %}</div>
+                <div class="detail-value">{{ session.ip_address }}</div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-label">{% trans "Actions Performed" %}</div>
+                <div class="detail-value persian-numbers">{{ session.actions_performed|length }}</div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-label">{% trans "Pages Visited" %}</div>
+                <div class="detail-value persian-numbers">{{ session.pages_visited|length }}</div>
+            </div>
+        </div>
+        
+        {% if session.reason %}
+        <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-500/30">
+            <p class="text-sm text-blue-800 dark:text-blue-300 font-medium">{% trans "Reason for Impersonation:" %}</p>
+            <p class="text-sm text-blue-700 dark:text-blue-400 mt-1">{{ session.reason }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- User Agent Information -->
+    {% if session.user_agent %}
+    <div class="detail-card dark:cyber-card-detail">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">{% trans "Browser Information" %}</h2>
+        <div class="bg-gray-50 dark:bg-cyber-bg-elevated p-3 rounded border">
+            <code class="text-sm text-gray-700 dark:text-cyber-text-secondary break-all">{{ session.user_agent }}</code>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Activity Timeline -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Actions Performed -->
+        <div class="detail-card dark:cyber-card-detail">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">
+                {% trans "Actions Performed" %} 
+                <span class="text-sm font-normal text-gray-500 dark:text-cyber-text-muted persian-numbers">({{ session.actions_performed|length }})</span>
+            </h2>
+            
+            {% if session.actions_performed %}
+            <div class="max-h-96 overflow-y-auto">
+                {% for action in session.actions_performed %}
+                <div class="timeline-item action">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="font-medium text-gray-900 dark:text-cyber-text-primary">
+                                {{ action.type|title }} Action
+                            </div>
+                            <div class="text-sm text-gray-600 dark:text-cyber-text-secondary mt-1">
+                                {{ action.description }}
+                            </div>
+                            {% if action.url %}
+                            <div class="text-xs text-blue-600 dark:text-cyber-neon-primary mt-1">
+                                {{ action.url }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="text-xs text-gray-500 dark:text-cyber-text-muted">
+                            {{ action.timestamp|date:"H:i:s" }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-8">
+                <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-cyber-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                </svg>
+                <p class="mt-2 text-sm text-gray-500 dark:text-cyber-text-muted">{% trans "No actions recorded" %}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Pages Visited -->
+        <div class="detail-card dark:cyber-card-detail">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">
+                {% trans "Pages Visited" %} 
+                <span class="text-sm font-normal text-gray-500 dark:text-cyber-text-muted persian-numbers">({{ session.pages_visited|length }})</span>
+            </h2>
+            
+            {% if session.pages_visited %}
+            <div class="max-h-96 overflow-y-auto">
+                {% for page in session.pages_visited %}
+                <div class="timeline-item page">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="font-medium text-gray-900 dark:text-cyber-text-primary">
+                                {% if page.title %}
+                                    {{ page.title }}
+                                {% else %}
+                                    {% trans "Page Visit" %}
+                                {% endif %}
+                            </div>
+                            <div class="text-sm text-blue-600 dark:text-cyber-neon-primary mt-1">
+                                {{ page.url }}
+                            </div>
+                        </div>
+                        <div class="text-xs text-gray-500 dark:text-cyber-text-muted">
+                            {{ page.timestamp|date:"H:i:s" }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-8">
+                <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-cyber-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                </svg>
+                <p class="mt-2 text-sm text-gray-500 dark:text-cyber-text-muted">{% trans "No page visits recorded" %}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Export Options -->
+    <div class="detail-card dark:cyber-card-detail">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">{% trans "Export Session Data" %}</h2>
+        
+        <div class="flex space-x-4 space-x-reverse">
+            <button onclick="exportSessionData('json')" 
+                    class="bg-blue-600 dark:bg-cyber-neon-primary text-white dark:text-cyber-bg-primary px-4 py-2 rounded hover:bg-blue-700 dark:hover:bg-cyber-neon-primary/80 transition-colors">
+                {% trans "Export as JSON" %}
+            </button>
+            
+            <button onclick="exportSessionData('csv')" 
+                    class="bg-green-600 dark:bg-cyber-neon-secondary text-white dark:text-cyber-bg-primary px-4 py-2 rounded hover:bg-green-700 dark:hover:bg-cyber-neon-secondary/80 transition-colors">
+                {% trans "Export as CSV" %}
+            </button>
+            
+            <button onclick="window.print()" 
+                    class="bg-gray-600 dark:bg-cyber-bg-elevated text-white px-4 py-2 rounded hover:bg-gray-700 dark:hover:bg-cyber-bg-surface transition-colors">
+                {% trans "Print Report" %}
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function terminateSession(sessionId) {
+    if (confirm('{% trans "Are you sure you want to terminate this impersonation session?" %}')) {
+        ZargarAdmin.showLoading();
+        
+        fetch('{% url "admin_panel:terminate_impersonation" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: 'session_id=' + sessionId + '&reason=admin_termination_from_detail'
+        })
+        .then(response => response.json())
+        .then(data => {
+            ZargarAdmin.hideLoading();
+            if (data.success) {
+                ZargarAdmin.showMessage('{% trans "Session terminated successfully" %}', 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                ZargarAdmin.showMessage('{% trans "Error terminating session:" %} ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            ZargarAdmin.hideLoading();
+            ZargarAdmin.showMessage('{% trans "Error terminating session" %}', 'error');
+        });
+    }
+}
+
+function exportSessionData(format) {
+    const sessionData = {
+        session_id: '{{ session.session_id }}',
+        admin_username: '{{ session.admin_username }}',
+        target_username: '{{ session.target_username }}',
+        tenant_domain: '{{ session.tenant_domain }}',
+        tenant_schema: '{{ session.tenant_schema }}',
+        status: '{{ session.status }}',
+        start_time: '{{ session.start_time|date:"c" }}',
+        end_time: '{{ session.end_time|date:"c"|default:"" }}',
+        duration: '{{ session.duration|default:"" }}',
+        ip_address: '{{ session.ip_address }}',
+        user_agent: '{{ session.user_agent }}',
+        reason: '{{ session.reason }}',
+        is_suspicious: {{ session.is_suspicious|yesno:"true,false" }},
+        security_notes: '{{ session.security_notes }}',
+        actions_performed: {{ session.actions_performed|safe }},
+        pages_visited: {{ session.pages_visited|safe }}
+    };
+    
+    if (format === 'json') {
+        const dataStr = JSON.stringify(sessionData, null, 2);
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `impersonation_session_${sessionData.session_id.substring(0, 8)}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+    } else if (format === 'csv') {
+        // Convert to CSV format
+        let csv = 'Field,Value\n';
+        csv += `Session ID,${sessionData.session_id}\n`;
+        csv += `Admin Username,${sessionData.admin_username}\n`;
+        csv += `Target Username,${sessionData.target_username}\n`;
+        csv += `Tenant Domain,${sessionData.tenant_domain}\n`;
+        csv += `Status,${sessionData.status}\n`;
+        csv += `Start Time,${sessionData.start_time}\n`;
+        csv += `End Time,${sessionData.end_time}\n`;
+        csv += `Duration,${sessionData.duration}\n`;
+        csv += `IP Address,${sessionData.ip_address}\n`;
+        csv += `Is Suspicious,${sessionData.is_suspicious}\n`;
+        csv += `Actions Count,${sessionData.actions_performed.length}\n`;
+        csv += `Pages Count,${sessionData.pages_visited.length}\n`;
+        
+        const dataBlob = new Blob([csv], {type: 'text/csv'});
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `impersonation_session_${sessionData.session_id.substring(0, 8)}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+    }
+    
+    ZargarAdmin.showMessage('{% trans "Session data exported successfully" %}', 'success');
+}
+
+// Auto-refresh if session is active
+{% if session.is_active %}
+setInterval(function() {
+    location.reload();
+}, 60000); // Refresh every minute for active sessions
+{% endif %}
+</script>
+
+<style media="print">
+@media print {
+    .no-print, nav, .flex.justify-between, button {
+        display: none !important;
+    }
+    
+    .detail-card {
+        break-inside: avoid;
+        margin-bottom: 1rem;
+    }
+    
+    body {
+        font-size: 12px;
+    }
+    
+    .timeline-item {
+        break-inside: avoid;
+    }
+}
+</style>
+{% endblock %}

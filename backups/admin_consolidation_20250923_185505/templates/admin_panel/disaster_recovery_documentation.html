@@ -1,0 +1,497 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}مستندات بازیابی فاجعه{% endblock %}
+
+{% block extra_css %}
+<style>
+    .doc-section {
+        border-left: 4px solid #e5e7eb;
+        padding-left: 1rem;
+        margin-bottom: 2rem;
+        transition: border-color 0.3s ease;
+    }
+    
+    .doc-section:hover {
+        border-left-color: #3b82f6;
+    }
+    
+    .doc-section.critical {
+        border-left-color: #ef4444;
+    }
+    
+    .doc-section.warning {
+        border-left-color: #f59e0b;
+    }
+    
+    .doc-section.info {
+        border-left-color: #3b82f6;
+    }
+    
+    .command-block {
+        background-color: #1f2937;
+        color: #f9fafb;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        font-family: 'Courier New', monospace;
+        font-size: 0.875rem;
+        overflow-x: auto;
+        margin: 0.5rem 0;
+    }
+    
+    .command-block .comment {
+        color: #9ca3af;
+    }
+    
+    .step-number {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.875rem;
+    }
+    
+    .validation-box {
+        background-color: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        margin-top: 0.5rem;
+    }
+    
+    .validation-box.dark {
+        background-color: rgba(34, 197, 94, 0.1);
+        border-color: rgba(34, 197, 94, 0.3);
+    }
+    
+    .toc-item {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #e5e7eb;
+        transition: background-color 0.2s ease;
+    }
+    
+    .toc-item:hover {
+        background-color: #f9fafb;
+    }
+    
+    .toc-item.dark:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+    
+    /* Dark mode cybersecurity theme */
+    [data-theme="dark"] .doc-section {
+        border-left-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    [data-theme="dark"] .doc-section:hover {
+        border-left-color: #00D4FF;
+    }
+    
+    [data-theme="dark"] .doc-section.critical {
+        border-left-color: #FF4757;
+    }
+    
+    [data-theme="dark"] .doc-section.warning {
+        border-left-color: #FFB800;
+    }
+    
+    [data-theme="dark"] .doc-section.info {
+        border-left-color: #00D4FF;
+    }
+    
+    [data-theme="dark"] .command-block {
+        background: linear-gradient(145deg, rgba(37, 42, 58, 0.9) 0%, rgba(26, 29, 41, 0.95) 100%);
+        border: 1px solid rgba(0, 212, 255, 0.2);
+        backdrop-filter: blur(16px);
+    }
+    
+    [data-theme="dark"] .step-number {
+        background: linear-gradient(135deg, #00D4FF, #00FF88);
+        color: #0B0E1A;
+    }
+    
+    [data-theme="dark"] .toc-item {
+        border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .print-friendly {
+        display: none;
+    }
+    
+    @media print {
+        .no-print { display: none !important; }
+        .print-friendly { display: block !important; }
+        .command-block { 
+            background-color: #f8f9fa !important; 
+            color: #000 !important; 
+            border: 1px solid #dee2e6 !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-6" x-data="disasterRecoveryDocumentation()">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6 no-print">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">مستندات بازیابی فاجعه</h1>
+            <p class="text-gray-600 dark:text-gray-300 mt-2">
+                راهنمای کامل بازیابی سیستم زرگر - نسخه {{ plan_version }}
+            </p>
+        </div>
+        <div class="flex gap-3">
+            <button @click="window.print()" 
+                    class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                </svg>
+                چاپ مستندات
+            </button>
+            <a href="{% url 'admin_panel:disaster_recovery_dashboard' %}" 
+               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 00-2 2v6a2 2 0 00-2 2zm-6-4h2m8-4h2m-2-4h2m-2-4h2"></path>
+                </svg>
+                بازگشت به داشبورد
+            </a>
+        </div>
+    </div>
+
+    <!-- Print Header -->
+    <div class="print-friendly mb-8">
+        <div class="text-center border-b-2 border-gray-300 pb-4 mb-6">
+            <h1 class="text-4xl font-bold text-gray-900 mb-2">مستندات بازیابی فاجعه</h1>
+            <h2 class="text-2xl text-gray-700">سیستم مدیریت زرگر</h2>
+            <p class="text-gray-600 mt-2">نسخه {{ plan_version }} - تاریخ ایجاد: {{ created_at|date:"Y/m/d H:i" }}</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <!-- Table of Contents -->
+        <div class="lg:col-span-1 no-print">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sticky top-6">
+                <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">فهرست مطالب</h2>
+                <nav class="space-y-1">
+                    <a href="#overview" class="toc-item block text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 px-2 py-1 rounded">
+                        نگاه کلی
+                    </a>
+                    <a href="#prerequisites" class="toc-item block text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 px-2 py-1 rounded">
+                        پیش‌نیازها
+                    </a>
+                    <a href="#procedures" class="toc-item block text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 px-2 py-1 rounded">
+                        مراحل بازیابی
+                    </a>
+                    <a href="#validation" class="toc-item block text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 px-2 py-1 rounded">
+                        مراحل اعتبارسنجی
+                    </a>
+                    <a href="#rollback" class="toc-item block text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 px-2 py-1 rounded">
+                        مراحل بازگشت
+                    </a>
+                    <a href="#contacts" class="toc-item block text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 px-2 py-1 rounded">
+                        اطلاعات تماس
+                    </a>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Main Documentation -->
+        <div class="lg:col-span-3">
+            <!-- Overview Section -->
+            <section id="overview" class="doc-section info">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">نگاه کلی</h2>
+                
+                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                    <h3 class="font-bold text-blue-900 dark:text-blue-300 mb-2">فلسفه بازیابی</h3>
+                    <p class="text-blue-800 dark:text-blue-200">{{ recovery_plan.disaster_recovery_plan.overview.philosophy }}</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    {% for component, description in recovery_plan.disaster_recovery_plan.overview.components.items %}
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <h4 class="font-bold text-gray-900 dark:text-white mb-2">
+                            {% if component == 'data' %}داده‌ها
+                            {% elif component == 'configuration' %}پیکربندی
+                            {% elif component == 'code' %}کد{% endif %}
+                        </h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">{{ description }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                        <h4 class="font-bold text-green-900 dark:text-green-300 mb-2">RTO (هدف زمان بازیابی)</h4>
+                        <p class="text-2xl font-bold text-green-700 dark:text-green-400">{{ recovery_plan.disaster_recovery_plan.overview.recovery_time_objective }}</p>
+                    </div>
+                    <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+                        <h4 class="font-bold text-orange-900 dark:text-orange-300 mb-2">RPO (هدف نقطه بازیابی)</h4>
+                        <p class="text-2xl font-bold text-orange-700 dark:text-orange-400">{{ recovery_plan.disaster_recovery_plan.overview.recovery_point_objective }}</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Prerequisites Section -->
+            <section id="prerequisites" class="doc-section warning">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">پیش‌نیازها</h2>
+                
+                <!-- Server Requirements -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3">نیازمندی‌های سرور</h3>
+                    <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                        {% for req, value in recovery_plan.disaster_recovery_plan.prerequisites.server_requirements.items %}
+                        <div class="flex justify-between items-center py-1">
+                            <span class="text-gray-700 dark:text-gray-300">
+                                {% if req == 'cpu' %}پردازنده
+                                {% elif req == 'memory' %}حافظه
+                                {% elif req == 'storage' %}ذخیره‌سازی
+                                {% elif req == 'network' %}شبکه{% endif %}:
+                            </span>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ value }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Software Requirements -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3">نیازمندی‌های نرم‌افزاری</h3>
+                    <ul class="space-y-2">
+                        {% for software in recovery_plan.disaster_recovery_plan.prerequisites.software_requirements %}
+                        <li class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span class="text-gray-700 dark:text-gray-300">{{ software }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- Access Requirements -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3">نیازمندی‌های دسترسی</h3>
+                    <ul class="space-y-2">
+                        {% for access in recovery_plan.disaster_recovery_plan.prerequisites.access_requirements %}
+                        <li class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                            </svg>
+                            <span class="text-gray-700 dark:text-gray-300">{{ access }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Recovery Procedures Section -->
+            <section id="procedures" class="doc-section critical">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">مراحل بازیابی فاجعه</h2>
+                
+                {% for phase_key, phase in recovery_plan.disaster_recovery_plan.recovery_procedures.items %}
+                <div class="mb-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="step-number">{{ forloop.counter }}</div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white">{{ phase.description }}</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">زمان تخمینی: {{ phase.estimated_time }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        {% for step in phase.steps %}
+                        <div class="border-l-4 border-gray-200 dark:border-gray-600 pl-4">
+                            <div class="flex items-start gap-3 mb-2">
+                                <span class="flex-shrink-0 w-6 h-6 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-xs font-bold text-blue-600 dark:text-blue-400">
+                                    {{ step.step }}
+                                </span>
+                                <div class="flex-1">
+                                    <h4 class="font-bold text-gray-900 dark:text-white">{{ step.title }}</h4>
+                                    <p class="text-gray-600 dark:text-gray-400 mt-1">{{ step.description }}</p>
+                                </div>
+                            </div>
+                            
+                            {% if step.commands %}
+                            <div class="mt-3">
+                                <h5 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">دستورات:</h5>
+                                <div class="command-block">
+                                    {% for command in step.commands %}
+                                    {% if command|slice:":1" == "#" %}
+                                    <div class="comment">{{ command }}</div>
+                                    {% else %}
+                                    <div>{{ command }}</div>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if step.validation %}
+                            <div class="validation-box {% if request.user.theme_preference == 'dark' %}dark{% endif %} mt-3">
+                                <div class="flex items-center gap-2">
+                                    <svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <span class="text-sm font-medium text-green-700 dark:text-green-300">تأیید:</span>
+                                </div>
+                                <p class="text-sm text-green-600 dark:text-green-400 mt-1">{{ step.validation }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </section>
+
+            <!-- Validation Steps Section -->
+            <section id="validation" class="doc-section info">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">مراحل اعتبارسنجی</h2>
+                
+                {% for validation_key, validation in recovery_plan.disaster_recovery_plan.validation_steps.items %}
+                <div class="mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <h3 class="font-bold text-blue-900 dark:text-blue-300 mb-3">
+                        {% if validation_key == 'database_validation' %}اعتبارسنجی پایگاه داده
+                        {% elif validation_key == 'application_validation' %}اعتبارسنجی اپلیکیشن
+                        {% elif validation_key == 'system_validation' %}اعتبارسنجی سیستم
+                        {% else %}{{ validation_key }}{% endif %}
+                    </h3>
+                    
+                    {% if validation.description %}
+                    <p class="text-blue-800 dark:text-blue-200 mb-3">{{ validation.description }}</p>
+                    {% endif %}
+                    
+                    {% if validation.checks %}
+                    <ul class="space-y-1">
+                        {% for check in validation.checks %}
+                        <li class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span class="text-blue-700 dark:text-blue-300 text-sm">{{ check }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </section>
+
+            <!-- Rollback Procedures Section -->
+            <section id="rollback" class="doc-section warning">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">مراحل بازگشت</h2>
+                
+                <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+                    <div class="flex items-center gap-2 mb-2">
+                        <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                        <h3 class="font-bold text-red-900 dark:text-red-300">هشدار مهم</h3>
+                    </div>
+                    <p class="text-red-800 dark:text-red-200">
+                        مراحل بازگشت تنها در صورت شکست فرآیند بازیابی استفاده شود. قبل از اجرای هر مرحله، با تیم فنی مشورت کنید.
+                    </p>
+                </div>
+
+                {% for rollback_key, rollback in recovery_plan.disaster_recovery_plan.rollback_procedures.items %}
+                <div class="mb-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                    <h3 class="font-bold text-yellow-900 dark:text-yellow-300 mb-3">{{ rollback.title }}</h3>
+                    <p class="text-yellow-800 dark:text-yellow-200 mb-3">{{ rollback.description }}</p>
+                    
+                    {% if rollback.steps %}
+                    <ol class="space-y-2">
+                        {% for step in rollback.steps %}
+                        <li class="flex items-start gap-2">
+                            <span class="flex-shrink-0 w-5 h-5 bg-yellow-200 dark:bg-yellow-800 rounded-full flex items-center justify-center text-xs font-bold text-yellow-800 dark:text-yellow-200">
+                                {{ forloop.counter }}
+                            </span>
+                            <span class="text-yellow-700 dark:text-yellow-300 text-sm">{{ step }}</span>
+                        </li>
+                        {% endfor %}
+                    </ol>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </section>
+
+            <!-- Emergency Contacts Section -->
+            <section id="contacts" class="doc-section critical">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">اطلاعات تماس اضطراری</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% for contact_key, contact in recovery_plan.disaster_recovery_plan.emergency_contacts.items %}
+                    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                        <h3 class="font-bold text-red-900 dark:text-red-300 mb-2">{{ contact.role }}</h3>
+                        <div class="space-y-1 text-sm">
+                            <p class="text-red-800 dark:text-red-200">
+                                <strong>نام:</strong> {{ contact.name }}
+                            </p>
+                            <p class="text-red-800 dark:text-red-200">
+                                <strong>تلفن:</strong> {{ contact.phone }}
+                            </p>
+                            <p class="text-red-800 dark:text-red-200">
+                                <strong>ایمیل:</strong> {{ contact.email }}
+                            </p>
+                            {% if contact.availability %}
+                            <p class="text-red-800 dark:text-red-200">
+                                <strong>در دسترس:</strong> {{ contact.availability }}
+                            </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <!-- Footer -->
+            <div class="mt-12 pt-6 border-t border-gray-200 dark:border-gray-600 text-center">
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    این مستندات در تاریخ {{ created_at|date:"Y/m/d H:i" }} ایجاد شده است.
+                    <br>
+                    برای آخرین نسخه، به داشبورد بازیابی فاجعه مراجعه کنید.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function disasterRecoveryDocumentation() {
+    return {
+        init() {
+            // Smooth scrolling for table of contents links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+        }
+    }
+}
+
+// Print optimization
+window.addEventListener('beforeprint', function() {
+    // Expand all collapsible sections for printing
+    document.querySelectorAll('[x-data]').forEach(el => {
+        if (el._x_dataStack && el._x_dataStack[0].expanded !== undefined) {
+            el._x_dataStack[0].expanded = true;
+        }
+    });
+});
+</script>
+{% endblock %}

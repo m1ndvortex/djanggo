@@ -1,0 +1,522 @@
+{% extends "admin_panel/base_admin.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Impersonation Audit Log" %} - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.audit-filters {
+    background: white;
+    dark:bg-cyber-bg-surface;
+    border: 1px solid #e5e7eb;
+    dark:border-cyber-neon-primary/20;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.audit-table {
+    background: white;
+    dark:bg-cyber-bg-surface;
+    border: 1px solid #e5e7eb;
+    dark:border-cyber-neon-primary/20;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.audit-row {
+    border-bottom: 1px solid #f3f4f6;
+    dark:border-cyber-bg-elevated;
+    transition: background-color 0.2s;
+}
+
+.audit-row:hover {
+    background: #f9fafb;
+    dark:bg-cyber-bg-elevated;
+}
+
+.audit-row.suspicious {
+    background: #fef3c7;
+    dark:bg-rgba(255, 183, 0, 0.1);
+    border-left: 4px solid #f59e0b;
+    dark:border-left-color: #FFB800;
+}
+
+.audit-row.terminated {
+    background: #fee2e2;
+    dark:bg-rgba(255, 71, 87, 0.1);
+    border-left: 4px solid #ef4444;
+    dark:border-left-color: #FF4757;
+}
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.status-active {
+    background: #dcfce7;
+    color: #166534;
+    dark:bg-rgba(0, 255, 136, 0.1);
+    dark:color: #00FF88;
+}
+
+.status-ended {
+    background: #e5e7eb;
+    color: #374151;
+    dark:bg-cyber-bg-elevated;
+    dark:color: #B8BCC8;
+}
+
+.status-expired {
+    background: #fef3c7;
+    color: #92400e;
+    dark:bg-rgba(255, 183, 0, 0.1);
+    dark:color: #FFB800;
+}
+
+.status-terminated {
+    background: #fee2e2;
+    color: #991b1b;
+    dark:bg-rgba(255, 71, 87, 0.1);
+    dark:color: #FF4757;
+}
+
+.filter-input {
+    border: 1px solid #d1d5db;
+    dark:border-cyber-neon-primary/30;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    background: white;
+    dark:bg-cyber-bg-primary;
+    color: #374151;
+    dark:color: #FFFFFF;
+}
+
+.filter-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    dark:border-color: #00D4FF;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    dark:box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+}
+
+.cyber-card-audit {
+    background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.cyber-neon-text {
+    color: #00D4FF;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+.cyber-stats-card {
+    background: linear-gradient(145deg, rgba(0,212,255,0.08) 0%, rgba(0,255,136,0.04) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.cyber-stats-card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.15), 0 0 20px rgba(0, 212, 255, 0.1);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Page Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary">
+                {% trans "Impersonation Audit Log" %}
+            </h1>
+            <p class="text-gray-600 dark:text-cyber-text-secondary mt-1">
+                {% trans "Complete audit trail of all admin impersonation activities" %}
+            </p>
+        </div>
+        <div class="flex space-x-4 space-x-reverse">
+            <a href="{% url 'admin_panel:user_impersonation' %}" 
+               class="bg-blue-600 dark:bg-cyber-neon-primary text-white dark:text-cyber-bg-primary px-4 py-2 rounded hover:bg-blue-700 dark:hover:bg-cyber-neon-primary/80 transition-colors">
+                {% trans "Back to Impersonation" %}
+            </a>
+            <a href="{% url 'admin_panel:impersonation_stats' %}" 
+               class="bg-green-600 dark:bg-cyber-neon-secondary text-white dark:text-cyber-bg-primary px-4 py-2 rounded hover:bg-green-700 dark:hover:bg-cyber-neon-secondary/80 transition-colors">
+                {% trans "View Statistics" %}
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="bg-white dark:cyber-stats-card rounded-lg p-6 shadow-sm dark:shadow-2xl">
+            <div class="flex items-center">
+                <div class="p-2 bg-blue-100 dark:bg-cyber-neon-primary/20 rounded-lg">
+                    <svg class="w-6 h-6 text-blue-600 dark:text-cyber-neon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                </div>
+                <div class="mr-4">
+                    <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">{% trans "Total Sessions" %}</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:cyber-neon-text persian-numbers">{{ total_sessions }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:cyber-stats-card rounded-lg p-6 shadow-sm dark:shadow-2xl">
+            <div class="flex items-center">
+                <div class="p-2 bg-green-100 dark:bg-cyber-neon-secondary/20 rounded-lg">
+                    <svg class="w-6 h-6 text-green-600 dark:text-cyber-neon-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                </div>
+                <div class="mr-4">
+                    <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">{% trans "Active Sessions" %}</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:cyber-neon-text persian-numbers">{{ active_sessions }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:cyber-stats-card rounded-lg p-6 shadow-sm dark:shadow-2xl">
+            <div class="flex items-center">
+                <div class="p-2 bg-yellow-100 dark:bg-yellow-500/20 rounded-lg">
+                    <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                </div>
+                <div class="mr-4">
+                    <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">{% trans "Suspicious Sessions" %}</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-yellow-400 persian-numbers">{{ suspicious_sessions }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:cyber-stats-card rounded-lg p-6 shadow-sm dark:shadow-2xl">
+            <div class="flex items-center">
+                <div class="p-2 bg-purple-100 dark:bg-purple-500/20 rounded-lg">
+                    <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"></path>
+                    </svg>
+                </div>
+                <div class="mr-4">
+                    <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">{% trans "Filtered Results" %}</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-purple-400 persian-numbers">{{ sessions|length }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="audit-filters dark:cyber-card-audit">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-cyber-text-primary mb-4">{% trans "Filter Sessions" %}</h3>
+        
+        <form method="get" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+                <label for="admin" class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                    {% trans "Admin User" %}
+                </label>
+                <input type="text" id="admin" name="admin" value="{{ admin_filter }}" 
+                       class="filter-input w-full" 
+                       placeholder="{% trans 'Enter admin username' %}">
+            </div>
+            
+            <div>
+                <label for="target" class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                    {% trans "Target User" %}
+                </label>
+                <input type="text" id="target" name="target" value="{{ target_filter }}" 
+                       class="filter-input w-full" 
+                       placeholder="{% trans 'Enter target username' %}">
+            </div>
+            
+            <div>
+                <label for="tenant" class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                    {% trans "Tenant" %}
+                </label>
+                <input type="text" id="tenant" name="tenant" value="{{ tenant_filter }}" 
+                       class="filter-input w-full" 
+                       placeholder="{% trans 'Enter tenant schema' %}">
+            </div>
+            
+            <div>
+                <label for="status" class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                    {% trans "Status" %}
+                </label>
+                <select id="status" name="status" class="filter-input w-full">
+                    <option value="">{% trans "All Statuses" %}</option>
+                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>{% trans "Active" %}</option>
+                    <option value="ended" {% if status_filter == 'ended' %}selected{% endif %}>{% trans "Ended" %}</option>
+                    <option value="expired" {% if status_filter == 'expired' %}selected{% endif %}>{% trans "Expired" %}</option>
+                    <option value="terminated" {% if status_filter == 'terminated' %}selected{% endif %}>{% trans "Terminated" %}</option>
+                </select>
+            </div>
+            
+            <div class="md:col-span-2 lg:col-span-4 flex items-center space-x-4 space-x-reverse">
+                <label class="flex items-center">
+                    <input type="checkbox" name="suspicious" value="true" 
+                           {% if suspicious_filter == 'true' %}checked{% endif %}
+                           class="rounded border-gray-300 dark:border-cyber-neon-primary/30 text-blue-600 dark:text-cyber-neon-primary focus:ring-blue-500 dark:focus:ring-cyber-neon-primary">
+                    <span class="mr-2 text-sm text-gray-700 dark:text-cyber-text-secondary">{% trans "Show only suspicious sessions" %}</span>
+                </label>
+                
+                <button type="submit" 
+                        class="bg-blue-600 dark:bg-cyber-neon-primary text-white dark:text-cyber-bg-primary px-4 py-2 rounded hover:bg-blue-700 dark:hover:bg-cyber-neon-primary/80 transition-colors">
+                    {% trans "Apply Filters" %}
+                </button>
+                
+                <a href="{% url 'admin_panel:impersonation_audit' %}" 
+                   class="bg-gray-500 dark:bg-cyber-bg-elevated text-white px-4 py-2 rounded hover:bg-gray-600 dark:hover:bg-cyber-bg-surface transition-colors">
+                    {% trans "Clear Filters" %}
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Audit Log Table -->
+    <div class="audit-table dark:cyber-card-audit">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-cyber-bg-elevated">
+                <thead class="bg-gray-50 dark:bg-cyber-bg-secondary">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                            {% trans "Session Info" %}
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                            {% trans "Admin → Target" %}
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                            {% trans "Tenant" %}
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                            {% trans "Duration" %}
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                            {% trans "Status" %}
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                            {% trans "Actions" %}
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-cyber-bg-surface divide-y divide-gray-200 dark:divide-cyber-bg-elevated">
+                    {% for session in sessions %}
+                    <tr class="audit-row {% if session.is_suspicious %}suspicious{% endif %} {% if session.status == 'terminated' %}terminated{% endif %}">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm">
+                                <div class="font-medium text-gray-900 dark:text-cyber-text-primary">
+                                    {{ session.session_id|slice:":8" }}...
+                                </div>
+                                <div class="text-gray-500 dark:text-cyber-text-muted">
+                                    {% trans "Started:" %} {{ session.start_time|date:"Y-m-d H:i" }}
+                                </div>
+                                {% if session.end_time %}
+                                <div class="text-gray-500 dark:text-cyber-text-muted">
+                                    {% trans "Ended:" %} {{ session.end_time|date:"Y-m-d H:i" }}
+                                </div>
+                                {% endif %}
+                                <div class="text-xs text-gray-400 dark:text-cyber-text-muted">
+                                    IP: {{ session.ip_address }}
+                                </div>
+                            </div>
+                        </td>
+                        
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm">
+                                <div class="font-medium text-gray-900 dark:text-cyber-text-primary">
+                                    {{ session.admin_username }}
+                                </div>
+                                <div class="text-gray-500 dark:text-cyber-text-muted">
+                                    ↓
+                                </div>
+                                <div class="font-medium text-blue-600 dark:text-cyber-neon-primary">
+                                    {{ session.target_username }}
+                                </div>
+                            </div>
+                        </td>
+                        
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm">
+                                <div class="font-medium text-gray-900 dark:text-cyber-text-primary">
+                                    {{ session.tenant_domain }}
+                                </div>
+                                <div class="text-gray-500 dark:text-cyber-text-muted text-xs">
+                                    {{ session.tenant_schema }}
+                                </div>
+                            </div>
+                        </td>
+                        
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-cyber-text-primary">
+                            {% if session.duration %}
+                                {{ session.duration }}
+                            {% else %}
+                                <span class="text-gray-500 dark:text-cyber-text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="status-badge status-{{ session.status }}">
+                                {% if session.status == 'active' %}{% trans "Active" %}
+                                {% elif session.status == 'ended' %}{% trans "Ended" %}
+                                {% elif session.status == 'expired' %}{% trans "Expired" %}
+                                {% elif session.status == 'terminated' %}{% trans "Terminated" %}
+                                {% else %}{{ session.status }}{% endif %}
+                            </span>
+                            
+                            {% if session.is_suspicious %}
+                            <div class="mt-1">
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-500/20 text-yellow-800 dark:text-yellow-400">
+                                    <svg class="w-3 h-3 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                    </svg>
+                                    {% trans "Suspicious" %}
+                                </span>
+                            </div>
+                            {% endif %}
+                        </td>
+                        
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex space-x-2 space-x-reverse">
+                                <a href="{% url 'admin_panel:impersonation_session_detail' session.session_id %}" 
+                                   class="text-blue-600 dark:text-cyber-neon-primary hover:text-blue-900 dark:hover:text-cyber-neon-primary/80">
+                                    {% trans "Details" %}
+                                </a>
+                                
+                                {% if session.is_active %}
+                                <button onclick="terminateSession('{{ session.session_id }}')" 
+                                        class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300">
+                                    {% trans "Terminate" %}
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center">
+                            <div class="text-gray-500 dark:text-cyber-text-muted">
+                                <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-cyber-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-cyber-text-primary">{% trans "No audit records found" %}</h3>
+                                <p class="mt-1 text-sm text-gray-500 dark:text-cyber-text-muted">
+                                    {% trans "No impersonation sessions match your current filters." %}
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="bg-white dark:bg-cyber-bg-surface px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-cyber-bg-elevated sm:px-6 mt-6 rounded-lg">
+        <div class="flex-1 flex justify-between sm:hidden">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 text-sm font-medium rounded-md text-gray-700 dark:text-cyber-text-secondary bg-white dark:bg-cyber-bg-surface hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated">
+                    {% trans "Previous" %}
+                </a>
+            {% endif %}
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" class="mr-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 text-sm font-medium rounded-md text-gray-700 dark:text-cyber-text-secondary bg-white dark:bg-cyber-bg-surface hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated">
+                    {% trans "Next" %}
+                </a>
+            {% endif %}
+        </div>
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+                <p class="text-sm text-gray-700 dark:text-cyber-text-secondary">
+                    {% trans "Showing" %}
+                    <span class="font-medium persian-numbers">{{ page_obj.start_index }}</span>
+                    {% trans "to" %}
+                    <span class="font-medium persian-numbers">{{ page_obj.end_index }}</span>
+                    {% trans "of" %}
+                    <span class="font-medium persian-numbers">{{ paginator.count }}</span>
+                    {% trans "results" %}
+                </p>
+            </div>
+            <div>
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                    {% if page_obj.has_previous %}
+                        <a href="?page=1" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-cyber-neon-primary/30 bg-white dark:bg-cyber-bg-surface text-sm font-medium text-gray-500 dark:text-cyber-text-muted hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated">
+                            <span class="sr-only">{% trans "First" %}</span>
+                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M15.707 15.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 010 1.414zm-6 0a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 011.414 1.414L5.414 10l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                        <a href="?page={{ page_obj.previous_page_number }}" class="relative inline-flex items-center px-2 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 bg-white dark:bg-cyber-bg-surface text-sm font-medium text-gray-500 dark:text-cyber-text-muted hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated">
+                            <span class="sr-only">{% trans "Previous" %}</span>
+                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                    {% endif %}
+                    
+                    <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 bg-white dark:bg-cyber-bg-surface text-sm font-medium text-gray-700 dark:text-cyber-text-primary persian-numbers">
+                        {{ page_obj.number }}
+                    </span>
+                    
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}" class="relative inline-flex items-center px-2 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 bg-white dark:bg-cyber-bg-surface text-sm font-medium text-gray-500 dark:text-cyber-text-muted hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated">
+                            <span class="sr-only">{% trans "Next" %}</span>
+                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                        <a href="?page={{ paginator.num_pages }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-cyber-neon-primary/30 bg-white dark:bg-cyber-bg-surface text-sm font-medium text-gray-500 dark:text-cyber-text-muted hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated">
+                            <span class="sr-only">{% trans "Last" %}</span>
+                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10.293 15.707a1 1 0 010-1.414L14.586 10l-4.293-4.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0zm-6 0a1 1 0 010-1.414L8.586 10 4.293 5.707a1 1 0 011.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function terminateSession(sessionId) {
+    if (confirm('{% trans "Are you sure you want to terminate this impersonation session?" %}')) {
+        fetch('{% url "admin_panel:terminate_impersonation" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: 'session_id=' + sessionId + '&reason=admin_termination'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                ZargarAdmin.showMessage('{% trans "Session terminated successfully" %}', 'success');
+                location.reload();
+            } else {
+                ZargarAdmin.showMessage('{% trans "Error terminating session:" %} ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            ZargarAdmin.showMessage('{% trans "Error terminating session" %}', 'error');
+        });
+    }
+}
+
+// Auto-refresh active sessions every 30 seconds
+setInterval(function() {
+    const activeSessions = document.querySelectorAll('.audit-row .status-active').length;
+    if (activeSessions > 0) {
+        // Only refresh if there are active sessions
+        location.reload();
+    }
+}, 30000);
+</script>
+{% endblock %}

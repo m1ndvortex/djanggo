@@ -1,0 +1,499 @@
+{% extends 'admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}ایجاد تنانت جدید - پنل مدیریت زرگر{% endblock %}
+
+{% block nav_title %}ایجاد تنانت جدید{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section {
+        background: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .dark .form-section {
+        background: var(--cyber-bg-surface);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    .form-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+    .dark .form-label {
+        color: var(--cyber-text-secondary);
+    }
+    .form-input {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+    }
+    .form-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    .dark .form-input {
+        background: var(--cyber-bg-elevated);
+        border-color: rgba(0, 212, 255, 0.3);
+        color: var(--cyber-text-primary);
+    }
+    .dark .form-input:focus {
+        border-color: var(--cyber-neon-primary);
+        box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+    }
+    .form-error {
+        color: #dc2626;
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+    }
+    .dark .form-error {
+        color: var(--cyber-neon-danger);
+    }
+    .form-help {
+        color: #6b7280;
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+    }
+    .dark .form-help {
+        color: var(--cyber-text-muted);
+    }
+</style>
+{% endblock %}
+
+{% block page_header %}
+<div class="bg-white dark:bg-cyber-bg-secondary rounded-lg shadow-lg dark:shadow-2xl p-6 mb-6 cyber-glass">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary">ایجاد تنانت جدید</h1>
+            <p class="text-gray-600 dark:text-cyber-text-secondary mt-1">فروشگاه طلا و جواهر جدید را به سیستم اضافه کنید</p>
+        </div>
+        <div class="flex space-x-3 space-x-reverse">
+            <a href="{% url 'core:tenants:tenant_list' %}" 
+               class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                بازگشت به لیست
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<form method="post" class="max-w-4xl mx-auto" id="tenant-create-form">
+    {% csrf_token %}
+    
+    <!-- Basic Information Section -->
+    <div class="form-section cyber-card">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-cyber-text-primary mb-4 flex items-center">
+            <svg class="w-5 h-5 ml-2 text-primary-500 dark:text-cyber-neon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            اطلاعات پایه فروشگاه
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Shop Name -->
+            <div class="form-group">
+                <label for="{{ form.name.id_for_label }}" class="form-label">
+                    {{ form.name.label }}
+                    <span class="text-red-500">*</span>
+                </label>
+                {{ form.name }}
+                {% if form.name.errors %}
+                    {% for error in form.name.errors %}
+                        <p class="form-error">{{ error }}</p>
+                    {% endfor %}
+                {% endif %}
+                {% if form.name.help_text %}
+                    <p class="form-help">{{ form.name.help_text }}</p>
+                {% endif %}
+            </div>
+            
+            <!-- Domain URL -->
+            <div class="form-group">
+                <label for="{{ form.domain_url.id_for_label }}" class="form-label">
+                    {{ form.domain_url.label }}
+                    <span class="text-red-500">*</span>
+                </label>
+                <div class="flex">
+                    {{ form.domain_url }}
+                    <span class="inline-flex items-center px-3 py-2 border border-r-0 border-gray-300 dark:border-cyber-neon-primary/30 bg-gray-50 dark:bg-cyber-bg-elevated text-gray-500 dark:text-cyber-text-muted text-sm rounded-l-md">
+                        .zargar.com
+                    </span>
+                </div>
+                {% if form.domain_url.errors %}
+                    {% for error in form.domain_url.errors %}
+                        <p class="form-error">{{ error }}</p>
+                    {% endfor %}
+                {% endif %}
+                {% if form.domain_url.help_text %}
+                    <p class="form-help">{{ form.domain_url.help_text }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Address -->
+        <div class="form-group">
+            <label for="{{ form.address.id_for_label }}" class="form-label">
+                {{ form.address.label }}
+            </label>
+            {{ form.address }}
+            {% if form.address.errors %}
+                {% for error in form.address.errors %}
+                    <p class="form-error">{{ error }}</p>
+                {% endfor %}
+            {% endif %}
+            {% if form.address.help_text %}
+                <p class="form-help">{{ form.address.help_text }}</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Owner Information Section -->
+    <div class="form-section cyber-card">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-cyber-text-primary mb-4 flex items-center">
+            <svg class="w-5 h-5 ml-2 text-primary-500 dark:text-cyber-neon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            </svg>
+            اطلاعات مالک فروشگاه
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Owner Name -->
+            <div class="form-group">
+                <label for="{{ form.owner_name.id_for_label }}" class="form-label">
+                    {{ form.owner_name.label }}
+                    <span class="text-red-500">*</span>
+                </label>
+                {{ form.owner_name }}
+                {% if form.owner_name.errors %}
+                    {% for error in form.owner_name.errors %}
+                        <p class="form-error">{{ error }}</p>
+                    {% endfor %}
+                {% endif %}
+                {% if form.owner_name.help_text %}
+                    <p class="form-help">{{ form.owner_name.help_text }}</p>
+                {% endif %}
+            </div>
+            
+            <!-- Owner Email -->
+            <div class="form-group">
+                <label for="{{ form.owner_email.id_for_label }}" class="form-label">
+                    {{ form.owner_email.label }}
+                    <span class="text-red-500">*</span>
+                </label>
+                {{ form.owner_email }}
+                {% if form.owner_email.errors %}
+                    {% for error in form.owner_email.errors %}
+                        <p class="form-error">{{ error }}</p>
+                    {% endfor %}
+                {% endif %}
+                {% if form.owner_email.help_text %}
+                    <p class="form-help">{{ form.owner_email.help_text }}</p>
+                {% endif %}
+            </div>
+            
+            <!-- Phone Number -->
+            <div class="form-group">
+                <label for="{{ form.phone_number.id_for_label }}" class="form-label">
+                    {{ form.phone_number.label }}
+                </label>
+                {{ form.phone_number }}
+                {% if form.phone_number.errors %}
+                    {% for error in form.phone_number.errors %}
+                        <p class="form-error">{{ error }}</p>
+                    {% endfor %}
+                {% endif %}
+                {% if form.phone_number.help_text %}
+                    <p class="form-help">{{ form.phone_number.help_text }}</p>
+                {% endif %}
+            </div>
+            
+            <!-- Subscription Plan -->
+            <div class="form-group">
+                <label for="{{ form.subscription_plan.id_for_label }}" class="form-label">
+                    {{ form.subscription_plan.label }}
+                    <span class="text-red-500">*</span>
+                </label>
+                {{ form.subscription_plan }}
+                {% if form.subscription_plan.errors %}
+                    {% for error in form.subscription_plan.errors %}
+                        <p class="form-error">{{ error }}</p>
+                    {% endfor %}
+                {% endif %}
+                {% if form.subscription_plan.help_text %}
+                    <p class="form-help">{{ form.subscription_plan.help_text }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confirmation Section -->
+    <div class="form-section cyber-card">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-cyber-text-primary mb-4 flex items-center">
+            <svg class="w-5 h-5 ml-2 text-yellow-500 dark:text-cyber-neon-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            </svg>
+            تأیید ایجاد تنانت
+        </h3>
+        
+        <div class="bg-yellow-50 dark:bg-cyber-neon-warning/10 border border-yellow-200 dark:border-cyber-neon-warning/30 rounded-lg p-4 mb-4">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-yellow-400 dark:text-cyber-neon-warning" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <div class="mr-3">
+                    <h3 class="text-sm font-medium text-yellow-800 dark:text-cyber-neon-warning">
+                        توجه مهم
+                    </h3>
+                    <div class="mt-2 text-sm text-yellow-700 dark:text-cyber-text-secondary">
+                        <p>با ایجاد این تنانت، عملیات زیر انجام خواهد شد:</p>
+                        <ul class="list-disc list-inside mt-2 space-y-1">
+                            <li>ایجاد اسکیمای جداگانه در پایگاه داده</li>
+                            <li>تنظیم دامنه فرعی برای دسترسی</li>
+                            <li>اجرای مایگریشن‌های پایگاه داده</li>
+                            <li>ایجاد کاربر مدیر اولیه</li>
+                            <li>تنظیم داده‌های اولیه سیستم</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex items-center">
+            <input type="checkbox" id="{{ form.confirm_creation.id_for_label }}" name="{{ form.confirm_creation.name }}" 
+                   class="h-4 w-4 text-primary-600 dark:text-cyber-neon-primary focus:ring-primary-500 dark:focus:ring-cyber-neon-primary border-gray-300 dark:border-cyber-neon-primary/30 rounded" required>
+            <label for="{{ form.confirm_creation.id_for_label }}" class="mr-2 block text-sm text-gray-900 dark:text-cyber-text-primary">
+                {{ form.confirm_creation.label }}
+                <span class="text-red-500">*</span>
+            </label>
+        </div>
+        {% if form.confirm_creation.errors %}
+            {% for error in form.confirm_creation.errors %}
+                <p class="form-error">{{ error }}</p>
+            {% endfor %}
+        {% endif %}
+        {% if form.confirm_creation.help_text %}
+            <p class="form-help">{{ form.confirm_creation.help_text }}</p>
+        {% endif %}
+    </div>
+    
+    <!-- Form Actions -->
+    <div class="flex items-center justify-end space-x-4 space-x-reverse">
+        <a href="{% url 'core:tenants:tenant_list' %}" 
+           class="bg-gray-300 dark:bg-cyber-bg-surface hover:bg-gray-400 dark:hover:bg-cyber-bg-elevated text-gray-700 dark:text-cyber-text-secondary px-6 py-2 rounded-lg font-medium transition-colors">
+            انصراف
+        </a>
+        <button type="submit" 
+                class="bg-primary-600 dark:bg-cyber-neon-primary hover:bg-primary-700 dark:hover:bg-cyber-neon-primary/80 text-white px-6 py-2 rounded-lg font-medium transition-colors cyber-button"
+                id="submit-btn">
+            <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            ایجاد تنانت
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('tenant-create-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const nameInput = document.querySelector('input[name="name"]');
+    const domainInput = document.querySelector('input[name="domain_url"]');
+    
+    // Auto-generate domain from shop name
+    if (nameInput && domainInput) {
+        nameInput.addEventListener('input', function() {
+            if (!domainInput.value || domainInput.dataset.autoGenerated === 'true') {
+                const shopName = this.value.trim();
+                if (shopName) {
+                    // Convert Persian/Arabic characters and create URL-friendly string
+                    let domain = shopName
+                        .replace(/[آأإا]/g, 'a')
+                        .replace(/[ب]/g, 'b')
+                        .replace(/[پ]/g, 'p')
+                        .replace(/[ت]/g, 't')
+                        .replace(/[ث]/g, 's')
+                        .replace(/[ج]/g, 'j')
+                        .replace(/[چ]/g, 'ch')
+                        .replace(/[ح]/g, 'h')
+                        .replace(/[خ]/g, 'kh')
+                        .replace(/[د]/g, 'd')
+                        .replace(/[ذ]/g, 'z')
+                        .replace(/[ر]/g, 'r')
+                        .replace(/[ز]/g, 'z')
+                        .replace(/[ژ]/g, 'zh')
+                        .replace(/[س]/g, 's')
+                        .replace(/[ش]/g, 'sh')
+                        .replace(/[ص]/g, 's')
+                        .replace(/[ض]/g, 'z')
+                        .replace(/[ط]/g, 't')
+                        .replace(/[ظ]/g, 'z')
+                        .replace(/[ع]/g, 'a')
+                        .replace(/[غ]/g, 'gh')
+                        .replace(/[ف]/g, 'f')
+                        .replace(/[ق]/g, 'gh')
+                        .replace(/[ک]/g, 'k')
+                        .replace(/[گ]/g, 'g')
+                        .replace(/[ل]/g, 'l')
+                        .replace(/[م]/g, 'm')
+                        .replace(/[ن]/g, 'n')
+                        .replace(/[و]/g, 'v')
+                        .replace(/[ه]/g, 'h')
+                        .replace(/[ی]/g, 'y')
+                        .toLowerCase()
+                        .replace(/[^a-z0-9]/g, '-')
+                        .replace(/-+/g, '-')
+                        .replace(/^-|-$/g, '');
+                    
+                    domainInput.value = domain;
+                    domainInput.dataset.autoGenerated = 'true';
+                }
+            }
+        });
+        
+        domainInput.addEventListener('input', function() {
+            this.dataset.autoGenerated = 'false';
+        });
+    }
+    
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        const requiredFields = form.querySelectorAll('input[required], select[required]');
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                isValid = false;
+                field.classList.add('border-red-500');
+                
+                // Show error message
+                let errorMsg = field.parentNode.querySelector('.form-error');
+                if (!errorMsg) {
+                    errorMsg = document.createElement('p');
+                    errorMsg.className = 'form-error';
+                    field.parentNode.appendChild(errorMsg);
+                }
+                errorMsg.textContent = 'این فیلد الزامی است.';
+            } else {
+                field.classList.remove('border-red-500');
+                const errorMsg = field.parentNode.querySelector('.form-error');
+                if (errorMsg && errorMsg.textContent === 'این فیلد الزامی است.') {
+                    errorMsg.remove();
+                }
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            ZargarAdmin.showMessage('لطفاً تمام فیلدهای الزامی را پر کنید.', 'error');
+            return;
+        }
+        
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            در حال ایجاد تنانت...
+        `;
+        
+        ZargarAdmin.showLoading();
+    });
+    
+    // Real-time validation
+    const inputs = form.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            validateField(this);
+        });
+    });
+    
+    function validateField(field) {
+        const value = field.value.trim();
+        let isValid = true;
+        let errorMessage = '';
+        
+        // Required field validation
+        if (field.hasAttribute('required') && !value) {
+            isValid = false;
+            errorMessage = 'این فیلد الزامی است.';
+        }
+        
+        // Email validation
+        if (field.type === 'email' && value) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(value)) {
+                isValid = false;
+                errorMessage = 'فرمت ایمیل صحیح نیست.';
+            }
+        }
+        
+        // Phone validation
+        if (field.name === 'phone_number' && value) {
+            const phoneRegex = /^(\+98|0)?9\d{9}$/;
+            if (!phoneRegex.test(value.replace(/[\s\-]/g, ''))) {
+                isValid = false;
+                errorMessage = 'شماره موبایل صحیح نیست.';
+            }
+        }
+        
+        // Domain validation
+        if (field.name === 'domain_url' && value) {
+            const domainRegex = /^[a-z0-9\-]+$/;
+            if (!domainRegex.test(value)) {
+                isValid = false;
+                errorMessage = 'دامنه فقط می‌تواند شامل حروف انگلیسی، اعداد و خط تیره باشد.';
+            }
+        }
+        
+        // Update field appearance
+        if (isValid) {
+            field.classList.remove('border-red-500');
+            field.classList.add('border-green-500');
+            
+            // Remove error message
+            const existingError = field.parentNode.querySelector('.form-error');
+            if (existingError && existingError.textContent === errorMessage) {
+                existingError.remove();
+            }
+        } else {
+            field.classList.remove('border-green-500');
+            field.classList.add('border-red-500');
+            
+            // Show error message
+            let errorElement = field.parentNode.querySelector('.form-error');
+            if (!errorElement) {
+                errorElement = document.createElement('p');
+                errorElement.className = 'form-error';
+                field.parentNode.appendChild(errorElement);
+            }
+            errorElement.textContent = errorMessage;
+        }
+        
+        return isValid;
+    }
+});
+</script>
+{% endblock %}

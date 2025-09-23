@@ -1,0 +1,382 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}جزئیات پشتیبان‌گیری{% endblock %}
+
+{% block extra_css %}
+<style>
+    .log-entry {
+        font-family: 'Courier New', monospace;
+        font-size: 0.875rem;
+        padding: 0.5rem;
+        border-radius: 0.375rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .log-info { background-color: #eff6ff; color: #1e40af; }
+    .log-warning { background-color: #fef3c7; color: #92400e; }
+    .log-error { background-color: #fee2e2; color: #dc2626; }
+    .log-success { background-color: #ecfdf5; color: #065f46; }
+    
+    .progress-ring {
+        transform: rotate(-90deg);
+    }
+    
+    .progress-ring-circle {
+        transition: stroke-dasharray 0.35s;
+        transform-origin: 50% 50%;
+    }
+    
+    .metadata-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+    }
+    
+    /* Dark mode cybersecurity theme */
+    [data-theme="dark"] .log-info { 
+        background-color: rgba(59, 130, 246, 0.1); 
+        color: #60a5fa; 
+        border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+    [data-theme="dark"] .log-warning { 
+        background-color: rgba(245, 158, 11, 0.1); 
+        color: #fbbf24; 
+        border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+    [data-theme="dark"] .log-error { 
+        background-color: rgba(239, 68, 68, 0.1); 
+        color: #f87171; 
+        border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+    [data-theme="dark"] .log-success { 
+        background-color: rgba(16, 185, 129, 0.1); 
+        color: #34d399; 
+        border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-6" x-data="backupJobDetail('{{ backup_job.job_id }}')">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">جزئیات پشتیبان‌گیری</h1>
+            <p class="text-gray-600 dark:text-gray-300 mt-2">{{ backup_job.name }}</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{% url 'admin_panel:backup_history' %}" 
+               class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                بازگشت
+            </a>
+        </div>
+    </div>
+
+    <!-- Status Overview -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        <!-- Progress Circle -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 text-center">
+            <div class="relative inline-flex items-center justify-center mb-4">
+                <svg class="progress-ring w-32 h-32" viewBox="0 0 120 120">
+                    <circle cx="60" cy="60" r="54" fill="none" stroke="#e5e7eb" stroke-width="8"/>
+                    <circle cx="60" cy="60" r="54" fill="none" 
+                            :stroke="getProgressColor()" 
+                            stroke-width="8" 
+                            stroke-linecap="round"
+                            class="progress-ring-circle"
+                            :stroke-dasharray="getProgressDashArray()"
+                            stroke-dashoffset="0"/>
+                </svg>
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <span class="text-2xl font-bold text-gray-900 dark:text-white" x-text="currentProgress + '%'"></span>
+                </div>
+            </div>
+            
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">پیشرفت</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400" x-text="getStatusText()"></p>
+        </div>
+
+        <!-- Job Information -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">اطلاعات پشتیبان</h3>
+            
+            <div class="space-y-3">
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">نوع:</span>
+                    <span class="font-medium text-gray-900 dark:text-white">
+                        {% if backup_job.backup_type == 'full_system' %}پشتیبان کامل سیستم
+                        {% elif backup_job.backup_type == 'tenant_only' %}پشتیبان تک تنانت
+                        {% elif backup_job.backup_type == 'configuration' %}پشتیبان پیکربندی
+                        {% elif backup_job.backup_type == 'database_only' %}فقط پایگاه داده
+                        {% else %}{{ backup_job.get_backup_type_display }}{% endif %}
+                    </span>
+                </div>
+                
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">تکرار:</span>
+                    <span class="font-medium text-gray-900 dark:text-white">
+                        {% if backup_job.frequency == 'manual' %}دستی
+                        {% elif backup_job.frequency == 'daily' %}روزانه
+                        {% elif backup_job.frequency == 'weekly' %}هفتگی
+                        {% elif backup_job.frequency == 'monthly' %}ماهانه
+                        {% else %}{{ backup_job.get_frequency_display }}{% endif %}
+                    </span>
+                </div>
+                
+                {% if backup_job.tenant_schema %}
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">تنانت:</span>
+                    <span class="font-medium text-gray-900 dark:text-white">{{ backup_job.tenant_schema }}</span>
+                </div>
+                {% endif %}
+                
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">ایجاد شده:</span>
+                    <span class="font-medium text-gray-900 dark:text-white">{{ backup_job.created_at|date:"Y/m/d H:i" }}</span>
+                </div>
+                
+                {% if backup_job.started_at %}
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">شروع:</span>
+                    <span class="font-medium text-gray-900 dark:text-white">{{ backup_job.started_at|date:"Y/m/d H:i" }}</span>
+                </div>
+                {% endif %}
+                
+                {% if backup_job.completed_at %}
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">اتمام:</span>
+                    <span class="font-medium text-gray-900 dark:text-white">{{ backup_job.completed_at|date:"Y/m/d H:i" }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- File Information -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">اطلاعات فایل</h3>
+            
+            <div class="space-y-3">
+                {% if backup_job.file_size_human %}
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">حجم:</span>
+                    <span class="font-medium text-gray-900 dark:text-white">{{ backup_job.file_size_human }}</span>
+                </div>
+                {% endif %}
+                
+                {% if backup_job.duration %}
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">مدت زمان:</span>
+                    <span class="font-medium text-gray-900 dark:text-white">{{ backup_job.duration }}</span>
+                </div>
+                {% endif %}
+                
+                {% if backup_job.storage_backends %}
+                <div>
+                    <span class="text-gray-600 dark:text-gray-400 block mb-2">ذخیره‌سازی:</span>
+                    <div class="space-y-1">
+                        {% for backend in backup_job.storage_backends %}
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span class="text-sm font-medium text-gray-900 dark:text-white">
+                                {% if backend == 'cloudflare_r2' %}Cloudflare R2
+                                {% elif backend == 'backblaze_b2' %}Backblaze B2
+                                {% else %}{{ backend }}{% endif %}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if backup_job.file_path %}
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">مسیر:</span>
+                    <span class="font-mono text-xs text-gray-900 dark:text-white break-all">{{ backup_job.file_path }}</span>
+                </div>
+                {% endif %}
+            </div>
+            
+            {% if backup_job.status == 'completed' %}
+            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                <button class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                    دانلود پشتیبان
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Error Message -->
+    {% if backup_job.error_message %}
+    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 mb-8">
+        <div class="flex items-start gap-4">
+            <div class="flex-shrink-0">
+                <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-red-800 dark:text-red-200 mb-2">خطا در پشتیبان‌گیری</h3>
+                <p class="text-red-700 dark:text-red-300 font-mono text-sm">{{ backup_job.error_message }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Metadata -->
+    {% if backup_job.metadata %}
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">اطلاعات تکمیلی</h3>
+        
+        <div class="metadata-grid">
+            {% for key, value in backup_job.metadata.items %}
+            <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                <h4 class="font-medium text-gray-900 dark:text-white mb-1">{{ key|title }}</h4>
+                <p class="text-sm text-gray-600 dark:text-gray-400">{{ value }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Log Messages -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">گزارش عملیات</h3>
+            <div class="flex gap-2">
+                <button @click="autoRefresh = !autoRefresh" 
+                        :class="autoRefresh ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'"
+                        class="px-3 py-1 rounded text-sm font-medium transition-colors">
+                    <span x-text="autoRefresh ? 'توقف به‌روزرسانی' : 'به‌روزرسانی خودکار'"></span>
+                </button>
+                <button @click="refreshLogs()" 
+                        class="bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 px-3 py-1 rounded text-sm font-medium transition-colors">
+                    به‌روزرسانی
+                </button>
+            </div>
+        </div>
+        
+        <div class="max-h-96 overflow-y-auto">
+            <template x-for="(log, index) in logMessages" :key="index">
+                <div class="log-entry" :class="'log-' + log.level">
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="font-bold" x-text="log.level.toUpperCase()"></span>
+                        <span class="text-xs opacity-75" x-text="formatTimestamp(log.timestamp)"></span>
+                    </div>
+                    <div x-text="log.message"></div>
+                </div>
+            </template>
+            
+            <div x-show="logMessages.length === 0" class="text-center py-8">
+                <svg class="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <p class="text-gray-600 dark:text-gray-400">هیچ گزارشی موجود نیست</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function backupJobDetail(jobId) {
+    return {
+        jobId: jobId,
+        currentStatus: '{{ backup_job.status }}',
+        currentProgress: {{ backup_job.progress_percentage }},
+        logMessages: {{ log_messages|safe }},
+        autoRefresh: false,
+        refreshInterval: null,
+        
+        init() {
+            // Start auto-refresh if job is running
+            if (this.currentStatus === 'running') {
+                this.autoRefresh = true;
+                this.startAutoRefresh();
+            }
+        },
+        
+        startAutoRefresh() {
+            if (this.refreshInterval) {
+                clearInterval(this.refreshInterval);
+            }
+            
+            this.refreshInterval = setInterval(() => {
+                if (this.autoRefresh) {
+                    this.refreshLogs();
+                }
+            }, 5000); // Refresh every 5 seconds
+        },
+        
+        async refreshLogs() {
+            try {
+                const response = await fetch(`{% url 'admin_panel:backup_status_api' %}?job_id=${this.jobId}`);
+                const data = await response.json();
+                
+                this.currentStatus = data.status;
+                this.currentProgress = data.progress;
+                this.logMessages = data.log_messages || [];
+                
+                // Stop auto-refresh if job completed or failed
+                if (data.status !== 'running') {
+                    this.autoRefresh = false;
+                    if (this.refreshInterval) {
+                        clearInterval(this.refreshInterval);
+                    }
+                }
+            } catch (error) {
+                console.error('Error refreshing logs:', error);
+            }
+        },
+        
+        getProgressColor() {
+            switch (this.currentStatus) {
+                case 'completed': return '#10b981';
+                case 'failed': return '#ef4444';
+                case 'running': return '#3b82f6';
+                default: return '#f59e0b';
+            }
+        },
+        
+        getProgressDashArray() {
+            const circumference = 2 * Math.PI * 54; // radius = 54
+            const progress = this.currentProgress / 100;
+            return `${circumference * progress} ${circumference}`;
+        },
+        
+        getStatusText() {
+            switch (this.currentStatus) {
+                case 'completed': return 'تکمیل شده';
+                case 'failed': return 'ناموفق';
+                case 'running': return 'در حال اجرا';
+                case 'pending': return 'در انتظار';
+                case 'cancelled': return 'لغو شده';
+                default: return 'نامشخص';
+            }
+        },
+        
+        formatTimestamp(timestamp) {
+            try {
+                const date = new Date(timestamp);
+                return date.toLocaleString('fa-IR', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            } catch (error) {
+                return timestamp;
+            }
+        }
+    }
+}
+</script>
+{% endblock %}
