@@ -852,7 +852,13 @@
     - Write tests for barcode UI workflows and mobile scanning interface
     - _Requirements: 7.9_
 
-  - [ ] 14.5 Build supplier and purchase order management backend (Backend)
+  - [x] 14.5 Build supplier and purchase order management backend (Backend)
+
+
+
+
+
+
     - Create supplier management backend with contact and payment terms
     - Implement purchase order workflow with delivery tracking
     - Build supplier payment management and delivery scheduling backend

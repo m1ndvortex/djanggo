@@ -838,3 +838,10 @@ from .layaway_models import (
     LayawayContract,
     LayawayReminder
 )
+
+# Import supplier service models to make them available
+from .supplier_services import (
+    SupplierPayment,
+    DeliverySchedule,
+    SupplierPerformanceMetrics
+)
