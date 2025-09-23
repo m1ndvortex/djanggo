@@ -7,10 +7,10 @@ from .base import *
 import dj_database_url
 
 # Use test database configuration
-DATABASE_URL = config('DATABASE_URL', default='postgresql://zargar:zargar_test_password@db:5432/zargar_test')
+TEST_DATABASE_URL = 'postgresql://zargar:zargar_password_2024@db:5432/zargar_test'
 
 DATABASES = {
-    'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+    'default': dj_database_url.parse(TEST_DATABASE_URL, conn_max_age=600)
 }
 
 # Override engine for django-tenants

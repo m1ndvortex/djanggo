@@ -1,0 +1,322 @@
+/* Supplier Management Styles */
+
+/* Light Mode Styles */
+.metric-card {
+    @apply bg-white rounded-lg shadow p-6 transition-all duration-200 hover:shadow-lg;
+}
+
+.icon-container {
+    @apply p-3 rounded-full;
+}
+
+.icon-container.primary {
+    @apply bg-blue-100 text-blue-600;
+}
+
+.icon-container.success {
+    @apply bg-green-100 text-green-600;
+}
+
+.icon-container.warning {
+    @apply bg-yellow-100 text-yellow-600;
+}
+
+.icon-container.danger {
+    @apply bg-red-100 text-red-600;
+}
+
+.icon-container.tertiary {
+    @apply bg-purple-100 text-purple-600;
+}
+
+.nav-link {
+    @apply text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200;
+}
+
+.nav-link.active {
+    @apply text-blue-600 bg-blue-50;
+}
+
+/* Dark Mode - Cybersecurity Theme Styles */
+.cyber-glass-header {
+    backdrop-filter: blur(20px) saturate(180%);
+    background: linear-gradient(145deg, rgba(11, 14, 26, 0.9) 0%, rgba(26, 29, 41, 0.8) 100%);
+    border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.cyber-logo-container {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 255, 136, 0.05) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+    @apply p-2 rounded-lg;
+}
+
+.cyber-glow-text {
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+.cyber-nav-link {
+    @apply text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-all duration-200;
+    border: 1px solid transparent;
+}
+
+.cyber-nav-link:hover {
+    border-color: rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.05) 0%, rgba(0, 255, 136, 0.02) 100%);
+}
+
+.cyber-nav-link.active {
+    @apply text-white;
+    border-color: rgba(0, 212, 255, 0.5);
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 255, 136, 0.05) 100%);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+}
+
+.cyber-metric-card {
+    backdrop-filter: blur(16px) saturate(150%);
+    background: linear-gradient(145deg, 
+        rgba(37, 42, 58, 0.8) 0%, 
+        rgba(26, 29, 41, 0.9) 50%,
+        rgba(11, 14, 26, 0.95) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    @apply rounded-lg p-6 transition-all duration-300;
+}
+
+.cyber-metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 50px rgba(0, 0, 0, 0.7), 
+                0 0 30px rgba(0, 212, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.cyber-glass-card {
+    backdrop-filter: blur(16px) saturate(150%);
+    background: linear-gradient(145deg, 
+        rgba(37, 42, 58, 0.8) 0%, 
+        rgba(26, 29, 41, 0.9) 50%,
+        rgba(11, 14, 26, 0.95) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    @apply rounded-lg;
+}
+
+.cyber-glass-base {
+    backdrop-filter: blur(12px) saturate(140%);
+    background: linear-gradient(145deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.01) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.cyber-glass-hover:hover {
+    background: linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%);
+    border-color: rgba(0, 212, 255, 0.1);
+}
+
+.cyber-icon-container {
+    @apply p-3 rounded-full;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cyber-icon-container.primary {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 212, 255, 0.05) 100%);
+    border-color: rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
+}
+
+.cyber-icon-container.success {
+    background: linear-gradient(145deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.05) 100%);
+    border-color: rgba(0, 255, 136, 0.3);
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.2);
+}
+
+.cyber-icon-container.warning {
+    background: linear-gradient(145deg, rgba(255, 184, 0, 0.1) 0%, rgba(255, 184, 0, 0.05) 100%);
+    border-color: rgba(255, 184, 0, 0.3);
+    box-shadow: 0 0 15px rgba(255, 184, 0, 0.2);
+}
+
+.cyber-icon-container.danger {
+    background: linear-gradient(145deg, rgba(255, 71, 87, 0.1) 0%, rgba(255, 71, 87, 0.05) 100%);
+    border-color: rgba(255, 71, 87, 0.3);
+    box-shadow: 0 0 15px rgba(255, 71, 87, 0.2);
+}
+
+.cyber-icon-container.tertiary {
+    background: linear-gradient(145deg, rgba(255, 107, 53, 0.1) 0%, rgba(255, 107, 53, 0.05) 100%);
+    border-color: rgba(255, 107, 53, 0.3);
+    box-shadow: 0 0 15px rgba(255, 107, 53, 0.2);
+}
+
+.cyber-number-glow {
+    text-shadow: 0 0 15px rgba(0, 255, 136, 0.6);
+}
+
+.cyber-text-primary {
+    color: #FFFFFF;
+}
+
+.cyber-text-secondary {
+    color: #B8BCC8;
+}
+
+.cyber-text-muted {
+    color: #6B7280;
+}
+
+.cyber-neon-primary {
+    color: #00D4FF;
+}
+
+.cyber-neon-secondary {
+    color: #00FF88;
+}
+
+.cyber-neon-tertiary {
+    color: #FF6B35;
+}
+
+.cyber-neon-warning {
+    color: #FFB800;
+}
+
+.cyber-neon-danger {
+    color: #FF4757;
+}
+
+.cyber-avatar {
+    backdrop-filter: blur(10px);
+    background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    @apply p-2 rounded-full;
+}
+
+.cyber-badge {
+    @apply px-2 py-1 rounded text-xs font-medium;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cyber-badge.primary {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.2) 0%, rgba(0, 212, 255, 0.1) 100%);
+    color: #00D4FF;
+    border-color: rgba(0, 212, 255, 0.3);
+}
+
+.cyber-badge.success {
+    background: linear-gradient(145deg, rgba(0, 255, 136, 0.2) 0%, rgba(0, 255, 136, 0.1) 100%);
+    color: #00FF88;
+    border-color: rgba(0, 255, 136, 0.3);
+}
+
+.cyber-badge.warning {
+    background: linear-gradient(145deg, rgba(255, 184, 0, 0.2) 0%, rgba(255, 184, 0, 0.1) 100%);
+    color: #FFB800;
+    border-color: rgba(255, 184, 0, 0.3);
+}
+
+.cyber-badge.danger {
+    background: linear-gradient(145deg, rgba(255, 71, 87, 0.2) 0%, rgba(255, 71, 87, 0.1) 100%);
+    color: #FF4757;
+    border-color: rgba(255, 71, 87, 0.3);
+}
+
+.cyber-badge.tertiary {
+    background: linear-gradient(145deg, rgba(255, 107, 53, 0.2) 0%, rgba(255, 107, 53, 0.1) 100%);
+    color: #FF6B35;
+    border-color: rgba(255, 107, 53, 0.3);
+}
+
+.cyber-button-primary {
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.2) 0%, rgba(0, 255, 136, 0.1) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.4);
+    color: #FFFFFF;
+    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.15), 0 0 20px rgba(0, 212, 255, 0.1);
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-300;
+}
+
+.cyber-button-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 40px rgba(0, 212, 255, 0.25), 0 0 30px rgba(0, 212, 255, 0.2);
+    background: linear-gradient(145deg, rgba(0, 212, 255, 0.3) 0%, rgba(0, 255, 136, 0.15) 100%);
+}
+
+.cyber-button-secondary {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #B8BCC8;
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-300;
+}
+
+.cyber-button-secondary:hover {
+    color: #FFFFFF;
+    border-color: rgba(255, 255, 255, 0.3);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+}
+
+.cyber-input {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #FFFFFF;
+    @apply w-full rounded-lg px-3 py-2 transition-all duration-200;
+}
+
+.cyber-input:focus {
+    border-color: rgba(0, 212, 255, 0.5);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+    outline: none;
+}
+
+.cyber-input::placeholder {
+    color: #6B7280;
+}
+
+/* Persian number styling */
+.persian-numbers {
+    font-family: 'IRANSans', 'Tahoma', sans-serif;
+}
+
+/* Animation classes */
+.animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .cyber-metric-card,
+    .metric-card {
+        @apply p-4;
+    }
+    
+    .cyber-glass-card {
+        @apply mx-2;
+    }
+}
+
+/* Print styles */
+@media print {
+    .cyber-glass-card,
+    .cyber-metric-card {
+        background: white !important;
+        border: 1px solid #ccc !important;
+        box-shadow: none !important;
+    }
+    
+    .cyber-text-primary,
+    .cyber-text-secondary {
+        color: black !important;
+    }
+}

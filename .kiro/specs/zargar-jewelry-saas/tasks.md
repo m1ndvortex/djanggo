@@ -865,7 +865,20 @@
     - Write tests for supplier management and purchase order processing
     - _Requirements: 7.8_
 
-  - [ ] 14.6 Build supplier and purchase order UI (Frontend)
+  - [x] 14.6 Build supplier and purchase order UI (Frontend)
+
+
+
+
+
+
+
+
+
+
+
+
+
     - Create supplier management interface with contact and payment terms forms
     - Build supplier database with search, filtering, and contact management
     - Build purchase order creation and management interface with Persian forms

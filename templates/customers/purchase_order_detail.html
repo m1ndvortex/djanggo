@@ -1,0 +1,526 @@
+{% extends "base_rtl.html" %}
+{% load static %}
+
+{% block title %}جزئیات سفارش خرید {{ purchase_order.order_number }} - زرگر{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/supplier-management.css' %}">
+<script src="{% static 'js/supplier-management.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen 
+     {% if user.theme_preference == 'dark' %}
+     bg-gradient-to-br from-cyber-bg-primary via-cyber-bg-secondary to-cyber-bg-surface
+     {% else %}
+     bg-gradient-to-br from-gray-50 to-gray-100
+     {% endif %}"
+     x-data="purchaseOrderDetail()" 
+     x-init="initDetail()"
+     :class="{ 'dark': darkMode, 'light': !darkMode }">
+
+    <!-- Header -->
+    <header class="{% if user.theme_preference == 'dark' %}cyber-glass-header{% else %}bg-white/80 backdrop-blur-sm border-b border-gray-200{% endif %} sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <div class="{% if user.theme_preference == 'dark' %}cyber-logo-container{% else %}bg-blue-600 p-2 rounded-lg{% endif %}">
+                        <svg class="h-8 w-8 {% if user.theme_preference == 'dark' %}text-cyber-neon-primary{% else %}text-white{% endif %}" 
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold {% if user.theme_preference == 'dark' %}text-cyber-text-primary cyber-glow-text{% else %}text-gray-900{% endif %}">
+                            سفارش خرید {{ purchase_order.order_number }}
+                        </h1>
+                        <p class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}">
+                            {{ purchase_order.supplier.persian_name|default:purchase_order.supplier.name }}
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    {% if can_edit %}
+                    <a href="{% url 'customers:purchase_order_update' purchase_order.pk %}" 
+                       class="{% if user.theme_preference == 'dark' %}cyber-button-secondary{% else %}bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700{% endif %}">
+                        ویرایش
+                    </a>
+                    {% endif %}
+                    
+                    {% if can_send %}
+                    <button @click="sendOrder({{ purchase_order.pk }})"
+                            class="{% if user.theme_preference == 'dark' %}cyber-button-primary{% else %}bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700{% endif %}">
+                        ارسال سفارش
+                    </button>
+                    {% endif %}
+                    
+                    {% if can_cancel %}
+                    <button @click="cancelOrder({{ purchase_order.pk }})"
+                            class="{% if user.theme_preference == 'dark' %}cyber-button-secondary{% else %}bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700{% endif %}">
+                        لغو سفارش
+                    </button>
+                    {% endif %}
+                    
+                    <a href="{% url 'customers:purchase_order_list' %}" 
+                       class="{% if user.theme_preference == 'dark' %}cyber-button-secondary{% else %}bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700{% endif %}">
+                        بازگشت به لیست
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        
+        <!-- Order Summary -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            
+            <!-- Order Information -->
+            <div class="lg:col-span-2 {% if user.theme_preference == 'dark' %}cyber-glass-card{% else %}bg-white rounded-lg shadow{% endif %} p-6">
+                <h3 class="text-lg font-semibold {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %} mb-4">
+                    اطلاعات سفارش
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-1">
+                            شماره سفارش
+                        </label>
+                        <p class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %} font-medium">
+                            {{ purchase_order.order_number }}
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-1">
+                            تاریخ سفارش
+                        </label>
+                        <p class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %} persian-numbers">
+                            {{ purchase_order.order_date|date:"Y/m/d" }}
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-1">
+                            تاریخ تحویل مورد انتظار
+                        </label>
+                        <p class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %} persian-numbers">
+                            {% if purchase_order.expected_delivery_date %}
+                                {{ purchase_order.expected_delivery_date|date:"Y/m/d" }}
+                            {% else %}
+                                تعیین نشده
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-1">
+                            اولویت
+                        </label>
+                        <span class="{% if purchase_order.priority == 'urgent' %}{% if user.theme_preference == 'dark' %}cyber-badge danger{% else %}bg-red-100 text-red-800 px-2 py-1 rounded text-sm{% endif %}{% elif purchase_order.priority == 'high' %}{% if user.theme_preference == 'dark' %}cyber-badge warning{% else %}bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm{% endif %}{% else %}{% if user.theme_preference == 'dark' %}cyber-badge primary{% else %}bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm{% endif %}{% endif %}">
+                            {{ purchase_order.get_priority_display }}
+                        </span>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-1">
+                            وضعیت
+                        </label>
+                        <span class="{% if purchase_order.status == 'draft' %}{% if user.theme_preference == 'dark' %}cyber-badge warning{% else %}bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm{% endif %}{% elif purchase_order.status == 'sent' %}{% if user.theme_preference == 'dark' %}cyber-badge primary{% else %}bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm{% endif %}{% elif purchase_order.status == 'confirmed' %}{% if user.theme_preference == 'dark' %}cyber-badge success{% else %}bg-green-100 text-green-800 px-2 py-1 rounded text-sm{% endif %}{% elif purchase_order.status == 'completed' %}{% if user.theme_preference == 'dark' %}cyber-badge success{% else %}bg-green-100 text-green-800 px-2 py-1 rounded text-sm{% endif %}{% elif purchase_order.status == 'cancelled' %}{% if user.theme_preference == 'dark' %}cyber-badge danger{% else %}bg-red-100 text-red-800 px-2 py-1 rounded text-sm{% endif %}{% endif %}">
+                            {{ purchase_order.get_status_display }}
+                        </span>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-1">
+                            درصد تکمیل
+                        </label>
+                        <div class="flex items-center">
+                            <div class="flex-1 bg-gray-200 rounded-full h-2 mr-2">
+                                <div class="bg-green-500 h-2 rounded-full" style="width: {{ completion_percentage }}%"></div>
+                            </div>
+                            <span class="text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-neon-secondary{% else %}text-green-600{% endif %} persian-numbers">
+                                {{ completion_percentage }}%
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if purchase_order.notes %}
+                <div class="mt-6">
+                    <label class="block text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-1">
+                        یادداشت‌ها
+                    </label>
+                    <p class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        {{ purchase_order.notes }}
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Supplier Information -->
+            <div class="{% if user.theme_preference == 'dark' %}cyber-glass-card{% else %}bg-white rounded-lg shadow{% endif %} p-6">
+                <h3 class="text-lg font-semibold {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %} mb-4">
+                    اطلاعات تامین‌کننده
+                </h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-1">
+                            نام
+                        </label>
+                        <p class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %} font-medium">
+                            {{ purchase_order.supplier.persian_name|default:purchase_order.supplier.name }}
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-1">
+                            شخص رابط
+                        </label>
+                        <p class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                            {{ purchase_order.supplier.contact_person|default:"تعیین نشده" }}
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-1">
+                            تلفن
+                        </label>
+                        <p class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %} persian-numbers">
+                            {{ purchase_order.supplier.phone_number }}
+                        </p>
+                    </div>
+                    
+                    {% if purchase_order.supplier.email %}
+                    <div>
+                        <label class="block text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-1">
+                            ایمیل
+                        </label>
+                        <p class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                            {{ purchase_order.supplier.email }}
+                        </p>
+                    </div>
+                    {% endif %}
+                    
+                    <div>
+                        <label class="block text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-1">
+                            شرایط پرداخت
+                        </label>
+                        <p class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                            {{ purchase_order.payment_terms|default:purchase_order.supplier.payment_terms }}
+                        </p>
+                    </div>
+                    
+                    <div class="pt-4">
+                        <a href="{% url 'customers:supplier_detail' purchase_order.supplier.pk %}" 
+                           class="{% if user.theme_preference == 'dark' %}text-cyber-neon-primary hover:text-cyber-neon-secondary{% else %}text-blue-600 hover:text-blue-800{% endif %} text-sm font-medium">
+                            مشاهده جزئیات تامین‌کننده →
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Items -->
+        <div class="{% if user.theme_preference == 'dark' %}cyber-glass-card{% else %}bg-white rounded-lg shadow{% endif %} overflow-hidden mb-8">
+            <div class="px-6 py-4 border-b {% if user.theme_preference == 'dark' %}border-cyber-neon-primary/20{% else %}border-gray-200{% endif %}">
+                <h3 class="text-lg font-semibold {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                    اقلام سفارش
+                </h3>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y {% if user.theme_preference == 'dark' %}divide-cyber-neon-primary/20{% else %}divide-gray-200{% endif %}">
+                    <thead class="{% if user.theme_preference == 'dark' %}cyber-glass-base{% else %}bg-gray-50{% endif %}">
+                        <tr>
+                            <th class="px-6 py-3 text-right text-xs font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                نام کالا
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                تعداد سفارش
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                دریافت شده
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                قیمت واحد
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                مجموع
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                وضعیت
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="{% if user.theme_preference == 'dark' %}cyber-glass-base{% else %}bg-white{% endif %} divide-y {% if user.theme_preference == 'dark' %}divide-cyber-neon-primary/10{% else %}divide-gray-200{% endif %}">
+                        {% for item in order_items %}
+                        <tr class="{% if user.theme_preference == 'dark' %}hover:cyber-glass-hover{% else %}hover:bg-gray-50{% endif %}">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                    {{ item.item_name }}
+                                </div>
+                                {% if item.weight_grams %}
+                                <div class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-muted{% else %}text-gray-500{% endif %} persian-numbers">
+                                    وزن: {{ item.weight_grams }} گرم
+                                </div>
+                                {% endif %}
+                                {% if item.karat %}
+                                <div class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-muted{% else %}text-gray-500{% endif %} persian-numbers">
+                                    عیار: {{ item.karat }}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-neon-secondary{% else %}text-gray-900{% endif %} persian-numbers">
+                                    {{ item.quantity_ordered }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-neon-secondary{% else %}text-gray-900{% endif %} persian-numbers">
+                                    {{ item.quantity_received }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-neon-secondary{% else %}text-gray-900{% endif %} persian-numbers">
+                                    {{ item.unit_price|floatformat:0 }}
+                                </div>
+                                <div class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">
+                                    تومان
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-neon-secondary{% else %}text-gray-900{% endif %} persian-numbers">
+                                    {{ item.total_price|floatformat:0 }}
+                                </div>
+                                <div class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">
+                                    تومان
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if item.is_fully_received %}
+                                <span class="{% if user.theme_preference == 'dark' %}cyber-badge success{% else %}bg-green-100 text-green-800 px-2 py-1 rounded text-sm{% endif %}">
+                                    تکمیل
+                                </span>
+                                {% elif item.quantity_received > 0 %}
+                                <span class="{% if user.theme_preference == 'dark' %}cyber-badge warning{% else %}bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm{% endif %}">
+                                    جزئی
+                                </span>
+                                {% else %}
+                                <span class="{% if user.theme_preference == 'dark' %}cyber-badge danger{% else %}bg-red-100 text-red-800 px-2 py-1 rounded text-sm{% endif %}">
+                                    در انتظار
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-12 text-center">
+                                <div class="{% if user.theme_preference == 'dark' %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">
+                                    <p class="text-lg font-medium mb-2">هیچ کالایی در این سفارش ثبت نشده است</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Order Total -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- Payment Information -->
+            {% if payments %}
+            <div class="{% if user.theme_preference == 'dark' %}cyber-glass-card{% else %}bg-white rounded-lg shadow{% endif %} p-6">
+                <h3 class="text-lg font-semibold {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %} mb-4">
+                    پرداخت‌ها
+                </h3>
+                
+                <div class="space-y-4">
+                    {% for payment in payments %}
+                    <div class="flex justify-between items-center p-3 {% if user.theme_preference == 'dark' %}cyber-glass-base{% else %}bg-gray-50{% endif %} rounded-lg">
+                        <div>
+                            <p class="text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                {{ payment.payment_method }}
+                            </p>
+                            <p class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-muted{% else %}text-gray-500{% endif %} persian-numbers">
+                                {{ payment.payment_date|date:"Y/m/d" }}
+                            </p>
+                        </div>
+                        <div class="text-left">
+                            <p class="text-sm font-bold {% if user.theme_preference == 'dark' %}text-cyber-neon-secondary{% else %}text-gray-900{% endif %} persian-numbers">
+                                {{ payment.amount|floatformat:0 }}
+                            </p>
+                            <p class="text-xs {% if user.theme_preference == 'dark' %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">
+                                تومان
+                            </p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Order Summary -->
+            <div class="{% if user.theme_preference == 'dark' %}cyber-glass-card{% else %}bg-white rounded-lg shadow{% endif %} p-6">
+                <h3 class="text-lg font-semibold {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %} mb-4">
+                    خلاصه سفارش
+                </h3>
+                
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            جمع کل:
+                        </span>
+                        <span class="text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-neon-secondary{% else %}text-gray-900{% endif %} persian-numbers">
+                            {{ purchase_order.total_amount|floatformat:0 }} تومان
+                        </span>
+                    </div>
+                    
+                    {% if purchase_order.payment_due_date %}
+                    <div class="flex justify-between">
+                        <span class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            سررسید پرداخت:
+                        </span>
+                        <span class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %} persian-numbers">
+                            {{ purchase_order.payment_due_date|date:"Y/m/d" }}
+                        </span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="flex justify-between">
+                        <span class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            ایجاد شده توسط:
+                        </span>
+                        <span class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                            {{ purchase_order.created_by.get_full_name|default:purchase_order.created_by.username }}
+                        </span>
+                    </div>
+                    
+                    <div class="flex justify-between">
+                        <span class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            تاریخ ایجاد:
+                        </span>
+                        <span class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %} persian-numbers">
+                            {{ purchase_order.created_at|date:"Y/m/d H:i" }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+function purchaseOrderDetail() {
+    return {
+        darkMode: localStorage.getItem('theme') === 'dark',
+        loading: false,
+        
+        initDetail() {
+            console.log('Purchase order detail initialized');
+        },
+        
+        sendOrder(orderId) {
+            if (!confirm('آیا از ارسال این سفارش به تامین‌کننده اطمینان دارید؟')) {
+                return;
+            }
+            
+            this.loading = true;
+            
+            fetch('{% url "customers:supplier_ajax" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': window.csrfToken
+                },
+                body: `action=send_purchase_order&order_id=${orderId}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    this.showMessage(data.message, 'success');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    this.showMessage(data.error, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                this.showMessage('خطا در ارتباط با سرور', 'error');
+            })
+            .finally(() => {
+                this.loading = false;
+            });
+        },
+        
+        cancelOrder(orderId) {
+            const reason = prompt('دلیل لغو سفارش را وارد کنید:');
+            if (!reason) return;
+            
+            this.loading = true;
+            
+            fetch('{% url "customers:supplier_ajax" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': window.csrfToken
+                },
+                body: `action=cancel_order&order_id=${orderId}&reason=${encodeURIComponent(reason)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    this.showMessage(data.message, 'success');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    this.showMessage(data.error, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                this.showMessage('خطا در ارتباط با سرور', 'error');
+            })
+            .finally(() => {
+                this.loading = false;
+            });
+        },
+        
+        showMessage(message, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `fixed top-20 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm transition-all duration-300 ${
+                type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' :
+                type === 'error' ? 'bg-red-100 text-red-800 border border-red-200' :
+                'bg-blue-100 text-blue-800 border border-blue-200'
+            }`;
+            
+            if (this.darkMode) {
+                messageDiv.className = messageDiv.className.replace('bg-green-100 text-green-800 border-green-200', 'cyber-glass-card text-cyber-neon-secondary border-cyber-neon-secondary/30');
+                messageDiv.className = messageDiv.className.replace('bg-red-100 text-red-800 border-red-200', 'cyber-glass-card text-cyber-neon-danger border-cyber-neon-danger/30');
+                messageDiv.className = messageDiv.className.replace('bg-blue-100 text-blue-800 border-blue-200', 'cyber-glass-card text-cyber-neon-primary border-cyber-neon-primary/30');
+            }
+            
+            messageDiv.textContent = message;
+            document.body.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                messageDiv.style.transform = 'translateX(0)';
+                messageDiv.style.opacity = '1';
+            }, 100);
+            
+            setTimeout(() => {
+                messageDiv.style.transform = 'translateX(100%)';
+                messageDiv.style.opacity = '0';
+                setTimeout(() => messageDiv.remove(), 300);
+            }, 5000);
+        }
+    }
+}
+</script>
+{% endblock %}

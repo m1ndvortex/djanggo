@@ -1,0 +1,340 @@
+{% extends "base_rtl.html" %}
+{% load static %}
+
+{% block title %}
+{% if object %}ویرایش سفارش خرید{% else %}سفارش خرید جدید{% endif %} - زرگر
+{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/supplier-management.css' %}">
+<script src="{% static 'js/supplier-management.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen 
+     {% if user.theme_preference == 'dark' %}
+     bg-gradient-to-br from-cyber-bg-primary via-cyber-bg-secondary to-cyber-bg-surface
+     {% else %}
+     bg-gradient-to-br from-gray-50 to-gray-100
+     {% endif %}"
+     x-data="purchaseOrderForm()" 
+     x-init="initForm()"
+     :class="{ 'dark': darkMode, 'light': !darkMode }">
+
+    <!-- Header -->
+    <header class="{% if user.theme_preference == 'dark' %}cyber-glass-header{% else %}bg-white/80 backdrop-blur-sm border-b border-gray-200{% endif %} sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <div class="{% if user.theme_preference == 'dark' %}cyber-logo-container{% else %}bg-blue-600 p-2 rounded-lg{% endif %}">
+                        <svg class="h-8 w-8 {% if user.theme_preference == 'dark' %}text-cyber-neon-primary{% else %}text-white{% endif %}" 
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold {% if user.theme_preference == 'dark' %}text-cyber-text-primary cyber-glow-text{% else %}text-gray-900{% endif %}">
+                            {% if object %}ویرایش سفارش خرید{% else %}سفارش خرید جدید{% endif %}
+                        </h1>
+                        <p class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}">
+                            مدیریت سفارشات خرید از تامین‌کنندگان
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Navigation -->
+                <nav class="hidden md:flex items-center space-x-6 space-x-reverse">
+                    <a href="{% url 'customers:purchase_order_list' %}" 
+                       class="{% if user.theme_preference == 'dark' %}cyber-nav-link{% else %}nav-link{% endif %}">
+                        لیست سفارشات
+                    </a>
+                    <a href="{% url 'customers:supplier_dashboard' %}" 
+                       class="{% if user.theme_preference == 'dark' %}cyber-nav-link{% else %}nav-link{% endif %}">
+                        داشبورد تامین‌کنندگان
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Basic Information -->
+            <div class="{% if user.theme_preference == 'dark' %}cyber-glass-card{% else %}bg-white rounded-lg shadow{% endif %} p-6">
+                <h3 class="text-lg font-semibold {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %} mb-4">
+                    اطلاعات پایه سفارش
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Supplier -->
+                    <div>
+                        <label for="{{ form.supplier.id_for_label }}" 
+                               class="block text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-2">
+                            تامین‌کننده *
+                        </label>
+                        {{ form.supplier }}
+                        {% if form.supplier.errors %}
+                        <p class="mt-1 text-sm {% if user.theme_preference == 'dark' %}text-cyber-neon-danger{% else %}text-red-600{% endif %}">
+                            {{ form.supplier.errors.0 }}
+                        </p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Order Date -->
+                    <div>
+                        <label for="{{ form.order_date.id_for_label }}" 
+                               class="block text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-2">
+                            تاریخ سفارش *
+                        </label>
+                        {{ form.order_date }}
+                        {% if form.order_date.errors %}
+                        <p class="mt-1 text-sm {% if user.theme_preference == 'dark' %}text-cyber-neon-danger{% else %}text-red-600{% endif %}">
+                            {{ form.order_date.errors.0 }}
+                        </p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Expected Delivery Date -->
+                    <div>
+                        <label for="{{ form.expected_delivery_date.id_for_label }}" 
+                               class="block text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-2">
+                            تاریخ تحویل مورد انتظار
+                        </label>
+                        {{ form.expected_delivery_date }}
+                        {% if form.expected_delivery_date.errors %}
+                        <p class="mt-1 text-sm {% if user.theme_preference == 'dark' %}text-cyber-neon-danger{% else %}text-red-600{% endif %}">
+                            {{ form.expected_delivery_date.errors.0 }}
+                        </p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Priority -->
+                    <div>
+                        <label for="{{ form.priority.id_for_label }}" 
+                               class="block text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-2">
+                            اولویت
+                        </label>
+                        {{ form.priority }}
+                        {% if form.priority.errors %}
+                        <p class="mt-1 text-sm {% if user.theme_preference == 'dark' %}text-cyber-neon-danger{% else %}text-red-600{% endif %}">
+                            {{ form.priority.errors.0 }}
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Information -->
+            <div class="{% if user.theme_preference == 'dark' %}cyber-glass-card{% else %}bg-white rounded-lg shadow{% endif %} p-6">
+                <h3 class="text-lg font-semibold {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %} mb-4">
+                    اطلاعات پرداخت
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Payment Terms -->
+                    <div>
+                        <label for="{{ form.payment_terms.id_for_label }}" 
+                               class="block text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-2">
+                            شرایط پرداخت
+                        </label>
+                        {{ form.payment_terms }}
+                        {% if form.payment_terms.errors %}
+                        <p class="mt-1 text-sm {% if user.theme_preference == 'dark' %}text-cyber-neon-danger{% else %}text-red-600{% endif %}">
+                            {{ form.payment_terms.errors.0 }}
+                        </p>
+                        {% endif %}
+                        <p class="mt-1 text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">
+                            مثال: نقدی، ۳۰ روزه، ۶۰ روزه
+                        </p>
+                    </div>
+                    
+                    <!-- Payment Due Date -->
+                    <div>
+                        <label for="{{ form.payment_due_date.id_for_label }}" 
+                               class="block text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-2">
+                            تاریخ سررسید پرداخت
+                        </label>
+                        {{ form.payment_due_date }}
+                        {% if form.payment_due_date.errors %}
+                        <p class="mt-1 text-sm {% if user.theme_preference == 'dark' %}text-cyber-neon-danger{% else %}text-red-600{% endif %}">
+                            {{ form.payment_due_date.errors.0 }}
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delivery Information -->
+            <div class="{% if user.theme_preference == 'dark' %}cyber-glass-card{% else %}bg-white rounded-lg shadow{% endif %} p-6">
+                <h3 class="text-lg font-semibold {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %} mb-4">
+                    اطلاعات تحویل
+                </h3>
+                
+                <div>
+                    <label for="{{ form.delivery_address.id_for_label }}" 
+                           class="block text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-2">
+                        آدرس تحویل
+                    </label>
+                    {{ form.delivery_address }}
+                    {% if form.delivery_address.errors %}
+                    <p class="mt-1 text-sm {% if user.theme_preference == 'dark' %}text-cyber-neon-danger{% else %}text-red-600{% endif %}">
+                        {{ form.delivery_address.errors.0 }}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="{% if user.theme_preference == 'dark' %}cyber-glass-card{% else %}bg-white rounded-lg shadow{% endif %} p-6">
+                <h3 class="text-lg font-semibold {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %} mb-4">
+                    یادداشت‌ها
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Notes -->
+                    <div>
+                        <label for="{{ form.notes.id_for_label }}" 
+                               class="block text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-2">
+                            یادداشت‌های عمومی
+                        </label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                        <p class="mt-1 text-sm {% if user.theme_preference == 'dark' %}text-cyber-neon-danger{% else %}text-red-600{% endif %}">
+                            {{ form.notes.errors.0 }}
+                        </p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Internal Notes -->
+                    <div>
+                        <label for="{{ form.internal_notes.id_for_label }}" 
+                               class="block text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-2">
+                            یادداشت‌های داخلی
+                        </label>
+                        {{ form.internal_notes }}
+                        {% if form.internal_notes.errors %}
+                        <p class="mt-1 text-sm {% if user.theme_preference == 'dark' %}text-cyber-neon-danger{% else %}text-red-600{% endif %}">
+                            {{ form.internal_notes.errors.0 }}
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-between items-center">
+                <div class="flex space-x-4 space-x-reverse">
+                    <button type="submit" 
+                            class="{% if user.theme_preference == 'dark' %}cyber-button-primary{% else %}bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200{% endif %} font-medium">
+                        {% if object %}به‌روزرسانی سفارش{% else %}ایجاد سفارش{% endif %}
+                    </button>
+                    <a href="{% if object %}{% url 'customers:purchase_order_detail' object.pk %}{% else %}{% url 'customers:purchase_order_list' %}{% endif %}" 
+                       class="{% if user.theme_preference == 'dark' %}cyber-button-secondary{% else %}bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 focus:ring-4 focus:ring-gray-200{% endif %} font-medium">
+                        انصراف
+                    </a>
+                </div>
+                
+                {% if object %}
+                <div class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">
+                    آخرین به‌روزرسانی: {{ object.updated_at|date:"Y/m/d H:i" }}
+                </div>
+                {% endif %}
+            </div>
+        </form>
+    </main>
+</div>
+
+<script>
+function purchaseOrderForm() {
+    return {
+        darkMode: localStorage.getItem('theme') === 'dark',
+        
+        initForm() {
+            console.log('Purchase order form initialized');
+            this.setupFormValidation();
+            this.setupSupplierChange();
+        },
+        
+        setupFormValidation() {
+            const form = document.querySelector('form');
+            const requiredFields = form.querySelectorAll('[required]');
+            
+            requiredFields.forEach(field => {
+                field.addEventListener('blur', () => {
+                    this.validateField(field);
+                });
+            });
+        },
+        
+        setupSupplierChange() {
+            const supplierField = document.querySelector('select[name="supplier"]');
+            const paymentTermsField = document.querySelector('input[name="payment_terms"]');
+            
+            if (supplierField && paymentTermsField) {
+                supplierField.addEventListener('change', (e) => {
+                    // Auto-fill payment terms from supplier if empty
+                    if (!paymentTermsField.value && e.target.selectedOptions[0]) {
+                        const supplierPaymentTerms = e.target.selectedOptions[0].dataset.paymentTerms;
+                        if (supplierPaymentTerms) {
+                            paymentTermsField.value = supplierPaymentTerms;
+                        }
+                    }
+                });
+            }
+        },
+        
+        validateField(field) {
+            const value = field.value.trim();
+            
+            if (field.hasAttribute('required') && !value) {
+                this.showFieldError(field, 'این فیلد الزامی است');
+                return false;
+            }
+            
+            this.clearFieldError(field);
+            return true;
+        },
+        
+        showFieldError(field, message) {
+            this.clearFieldError(field);
+            
+            const errorElement = document.createElement('p');
+            errorElement.className = `mt-1 text-sm field-error ${
+                this.darkMode ? 'text-cyber-neon-danger' : 'text-red-600'
+            }`;
+            errorElement.textContent = message;
+            
+            field.parentNode.appendChild(errorElement);
+            field.classList.add('border-red-500');
+        },
+        
+        clearFieldError(field) {
+            const errorElement = field.parentNode.querySelector('.field-error');
+            if (errorElement) {
+                errorElement.remove();
+            }
+            field.classList.remove('border-red-500');
+        }
+    }
+}
+
+// Apply form styling based on theme
+document.addEventListener('DOMContentLoaded', function() {
+    const isDark = localStorage.getItem('theme') === 'dark';
+    const inputs = document.querySelectorAll('input, select, textarea');
+    
+    inputs.forEach(input => {
+        if (isDark) {
+            input.classList.add('cyber-input');
+        } else {
+            input.classList.add('border', 'border-gray-300', 'rounded-lg', 'px-3', 'py-2', 'focus:ring-blue-500', 'focus:border-blue-500');
+        }
+    });
+});
+</script>
+{% endblock %}

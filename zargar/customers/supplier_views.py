@@ -1,756 +1,741 @@
 """
-API views for supplier management backend.
+Supplier management views with contact and payment terms forms.
 """
-from rest_framework import viewsets, status, permissions
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from django.utils.translation import gettext_lazy as _
-from django.db.models import Q, Count, Sum, Avg
+from django.views.generic import TemplateView, ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from django.urls import reverse_lazy
+from django.db.models import Q, Sum, Count, Avg, F
 from django.utils import timezone
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import SearchFilter, OrderingFilter
+from datetime import datetime, timedelta
+from decimal import Decimal
+import json
 
+from zargar.core.mixins import TenantContextMixin
 from .models import Supplier, PurchaseOrder, PurchaseOrderItem
-from .supplier_services import (
-    SupplierPayment, 
-    DeliverySchedule, 
-    SupplierPerformanceMetrics,
-    SupplierManagementService
-)
-from .supplier_serializers import (
-    SupplierSerializer,
-    SupplierCreateSerializer,
-    PurchaseOrderSerializer,
-    PurchaseOrderCreateSerializer,
-    PurchaseOrderItemSerializer,
-    SupplierPaymentSerializer,
-    SupplierPaymentCreateSerializer,
-    DeliveryScheduleSerializer,
-    SupplierPerformanceMetricsSerializer,
-    SupplierPerformanceReportSerializer,
-    DeliveryTrackingUpdateSerializer
-)
-from zargar.core.permissions import TenantPermission
+from .supplier_services import SupplierPayment, DeliverySchedule, SupplierPerformanceMetrics
 
 
-class SupplierViewSet(viewsets.ModelViewSet):
+class SupplierManagementDashboardView(LoginRequiredMixin, TenantContextMixin, TemplateView):
     """
-    ViewSet for supplier management with contact and payment terms.
+    Supplier management interface with contact and payment terms forms.
     """
-    queryset = Supplier.objects.all()
-    serializer_class = SupplierSerializer
-    permission_classes = [permissions.IsAuthenticated, TenantPermission]
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['supplier_type', 'is_active', 'is_preferred', 'city']
-    search_fields = ['name', 'persian_name', 'contact_person', 'phone_number', 'email']
-    ordering_fields = ['name', 'persian_name', 'created_at', 'total_orders', 'total_amount']
-    ordering = ['-created_at']
+    template_name = 'customers/supplier_dashboard.html'
     
-    def get_serializer_class(self):
-        """Return appropriate serializer based on action."""
-        if self.action == 'create':
-            return SupplierCreateSerializer
-        return SupplierSerializer
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Get supplier statistics
+        total_suppliers = Supplier.objects.filter(tenant=self.request.tenant).count()
+        active_suppliers = Supplier.objects.filter(tenant=self.request.tenant, is_active=True).count()
+        preferred_suppliers = Supplier.objects.filter(tenant=self.request.tenant, is_preferred=True).count()
+        
+        # Get supplier type distribution
+        supplier_types = Supplier.objects.filter(
+            tenant=self.request.tenant
+        ).values('supplier_type').annotate(count=Count('id')).order_by('-count')
+        
+        # Get top suppliers by order amount
+        top_suppliers = Supplier.objects.filter(
+            tenant=self.request.tenant,
+            is_active=True
+        ).order_by('-total_amount')[:10]
+        
+        # Get recent suppliers
+        recent_suppliers = Supplier.objects.filter(
+            tenant=self.request.tenant
+        ).order_by('-created_at')[:5]
+        
+        # Get pending purchase orders
+        pending_orders = PurchaseOrder.objects.filter(
+            supplier__tenant=self.request.tenant,
+            status__in=['draft', 'sent', 'confirmed']
+        ).select_related('supplier').order_by('-order_date')[:10]
+        
+        # Get overdue orders
+        overdue_orders = PurchaseOrder.objects.filter(
+            supplier__tenant=self.request.tenant,
+            expected_delivery_date__lt=timezone.now().date(),
+            status__in=['sent', 'confirmed']
+        ).select_related('supplier').count()
+        
+        # Calculate total order amounts
+        order_stats = PurchaseOrder.objects.filter(
+            supplier__tenant=self.request.tenant
+        ).aggregate(
+            total_orders=Count('id'),
+            total_amount=Sum('total_amount'),
+            pending_amount=Sum('total_amount', filter=Q(status__in=['draft', 'sent', 'confirmed'])),
+            completed_amount=Sum('total_amount', filter=Q(status='completed'))
+        )
+        
+        context.update({
+            'total_suppliers': total_suppliers,
+            'active_suppliers': active_suppliers,
+            'inactive_suppliers': total_suppliers - active_suppliers,
+            'preferred_suppliers': preferred_suppliers,
+            'supplier_types': list(supplier_types),
+            'top_suppliers': top_suppliers,
+            'recent_suppliers': recent_suppliers,
+            'pending_orders': pending_orders,
+            'overdue_orders': overdue_orders,
+            'order_stats': {
+                'total_orders': order_stats['total_orders'] or 0,
+                'total_amount': order_stats['total_amount'] or 0,
+                'pending_amount': order_stats['pending_amount'] or 0,
+                'completed_amount': order_stats['completed_amount'] or 0
+            }
+        })
+        
+        return context
+
+
+class SupplierListView(LoginRequiredMixin, TenantContextMixin, ListView):
+    """
+    Supplier database with search, filtering, and contact management.
+    """
+    model = Supplier
+    template_name = 'customers/supplier_list.html'
+    context_object_name = 'suppliers'
+    paginate_by = 20
     
     def get_queryset(self):
-        """Filter suppliers by tenant and add performance metrics."""
-        queryset = super().get_queryset()
+        queryset = Supplier.objects.filter(tenant=self.request.tenant).order_by('-created_at')
         
-        # Add performance metrics annotation
-        queryset = queryset.select_related('performance_metrics')
+        # Search functionality
+        search = self.request.GET.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(name__icontains=search) |
+                Q(persian_name__icontains=search) |
+                Q(contact_person__icontains=search) |
+                Q(phone_number__icontains=search) |
+                Q(email__icontains=search)
+            )
         
-        # Filter by active status if requested
-        if self.request.query_params.get('active_only') == 'true':
+        # Filter by supplier type
+        supplier_type = self.request.GET.get('supplier_type')
+        if supplier_type:
+            queryset = queryset.filter(supplier_type=supplier_type)
+        
+        # Filter by status
+        status = self.request.GET.get('status')
+        if status == 'active':
             queryset = queryset.filter(is_active=True)
+        elif status == 'inactive':
+            queryset = queryset.filter(is_active=False)
+        elif status == 'preferred':
+            queryset = queryset.filter(is_preferred=True)
+        
+        # Sort options
+        sort = self.request.GET.get('sort', '-created_at')
+        if sort in ['name', '-name', 'total_amount', '-total_amount', 'total_orders', '-total_orders', 'created_at', '-created_at']:
+            queryset = queryset.order_by(sort)
         
         return queryset
     
-    @action(detail=True, methods=['get'])
-    def performance_report(self, request, pk=None):
-        """
-        Get comprehensive performance report for a supplier.
-        """
-        supplier = self.get_object()
-        report_data = SupplierManagementService.get_supplier_performance_report(supplier)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
         
-        serializer = SupplierPerformanceReportSerializer(report_data)
-        return Response(serializer.data)
-    
-    @action(detail=True, methods=['post'])
-    def toggle_preferred(self, request, pk=None):
-        """
-        Toggle supplier preferred status.
-        """
-        supplier = self.get_object()
-        supplier.is_preferred = not supplier.is_preferred
-        supplier.save(update_fields=['is_preferred'])
-        
-        return Response({
-            'message': _('Supplier preferred status updated'),
-            'is_preferred': supplier.is_preferred
-        })
-    
-    @action(detail=True, methods=['post'])
-    def deactivate(self, request, pk=None):
-        """
-        Deactivate supplier (soft delete).
-        """
-        supplier = self.get_object()
-        
-        # Check for active purchase orders
-        active_orders = supplier.purchase_orders.filter(
-            status__in=['draft', 'sent', 'confirmed', 'partially_received']
-        ).count()
-        
-        if active_orders > 0:
-            return Response({
-                'error': _('Cannot deactivate supplier with active purchase orders')
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        supplier.is_active = False
-        supplier.save(update_fields=['is_active'])
-        
-        return Response({
-            'message': _('Supplier deactivated successfully')
-        })
-    
-    @action(detail=False, methods=['get'])
-    def statistics(self, request):
-        """
-        Get supplier statistics overview.
-        """
-        queryset = self.get_queryset()
-        
-        stats = {
-            'total_suppliers': queryset.count(),
-            'active_suppliers': queryset.filter(is_active=True).count(),
-            'preferred_suppliers': queryset.filter(is_preferred=True).count(),
-            'suppliers_by_type': dict(
-                queryset.values('supplier_type').annotate(
-                    count=Count('id')
-                ).values_list('supplier_type', 'count')
-            ),
-            'top_suppliers_by_orders': list(
-                queryset.filter(is_active=True).order_by('-total_orders')[:5].values(
-                    'id', 'name', 'persian_name', 'total_orders', 'total_amount'
-                )
-            ),
-            'recent_suppliers': list(
-                queryset.filter(
-                    created_at__gte=timezone.now() - timezone.timedelta(days=30)
-                ).count()
-            )
+        # Get filter options
+        context['supplier_types'] = Supplier.SUPPLIER_TYPES
+        context['current_filters'] = {
+            'search': self.request.GET.get('search', ''),
+            'supplier_type': self.request.GET.get('supplier_type', ''),
+            'status': self.request.GET.get('status', ''),
+            'sort': self.request.GET.get('sort', '-created_at')
         }
         
-        return Response(stats)
+        return context
 
 
-class PurchaseOrderViewSet(viewsets.ModelViewSet):
+class SupplierDetailView(LoginRequiredMixin, TenantContextMixin, DetailView):
     """
-    ViewSet for purchase order workflow with delivery tracking.
+    Detailed view of supplier information with performance tracking.
     """
-    queryset = PurchaseOrder.objects.all()
-    serializer_class = PurchaseOrderSerializer
-    permission_classes = [permissions.IsAuthenticated, TenantPermission]
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['supplier', 'status', 'priority', 'is_paid']
-    search_fields = ['order_number', 'supplier__name', 'supplier__persian_name']
-    ordering_fields = ['order_date', 'expected_delivery_date', 'total_amount', 'created_at']
-    ordering = ['-created_at']
-    
-    def get_serializer_class(self):
-        """Return appropriate serializer based on action."""
-        if self.action == 'create':
-            return PurchaseOrderCreateSerializer
-        return PurchaseOrderSerializer
+    model = Supplier
+    template_name = 'customers/supplier_detail.html'
+    context_object_name = 'supplier'
     
     def get_queryset(self):
-        """Filter purchase orders by tenant with related data."""
-        queryset = super().get_queryset()
-        queryset = queryset.select_related('supplier').prefetch_related('items')
+        return Supplier.objects.filter(tenant=self.request.tenant)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        supplier = self.get_object()
         
-        # Filter by date range if provided
-        date_from = self.request.query_params.get('date_from')
-        date_to = self.request.query_params.get('date_to')
+        # Get purchase orders
+        purchase_orders = PurchaseOrder.objects.filter(
+            supplier=supplier
+        ).order_by('-order_date')[:20]
         
+        # Get order statistics
+        order_stats = PurchaseOrder.objects.filter(
+            supplier=supplier
+        ).aggregate(
+            total_orders=Count('id'),
+            total_amount=Sum('total_amount'),
+            pending_orders=Count('id', filter=Q(status__in=['draft', 'sent', 'confirmed'])),
+            completed_orders=Count('id', filter=Q(status='completed')),
+            cancelled_orders=Count('id', filter=Q(status='cancelled')),
+            avg_order_amount=Avg('total_amount')
+        )
+        
+        # Get recent payments
+        recent_payments = SupplierPayment.objects.filter(
+            supplier=supplier
+        ).order_by('-payment_date')[:10]
+        
+        # Get delivery performance
+        delivery_performance = PurchaseOrder.objects.filter(
+            supplier=supplier,
+            status='completed',
+            expected_delivery_date__isnull=False,
+            actual_delivery_date__isnull=False
+        ).annotate(
+            delivery_delay=F('actual_delivery_date') - F('expected_delivery_date')
+        ).aggregate(
+            on_time_deliveries=Count('id', filter=Q(delivery_delay__lte=0)),
+            late_deliveries=Count('id', filter=Q(delivery_delay__gt=0)),
+            avg_delay_days=Avg('delivery_delay')
+        )
+        
+        # Calculate performance metrics
+        total_completed = delivery_performance['on_time_deliveries'] + delivery_performance['late_deliveries']
+        on_time_percentage = 0
+        if total_completed > 0:
+            on_time_percentage = (delivery_performance['on_time_deliveries'] / total_completed) * 100
+        
+        # Get supplier performance metrics
+        try:
+            performance_metrics = SupplierPerformanceMetrics.objects.get(supplier=supplier)
+        except SupplierPerformanceMetrics.DoesNotExist:
+            performance_metrics = None
+        
+        context.update({
+            'purchase_orders': purchase_orders,
+            'order_stats': order_stats,
+            'recent_payments': recent_payments,
+            'delivery_performance': delivery_performance,
+            'on_time_percentage': round(on_time_percentage, 1),
+            'performance_metrics': performance_metrics
+        })
+        
+        return context
+
+
+class SupplierCreateView(LoginRequiredMixin, TenantContextMixin, CreateView):
+    """
+    Create new supplier with contact and payment terms.
+    """
+    model = Supplier
+    template_name = 'customers/supplier_form.html'
+    fields = [
+        'name', 'persian_name', 'supplier_type', 'contact_person',
+        'phone_number', 'email', 'website', 'address', 'city',
+        'tax_id', 'payment_terms', 'credit_limit', 'is_preferred', 'notes'
+    ]
+    
+    def form_valid(self, form):
+        form.instance.tenant = self.request.tenant
+        form.instance.created_by = self.request.user
+        messages.success(self.request, f'تامین‌کننده {form.instance.persian_name or form.instance.name} با موفقیت ایجاد شد.')
+        return super().form_valid(form)
+    
+    def get_success_url(self):
+        return reverse_lazy('customers:supplier_detail', kwargs={'pk': self.object.pk})
+
+
+class SupplierUpdateView(LoginRequiredMixin, TenantContextMixin, UpdateView):
+    """
+    Update supplier information.
+    """
+    model = Supplier
+    template_name = 'customers/supplier_form.html'
+    fields = [
+        'name', 'persian_name', 'supplier_type', 'contact_person',
+        'phone_number', 'email', 'website', 'address', 'city',
+        'tax_id', 'payment_terms', 'credit_limit', 'is_active', 'is_preferred', 'notes'
+    ]
+    
+    def get_queryset(self):
+        return Supplier.objects.filter(tenant=self.request.tenant)
+    
+    def form_valid(self, form):
+        messages.success(self.request, f'اطلاعات تامین‌کننده {form.instance.persian_name or form.instance.name} به‌روزرسانی شد.')
+        return super().form_valid(form)
+    
+    def get_success_url(self):
+        return reverse_lazy('customers:supplier_detail', kwargs={'pk': self.object.pk})
+
+
+class PurchaseOrderListView(LoginRequiredMixin, TenantContextMixin, ListView):
+    """
+    Purchase order creation and management interface with Persian forms.
+    """
+    model = PurchaseOrder
+    template_name = 'customers/purchase_order_list.html'
+    context_object_name = 'purchase_orders'
+    paginate_by = 20
+    
+    def get_queryset(self):
+        queryset = PurchaseOrder.objects.filter(
+            supplier__tenant=self.request.tenant
+        ).select_related('supplier').order_by('-order_date')
+        
+        # Filter by supplier
+        supplier_id = self.request.GET.get('supplier')
+        if supplier_id:
+            queryset = queryset.filter(supplier_id=supplier_id)
+        
+        # Filter by status
+        status = self.request.GET.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+        
+        # Filter by priority
+        priority = self.request.GET.get('priority')
+        if priority:
+            queryset = queryset.filter(priority=priority)
+        
+        # Date range filter
+        date_from = self.request.GET.get('date_from')
+        date_to = self.request.GET.get('date_to')
         if date_from:
             queryset = queryset.filter(order_date__gte=date_from)
         if date_to:
             queryset = queryset.filter(order_date__lte=date_to)
         
-        # Filter overdue orders
-        if self.request.query_params.get('overdue') == 'true':
-            today = timezone.now().date()
+        # Search functionality
+        search = self.request.GET.get('search')
+        if search:
             queryset = queryset.filter(
-                expected_delivery_date__lt=today,
-                status__in=['sent', 'confirmed', 'partially_received']
+                Q(order_number__icontains=search) |
+                Q(supplier__name__icontains=search) |
+                Q(supplier__persian_name__icontains=search) |
+                Q(notes__icontains=search)
             )
         
         return queryset
     
-    @action(detail=True, methods=['post'])
-    def mark_as_sent(self, request, pk=None):
-        """
-        Mark purchase order as sent to supplier.
-        """
-        purchase_order = self.get_object()
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
         
-        if purchase_order.status != 'draft':
-            return Response({
-                'error': _('Only draft orders can be marked as sent')
-            }, status=status.HTTP_400_BAD_REQUEST)
+        # Get filter options
+        context['suppliers'] = Supplier.objects.filter(
+            tenant=self.request.tenant,
+            is_active=True
+        ).order_by('persian_name', 'name')
         
-        purchase_order.mark_as_sent()
+        context['status_choices'] = PurchaseOrder.STATUS_CHOICES
+        context['priority_choices'] = PurchaseOrder.PRIORITY_CHOICES
         
-        return Response({
-            'message': _('Purchase order marked as sent'),
-            'status': purchase_order.status
-        })
-    
-    @action(detail=True, methods=['post'])
-    def mark_as_confirmed(self, request, pk=None):
-        """
-        Mark purchase order as confirmed by supplier.
-        """
-        purchase_order = self.get_object()
-        
-        if purchase_order.status != 'sent':
-            return Response({
-                'error': _('Only sent orders can be marked as confirmed')
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        purchase_order.mark_as_confirmed()
-        
-        return Response({
-            'message': _('Purchase order marked as confirmed'),
-            'status': purchase_order.status
-        })
-    
-    @action(detail=True, methods=['post'])
-    def mark_as_received(self, request, pk=None):
-        """
-        Mark purchase order as received (complete or partial).
-        """
-        purchase_order = self.get_object()
-        partial = request.data.get('partial', False)
-        
-        if purchase_order.status not in ['confirmed', 'partially_received']:
-            return Response({
-                'error': _('Only confirmed orders can be marked as received')
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        purchase_order.mark_as_received(partial=partial)
-        
-        return Response({
-            'message': _('Purchase order marked as received'),
-            'status': purchase_order.status
-        })
-    
-    @action(detail=True, methods=['post'])
-    def cancel_order(self, request, pk=None):
-        """
-        Cancel purchase order.
-        """
-        purchase_order = self.get_object()
-        reason = request.data.get('reason', '')
-        
-        if purchase_order.status in ['completed', 'cancelled']:
-            return Response({
-                'error': _('Cannot cancel completed or already cancelled order')
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        purchase_order.cancel_order(reason=reason)
-        
-        return Response({
-            'message': _('Purchase order cancelled'),
-            'status': purchase_order.status
-        })
-    
-    @action(detail=True, methods=['get'])
-    def items(self, request, pk=None):
-        """
-        Get purchase order items.
-        """
-        purchase_order = self.get_object()
-        items = purchase_order.items.all()
-        serializer = PurchaseOrderItemSerializer(items, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=True, methods=['post'])
-    def receive_item(self, request, pk=None):
-        """
-        Receive specific quantity of an item.
-        """
-        purchase_order = self.get_object()
-        item_id = request.data.get('item_id')
-        quantity = request.data.get('quantity', 0)
-        
-        try:
-            item = purchase_order.items.get(id=item_id)
-            success = item.receive_quantity(quantity)
-            
-            if success:
-                return Response({
-                    'message': _('Item quantity received successfully'),
-                    'quantity_received': item.quantity_received,
-                    'quantity_pending': item.quantity_pending
-                })
-            else:
-                return Response({
-                    'error': _('Invalid quantity or item already fully received')
-                }, status=status.HTTP_400_BAD_REQUEST)
-                
-        except PurchaseOrderItem.DoesNotExist:
-            return Response({
-                'error': _('Item not found')
-            }, status=status.HTTP_404_NOT_FOUND)
-    
-    @action(detail=False, methods=['get'])
-    def statistics(self, request):
-        """
-        Get purchase order statistics.
-        """
-        queryset = self.get_queryset()
-        today = timezone.now().date()
-        
-        stats = {
-            'total_orders': queryset.count(),
-            'orders_by_status': dict(
-                queryset.values('status').annotate(
-                    count=Count('id')
-                ).values_list('status', 'count')
-            ),
-            'total_value': queryset.aggregate(
-                total=Sum('total_amount')
-            )['total'] or 0,
-            'overdue_orders': queryset.filter(
-                expected_delivery_date__lt=today,
-                status__in=['sent', 'confirmed', 'partially_received']
-            ).count(),
-            'orders_this_month': queryset.filter(
-                order_date__year=today.year,
-                order_date__month=today.month
-            ).count(),
-            'average_order_value': queryset.aggregate(
-                avg=Avg('total_amount')
-            )['avg'] or 0,
+        context['current_filters'] = {
+            'supplier': self.request.GET.get('supplier', ''),
+            'status': self.request.GET.get('status', ''),
+            'priority': self.request.GET.get('priority', ''),
+            'date_from': self.request.GET.get('date_from', ''),
+            'date_to': self.request.GET.get('date_to', ''),
+            'search': self.request.GET.get('search', '')
         }
         
-        return Response(stats)
-
-
-class SupplierPaymentViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for supplier payment management.
-    """
-    queryset = SupplierPayment.objects.all()
-    serializer_class = SupplierPaymentSerializer
-    permission_classes = [permissions.IsAuthenticated, TenantPermission]
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['supplier', 'purchase_order', 'payment_method', 'status', 'is_approved']
-    search_fields = ['payment_number', 'supplier__name', 'reference_number']
-    ordering_fields = ['payment_date', 'amount', 'created_at']
-    ordering = ['-payment_date']
-    
-    def get_serializer_class(self):
-        """Return appropriate serializer based on action."""
-        if self.action == 'create':
-            return SupplierPaymentCreateSerializer
-        return SupplierPaymentSerializer
-    
-    def get_queryset(self):
-        """Filter payments by tenant with related data."""
-        queryset = super().get_queryset()
-        queryset = queryset.select_related('supplier', 'purchase_order', 'approved_by')
-        
-        # Filter by date range if provided
-        date_from = self.request.query_params.get('date_from')
-        date_to = self.request.query_params.get('date_to')
-        
-        if date_from:
-            queryset = queryset.filter(payment_date__gte=date_from)
-        if date_to:
-            queryset = queryset.filter(payment_date__lte=date_to)
-        
-        # Filter pending approvals
-        if self.request.query_params.get('pending_approval') == 'true':
-            queryset = queryset.filter(status='pending', is_approved=False)
-        
-        return queryset
-    
-    @action(detail=True, methods=['post'])
-    def approve(self, request, pk=None):
-        """
-        Approve supplier payment.
-        """
-        payment = self.get_object()
-        
-        if payment.is_approved:
-            return Response({
-                'error': _('Payment is already approved')
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Check user permissions (only owners and accountants can approve)
-        if not request.user.can_access_accounting():
-            return Response({
-                'error': _('Insufficient permissions to approve payments')
-            }, status=status.HTTP_403_FORBIDDEN)
-        
-        payment.approve_payment(request.user)
-        
-        return Response({
-            'message': _('Payment approved successfully'),
-            'status': payment.status,
-            'is_approved': payment.is_approved
-        })
-    
-    @action(detail=True, methods=['post'])
-    def mark_completed(self, request, pk=None):
-        """
-        Mark payment as completed.
-        """
-        payment = self.get_object()
-        
-        try:
-            payment.mark_as_completed()
-            return Response({
-                'message': _('Payment marked as completed'),
-                'status': payment.status
-            })
-        except Exception as e:
-            return Response({
-                'error': str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
-    
-    @action(detail=True, methods=['post'])
-    def cancel(self, request, pk=None):
-        """
-        Cancel payment.
-        """
-        payment = self.get_object()
-        reason = request.data.get('reason', '')
-        
-        try:
-            payment.cancel_payment(reason=reason)
-            return Response({
-                'message': _('Payment cancelled successfully'),
-                'status': payment.status
-            })
-        except Exception as e:
-            return Response({
-                'error': str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
-    
-    @action(detail=False, methods=['get'])
-    def pending_approvals(self, request):
-        """
-        Get payments pending approval.
-        """
-        pending_payments = self.get_queryset().filter(
-            status='pending',
-            is_approved=False
+        # Get summary statistics
+        context['summary_stats'] = PurchaseOrder.objects.filter(
+            supplier__tenant=self.request.tenant
+        ).aggregate(
+            total_orders=Count('id'),
+            pending_orders=Count('id', filter=Q(status__in=['draft', 'sent', 'confirmed'])),
+            overdue_orders=Count('id', filter=Q(
+                expected_delivery_date__lt=timezone.now().date(),
+                status__in=['sent', 'confirmed']
+            )),
+            total_amount=Sum('total_amount')
         )
         
-        serializer = self.get_serializer(pending_payments, many=True)
-        return Response(serializer.data)
+        return context
+
+
+class PurchaseOrderDetailView(LoginRequiredMixin, TenantContextMixin, DetailView):
+    """
+    Detailed view of purchase order with items and tracking.
+    """
+    model = PurchaseOrder
+    template_name = 'customers/purchase_order_detail.html'
+    context_object_name = 'purchase_order'
     
-    @action(detail=False, methods=['get'])
-    def statistics(self, request):
-        """
-        Get payment statistics.
-        """
-        queryset = self.get_queryset()
-        today = timezone.now().date()
+    def get_queryset(self):
+        return PurchaseOrder.objects.filter(
+            supplier__tenant=self.request.tenant
+        ).select_related('supplier')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        purchase_order = self.get_object()
         
-        stats = {
-            'total_payments': queryset.count(),
-            'total_amount': queryset.aggregate(
-                total=Sum('amount')
-            )['total'] or 0,
-            'payments_by_status': dict(
-                queryset.values('status').annotate(
-                    count=Count('id')
-                ).values_list('status', 'count')
-            ),
-            'payments_by_method': dict(
-                queryset.values('payment_method').annotate(
-                    count=Count('id')
-                ).values_list('payment_method', 'count')
-            ),
-            'pending_approvals': queryset.filter(
-                status='pending',
-                is_approved=False
-            ).count(),
-            'payments_this_month': queryset.filter(
-                payment_date__year=today.year,
-                payment_date__month=today.month
-            ).aggregate(
-                count=Count('id'),
-                total=Sum('amount')
-            ),
-        }
+        # Get order items
+        order_items = PurchaseOrderItem.objects.filter(
+            purchase_order=purchase_order
+        ).order_by('id')
         
-        return Response(stats)
+        # Get delivery schedules
+        delivery_schedules = DeliverySchedule.objects.filter(
+            purchase_order=purchase_order
+        ).order_by('scheduled_date')
+        
+        # Get payments
+        payments = SupplierPayment.objects.filter(
+            purchase_order=purchase_order
+        ).order_by('-payment_date')
+        
+        # Calculate completion percentage
+        total_items = order_items.count()
+        received_items = order_items.filter(is_received=True).count()
+        completion_percentage = 0
+        if total_items > 0:
+            completion_percentage = (received_items / total_items) * 100
+        
+        context.update({
+            'order_items': order_items,
+            'delivery_schedules': delivery_schedules,
+            'payments': payments,
+            'completion_percentage': round(completion_percentage, 1),
+            'can_edit': purchase_order.status in ['draft'],
+            'can_send': purchase_order.status == 'draft',
+            'can_receive': purchase_order.status in ['sent', 'confirmed', 'partially_received'],
+            'can_cancel': purchase_order.status in ['draft', 'sent', 'confirmed']
+        })
+        
+        return context
 
 
-class DeliveryScheduleViewSet(viewsets.ModelViewSet):
+class PurchaseOrderCreateView(LoginRequiredMixin, TenantContextMixin, CreateView):
     """
-    ViewSet for delivery schedule management and tracking.
+    Create new purchase order.
     """
-    queryset = DeliverySchedule.objects.all()
-    serializer_class = DeliveryScheduleSerializer
-    permission_classes = [permissions.IsAuthenticated, TenantPermission]
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['purchase_order__supplier', 'status', 'delivery_method']
-    search_fields = [
-        'delivery_number', 
-        'tracking_number', 
-        'purchase_order__order_number',
-        'purchase_order__supplier__name'
+    model = PurchaseOrder
+    template_name = 'customers/purchase_order_form.html'
+    fields = [
+        'supplier', 'order_date', 'expected_delivery_date', 'priority',
+        'payment_terms', 'payment_due_date', 'delivery_address',
+        'notes', 'internal_notes'
     ]
-    ordering_fields = ['scheduled_date', 'actual_delivery_date', 'created_at']
-    ordering = ['scheduled_date']
+    
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        # Filter suppliers to current tenant
+        form.fields['supplier'].queryset = Supplier.objects.filter(
+            tenant=self.request.tenant,
+            is_active=True
+        ).order_by('persian_name', 'name')
+        return form
+    
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        messages.success(self.request, f'سفارش خرید {form.instance.order_number} ایجاد شد.')
+        return super().form_valid(form)
+    
+    def get_success_url(self):
+        return reverse_lazy('customers:purchase_order_detail', kwargs={'pk': self.object.pk})
+
+
+class PurchaseOrderUpdateView(LoginRequiredMixin, TenantContextMixin, UpdateView):
+    """
+    Update purchase order.
+    """
+    model = PurchaseOrder
+    template_name = 'customers/purchase_order_form.html'
+    fields = [
+        'supplier', 'order_date', 'expected_delivery_date', 'priority',
+        'payment_terms', 'payment_due_date', 'delivery_address',
+        'notes', 'internal_notes'
+    ]
     
     def get_queryset(self):
-        """Filter delivery schedules by tenant with related data."""
-        queryset = super().get_queryset()
-        queryset = queryset.select_related(
-            'purchase_order', 
-            'purchase_order__supplier'
+        return PurchaseOrder.objects.filter(
+            supplier__tenant=self.request.tenant,
+            status='draft'  # Only allow editing draft orders
         )
-        
-        # Filter by date range if provided
-        date_from = self.request.query_params.get('date_from')
-        date_to = self.request.query_params.get('date_to')
-        
-        if date_from:
-            queryset = queryset.filter(scheduled_date__gte=date_from)
-        if date_to:
-            queryset = queryset.filter(scheduled_date__lte=date_to)
-        
-        # Filter overdue deliveries
-        if self.request.query_params.get('overdue') == 'true':
-            today = timezone.now().date()
-            queryset = queryset.filter(
-                scheduled_date__lt=today,
-                status__in=['scheduled', 'in_transit', 'delayed']
-            )
-        
-        return queryset
     
-    @action(detail=True, methods=['post'])
-    def update_tracking(self, request, pk=None):
-        """
-        Update delivery tracking information.
-        """
-        delivery = self.get_object()
-        serializer = DeliveryTrackingUpdateSerializer(data=request.data)
-        
-        if serializer.is_valid():
-            data = serializer.validated_data
-            
-            # Update delivery status and tracking
-            delivery = SupplierManagementService.update_delivery_tracking(
-                delivery_schedule=delivery,
-                status=data['status'],
-                tracking_number=data.get('tracking_number', ''),
-                notes=data.get('notes', '')
-            )
-            
-            # Handle special status updates
-            if data['status'] == 'delivered':
-                delivery.mark_as_delivered(
-                    received_by_name=data.get('received_by_name', ''),
-                    signature=data.get('received_by_signature', '')
-                )
-            elif data['status'] == 'in_transit':
-                delivery.mark_as_in_transit(
-                    tracking_number=data.get('tracking_number', '')
-                )
-            
-            response_serializer = self.get_serializer(delivery)
-            return Response(response_serializer.data)
-        
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        # Filter suppliers to current tenant
+        form.fields['supplier'].queryset = Supplier.objects.filter(
+            tenant=self.request.tenant,
+            is_active=True
+        ).order_by('persian_name', 'name')
+        return form
     
-    @action(detail=True, methods=['post'])
-    def mark_delivered(self, request, pk=None):
-        """
-        Mark delivery as completed.
-        """
-        delivery = self.get_object()
-        received_by_name = request.data.get('received_by_name', '')
-        signature = request.data.get('signature', '')
-        
-        if not received_by_name:
-            return Response({
-                'error': _('Received by name is required')
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        delivery.mark_as_delivered(
-            received_by_name=received_by_name,
-            signature=signature
-        )
-        
-        return Response({
-            'message': _('Delivery marked as completed'),
-            'status': delivery.status,
-            'actual_delivery_date': delivery.actual_delivery_date
-        })
+    def form_valid(self, form):
+        messages.success(self.request, f'سفارش خرید {form.instance.order_number} به‌روزرسانی شد.')
+        return super().form_valid(form)
     
-    @action(detail=True, methods=['post'])
-    def mark_delayed(self, request, pk=None):
-        """
-        Mark delivery as delayed and reschedule.
-        """
-        delivery = self.get_object()
-        new_date = request.data.get('new_date')
-        reason = request.data.get('reason', '')
-        
-        if not new_date:
-            return Response({
-                'error': _('New delivery date is required')
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        try:
-            from datetime import datetime
-            new_date = datetime.strptime(new_date, '%Y-%m-%d').date()
-            delivery.mark_as_delayed(new_date=new_date, reason=reason)
-            
-            return Response({
-                'message': _('Delivery rescheduled'),
-                'status': delivery.status,
-                'scheduled_date': delivery.scheduled_date
-            })
-        except ValueError:
-            return Response({
-                'error': _('Invalid date format. Use YYYY-MM-DD')
-            }, status=status.HTTP_400_BAD_REQUEST)
+    def get_success_url(self):
+        return reverse_lazy('customers:purchase_order_detail', kwargs={'pk': self.object.pk})
+
+
+class SupplierPerformanceReportView(LoginRequiredMixin, TenantContextMixin, TemplateView):
+    """
+    Supplier performance tracking and reporting dashboard.
+    """
+    template_name = 'customers/supplier_performance.html'
     
-    @action(detail=False, methods=['get'])
-    def overdue(self, request):
-        """
-        Get all overdue deliveries.
-        """
-        overdue_deliveries = SupplierManagementService.get_overdue_deliveries()
-        serializer = self.get_serializer(overdue_deliveries, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'])
-    def today_deliveries(self, request):
-        """
-        Get deliveries scheduled for today.
-        """
-        today = timezone.now().date()
-        today_deliveries = self.get_queryset().filter(
-            scheduled_date=today,
-            status__in=['scheduled', 'in_transit']
-        )
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
         
-        serializer = self.get_serializer(today_deliveries, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'])
-    def statistics(self, request):
-        """
-        Get delivery statistics.
-        """
-        queryset = self.get_queryset()
-        today = timezone.now().date()
+        # Get date range from request
+        date_from = self.request.GET.get('date_from')
+        date_to = self.request.GET.get('date_to')
         
-        stats = {
-            'total_deliveries': queryset.count(),
-            'deliveries_by_status': dict(
-                queryset.values('status').annotate(
-                    count=Count('id')
-                ).values_list('status', 'count')
+        if not date_from:
+            date_from = (timezone.now() - timedelta(days=90)).date()
+        else:
+            date_from = datetime.strptime(date_from, '%Y-%m-%d').date()
+        
+        if not date_to:
+            date_to = timezone.now().date()
+        else:
+            date_to = datetime.strptime(date_to, '%Y-%m-%d').date()
+        
+        # Get supplier performance data
+        suppliers = Supplier.objects.filter(
+            tenant=self.request.tenant,
+            is_active=True
+        ).annotate(
+            orders_in_period=Count(
+                'purchase_orders',
+                filter=Q(purchase_orders__order_date__range=[date_from, date_to])
             ),
-            'overdue_deliveries': queryset.filter(
-                scheduled_date__lt=today,
-                status__in=['scheduled', 'in_transit', 'delayed']
-            ).count(),
-            'today_deliveries': queryset.filter(
-                scheduled_date=today,
-                status__in=['scheduled', 'in_transit']
-            ).count(),
-            'completed_this_month': queryset.filter(
-                actual_delivery_date__year=today.year,
-                actual_delivery_date__month=today.month,
-                status='delivered'
-            ).count(),
-            'average_delivery_cost': queryset.aggregate(
-                avg=Avg('delivery_cost')
-            )['avg'] or 0,
-        }
+            total_amount_in_period=Sum(
+                'purchase_orders__total_amount',
+                filter=Q(purchase_orders__order_date__range=[date_from, date_to])
+            ),
+            completed_orders=Count(
+                'purchase_orders',
+                filter=Q(
+                    purchase_orders__order_date__range=[date_from, date_to],
+                    purchase_orders__status='completed'
+                )
+            ),
+            on_time_deliveries=Count(
+                'purchase_orders',
+                filter=Q(
+                    purchase_orders__order_date__range=[date_from, date_to],
+                    purchase_orders__status='completed',
+                    purchase_orders__actual_delivery_date__lte=F('purchase_orders__expected_delivery_date')
+                )
+            )
+        ).filter(orders_in_period__gt=0).order_by('-total_amount_in_period')
         
-        return Response(stats)
-
-
-class SupplierPerformanceViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    ViewSet for supplier performance metrics (read-only).
-    """
-    queryset = SupplierPerformanceMetrics.objects.all()
-    serializer_class = SupplierPerformanceMetricsSerializer
-    permission_classes = [permissions.IsAuthenticated, TenantPermission]
-    filter_backends = [DjangoFilterBackend, OrderingFilter]
-    filterset_fields = ['supplier']
-    ordering_fields = ['overall_rating', 'total_deliveries', 'last_calculated']
-    ordering = ['-overall_rating']
-    
-    def get_queryset(self):
-        """Filter performance metrics by tenant."""
-        return super().get_queryset().select_related('supplier')
-    
-    @action(detail=True, methods=['post'])
-    def update_metrics(self, request, pk=None):
-        """
-        Manually update performance metrics for a supplier.
-        """
-        metrics = self.get_object()
-        metrics.update_metrics()
+        # Calculate performance metrics for each supplier
+        supplier_performance = []
+        for supplier in suppliers:
+            on_time_rate = 0
+            if supplier.completed_orders > 0:
+                on_time_rate = (supplier.on_time_deliveries / supplier.completed_orders) * 100
+            
+            supplier_performance.append({
+                'supplier': supplier,
+                'orders_count': supplier.orders_in_period,
+                'total_amount': supplier.total_amount_in_period or 0,
+                'completed_orders': supplier.completed_orders,
+                'on_time_deliveries': supplier.on_time_deliveries,
+                'on_time_rate': round(on_time_rate, 1)
+            })
         
-        serializer = self.get_serializer(metrics)
-        return Response({
-            'message': _('Performance metrics updated successfully'),
-            'metrics': serializer.data
+        # Get overall statistics
+        overall_stats = PurchaseOrder.objects.filter(
+            supplier__tenant=self.request.tenant,
+            order_date__range=[date_from, date_to]
+        ).aggregate(
+            total_orders=Count('id'),
+            total_amount=Sum('total_amount'),
+            completed_orders=Count('id', filter=Q(status='completed')),
+            cancelled_orders=Count('id', filter=Q(status='cancelled')),
+            overdue_orders=Count('id', filter=Q(
+                expected_delivery_date__lt=timezone.now().date(),
+                status__in=['sent', 'confirmed']
+            ))
+        )
+        
+        # Get top performing suppliers
+        top_suppliers_by_amount = supplier_performance[:5]
+        top_suppliers_by_reliability = sorted(
+            [s for s in supplier_performance if s['completed_orders'] >= 3],
+            key=lambda x: x['on_time_rate'],
+            reverse=True
+        )[:5]
+        
+        context.update({
+            'date_from': date_from,
+            'date_to': date_to,
+            'supplier_performance': supplier_performance,
+            'overall_stats': overall_stats,
+            'top_suppliers_by_amount': top_suppliers_by_amount,
+            'top_suppliers_by_reliability': top_suppliers_by_reliability
         })
+        
+        return context
+
+
+# AJAX Views for dynamic functionality
+class SupplierAjaxView(LoginRequiredMixin, TenantContextMixin, TemplateView):
+    """
+    AJAX endpoints for supplier operations.
+    """
     
-    @action(detail=False, methods=['get'])
-    def top_performers(self, request):
-        """
-        Get top performing suppliers.
-        """
-        top_suppliers = self.get_queryset().filter(
-            overall_rating__gt=0
-        ).order_by('-overall_rating')[:10]
+    def post(self, request, *args, **kwargs):
+        action = request.POST.get('action')
         
-        serializer = self.get_serializer(top_suppliers, many=True)
-        return Response(serializer.data)
+        if action == 'toggle_preferred':
+            return self.toggle_preferred_supplier(request)
+        elif action == 'toggle_active':
+            return self.toggle_active_supplier(request)
+        elif action == 'update_payment_terms':
+            return self.update_payment_terms(request)
+        elif action == 'send_purchase_order':
+            return self.send_purchase_order(request)
+        elif action == 'receive_items':
+            return self.receive_items(request)
+        elif action == 'cancel_order':
+            return self.cancel_order(request)
+        
+        return JsonResponse({'success': False, 'error': 'Invalid action'})
     
-    @action(detail=False, methods=['get'])
-    def performance_summary(self, request):
-        """
-        Get overall performance summary.
-        """
-        queryset = self.get_queryset()
-        
-        summary = {
-            'total_suppliers_with_metrics': queryset.count(),
-            'average_rating': queryset.aggregate(
-                avg=Avg('overall_rating')
-            )['avg'] or 0,
-            'average_on_time_delivery': queryset.exclude(
-                total_deliveries=0
-            ).aggregate(
-                avg=Avg('on_time_deliveries') * 100 / Avg('total_deliveries')
-            )['avg'] or 0,
-            'total_orders_tracked': queryset.aggregate(
-                total=Sum('total_deliveries')
-            )['total'] or 0,
-            'suppliers_above_4_rating': queryset.filter(
-                overall_rating__gte=4.0
-            ).count(),
-        }
-        
-        return Response(summary)
+    def toggle_preferred_supplier(self, request):
+        """Toggle supplier preferred status."""
+        try:
+            supplier_id = request.POST.get('supplier_id')
+            supplier = get_object_or_404(Supplier, id=supplier_id, tenant=request.tenant)
+            
+            supplier.is_preferred = not supplier.is_preferred
+            supplier.save(update_fields=['is_preferred', 'updated_at'])
+            
+            status = 'ترجیحی' if supplier.is_preferred else 'عادی'
+            return JsonResponse({
+                'success': True,
+                'message': f'وضعیت تامین‌کننده {supplier.persian_name or supplier.name} به {status} تغییر یافت.',
+                'is_preferred': supplier.is_preferred
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    def toggle_active_supplier(self, request):
+        """Toggle supplier active status."""
+        try:
+            supplier_id = request.POST.get('supplier_id')
+            supplier = get_object_or_404(Supplier, id=supplier_id, tenant=request.tenant)
+            
+            supplier.is_active = not supplier.is_active
+            supplier.save(update_fields=['is_active', 'updated_at'])
+            
+            status = 'فعال' if supplier.is_active else 'غیرفعال'
+            return JsonResponse({
+                'success': True,
+                'message': f'وضعیت تامین‌کننده {supplier.persian_name or supplier.name} به {status} تغییر یافت.',
+                'is_active': supplier.is_active
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    def update_payment_terms(self, request):
+        """Update supplier payment terms."""
+        try:
+            supplier_id = request.POST.get('supplier_id')
+            payment_terms = request.POST.get('payment_terms')
+            
+            supplier = get_object_or_404(Supplier, id=supplier_id, tenant=request.tenant)
+            supplier.payment_terms = payment_terms
+            supplier.save(update_fields=['payment_terms', 'updated_at'])
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'شرایط پرداخت تامین‌کننده {supplier.persian_name or supplier.name} به‌روزرسانی شد.',
+                'payment_terms': payment_terms
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    def send_purchase_order(self, request):
+        """Send purchase order to supplier."""
+        try:
+            order_id = request.POST.get('order_id')
+            purchase_order = get_object_or_404(
+                PurchaseOrder, 
+                id=order_id, 
+                supplier__tenant=request.tenant,
+                status='draft'
+            )
+            
+            purchase_order.mark_as_sent()
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'سفارش خرید {purchase_order.order_number} به تامین‌کننده ارسال شد.',
+                'new_status': purchase_order.get_status_display()
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    def receive_items(self, request):
+        """Mark items as received."""
+        try:
+            order_id = request.POST.get('order_id')
+            item_quantities = json.loads(request.POST.get('item_quantities', '{}'))
+            
+            purchase_order = get_object_or_404(
+                PurchaseOrder, 
+                id=order_id, 
+                supplier__tenant=request.tenant
+            )
+            
+            received_items = 0
+            for item_id, quantity in item_quantities.items():
+                try:
+                    item = PurchaseOrderItem.objects.get(
+                        id=item_id, 
+                        purchase_order=purchase_order
+                    )
+                    if item.receive_quantity(int(quantity)):
+                        received_items += 1
+                except (PurchaseOrderItem.DoesNotExist, ValueError):
+                    continue
+            
+            # Update order status if all items received
+            all_items = purchase_order.items.all()
+            if all(item.is_fully_received for item in all_items):
+                purchase_order.mark_as_received(partial=False)
+            elif any(item.quantity_received > 0 for item in all_items):
+                purchase_order.mark_as_received(partial=True)
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'{received_items} قلم کالا دریافت شد.',
+                'new_status': purchase_order.get_status_display()
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    def cancel_order(self, request):
+        """Cancel purchase order."""
+        try:
+            order_id = request.POST.get('order_id')
+            reason = request.POST.get('reason', '')
+            
+            purchase_order = get_object_or_404(
+                PurchaseOrder, 
+                id=order_id, 
+                supplier__tenant=request.tenant,
+                status__in=['draft', 'sent', 'confirmed']
+            )
+            
+            purchase_order.cancel_order(reason)
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'سفارش خرید {purchase_order.order_number} لغو شد.',
+                'new_status': purchase_order.get_status_display()
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
