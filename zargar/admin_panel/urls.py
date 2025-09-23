@@ -9,7 +9,8 @@ app_name = 'admin_panel'
 
 urlpatterns = [
     # Admin panel dashboard
-    path('', views.AdminPanelDashboardView.as_view(), name='dashboard'),
+    path('', views.UnifiedAdminDashboardView.as_view(), name='dashboard'),
+    path('legacy/', views.AdminPanelDashboardView.as_view(), name='legacy_dashboard'),
     
     # Authentication
     path('login/', views.AdminLoginView.as_view(), name='login'),
@@ -48,6 +49,11 @@ urlpatterns = [
     path('disaster-recovery/', disaster_recovery_views.DisasterRecoveryDashboardView.as_view(), name='disaster_recovery_dashboard'),
     path('disaster-recovery/test/', disaster_recovery_views.DisasterRecoveryTestView.as_view(), name='disaster_recovery_test'),
     path('disaster-recovery/documentation/', disaster_recovery_views.DisasterRecoveryDocumentationView.as_view(), name='disaster_recovery_documentation'),
+    
+    # API endpoints for unified dashboard
+    path('api/stats/', views.UnifiedAdminStatsAPIView.as_view(), name='unified_stats_api'),
+    path('api/recent-activity/', views.UnifiedAdminRecentActivityAPIView.as_view(), name='unified_activity_api'),
+    path('api/system-alerts/', views.UnifiedAdminSystemAlertsAPIView.as_view(), name='unified_alerts_api'),
     
     # Include django-hijack URLs
     path('hijack/', include('hijack.urls')),

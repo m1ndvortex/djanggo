@@ -151,7 +151,7 @@
         {% if messages %}
             <div class="mb-6">
                 {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} bg-{{ message.tags == 'error' and 'red' or message.tags == 'success' and 'green' or 'blue' }}-100 dark:bg-cyber-bg-surface border border-{{ message.tags == 'error' and 'red' or message.tags == 'success' and 'green' or 'blue' }}-300 dark:border-cyber-neon-{{ message.tags == 'error' and 'danger' or message.tags == 'success' and 'secondary' or 'primary' }}/30 text-{{ message.tags == 'error' and 'red' or message.tags == 'success' and 'green' or 'blue' }}-800 dark:text-cyber-text-primary px-4 py-3 rounded-lg mb-4">
+                    <div class="alert alert-{{ message.tags }} {% if message.tags == 'error' %}bg-red-100 border-red-300 text-red-800 dark:bg-cyber-neon-danger/10 dark:border-cyber-neon-danger/30 dark:text-cyber-neon-danger{% elif message.tags == 'success' %}bg-green-100 border-green-300 text-green-800 dark:bg-cyber-neon-secondary/10 dark:border-cyber-neon-secondary/30 dark:text-cyber-neon-secondary{% else %}bg-blue-100 border-blue-300 text-blue-800 dark:bg-cyber-neon-primary/10 dark:border-cyber-neon-primary/30 dark:text-cyber-neon-primary{% endif %} px-4 py-3 rounded-lg mb-4 border">
                         {{ message }}
                     </div>
                 {% endfor %}

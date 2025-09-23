@@ -11,6 +11,9 @@ from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 from django.db.models import Count, Sum, Q
 from django.http import JsonResponse, HttpResponseForbidden
+from django.views.decorators.http import require_http_methods
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from decimal import Decimal
@@ -83,6 +86,100 @@ class AdminPanelDashboardView(SuperAdminRequiredMixin, TemplateView):
             'total_invoices': total_invoices,
             'total_revenue': total_revenue,
             'pending_revenue': pending_revenue,
+        })
+        
+        return context
+
+
+class UnifiedAdminDashboardView(SuperAdminRequiredMixin, TemplateView):
+    """
+    Unified dashboard integrating all SuperAdmin features.
+    """
+    template_name = 'admin_panel/unified_dashboard.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Get comprehensive statistics
+        total_tenants = Tenant.objects.exclude(schema_name='public').count()
+        active_tenants = Tenant.objects.exclude(schema_name='public').filter(is_active=True).count()
+        inactive_tenants = total_tenants - active_tenants
+        
+        # Calculate percentage
+        active_percentage = round((active_tenants / total_tenants * 100) if total_tenants > 0 else 0, 1)
+        
+        # Revenue statistics
+        total_revenue = TenantInvoice.objects.filter(status='paid').aggregate(
+            total=Sum('total_amount_toman')
+        )['total'] or Decimal('0')
+        
+        pending_revenue = TenantInvoice.objects.filter(status='pending').aggregate(
+            total=Sum('total_amount_toman')
+        )['total'] or Decimal('0')
+        
+        # Monthly growth calculations (mock data for now)
+        new_tenants_this_month = Tenant.objects.exclude(schema_name='public').filter(
+            created_on__month=timezone.now().month,
+            created_on__year=timezone.now().year
+        ).count()
+        
+        revenue_growth = 12.5  # Mock data - should be calculated from actual data
+        uptime_percentage = 99.9  # Mock data - should come from system health monitoring
+        
+        # System health status
+        system_status = 'سالم'  # This should come from actual health checks
+        
+        # Recent activity (mock data - should come from audit logs)
+        recent_activities = [
+            {
+                'id': 1,
+                'description': 'تنانت جدید "طلای پارس" ایجاد شد',
+                'time': '۵ دقیقه پیش',
+                'type': 'tenant_created'
+            },
+            {
+                'id': 2,
+                'description': 'پشتیبان خودکار سیستم تکمیل شد',
+                'time': '۱۵ دقیقه پیش',
+                'type': 'backup_completed'
+            },
+            {
+                'id': 3,
+                'description': 'کاربر admin وارد تنانت "زرگری نقره" شد',
+                'time': '۳۰ دقیقه پیش',
+                'type': 'impersonation_started'
+            }
+        ]
+        
+        # System alerts (mock data - should come from health monitoring)
+        system_alerts = [
+            {
+                'id': 1,
+                'type': 'success',
+                'title': 'سیستم سالم',
+                'message': 'تمام سرویس‌ها به درستی کار می‌کنند'
+            },
+            {
+                'id': 2,
+                'type': 'warning',
+                'title': 'فضای دیسک',
+                'message': 'فضای دیسک کمتر از ۲۰٪ باقی مانده'
+            }
+        ]
+        
+        context.update({
+            'total_tenants': total_tenants,
+            'active_tenants': active_tenants,
+            'inactive_tenants': inactive_tenants,
+            'active_percentage': active_percentage,
+            'total_revenue': total_revenue,
+            'pending_revenue': pending_revenue,
+            'new_tenants_this_month': new_tenants_this_month,
+            'revenue_growth': revenue_growth,
+            'uptime_percentage': uptime_percentage,
+            'system_status': system_status,
+            'recent_activities': recent_activities,
+            'system_alerts': system_alerts,
         })
         
         return context
@@ -2169,3 +2266,92 @@ class BackupStatusAPIView(SuperAdminRequiredMixin, View):
                 'success': False,
                 'error': 'Error getting backup status'
             })
+
+class UnifiedAdminStatsAPIView(SuperAdminRequiredMixin, View):
+    """
+    API endpoint for real-time statistics updates.
+    """
+    
+    def get(self, request):
+        """Return current system statistics."""
+        total_tenants = Tenant.objects.exclude(schema_name='public').count()
+        active_tenants = Tenant.objects.exclude(schema_name='public').filter(is_active=True).count()
+        
+        total_revenue = TenantInvoice.objects.filter(status='paid').aggregate(
+            total=Sum('total_amount_toman')
+        )['total'] or Decimal('0')
+        
+        # System health check (simplified)
+        system_status = 'سالم'  # This should come from actual health monitoring
+        
+        return JsonResponse({
+            'total_tenants': total_tenants,
+            'active_tenants': active_tenants,
+            'total_revenue': float(total_revenue),
+            'system_status': system_status,
+            'timestamp': timezone.now().isoformat()
+        })
+
+
+class UnifiedAdminRecentActivityAPIView(SuperAdminRequiredMixin, View):
+    """
+    API endpoint for recent activity updates.
+    """
+    
+    def get(self, request):
+        """Return recent system activities."""
+        # This should come from actual audit logs
+        activities = [
+            {
+                'id': 1,
+                'description': 'تنانت جدید "طلای پارس" ایجاد شد',
+                'time': '۵ دقیقه پیش',
+                'type': 'tenant_created'
+            },
+            {
+                'id': 2,
+                'description': 'پشتیبان خودکار سیستم تکمیل شد',
+                'time': '۱۵ دقیقه پیش',
+                'type': 'backup_completed'
+            },
+            {
+                'id': 3,
+                'description': 'کاربر admin وارد تنانت "زرگری نقره" شد',
+                'time': '۳۰ دقیقه پیش',
+                'type': 'impersonation_started'
+            }
+        ]
+        
+        return JsonResponse({
+            'activities': activities,
+            'timestamp': timezone.now().isoformat()
+        })
+
+
+class UnifiedAdminSystemAlertsAPIView(SuperAdminRequiredMixin, View):
+    """
+    API endpoint for system alerts.
+    """
+    
+    def get(self, request):
+        """Return current system alerts."""
+        # This should come from actual system monitoring
+        alerts = [
+            {
+                'id': 1,
+                'type': 'success',
+                'title': 'سیستم سالم',
+                'message': 'تمام سرویس‌ها به درستی کار می‌کنند'
+            },
+            {
+                'id': 2,
+                'type': 'warning',
+                'title': 'فضای دیسک',
+                'message': 'فضای دیسک کمتر از ۲۰٪ باقی مانده'
+            }
+        ]
+        
+        return JsonResponse({
+            'alerts': alerts,
+            'timestamp': timezone.now().isoformat()
+        })
