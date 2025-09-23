@@ -17,130 +17,8 @@ import json
 from .models import User, AuditLog, TOTPDevice
 
 
-class AdminLoginView(auth_views.LoginView):
-    """
-    Custom login view for super-panel administrators.
-    """
-    template_name = 'auth/admin_login.html'
-    redirect_authenticated_user = True
-    success_url = reverse_lazy('core:dashboard')
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context.update({
-            'page_title': 'ورود مدیر سیستم',
-            'is_admin_login': True,
-        })
-        return context
-    
-    def form_valid(self, form):
-        """Handle successful login with audit logging and 2FA check."""
-        user = form.get_user()
-        
-        # Check if user is super admin
-        if not user.is_superuser:
-            messages.error(self.request, _('شما مجوز دسترسی به پنل مدیریت را ندارید.'))
-            return self.form_invalid(form)
-        
-        # Check if super admin has 2FA enabled (mandatory for super admins)
-        if not user.is_2fa_enabled:
-            messages.error(self.request, _('احراز هویت دو مرحله‌ای برای مدیران سیستم اجباری است.'))
-            return self.form_invalid(form)
-        
-        # Check if user has confirmed 2FA device
-        try:
-            totp_device = TOTPDevice.objects.get(user=user, is_confirmed=True)
-            
-            # Store user ID in session for 2FA verification
-            self.request.session['2fa_user_id'] = user.id
-            self.request.session['2fa_next_url'] = self.get_success_url()
-            self.request.session['is_admin_login'] = True
-            
-            # Log initial login attempt (before 2FA)
-            AuditLog.objects.create(
-                user=user,
-                action='login_attempt',
-                details={
-                    'login_type': 'admin_panel',
-                    'requires_2fa': True,
-                    'ip_address': self.get_client_ip(),
-                    'user_agent': self.request.META.get('HTTP_USER_AGENT', ''),
-                },
-                ip_address=self.get_client_ip(),
-                user_agent=self.request.META.get('HTTP_USER_AGENT', ''),
-            )
-            
-            # Redirect to 2FA verification
-            return redirect('core:admin_2fa_verify')
-            
-        except TOTPDevice.DoesNotExist:
-            messages.error(self.request, _('احراز هویت دو مرحله‌ای تنظیم نشده است. لطفاً ابتدا آن را فعال کنید.'))
-            return self.form_invalid(form)
-    
-    def form_invalid(self, form):
-        """Handle failed login attempts."""
-        username = form.cleaned_data.get('username', '')
-        
-        # Log failed login attempt
-        AuditLog.objects.create(
-            user=None,
-            action='login_failed',
-            details={
-                'username': username,
-                'login_type': 'admin_panel',
-                'ip_address': self.get_client_ip(),
-                'user_agent': self.request.META.get('HTTP_USER_AGENT', ''),
-                'errors': form.errors.as_json(),
-            },
-            ip_address=self.get_client_ip(),
-            user_agent=self.request.META.get('HTTP_USER_AGENT', ''),
-        )
-        
-        return super().form_invalid(form)
-    
-    def get_client_ip(self):
-        """Get client IP address."""
-        x_forwarded_for = self.request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]
-        else:
-            ip = self.request.META.get('REMOTE_ADDR')
-        return ip
-
-
-class AdminLogoutView(auth_views.LogoutView):
-    """
-    Custom logout view for super-panel administrators.
-    """
-    next_page = reverse_lazy('core:admin_login')
-    
-    def dispatch(self, request, *args, **kwargs):
-        """Log logout action before processing."""
-        if request.user.is_authenticated:
-            AuditLog.objects.create(
-                user=request.user,
-                action='logout',
-                details={
-                    'logout_type': 'admin_panel',
-                    'ip_address': self.get_client_ip(request),
-                    'user_agent': request.META.get('HTTP_USER_AGENT', ''),
-                },
-                ip_address=self.get_client_ip(request),
-                user_agent=request.META.get('HTTP_USER_AGENT', ''),
-            )
-            
-            messages.success(request, _('با موفقیت از سیستم خارج شدید.'))
-        
-        return super().dispatch(request, *args, **kwargs)
-    
-    def get_client_ip(self, request):
-        """Get client IP address."""
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]
-        else:
-            ip = request.META.get('REMOTE_ADDR')
-        return ip
+# Legacy admin login/logout views removed - now using unified admin system
+# All admin authentication is handled by zargar.admin_panel.unified_auth_views
 
 
 class AdminPasswordResetView(auth_views.PasswordResetView):
@@ -279,7 +157,7 @@ class Admin2FAVerifyView(TemplateView):
         # Check if user is in 2FA verification state
         if not request.session.get('2fa_user_id') or not request.session.get('is_admin_login'):
             messages.error(request, _('جلسه احراز هویت منقضی شده است.'))
-            return redirect('core:admin_login')
+            return redirect('admin_panel:unified_login')
         
         return super().dispatch(request, *args, **kwargs)
     
@@ -307,7 +185,7 @@ class Admin2FAVerifyView(TemplateView):
             # Verify user is super admin
             if not user.is_superuser:
                 messages.error(request, _('دسترسی غیرمجاز.'))
-                return redirect('core:admin_login')
+                return redirect('admin_panel:unified_login')
             
             totp_device = TOTPDevice.objects.get(user=user, is_confirmed=True)
             
@@ -358,7 +236,7 @@ class Admin2FAVerifyView(TemplateView):
                 
         except (User.DoesNotExist, TOTPDevice.DoesNotExist):
             messages.error(request, _('خطا در احراز هویت.'))
-            return redirect('core:admin_login')
+            return redirect('admin_panel:unified_login')
         except Exception as e:
             messages.error(request, _('خطای سیستمی رخ داده است.'))
             import logging

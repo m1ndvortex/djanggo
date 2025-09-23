@@ -1,0 +1,491 @@
+{% extends 'base_rtl.html' %}
+{% load persian_tags %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Contract Generation" %} - {{ contract.contract_number }} - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/gold-installments.css' %}" rel="stylesheet">
+<style>
+.contract-preview {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 2rem;
+    font-family: 'Vazir', sans-serif;
+    direction: rtl;
+    line-height: 1.8;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+}
+.contract-header {
+    text-align: center;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 1rem;
+    margin-bottom: 2rem;
+}
+.contract-section {
+    margin-bottom: 2rem;
+}
+.contract-section h5 {
+    color: #007bff;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
+.signature-area {
+    border: 1px dashed #6c757d;
+    padding: 2rem;
+    margin: 1rem 0;
+    text-align: center;
+    background-color: #f8f9fa;
+}
+.signature-box {
+    display: inline-block;
+    width: 200px;
+    height: 80px;
+    border: 1px solid #6c757d;
+    margin: 0.5rem;
+    position: relative;
+}
+.signature-label {
+    position: absolute;
+    bottom: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+.legal-terms {
+    font-size: 0.9rem;
+    color: #495057;
+    background-color: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 0.375rem;
+    border-right: 4px solid #007bff;
+}
+.contract-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+}
+.contract-data-table th,
+.contract-data-table td {
+    border: 1px solid #dee2e6;
+    padding: 0.75rem;
+    text-align: right;
+}
+.contract-data-table th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+.print-hidden {
+    display: block;
+}
+@media print {
+    .print-hidden {
+        display: none !important;
+    }
+    .contract-preview {
+        box-shadow: none;
+        border: none;
+    }
+    body {
+        font-size: 12pt;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4 print-hidden">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-gray-800">{% trans "Contract Generation" %}</h1>
+                    <p class="text-muted">
+                        {% trans "Generate legal contract for" %} {{ contract.contract_number }}
+                        - {{ contract.customer.persian_first_name }} {{ contract.customer.persian_last_name }}
+                    </p>
+                </div>
+                <div>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-success" onclick="window.print()">
+                            <i class="fas fa-print me-2"></i>
+                            {% trans "Print Contract" %}
+                        </button>
+                        <a href="{% url 'gold_installments:generate_contract_pdf' contract.pk %}" class="btn btn-primary">
+                            <i class="fas fa-file-pdf me-2"></i>
+                            {% trans "Download PDF" %}
+                        </a>
+                        <a href="{% url 'gold_installments:contract_detail' contract.pk %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            {% trans "Back to Contract" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contract Customization Options -->
+    <div class="row mb-4 print-hidden">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Contract Customization" %}</h6>
+                </div>
+                <div class="card-body">
+                    <form id="contractCustomizationForm">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="include_terms" class="form-label">{% trans "Include Legal Terms" %}</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="include_terms" checked>
+                                        <label class="form-check-label" for="include_terms">
+                                            {% trans "Include standard legal terms and conditions" %}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="include_signatures" class="form-label">{% trans "Signature Requirements" %}</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="include_signatures" checked>
+                                        <label class="form-check-label" for="include_signatures">
+                                            {% trans "Include signature areas" %}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="contract_language" class="form-label">{% trans "Contract Language" %}</label>
+                                    <select class="form-select" id="contract_language">
+                                        <option value="persian" selected>{% trans "Persian (Farsi)" %}</option>
+                                        <option value="english">{% trans "English" %}</option>
+                                        <option value="bilingual">{% trans "Bilingual (Persian/English)" %}</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="additional_terms" class="form-label">{% trans "Additional Terms" %}</label>
+                                    <textarea class="form-control persian-textarea" id="additional_terms" rows="3"
+                                              placeholder="{% trans 'Enter any additional terms or conditions...' %}">{{ contract.special_conditions }}</textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="witness_required" class="form-label">{% trans "Witness Requirements" %}</label>
+                                    <select class="form-select" id="witness_required">
+                                        <option value="none">{% trans "No witnesses required" %}</option>
+                                        <option value="one">{% trans "One witness required" %}</option>
+                                        <option value="two" selected>{% trans "Two witnesses required" %}</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-end">
+                            <button type="button" class="btn btn-primary" onclick="updateContractPreview()">
+                                <i class="fas fa-sync me-2"></i>
+                                {% trans "Update Preview" %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contract Preview -->
+    <div class="row">
+        <div class="col-12">
+            <div class="contract-preview" id="contractPreview">
+                <!-- Contract Header -->
+                <div class="contract-header">
+                    <h2>{% trans "Gold Installment Contract" %}</h2>
+                    <h3>قرارداد طلای قرضی</h3>
+                    <p class="mb-0">{% trans "Contract Number" %}: <strong>{{ contract.contract_number }}</strong></p>
+                    <p class="mb-0">{% trans "Date" %}: <strong>{{ contract.contract_date_shamsi }}</strong></p>
+                </div>
+
+                <!-- Parties Section -->
+                <div class="contract-section">
+                    <h5>{% trans "Contract Parties" %} - طرفین قرارداد</h5>
+                    <table class="contract-data-table">
+                        <tr>
+                            <th style="width: 30%;">{% trans "Party" %}</th>
+                            <th>{% trans "Details" %}</th>
+                        </tr>
+                        <tr>
+                            <td><strong>{% trans "First Party (Shop)" %}</strong><br>طرف اول (طلافروشی)</td>
+                            <td>
+                                <strong>{{ request.tenant.name }}</strong><br>
+                                {% trans "Address" %}: {{ request.tenant.address|default:"[Shop Address]" }}<br>
+                                {% trans "Phone" %}: {{ request.tenant.phone|default:"[Shop Phone]" }}<br>
+                                {% trans "License" %}: {{ request.tenant.business_license|default:"[Business License]" }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>{% trans "Second Party (Customer)" %}</strong><br>طرف دوم (مشتری)</td>
+                            <td>
+                                <strong>{{ contract_data.customer_name }}</strong><br>
+                                {% trans "Phone" %}: {{ contract_data.customer_phone }}<br>
+                                {% trans "National ID" %}: {{ contract.customer.national_id|default:"[National ID]" }}<br>
+                                {% trans "Address" %}: {{ contract.customer.address|default:"[Customer Address]" }}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Contract Details Section -->
+                <div class="contract-section">
+                    <h5>{% trans "Contract Details" %} - جزئیات قرارداد</h5>
+                    <table class="contract-data-table">
+                        <tr>
+                            <th>{% trans "Item" %}</th>
+                            <th>{% trans "Value" %}</th>
+                        </tr>
+                        <tr>
+                            <td>{% trans "Initial Gold Weight" %}<br>وزن اولیه طلا</td>
+                            <td><strong>{% persian_weight contract_data.initial_weight 'gram' %}</strong></td>
+                        </tr>
+                        <tr>
+                            <td>{% trans "Gold Karat" %}<br>عیار طلا</td>
+                            <td><strong>{{ contract_data.gold_karat }} {% trans "karat" %}</strong></td>
+                        </tr>
+                        <tr>
+                            <td>{% trans "Payment Schedule" %}<br>برنامه پرداخت</td>
+                            <td><strong>{{ contract_data.payment_schedule }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td>{% trans "Contract Date" %}<br>تاریخ قرارداد</td>
+                            <td><strong>{{ contract_data.contract_date_shamsi }}</strong></td>
+                        </tr>
+                        {% if contract.has_price_protection %}
+                        <tr>
+                            <td>{% trans "Price Protection" %}<br>حمایت قیمتی</td>
+                            <td>
+                                <strong>{% trans "Enabled" %}</strong><br>
+                                {% if contract.price_ceiling_per_gram %}
+                                    {% trans "Ceiling" %}: {% persian_currency contract.price_ceiling_per_gram %}<br>
+                                {% endif %}
+                                {% if contract.price_floor_per_gram %}
+                                    {% trans "Floor" %}: {% persian_currency contract.price_floor_per_gram %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% if contract.early_payment_discount_percentage > 0 %}
+                        <tr>
+                            <td>{% trans "Early Payment Discount" %}<br>تخفیف پرداخت زودهنگام</td>
+                            <td><strong>{% persian_number contract.early_payment_discount_percentage %}%</strong></td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+
+                <!-- Terms and Conditions -->
+                <div class="contract-section" id="legalTermsSection">
+                    <h5>{% trans "Terms and Conditions" %} - شرایط و ضوابط</h5>
+                    <div class="legal-terms">
+                        <h6>{{ legal_terms_template.title }}</h6>
+                        <ol>
+                            {% for term in legal_terms_template.terms %}
+                            <li>{{ term }}</li>
+                            {% endfor %}
+                        </ol>
+                        
+                        {% if contract.special_conditions %}
+                        <h6>{% trans "Special Conditions" %} - شرایط خاص</h6>
+                        <p>{{ contract.special_conditions }}</p>
+                        {% endif %}
+                        
+                        <div class="mt-3">
+                            <strong>{{ legal_terms_template.footer }}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Schedule -->
+                <div class="contract-section">
+                    <h5>{% trans "Payment Information" %} - اطلاعات پرداخت</h5>
+                    <div class="alert alert-info">
+                        <h6>{% trans "Payment Method" %} - روش پرداخت</h6>
+                        <p class="mb-1">
+                            {% trans "Payments will be calculated based on current gold market prices at the time of each payment." %}
+                            پرداخت‌ها بر اساس قیمت روز طلا در زمان هر پرداخت محاسبه خواهد شد.
+                        </p>
+                        <p class="mb-1">
+                            {% trans "Each payment amount will be converted to gold weight equivalent and deducted from the remaining balance." %}
+                            هر مبلغ پرداختی به معادل وزن طلا تبدیل و از مانده حساب کسر خواهد شد.
+                        </p>
+                        <p class="mb-0">
+                            {% trans "Payment schedule" %}: <strong>{{ contract_data.payment_schedule }}</strong>
+                            برنامه پرداخت: <strong>{{ contract_data.payment_schedule }}</strong>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Signatures Section -->
+                <div class="contract-section" id="signaturesSection">
+                    <h5>{% trans "Signatures" %} - امضاها</h5>
+                    <div class="signature-area">
+                        <div class="row">
+                            {% for signature in signature_requirements %}
+                            {% if signature.required or signature.party == 'customer' or signature.party == 'shop_owner' %}
+                            <div class="col-md-6 mb-4">
+                                <div class="signature-box">
+                                    <div class="signature-label">{{ signature.label }}</div>
+                                </div>
+                                <div class="mt-4 text-center">
+                                    <strong>
+                                        {% if signature.party == 'customer' %}
+                                            {{ contract_data.customer_name }}
+                                        {% elif signature.party == 'shop_owner' %}
+                                            {% trans "Shop Owner" %}
+                                        {% else %}
+                                            {% trans "Witness" %}
+                                        {% endif %}
+                                    </strong>
+                                </div>
+                                <div class="text-center text-muted">
+                                    {% trans "Date" %}: _______________
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="mt-4">
+                            <p class="text-center text-muted">
+                                {% trans "This contract is signed in the presence of witnesses and is legally binding." %}<br>
+                                این قرارداد در حضور شاهدان امضا شده و از لحاظ قانونی الزام‌آور است.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contract Footer -->
+                <div class="contract-section">
+                    <div class="text-center text-muted">
+                        <hr>
+                        <p class="mb-1">
+                            {% trans "This contract is generated by ZARGAR Jewelry Management System" %}<br>
+                            این قرارداد توسط سیستم مدیریت طلافروشی زرگر تولید شده است
+                        </p>
+                        <p class="mb-0">
+                            {% trans "Generated on" %}: {% now "Y/m/d H:i" %} - 
+                            تولید شده در: {% now "Y/m/d H:i" %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/gold-installments.js' %}"></script>
+<script>
+function updateContractPreview() {
+    const includeTerms = document.getElementById('include_terms').checked;
+    const includeSignatures = document.getElementById('include_signatures').checked;
+    const witnessRequired = document.getElementById('witness_required').value;
+    const additionalTerms = document.getElementById('additional_terms').value;
+    
+    // Show/hide legal terms section
+    const legalTermsSection = document.getElementById('legalTermsSection');
+    if (includeTerms) {
+        legalTermsSection.style.display = 'block';
+    } else {
+        legalTermsSection.style.display = 'none';
+    }
+    
+    // Show/hide signatures section
+    const signaturesSection = document.getElementById('signaturesSection');
+    if (includeSignatures) {
+        signaturesSection.style.display = 'block';
+    } else {
+        signaturesSection.style.display = 'none';
+    }
+    
+    // Update witness signatures based on selection
+    const witnessSignatures = signaturesSection.querySelectorAll('.col-md-6');
+    witnessSignatures.forEach((signature, index) => {
+        const signatureLabel = signature.querySelector('.signature-label');
+        if (signatureLabel) {
+            if (signatureLabel.textContent.includes('Witness')) {
+                const witnessNumber = signatureLabel.textContent.includes('1') ? 1 : 2;
+                if (witnessRequired === 'none' || 
+                    (witnessRequired === 'one' && witnessNumber > 1)) {
+                    signature.style.display = 'none';
+                } else {
+                    signature.style.display = 'block';
+                }
+            }
+        }
+    });
+    
+    // Update additional terms if provided
+    if (additionalTerms.trim()) {
+        const specialConditionsElement = legalTermsSection.querySelector('p');
+        if (specialConditionsElement) {
+            specialConditionsElement.textContent = additionalTerms;
+        }
+    }
+    
+    // Show success message
+    const toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-success border-0 position-fixed top-0 end-0 m-3';
+    toast.setAttribute('role', 'alert');
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                {% trans "Contract preview updated successfully" %}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    
+    // Remove toast after it's hidden
+    toast.addEventListener('hidden.bs.toast', () => {
+        document.body.removeChild(toast);
+    });
+}
+
+// Print optimization
+window.addEventListener('beforeprint', function() {
+    // Hide any elements that shouldn't be printed
+    document.querySelectorAll('.print-hidden').forEach(element => {
+        element.style.display = 'none';
+    });
+});
+
+window.addEventListener('afterprint', function() {
+    // Restore hidden elements after printing
+    document.querySelectorAll('.print-hidden').forEach(element => {
+        element.style.display = 'block';
+    });
+});
+
+// Auto-update preview when form changes
+document.getElementById('contractCustomizationForm').addEventListener('change', function() {
+    updateContractPreview();
+});
+</script>
+{% endblock %}

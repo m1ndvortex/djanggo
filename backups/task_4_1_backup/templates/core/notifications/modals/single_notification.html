@@ -1,0 +1,406 @@
+{% load i18n %}
+
+<!-- Single Notification Modal -->
+<div class="modal fade" id="singleNotificationModal" tabindex="-1" aria-labelledby="singleNotificationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="singleNotificationModalLabel">{% trans "Send Single Notification" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="singleNotificationForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="singleTemplateType" class="form-label">{% trans "Template Type" %}</label>
+                                <select class="form-select" id="singleTemplateType" name="template_type" required>
+                                    <option value="">{% trans "Select template type" %}</option>
+                                    <option value="payment_reminder">{% trans "Payment Reminder" %}</option>
+                                    <option value="payment_overdue">{% trans "Payment Overdue" %}</option>
+                                    <option value="birthday_greeting">{% trans "Birthday Greeting" %}</option>
+                                    <option value="appointment_reminder">{% trans "Appointment Reminder" %}</option>
+                                    <option value="special_offer">{% trans "Special Offer" %}</option>
+                                    <option value="custom">{% trans "Custom Message" %}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="singleRecipientType" class="form-label">{% trans "Recipient Type" %}</label>
+                                <select class="form-select" id="singleRecipientType" name="recipient_type" required>
+                                    <option value="customer">{% trans "Customer" %}</option>
+                                    <option value="user">{% trans "User" %}</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="singleRecipientId" class="form-label">{% trans "Recipient" %}</label>
+                        <select class="form-select" id="singleRecipientId" name="recipient_id" required>
+                            <option value="">{% trans "Select recipient" %}</option>
+                        </select>
+                        <div class="form-text">{% trans "Start typing to search for customers or users" %}</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{% trans "Delivery Methods" %}</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="singleSms" name="delivery_methods" value="sms" checked>
+                            <label class="form-check-label" for="singleSms">
+                                <i class="fas fa-sms me-2"></i>{% trans "SMS" %}
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="singleEmail" name="delivery_methods" value="email">
+                            <label class="form-check-label" for="singleEmail">
+                                <i class="fas fa-envelope me-2"></i>{% trans "Email" %}
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Context Variables -->
+                    <div id="contextVariables" class="mb-3" style="display: none;">
+                        <label class="form-label">{% trans "Message Variables" %}</label>
+                        <div class="row" id="contextFields">
+                            <!-- Dynamic context fields will be added here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Custom Message Fields -->
+                    <div id="customMessageFields" style="display: none;">
+                        <div class="mb-3">
+                            <label for="customTitle" class="form-label">{% trans "Message Title" %}</label>
+                            <input type="text" class="form-control" id="customTitle" name="custom_title" 
+                                   placeholder="{% trans 'Enter message title' %}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="customContent" class="form-label">{% trans "Message Content" %}</label>
+                            <textarea class="form-control persian-textarea" id="customContent" name="custom_content" 
+                                      rows="4" placeholder="{% trans 'Enter your message in Persian' %}"></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Preview -->
+                    <div id="messagePreview" class="mb-3" style="display: none;">
+                        <label class="form-label">{% trans "Message Preview" %}</label>
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 id="previewMessageTitle" class="card-title"></h6>
+                                <p id="previewMessageContent" class="card-text"></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="sendImmediately" name="send_immediately" checked>
+                            <label class="form-check-label" for="sendImmediately">
+                                {% trans "Send immediately" %}
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div id="scheduleFields" style="display: none;">
+                        <div class="mb-3">
+                            <label for="scheduledDateTime" class="form-label">{% trans "Schedule for" %}</label>
+                            <input type="datetime-local" class="form-control" id="scheduledDateTime" name="scheduled_datetime">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                <button type="button" class="btn btn-primary" onclick="sendSingleNotification()">
+                    <i class="fas fa-paper-plane me-2"></i>
+                    <span id="sendButtonText">{% trans "Send Notification" %}</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Template type change handler
+    document.getElementById('singleTemplateType').addEventListener('change', function() {
+        const templateType = this.value;
+        updateContextFields(templateType);
+        updateMessagePreview();
+    });
+    
+    // Recipient type change handler
+    document.getElementById('singleRecipientType').addEventListener('change', function() {
+        loadRecipients(this.value);
+    });
+    
+    // Send immediately checkbox handler
+    document.getElementById('sendImmediately').addEventListener('change', function() {
+        const scheduleFields = document.getElementById('scheduleFields');
+        const sendButtonText = document.getElementById('sendButtonText');
+        
+        if (this.checked) {
+            scheduleFields.style.display = 'none';
+            sendButtonText.textContent = '{% trans "Send Notification" %}';
+        } else {
+            scheduleFields.style.display = 'block';
+            sendButtonText.textContent = '{% trans "Schedule Notification" %}';
+        }
+    });
+    
+    // Context field change handlers
+    document.addEventListener('input', function(e) {
+        if (e.target.matches('#contextFields input, #customTitle, #customContent')) {
+            updateMessagePreview();
+        }
+    });
+});
+
+function updateContextFields(templateType) {
+    const contextVariables = document.getElementById('contextVariables');
+    const contextFields = document.getElementById('contextFields');
+    const customMessageFields = document.getElementById('customMessageFields');
+    
+    // Clear existing fields
+    contextFields.innerHTML = '';
+    
+    if (templateType === 'custom') {
+        contextVariables.style.display = 'none';
+        customMessageFields.style.display = 'block';
+        return;
+    } else {
+        customMessageFields.style.display = 'none';
+    }
+    
+    const fieldConfigs = {
+        'payment_reminder': [
+            { name: 'contract_number', label: '{% trans "Contract Number" %}', placeholder: 'GI-2024-001' },
+            { name: 'amount', label: '{% trans "Amount (Toman)" %}', placeholder: '2,500,000' },
+            { name: 'due_date', label: '{% trans "Due Date" %}', placeholder: '1403/07/15' }
+        ],
+        'payment_overdue': [
+            { name: 'contract_number', label: '{% trans "Contract Number" %}', placeholder: 'GI-2024-001' },
+            { name: 'overdue_amount', label: '{% trans "Overdue Amount" %}', placeholder: '1,000,000' },
+            { name: 'overdue_days', label: '{% trans "Days Overdue" %}', placeholder: '5' }
+        ],
+        'birthday_greeting': [
+            { name: 'age', label: '{% trans "Age" %}', placeholder: '35' },
+            { name: 'special_offer', label: '{% trans "Special Offer" %}', placeholder: '{% trans "10% discount" %}' }
+        ],
+        'appointment_reminder': [
+            { name: 'appointment_date', label: '{% trans "Appointment Date" %}', placeholder: '1403/07/20' },
+            { name: 'appointment_time', label: '{% trans "Appointment Time" %}', placeholder: '14:30' },
+            { name: 'service_type', label: '{% trans "Service Type" %}', placeholder: '{% trans "Jewelry repair" %}' }
+        ],
+        'special_offer': [
+            { name: 'offer_title', label: '{% trans "Offer Title" %}', placeholder: '{% trans "Special Gold Discount" %}' },
+            { name: 'discount_percentage', label: '{% trans "Discount %" %}', placeholder: '20' },
+            { name: 'expiry_date', label: '{% trans "Expiry Date" %}', placeholder: '1403/08/01' }
+        ]
+    };
+    
+    const fields = fieldConfigs[templateType] || [];
+    
+    if (fields.length > 0) {
+        contextVariables.style.display = 'block';
+        
+        fields.forEach(field => {
+            const colDiv = document.createElement('div');
+            colDiv.className = 'col-md-6 mb-3';
+            
+            colDiv.innerHTML = `
+                <label for="context_${field.name}" class="form-label">${field.label}</label>
+                <input type="text" class="form-control" id="context_${field.name}" 
+                       name="context_${field.name}" placeholder="${field.placeholder}">
+            `;
+            
+            contextFields.appendChild(colDiv);
+        });
+    } else {
+        contextVariables.style.display = 'none';
+    }
+}
+
+function loadRecipients(recipientType) {
+    const recipientSelect = document.getElementById('singleRecipientId');
+    
+    // Clear existing options
+    recipientSelect.innerHTML = '<option value="">{% trans "Loading..." %}</option>';
+    
+    // In a real implementation, this would fetch from the server
+    // For now, we'll simulate with some sample data
+    setTimeout(() => {
+        recipientSelect.innerHTML = '<option value="">{% trans "Select recipient" %}</option>';
+        
+        if (recipientType === 'customer') {
+            // Sample customers - in real implementation, fetch from API
+            const customers = [
+                { id: 1, name: 'احمد رضایی', phone: '09123456789' },
+                { id: 2, name: 'مریم حسینی', phone: '09987654321' },
+                { id: 3, name: 'علی محمدی', phone: '09111222333' }
+            ];
+            
+            customers.forEach(customer => {
+                const option = document.createElement('option');
+                option.value = customer.id;
+                option.textContent = `${customer.name} (${customer.phone})`;
+                recipientSelect.appendChild(option);
+            });
+        } else if (recipientType === 'user') {
+            // Sample users
+            const users = [
+                { id: 1, name: 'مدیر فروشگاه', role: 'owner' },
+                { id: 2, name: 'حسابدار', role: 'accountant' }
+            ];
+            
+            users.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = `${user.name} (${user.role})`;
+                recipientSelect.appendChild(option);
+            });
+        }
+    }, 500);
+}
+
+function updateMessagePreview() {
+    const templateType = document.getElementById('singleTemplateType').value;
+    const previewDiv = document.getElementById('messagePreview');
+    const titleElement = document.getElementById('previewMessageTitle');
+    const contentElement = document.getElementById('previewMessageContent');
+    
+    if (!templateType) {
+        previewDiv.style.display = 'none';
+        return;
+    }
+    
+    let title = '';
+    let content = '';
+    
+    if (templateType === 'custom') {
+        title = document.getElementById('customTitle').value || '{% trans "Custom Message" %}';
+        content = document.getElementById('customContent').value || '{% trans "Your custom message will appear here" %}';
+    } else {
+        // Get context values
+        const context = {};
+        const contextInputs = document.querySelectorAll('#contextFields input');
+        contextInputs.forEach(input => {
+            const fieldName = input.name.replace('context_', '');
+            context[fieldName] = input.value || input.placeholder;
+        });
+        
+        // Sample templates - in real implementation, fetch from server
+        const templates = {
+            'payment_reminder': {
+                title: 'یادآوری پرداخت',
+                content: `سلام {customer_name}، پرداخت قرارداد ${context.contract_number || '{contract_number}'} به مبلغ ${context.amount || '{amount}'} تومان در تاریخ ${context.due_date || '{due_date}'} سررسید می‌شود.`
+            },
+            'birthday_greeting': {
+                title: 'تولدت مبارک',
+                content: `سلام {customer_name}، تولد ${context.age || '{age}'} سالگی‌ت مبارک! ${context.special_offer || '{special_offer}'} ویژه شما آماده است.`
+            }
+        };
+        
+        const template = templates[templateType];
+        if (template) {
+            title = template.title;
+            content = template.content;
+        }
+    }
+    
+    titleElement.textContent = title;
+    contentElement.textContent = content;
+    previewDiv.style.display = 'block';
+}
+
+function sendSingleNotification() {
+    const form = document.getElementById('singleNotificationForm');
+    const formData = new FormData(form);
+    
+    // Validate form
+    const templateType = formData.get('template_type');
+    const recipientId = formData.get('recipient_id');
+    const deliveryMethods = formData.getAll('delivery_methods');
+    
+    if (!templateType || !recipientId || deliveryMethods.length === 0) {
+        showNotification('{% trans "Please fill in all required fields" %}', 'error');
+        return;
+    }
+    
+    // Prepare data
+    const data = {
+        template_type: templateType,
+        recipient_type: formData.get('recipient_type'),
+        recipient_id: parseInt(recipientId),
+        delivery_methods: deliveryMethods,
+        context: {}
+    };
+    
+    // Add context variables
+    if (templateType === 'custom') {
+        data.context = {
+            title: formData.get('custom_title'),
+            content: formData.get('custom_content')
+        };
+    } else {
+        const contextInputs = document.querySelectorAll('#contextFields input');
+        contextInputs.forEach(input => {
+            const fieldName = input.name.replace('context_', '');
+            if (input.value) {
+                data.context[fieldName] = input.value;
+            }
+        });
+    }
+    
+    // Add customer name (this would be fetched from the selected recipient)
+    const recipientSelect = document.getElementById('singleRecipientId');
+    const selectedOption = recipientSelect.options[recipientSelect.selectedIndex];
+    if (selectedOption) {
+        data.context.customer_name = selectedOption.text.split(' (')[0];
+    }
+    
+    // Add scheduling if not immediate
+    if (!formData.get('send_immediately')) {
+        const scheduledDateTime = formData.get('scheduled_datetime');
+        if (scheduledDateTime) {
+            data.scheduled_datetime = new Date(scheduledDateTime).toISOString();
+        }
+    }
+    
+    // Send request
+    const button = document.querySelector('#singleNotificationModal .btn-primary');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>{% trans "Sending..." %}';
+    button.disabled = true;
+    
+    fetch('{% url "core:notifications:send_ajax" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('singleNotificationModal')).hide();
+            form.reset();
+            // Refresh the page to show new notification
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification(data.error, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error sending notification:', error);
+        showNotification('{% trans "Error connecting to server" %}', 'error');
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+</script>

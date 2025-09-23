@@ -1,0 +1,763 @@
+{% extends 'base_rtl.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "اسکن موبایل" %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .scanner-container {
+        position: relative;
+        width: 100%;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+    
+    .camera-preview {
+        width: 100%;
+        height: 300px;
+        background: #000;
+        border-radius: 12px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .scanner-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 200px;
+        height: 200px;
+        border: 2px solid #00FF88;
+        border-radius: 12px;
+        box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+    }
+    
+    .scanner-corners {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #00D4FF;
+    }
+    
+    .scanner-corners.top-left {
+        top: -2px;
+        left: -2px;
+        border-right: none;
+        border-bottom: none;
+    }
+    
+    .scanner-corners.top-right {
+        top: -2px;
+        right: -2px;
+        border-left: none;
+        border-bottom: none;
+    }
+    
+    .scanner-corners.bottom-left {
+        bottom: -2px;
+        left: -2px;
+        border-right: none;
+        border-top: none;
+    }
+    
+    .scanner-corners.bottom-right {
+        bottom: -2px;
+        right: -2px;
+        border-left: none;
+        border-top: none;
+    }
+    
+    .scan-line {
+        position: absolute;
+        width: 100%;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #00FF88, transparent);
+        animation: scan-animation 2s linear infinite;
+    }
+    
+    @keyframes scan-animation {
+        0% { top: 0; }
+        100% { top: 100%; }
+    }
+    
+    .scan-result {
+        background: linear-gradient(145deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 212, 255, 0.1) 100%);
+        border: 1px solid rgba(0, 255, 136, 0.3);
+        backdrop-filter: blur(10px);
+    }
+    
+    .scan-button {
+        background: linear-gradient(135deg, #00FF88 0%, #00D4FF 100%);
+        color: #0B0E1A;
+        transition: all 0.3s ease;
+    }
+    
+    .scan-button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 8px 25px rgba(0, 255, 136, 0.4);
+    }
+    
+    .scan-button:active {
+        transform: scale(0.95);
+    }
+    
+    .camera-controls {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .control-button {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        color: white;
+        transition: all 0.3s ease;
+    }
+    
+    .control-button:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: scale(1.1);
+    }
+    
+    .flashlight-on {
+        background: rgba(255, 235, 59, 0.3);
+        border-color: rgba(255, 235, 59, 0.5);
+    }
+    
+    .scan-history-item {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+    }
+    
+    .scan-history-item:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900" x-data="mobileScanner()">
+    <!-- Header -->
+    <div class="bg-black bg-opacity-30 backdrop-filter backdrop-blur-lg border-b border-white border-opacity-20">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <button @click="goBack()" class="text-white hover:text-gray-300 ml-4">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </button>
+                    <h1 class="text-xl font-bold text-white">{% trans "اسکن موبایل" %}</h1>
+                </div>
+                
+                <div class="flex items-center space-x-2 space-x-reverse">
+                    <button @click="toggleHistory()" 
+                            class="text-white hover:text-gray-300 p-2 rounded-lg bg-white bg-opacity-10">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </button>
+                    <button @click="openSettings()" 
+                            class="text-white hover:text-gray-300 p-2 rounded-lg bg-white bg-opacity-10">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Scanner Interface -->
+    <div class="container mx-auto px-4 py-6">
+        <!-- Scanner Container -->
+        <div class="scanner-container mb-6">
+            <div class="camera-preview" id="camera-preview">
+                <video x-ref="video" autoplay playsinline class="w-full h-full object-cover"></video>
+                
+                <!-- Scanner Overlay -->
+                <div class="scanner-overlay">
+                    <div class="scanner-corners top-left"></div>
+                    <div class="scanner-corners top-right"></div>
+                    <div class="scanner-corners bottom-left"></div>
+                    <div class="scanner-corners bottom-right"></div>
+                    <div class="scan-line" x-show="isScanning"></div>
+                </div>
+                
+                <!-- Status Overlay -->
+                <div class="absolute top-4 left-4 right-4">
+                    <div x-show="scanStatus" 
+                         class="bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg text-center"
+                         x-text="scanStatus"></div>
+                </div>
+            </div>
+            
+            <!-- Camera Controls -->
+            <div class="camera-controls">
+                <button @click="toggleFlashlight()" 
+                        class="control-button"
+                        :class="{ 'flashlight-on': flashlightOn }">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                    </svg>
+                </button>
+                
+                <button @click="capturePhoto()" 
+                        class="control-button bg-red-500 bg-opacity-30 border-red-500">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                </button>
+                
+                <button @click="switchCamera()" class="control-button">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Manual Input -->
+        <div class="bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg rounded-lg p-6 mb-6">
+            <h3 class="text-lg font-medium text-white mb-4">{% trans "ورود دستی بارکد" %}</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <input type="text" x-model="manualInput" 
+                           @keyup.enter="processManualScan()"
+                           class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 
+                                  rounded-lg text-white placeholder-gray-300 focus:outline-none focus:ring-2 
+                                  focus:ring-blue-500 focus:border-transparent"
+                           placeholder="{% trans 'بارکد یا QR کد را وارد کنید...' %}">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">
+                            {% trans "نوع عملیات" %}
+                        </label>
+                        <select x-model="scanAction"
+                                class="w-full px-3 py-2 bg-white bg-opacity-20 border border-white border-opacity-30 
+                                       rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="lookup">{% trans "جستجو" %}</option>
+                            <option value="inventory_check">{% trans "بررسی موجودی" %}</option>
+                            <option value="sale">{% trans "فروش" %}</option>
+                            <option value="audit">{% trans "حسابرسی" %}</option>
+                            <option value="transfer">{% trans "انتقال" %}</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">
+                            {% trans "مکان" %}
+                        </label>
+                        <input type="text" x-model="scanLocation"
+                               class="w-full px-3 py-2 bg-white bg-opacity-20 border border-white border-opacity-30 
+                                      rounded-lg text-white placeholder-gray-300 focus:outline-none focus:ring-2 
+                                      focus:ring-blue-500"
+                               placeholder="{% trans 'مکان اسکن...' %}">
+                    </div>
+                </div>
+                
+                <button @click="processManualScan()" 
+                        class="w-full scan-button py-3 rounded-lg font-medium">
+                    {% trans "پردازش اسکن" %}
+                </button>
+            </div>
+        </div>
+
+        <!-- Scan Result -->
+        <div x-show="scanResult" x-cloak class="scan-result rounded-lg p-6 mb-6">
+            <div class="flex items-start justify-between mb-4">
+                <h3 class="text-lg font-medium text-white">{% trans "نتیجه اسکن" %}</h3>
+                <button @click="clearResult()" class="text-gray-300 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div x-show="scanResult" class="space-y-3">
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <span class="text-gray-300">{% trans "نام:" %}</span>
+                        <span class="text-white font-medium" x-text="scanResult?.name"></span>
+                    </div>
+                    <div>
+                        <span class="text-gray-300">{% trans "SKU:" %}</span>
+                        <span class="text-white font-medium" x-text="scanResult?.sku"></span>
+                    </div>
+                    <div>
+                        <span class="text-gray-300">{% trans "وضعیت:" %}</span>
+                        <span class="text-white font-medium" x-text="scanResult?.status"></span>
+                    </div>
+                    <div>
+                        <span class="text-gray-300">{% trans "موجودی:" %}</span>
+                        <span class="text-white font-medium" x-text="scanResult?.quantity"></span>
+                    </div>
+                </div>
+                
+                <div class="flex space-x-3 space-x-reverse pt-4">
+                    <button @click="viewItemDetails()" 
+                            class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg">
+                        {% trans "مشاهده جزئیات" %}
+                    </button>
+                    <button @click="addToCart()" 
+                            class="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg">
+                        {% trans "افزودن به سبد" %}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Scans -->
+        <div x-show="!showHistory" class="bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg rounded-lg p-6">
+            <h3 class="text-lg font-medium text-white mb-4">{% trans "اسکن‌های اخیر" %}</h3>
+            
+            <div class="space-y-3">
+                <template x-for="scan in recentScans.slice(0, 5)" :key="scan.id">
+                    <div class="scan-history-item rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="text-white font-medium" x-text="scan.jewelry_item_name"></div>
+                                <div class="text-gray-300 text-sm" x-text="scan.jewelry_item_sku"></div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-gray-300 text-sm" x-text="formatTime(scan.scan_timestamp)"></div>
+                                <div class="text-xs text-gray-400" x-text="scan.scan_action"></div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+                
+                <div x-show="recentScans.length === 0" class="text-center text-gray-400 py-8">
+                    {% trans "هنوز اسکنی انجام نشده است" %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Full History -->
+        <div x-show="showHistory" x-cloak class="bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg rounded-lg p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-white">{% trans "تاریخچه کامل اسکن" %}</h3>
+                <button @click="toggleHistory()" class="text-gray-300 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="space-y-3 max-h-96 overflow-y-auto">
+                <template x-for="scan in allScans" :key="scan.id">
+                    <div class="scan-history-item rounded-lg p-4">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="text-white font-medium" x-text="scan.jewelry_item_name"></div>
+                                <div class="text-gray-300 text-sm" x-text="scan.jewelry_item_sku"></div>
+                                <div class="text-xs text-gray-400 mt-1" x-text="scan.notes || '-'"></div>
+                            </div>
+                            <div class="text-right ml-4">
+                                <div class="text-gray-300 text-sm" x-text="formatDateTime(scan.scan_timestamp)"></div>
+                                <div class="text-xs text-gray-400" x-text="scan.scan_action"></div>
+                                <div class="text-xs text-gray-500" x-text="scan.location || '-'"></div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div x-show="showSettings" x-cloak
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+         @click.self="closeSettings()">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+                    {% trans "تنظیمات اسکنر" %}
+                </h3>
+                <button @click="closeSettings()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" x-model="settings.autoFocus" class="mr-2">
+                        <span class="text-sm text-gray-700 dark:text-gray-300">{% trans "فوکوس خودکار" %}</span>
+                    </label>
+                </div>
+                
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" x-model="settings.soundEnabled" class="mr-2">
+                        <span class="text-sm text-gray-700 dark:text-gray-300">{% trans "صدای اسکن" %}</span>
+                    </label>
+                </div>
+                
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" x-model="settings.vibrationEnabled" class="mr-2">
+                        <span class="text-sm text-gray-700 dark:text-gray-300">{% trans "لرزش هنگام اسکن" %}</span>
+                    </label>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        {% trans "کیفیت دوربین" %}
+                    </label>
+                    <select x-model="settings.cameraQuality"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md 
+                                   bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <option value="low">{% trans "پایین" %}</option>
+                        <option value="medium">{% trans "متوسط" %}</option>
+                        <option value="high">{% trans "بالا" %}</option>
+                    </select>
+                </div>
+                
+                <div class="flex space-x-3 space-x-reverse pt-4">
+                    <button @click="saveSettings()" 
+                            class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md">
+                        {% trans "ذخیره" %}
+                    </button>
+                    <button @click="closeSettings()" 
+                            class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-md">
+                        {% trans "انصراف" %}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function mobileScanner() {
+    return {
+        // Camera
+        stream: null,
+        isScanning: false,
+        flashlightOn: false,
+        currentCamera: 'environment', // 'user' for front camera
+        
+        // Scan data
+        manualInput: '',
+        scanAction: 'lookup',
+        scanLocation: '',
+        scanResult: null,
+        scanStatus: '',
+        
+        // History
+        showHistory: false,
+        recentScans: [],
+        allScans: [],
+        
+        // Settings
+        showSettings: false,
+        settings: {
+            autoFocus: true,
+            soundEnabled: true,
+            vibrationEnabled: true,
+            cameraQuality: 'medium'
+        },
+        
+        // Methods
+        async init() {
+            await this.startCamera();
+            this.loadRecentScans();
+            this.loadSettings();
+        },
+        
+        async startCamera() {
+            try {
+                this.scanStatus = 'در حال راه‌اندازی دوربین...';
+                
+                const constraints = {
+                    video: {
+                        facingMode: this.currentCamera,
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                };
+                
+                this.stream = await navigator.mediaDevices.getUserMedia(constraints);
+                this.$refs.video.srcObject = this.stream;
+                
+                this.scanStatus = 'آماده برای اسکن';
+                this.isScanning = true;
+                
+                // Start barcode detection
+                this.startBarcodeDetection();
+                
+            } catch (error) {
+                console.error('Error starting camera:', error);
+                this.scanStatus = 'خطا در راه‌اندازی دوربین';
+            }
+        },
+        
+        stopCamera() {
+            if (this.stream) {
+                this.stream.getTracks().forEach(track => track.stop());
+                this.stream = null;
+            }
+            this.isScanning = false;
+        },
+        
+        async switchCamera() {
+            this.stopCamera();
+            this.currentCamera = this.currentCamera === 'environment' ? 'user' : 'environment';
+            await this.startCamera();
+        },
+        
+        async toggleFlashlight() {
+            if (this.stream) {
+                const track = this.stream.getVideoTracks()[0];
+                const capabilities = track.getCapabilities();
+                
+                if (capabilities.torch) {
+                    this.flashlightOn = !this.flashlightOn;
+                    await track.applyConstraints({
+                        advanced: [{ torch: this.flashlightOn }]
+                    });
+                }
+            }
+        },
+        
+        startBarcodeDetection() {
+            // This would integrate with a barcode detection library
+            // For now, we'll simulate detection
+            if ('BarcodeDetector' in window) {
+                const barcodeDetector = new BarcodeDetector();
+                
+                const detectBarcodes = async () => {
+                    if (this.isScanning && this.$refs.video.readyState === 4) {
+                        try {
+                            const barcodes = await barcodeDetector.detect(this.$refs.video);
+                            if (barcodes.length > 0) {
+                                this.processScan(barcodes[0].rawValue);
+                            }
+                        } catch (error) {
+                            console.error('Barcode detection error:', error);
+                        }
+                    }
+                    
+                    if (this.isScanning) {
+                        requestAnimationFrame(detectBarcodes);
+                    }
+                };
+                
+                detectBarcodes();
+            }
+        },
+        
+        capturePhoto() {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            const video = this.$refs.video;
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0);
+            
+            // Convert to blob and process
+            canvas.toBlob(blob => {
+                // Here you would send the image to a server for barcode detection
+                console.log('Photo captured for processing');
+            });
+        },
+        
+        async processManualScan() {
+            if (!this.manualInput.trim()) return;
+            
+            await this.processScan(this.manualInput.trim());
+            this.manualInput = '';
+        },
+        
+        async processScan(scannedData) {
+            try {
+                this.scanStatus = 'در حال پردازش...';
+                
+                const response = await fetch('/jewelry/barcode/scan/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        scanned_data: scannedData,
+                        scan_action: this.scanAction,
+                        scanner_device: 'mobile_web',
+                        location: this.scanLocation || 'mobile_scanner'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.scanResult = data.jewelry_item;
+                    this.scanStatus = 'اسکن موفق';
+                    this.playSuccessSound();
+                    this.vibrate();
+                    this.loadRecentScans(); // Refresh recent scans
+                } else {
+                    this.scanStatus = data.error || 'کالا یافت نشد';
+                    this.playErrorSound();
+                }
+                
+            } catch (error) {
+                console.error('Error processing scan:', error);
+                this.scanStatus = 'خطا در پردازش اسکن';
+                this.playErrorSound();
+            }
+        },
+        
+        clearResult() {
+            this.scanResult = null;
+            this.scanStatus = 'آماده برای اسکن';
+        },
+        
+        viewItemDetails() {
+            if (this.scanResult) {
+                window.location.href = `/jewelry/items/${this.scanResult.id}/`;
+            }
+        },
+        
+        addToCart() {
+            if (this.scanResult) {
+                // Add to POS cart or similar functionality
+                console.log('Adding to cart:', this.scanResult);
+                this.showNotification('کالا به سبد اضافه شد', 'success');
+            }
+        },
+        
+        async loadRecentScans() {
+            try {
+                const response = await fetch('/jewelry/api/scan-history/?limit=20');
+                const data = await response.json();
+                this.recentScans = data.results || [];
+            } catch (error) {
+                console.error('Error loading recent scans:', error);
+            }
+        },
+        
+        async loadAllScans() {
+            try {
+                const response = await fetch('/jewelry/api/scan-history/?limit=100');
+                const data = await response.json();
+                this.allScans = data.results || [];
+            } catch (error) {
+                console.error('Error loading all scans:', error);
+            }
+        },
+        
+        toggleHistory() {
+            this.showHistory = !this.showHistory;
+            if (this.showHistory && this.allScans.length === 0) {
+                this.loadAllScans();
+            }
+        },
+        
+        openSettings() {
+            this.showSettings = true;
+        },
+        
+        closeSettings() {
+            this.showSettings = false;
+        },
+        
+        saveSettings() {
+            localStorage.setItem('mobileScannerSettings', JSON.stringify(this.settings));
+            this.closeSettings();
+            this.showNotification('تنظیمات ذخیره شد', 'success');
+        },
+        
+        loadSettings() {
+            const saved = localStorage.getItem('mobileScannerSettings');
+            if (saved) {
+                this.settings = { ...this.settings, ...JSON.parse(saved) };
+            }
+        },
+        
+        playSuccessSound() {
+            if (this.settings.soundEnabled) {
+                // Play success sound
+                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT');
+                audio.play().catch(() => {});
+            }
+        },
+        
+        playErrorSound() {
+            if (this.settings.soundEnabled) {
+                // Play error sound
+                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT');
+                audio.play().catch(() => {});
+            }
+        },
+        
+        vibrate() {
+            if (this.settings.vibrationEnabled && 'vibrate' in navigator) {
+                navigator.vibrate(200);
+            }
+        },
+        
+        formatTime(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleTimeString('fa-IR', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+        },
+        
+        formatDateTime(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('fa-IR') + ' ' + date.toLocaleTimeString('fa-IR');
+        },
+        
+        goBack() {
+            window.history.back();
+        },
+        
+        showNotification(message, type = 'info') {
+            const colors = {
+                success: 'green',
+                error: 'red',
+                warning: 'yellow',
+                info: 'blue'
+            };
+            
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 bg-${colors[type]}-500 text-white px-6 py-3 rounded-lg shadow-lg z-50`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+    }
+}
+</script>
+{% endblock %}

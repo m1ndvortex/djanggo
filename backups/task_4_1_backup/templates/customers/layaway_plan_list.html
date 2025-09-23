@@ -1,0 +1,528 @@
+{% extends 'base_rtl.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}لیست قراردادهای طلای قرضی{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/layaway-dashboard.css' %}" rel="stylesheet">
+<link href="{% static 'css/layaway-forms.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="layaway-list" x-data="layawayList()">
+    <!-- Header -->
+    <div class="page-header">
+        <div class="header-content">
+            <h1 class="page-title">
+                <i class="fas fa-list"></i>
+                لیست قراردادهای طلای قرضی
+            </h1>
+            <div class="header-actions">
+                <a href="{% url 'customers:layaway_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-right"></i>
+                    بازگشت
+                </a>
+                <a href="{% url 'customers:layaway_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    قرارداد جدید
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title">
+                <i class="fas fa-filter"></i>
+                فیلترها و جستجو
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="filter-form">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label class="form-label">جستجو:</label>
+                            <input type="text" name="search" class="form-control" 
+                                   value="{{ current_filters.search }}"
+                                   placeholder="شماره قرارداد، نام مشتری...">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label class="form-label">وضعیت:</label>
+                            <select name="status" class="form-control">
+                                <option value="">همه</option>
+                                {% for value, label in status_choices %}
+                                <option value="{{ value }}" {% if current_filters.status == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label class="form-label">مشتری:</label>
+                            <select name="customer" class="form-control select2">
+                                <option value="">همه مشتریان</option>
+                                {% for customer in customers %}
+                                <option value="{{ customer.id }}" {% if current_filters.customer == customer.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ customer.full_persian_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label class="form-label">معوقات:</label>
+                            <select name="overdue" class="form-control">
+                                <option value="">همه</option>
+                                <option value="true" {% if current_filters.overdue == "true" %}selected{% endif %}>
+                                    فقط معوقات
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-flex">
+                                <button type="submit" class="btn btn-primary mr-2">
+                                    <i class="fas fa-search"></i>
+                                    جستجو
+                                </button>
+                                <a href="{% url 'customers:layaway_list' %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times"></i>
+                                    پاک کردن
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Plans List -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title">
+                <i class="fas fa-table"></i>
+                قراردادها
+                {% if plans %}
+                    <span class="badge badge-primary">{{ plans|length }}</span>
+                {% endif %}
+            </h5>
+            <div class="card-actions">
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-info" @click="exportToExcel">
+                        <i class="fas fa-file-excel"></i>
+                        اکسل
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" @click="printList">
+                        <i class="fas fa-print"></i>
+                        چاپ
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if plans %}
+                <div class="table-responsive">
+                    <table class="table table-hover" id="plansTable">
+                        <thead>
+                            <tr>
+                                <th>شماره قرارداد</th>
+                                <th>مشتری</th>
+                                <th>کالا</th>
+                                <th>مبلغ کل</th>
+                                <th>پرداخت شده</th>
+                                <th>مانده</th>
+                                <th>درصد تکمیل</th>
+                                <th>وضعیت</th>
+                                <th>تاریخ شروع</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for plan in plans %}
+                            <tr class="{% if plan.is_overdue %}table-warning{% elif plan.status == 'completed' %}table-success{% elif plan.status == 'cancelled' %}table-danger{% endif %}">
+                                <td>
+                                    <a href="{% url 'customers:layaway_detail' plan.pk %}" class="plan-number">
+                                        {{ plan.plan_number }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <strong>{{ plan.customer.full_persian_name }}</strong>
+                                    <small class="text-muted d-block">{{ plan.customer.phone_number }}</small>
+                                </td>
+                                <td>
+                                    {{ plan.jewelry_item.name }}
+                                    <small class="text-muted d-block">{{ plan.jewelry_item.sku }}</small>
+                                </td>
+                                <td class="text-primary">
+                                    <strong>{{ plan.total_amount|floatformat:0 }}</strong>
+                                    <small class="text-muted d-block">تومان</small>
+                                </td>
+                                <td class="text-success">
+                                    <strong>{{ plan.total_paid|floatformat:0 }}</strong>
+                                    <small class="text-muted d-block">تومان</small>
+                                </td>
+                                <td class="text-warning">
+                                    <strong>{{ plan.remaining_balance|floatformat:0 }}</strong>
+                                    <small class="text-muted d-block">تومان</small>
+                                </td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar 
+                                                    {% if plan.completion_percentage >= 100 %}bg-success
+                                                    {% elif plan.completion_percentage >= 75 %}bg-info
+                                                    {% elif plan.completion_percentage >= 50 %}bg-warning
+                                                    {% else %}bg-danger{% endif %}" 
+                                             role="progressbar" 
+                                             style="width: {{ plan.completion_percentage }}%"
+                                             aria-valuenow="{{ plan.completion_percentage }}" 
+                                             aria-valuemin="0" aria-valuemax="100">
+                                            {{ plan.completion_percentage|floatformat:0 }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if plan.status == 'active' %}
+                                        {% if plan.is_overdue %}
+                                            <span class="badge badge-danger">معوق</span>
+                                            <small class="text-danger d-block">{{ plan.days_overdue }} روز</small>
+                                        {% else %}
+                                            <span class="badge badge-success">فعال</span>
+                                        {% endif %}
+                                    {% elif plan.status == 'completed' %}
+                                        <span class="badge badge-primary">تکمیل شده</span>
+                                    {% elif plan.status == 'cancelled' %}
+                                        <span class="badge badge-secondary">لغو شده</span>
+                                    {% elif plan.status == 'on_hold' %}
+                                        <span class="badge badge-warning">تعلیق</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ plan.start_date_shamsi|default:plan.start_date }}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'customers:layaway_detail' plan.pk %}" 
+                                           class="btn btn-outline-primary" title="جزئیات">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if plan.status == 'active' %}
+                                        <button type="button" class="btn btn-outline-success" 
+                                                title="ثبت پرداخت"
+                                                @click="quickPayment({{ plan.id }}, '{{ plan.plan_number }}', {{ plan.next_payment_amount|default:0 }})">
+                                            <i class="fas fa-money-bill-wave"></i>
+                                        </button>
+                                        {% endif %}
+                                        <button type="button" class="btn btn-outline-info" 
+                                                title="ارسال یادآوری"
+                                                @click="sendReminder({{ plan.id }}, '{{ plan.customer.full_persian_name }}')">
+                                            <i class="fas fa-bell"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if is_paginated %}
+                <nav aria-label="صفحه‌بندی">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">قبلی</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">بعدی</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-file-contract fa-3x text-muted"></i>
+                    <h5>قراردادی یافت نشد</h5>
+                    <p class="text-muted">
+                        {% if current_filters.search or current_filters.status or current_filters.customer or current_filters.overdue %}
+                            با فیلترهای انتخاب شده قراردادی یافت نشد. فیلترها را تغییر دهید.
+                        {% else %}
+                            هنوز قراردادی ایجاد نشده است.
+                        {% endif %}
+                    </p>
+                    {% if not current_filters.search and not current_filters.status and not current_filters.customer and not current_filters.overdue %}
+                    <a href="{% url 'customers:layaway_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        ایجاد اولین قرارداد
+                    </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Payment Modal -->
+    <div class="modal fade" id="quickPaymentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" action="" id="quickPaymentForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="process_payment">
+                    
+                    <div class="modal-header">
+                        <h5 class="modal-title">ثبت پرداخت سریع</h5>
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <strong>قرارداد:</strong> <span id="quickPaymentPlanNumber"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label required">مبلغ پرداخت (تومان):</label>
+                            <input type="number" name="amount" class="form-control" 
+                                   id="quickPaymentAmount" step="1000" min="1000" required>
+                            <small class="form-text text-muted">
+                                مبلغ قسط بعدی: <span id="suggestedAmount"></span> تومان
+                            </small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label required">روش پرداخت:</label>
+                            <select name="payment_method" class="form-control" required>
+                                <option value="cash">نقد</option>
+                                <option value="bank_transfer">انتقال بانکی</option>
+                                <option value="card">کارت</option>
+                                <option value="cheque">چک</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">شماره مرجع:</label>
+                            <input type="text" name="reference_number" class="form-control">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">یادداشت:</label>
+                            <textarea name="notes" class="form-control" rows="2"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">انصراف</button>
+                        <button type="submit" class="btn btn-success">ثبت پرداخت</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Send Reminder Modal -->
+    <div class="modal fade" id="sendReminderModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" action="{% url 'customers:layaway_reminders' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create_custom_reminder">
+                    <input type="hidden" name="plan_id" id="reminderPlanId">
+                    
+                    <div class="modal-header">
+                        <h5 class="modal-title">ارسال یادآوری</h5>
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <strong>مشتری:</strong> <span id="reminderCustomerName"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label required">نوع یادآوری:</label>
+                            <select name="reminder_type" class="form-control" required>
+                                <option value="upcoming">پرداخت آتی</option>
+                                <option value="overdue">پرداخت معوق</option>
+                                <option value="final_notice">اخطار نهایی</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label required">روش ارسال:</label>
+                            <select name="delivery_method" class="form-control" required>
+                                <option value="sms">پیامک</option>
+                                <option value="email">ایمیل</option>
+                                <option value="phone_call">تماس تلفنی</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label required">متن یادآوری:</label>
+                            <textarea name="custom_message" class="form-control" rows="4" required>سلام {{customer_name}} عزیز،
+
+یادآوری پرداخت قسط طلای قرضی:
+شماره قرارداد: {{plan_number}}
+مبلغ قسط: {{next_payment_amount}} تومان
+
+لطفاً برای پرداخت به فروشگاه مراجعه فرمایید.
+
+با تشکر</textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">انصراف</button>
+                        <button type="submit" class="btn btn-primary">ارسال یادآوری</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/layaway-dashboard.js' %}"></script>
+<script>
+function layawayList() {
+    return {
+        init() {
+            this.initializeSelect2();
+            this.initializeDataTable();
+        },
+        
+        initializeSelect2() {
+            if (typeof $ !== 'undefined' && $.fn.select2) {
+                $('.select2').select2({
+                    theme: 'bootstrap4',
+                    width: '100%',
+                    placeholder: 'انتخاب کنید...',
+                    allowClear: true
+                });
+            }
+        },
+        
+        initializeDataTable() {
+            // Add sorting and search functionality if DataTables is available
+            if (typeof $ !== 'undefined' && $.fn.DataTable) {
+                $('#plansTable').DataTable({
+                    language: {
+                        url: '//cdn.datatables.net/plug-ins/1.10.24/i18n/Persian.json'
+                    },
+                    pageLength: 25,
+                    order: [[8, 'desc']], // Sort by start date
+                    columnDefs: [
+                        { orderable: false, targets: [6, 9] } // Disable sorting for progress and actions
+                    ]
+                });
+            }
+        },
+        
+        quickPayment(planId, planNumber, suggestedAmount) {
+            // Set form action
+            const form = document.getElementById('quickPaymentForm');
+            form.action = `/customers/layaway/${planId}/`;
+            
+            // Fill modal data
+            document.getElementById('quickPaymentPlanNumber').textContent = planNumber;
+            document.getElementById('quickPaymentAmount').value = suggestedAmount;
+            document.getElementById('suggestedAmount').textContent = this.formatNumber(suggestedAmount);
+            
+            // Show modal
+            if (typeof $ !== 'undefined') {
+                $('#quickPaymentModal').modal('show');
+            }
+        },
+        
+        sendReminder(planId, customerName) {
+            // Fill modal data
+            document.getElementById('reminderPlanId').value = planId;
+            document.getElementById('reminderCustomerName').textContent = customerName;
+            
+            // Show modal
+            if (typeof $ !== 'undefined') {
+                $('#sendReminderModal').modal('show');
+            }
+        },
+        
+        exportToExcel() {
+            // Export table to Excel
+            const table = document.getElementById('plansTable');
+            if (table) {
+                const wb = XLSX.utils.table_to_book(table, {sheet: "قراردادهای طلای قرضی"});
+                XLSX.writeFile(wb, 'layaway_plans.xlsx');
+            }
+        },
+        
+        printList() {
+            // Print the table
+            const printContent = document.querySelector('.table-responsive').innerHTML;
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html dir="rtl">
+                <head>
+                    <title>لیست قراردادهای طلای قرضی</title>
+                    <style>
+                        body { font-family: 'Vazir', Arial, sans-serif; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: right; }
+                        th { background-color: #f8f9fa; }
+                        .badge { padding: 2px 6px; border-radius: 3px; font-size: 10px; }
+                        .badge-success { background-color: #28a745; color: white; }
+                        .badge-danger { background-color: #dc3545; color: white; }
+                        .badge-warning { background-color: #ffc107; color: black; }
+                        .badge-primary { background-color: #007bff; color: white; }
+                        .badge-secondary { background-color: #6c757d; color: white; }
+                    </style>
+                </head>
+                <body>
+                    <h2>لیست قراردادهای طلای قرضی</h2>
+                    <p>تاریخ چاپ: ${new Date().toLocaleDateString('fa-IR')}</p>
+                    ${printContent}
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
+        },
+        
+        formatNumber(number) {
+            return new Intl.NumberFormat('fa-IR').format(number);
+        }
+    }
+}
+</script>
+
+<!-- Include XLSX library for Excel export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+{% endblock %}

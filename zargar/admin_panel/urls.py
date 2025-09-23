@@ -19,9 +19,7 @@ urlpatterns = [
     path('2fa/setup/', unified_auth_views.UnifiedAdmin2FASetupView.as_view(), name='2fa_setup'),
     path('session/status/', unified_auth_views.UnifiedAdminSessionStatusView.as_view(), name='session_status'),
     
-    # Legacy Authentication (deprecated)
-    path('legacy/login/', views.AdminLoginView.as_view(), name='legacy_login'),
-    path('legacy/logout/', views.AdminLogoutView.as_view(), name='legacy_logout'),
+
     
     # User Impersonation
     path('impersonation/', views.UserImpersonationView.as_view(), name='user_impersonation'),

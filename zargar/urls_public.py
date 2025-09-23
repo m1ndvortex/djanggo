@@ -7,6 +7,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.http import JsonResponse
+from django.shortcuts import redirect
 from django.views.decorators.cache import never_cache
 
 
@@ -22,8 +23,8 @@ def health_check(request):
 
 
 urlpatterns = [
-    # Admin super-panel
-    path('admin/', admin.site.urls),
+    # Redirect /admin/ to unified admin system
+    path('admin/', lambda request: redirect('/super-panel/', permanent=True)),
     
     # Health check
     path('health/', health_check, name='health_check'),
@@ -31,7 +32,7 @@ urlpatterns = [
     # API endpoints (shared)
     path('api/', include('zargar.api.urls')),
     
-    # Super-panel specific URLs
+    # Super-panel specific URLs (unified admin system)
     path('super-panel/', include('zargar.admin_panel.urls', namespace='admin_panel')),
     
     # Authentication URLs

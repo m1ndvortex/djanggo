@@ -1,0 +1,494 @@
+{% extends 'admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - پنل مدیریت زرگر{% endblock %}
+
+{% block page_header %}
+<div class="bg-white dark:bg-cyber-bg-secondary rounded-lg shadow-lg dark:shadow-2xl p-6 mb-6 cyber-glass">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary">{{ page_title }}</h1>
+            <p class="text-gray-600 dark:text-cyber-text-secondary mt-1">
+                {% if form_action == 'create' %}
+                    ایجاد پلن اشتراک جدید برای تنانت‌ها
+                {% else %}
+                    ویرایش اطلاعات پلن اشتراک
+                {% endif %}
+            </p>
+        </div>
+        <div class="flex space-x-3 space-x-reverse">
+            <a href="{% url 'core:tenants:billing:subscription_plans' %}" 
+               class="bg-gray-600 dark:bg-cyber-bg-elevated hover:bg-gray-700 dark:hover:bg-cyber-bg-elevated/80 text-white px-4 py-2 rounded-lg transition-colors">
+                بازگشت به لیست
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <form method="post" class="space-y-8" x-data="subscriptionPlanForm()">
+        {% csrf_token %}
+        
+        <!-- Basic Information -->
+        <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 cyber-card">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-6">اطلاعات پایه</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Plan Name (English) -->
+                <div class="form-group">
+                    <label for="{{ form.name.id_for_label }}" class="form-label">
+                        نام پلن (انگلیسی)
+                        <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                        {% for error in form.name.errors %}
+                            <p class="form-error">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                    <p class="form-help">نام پلن به زبان انگلیسی برای استفاده در سیستم</p>
+                </div>
+                
+                <!-- Plan Name (Persian) -->
+                <div class="form-group">
+                    <label for="{{ form.name_persian.id_for_label }}" class="form-label">
+                        نام پلن (فارسی)
+                        <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.name_persian }}
+                    {% if form.name_persian.errors %}
+                        {% for error in form.name_persian.errors %}
+                            <p class="form-error">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                    <p class="form-help">نام پلن به زبان فارسی برای نمایش به کاربران</p>
+                </div>
+                
+                <!-- Plan Type -->
+                {% if form_action == 'create' %}
+                <div class="form-group">
+                    <label for="{{ form.plan_type.id_for_label }}" class="form-label">
+                        نوع پلن
+                        <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.plan_type }}
+                    {% if form.plan_type.errors %}
+                        {% for error in form.plan_type.errors %}
+                            <p class="form-error">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                    <p class="form-help">نوع پلن (پایه، حرفه‌ای، سازمانی)</p>
+                </div>
+                {% endif %}
+                
+                <!-- Status Toggles -->
+                <div class="form-group">
+                    <div class="space-y-4">
+                        <div class="flex items-center">
+                            {{ form.is_active }}
+                            <label for="{{ form.is_active.id_for_label }}" class="mr-3 text-sm font-medium text-gray-700 dark:text-cyber-text-secondary">
+                                پلن فعال است
+                            </label>
+                        </div>
+                        <div class="flex items-center">
+                            {{ form.is_popular }}
+                            <label for="{{ form.is_popular.id_for_label }}" class="mr-3 text-sm font-medium text-gray-700 dark:text-cyber-text-secondary">
+                                پلن محبوب (برای بازاریابی)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pricing Information -->
+        <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 cyber-card">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-6">اطلاعات قیمت‌گذاری</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Monthly Price -->
+                <div class="form-group">
+                    <label for="{{ form.monthly_price_toman.id_for_label }}" class="form-label">
+                        قیمت ماهانه (تومان)
+                        <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        {{ form.monthly_price_toman }}
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-gray-500 dark:text-cyber-text-muted text-sm">تومان</span>
+                        </div>
+                    </div>
+                    {% if form.monthly_price_toman.errors %}
+                        {% for error in form.monthly_price_toman.errors %}
+                            <p class="form-error">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                    <p class="form-help">قیمت اشتراک ماهانه به تومان</p>
+                </div>
+                
+                <!-- Yearly Price -->
+                <div class="form-group">
+                    <label for="{{ form.yearly_price_toman.id_for_label }}" class="form-label">
+                        قیمت سالانه (تومان)
+                    </label>
+                    <div class="relative">
+                        {{ form.yearly_price_toman }}
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-gray-500 dark:text-cyber-text-muted text-sm">تومان</span>
+                        </div>
+                    </div>
+                    {% if form.yearly_price_toman.errors %}
+                        {% for error in form.yearly_price_toman.errors %}
+                            <p class="form-error">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                    <p class="form-help">قیمت اشتراک سالانه (اختیاری) - معمولاً با تخفیف</p>
+                    
+                    <!-- Discount Calculator -->
+                    <div x-show="yearlyPrice > 0" class="mt-2 p-3 bg-green-50 dark:bg-cyber-neon-secondary/10 rounded-lg">
+                        <p class="text-sm text-green-700 dark:text-cyber-neon-secondary">
+                            تخفیف سالانه: <span x-text="discountPercentage + '%'"></span>
+                            (صرفه‌جویی: <span x-text="formatCurrency(yearlySavings)"></span> تومان)
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Plan Limits -->
+        <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 cyber-card">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-6">محدودیت‌های پلن</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Max Users -->
+                <div class="form-group">
+                    <label for="{{ form.max_users.id_for_label }}" class="form-label">
+                        حداکثر کاربران
+                        <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.max_users }}
+                    {% if form.max_users.errors %}
+                        {% for error in form.max_users.errors %}
+                            <p class="form-error">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                    <p class="form-help">تعداد کاربران مجاز در هر تنانت</p>
+                </div>
+                
+                <!-- Max Inventory Items -->
+                <div class="form-group">
+                    <label for="{{ form.max_inventory_items.id_for_label }}" class="form-label">
+                        حداکثر کالاها
+                        <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.max_inventory_items }}
+                    {% if form.max_inventory_items.errors %}
+                        {% for error in form.max_inventory_items.errors %}
+                            <p class="form-error">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                    <p class="form-help">تعداد کالاهای مجاز در موجودی</p>
+                </div>
+                
+                <!-- Max Customers -->
+                <div class="form-group">
+                    <label for="{{ form.max_customers.id_for_label }}" class="form-label">
+                        حداکثر مشتریان
+                        <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.max_customers }}
+                    {% if form.max_customers.errors %}
+                        {% for error in form.max_customers.errors %}
+                            <p class="form-error">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                    <p class="form-help">تعداد مشتریان مجاز در دیتابیس</p>
+                </div>
+                
+                <!-- Max Monthly Transactions -->
+                <div class="form-group">
+                    <label for="{{ form.max_monthly_transactions.id_for_label }}" class="form-label">
+                        حداکثر تراکنش ماهانه
+                        <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.max_monthly_transactions }}
+                    {% if form.max_monthly_transactions.errors %}
+                        {% for error in form.max_monthly_transactions.errors %}
+                            <p class="form-error">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                    <p class="form-help">تعداد تراکنش‌های مجاز در ماه</p>
+                </div>
+                
+                <!-- Max Storage -->
+                <div class="form-group">
+                    <label for="{{ form.max_storage_gb.id_for_label }}" class="form-label">
+                        حداکثر فضای ذخیره (گیگابایت)
+                        <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        {{ form.max_storage_gb }}
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-gray-500 dark:text-cyber-text-muted text-sm">GB</span>
+                        </div>
+                    </div>
+                    {% if form.max_storage_gb.errors %}
+                        {% for error in form.max_storage_gb.errors %}
+                            <p class="form-error">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                    <p class="form-help">فضای ذخیره‌سازی برای تصاویر و اسناد</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Plan Features -->
+        <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 cyber-card">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-6">امکانات پلن</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Core Features -->
+                <div class="space-y-4">
+                    <h4 class="font-medium text-gray-900 dark:text-cyber-text-primary">امکانات اصلی</h4>
+                    <div class="space-y-3">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="features[pos_system]" value="true" 
+                                   class="rounded border-gray-300 dark:border-cyber-neon-primary/30 text-primary-600 dark:text-cyber-neon-primary focus:ring-primary-500 dark:focus:ring-cyber-neon-primary">
+                            <span class="mr-3 text-sm text-gray-700 dark:text-cyber-text-secondary">سیستم فروش (POS)</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="features[inventory_management]" value="true" 
+                                   class="rounded border-gray-300 dark:border-cyber-neon-primary/30 text-primary-600 dark:text-cyber-neon-primary focus:ring-primary-500 dark:focus:ring-cyber-neon-primary">
+                            <span class="mr-3 text-sm text-gray-700 dark:text-cyber-text-secondary">مدیریت موجودی</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="features[customer_management]" value="true" 
+                                   class="rounded border-gray-300 dark:border-cyber-neon-primary/30 text-primary-600 dark:text-cyber-neon-primary focus:ring-primary-500 dark:focus:ring-cyber-neon-primary">
+                            <span class="mr-3 text-sm text-gray-700 dark:text-cyber-text-secondary">مدیریت مشتریان</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Advanced Features -->
+                <div class="space-y-4">
+                    <h4 class="font-medium text-gray-900 dark:text-cyber-text-primary">امکانات پیشرفته</h4>
+                    <div class="space-y-3">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="features[accounting_system]" value="true" 
+                                   class="rounded border-gray-300 dark:border-cyber-neon-primary/30 text-primary-600 dark:text-cyber-neon-primary focus:ring-primary-500 dark:focus:ring-cyber-neon-primary">
+                            <span class="mr-3 text-sm text-gray-700 dark:text-cyber-text-secondary">سیستم حسابداری</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="features[gold_installment]" value="true" 
+                                   class="rounded border-gray-300 dark:border-cyber-neon-primary/30 text-primary-600 dark:text-cyber-neon-primary focus:ring-primary-500 dark:focus:ring-cyber-neon-primary">
+                            <span class="mr-3 text-sm text-gray-700 dark:text-cyber-text-secondary">سیستم طلای قرضی</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="features[reporting]" value="true" 
+                                   class="rounded border-gray-300 dark:border-cyber-neon-primary/30 text-primary-600 dark:text-cyber-neon-primary focus:ring-primary-500 dark:focus:ring-cyber-neon-primary">
+                            <span class="mr-3 text-sm text-gray-700 dark:text-cyber-text-secondary">گزارش‌گیری</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Premium Features -->
+                <div class="space-y-4">
+                    <h4 class="font-medium text-gray-900 dark:text-cyber-text-primary">امکانات ویژه</h4>
+                    <div class="space-y-3">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="features[mobile_app]" value="true" 
+                                   class="rounded border-gray-300 dark:border-cyber-neon-primary/30 text-primary-600 dark:text-cyber-neon-primary focus:ring-primary-500 dark:focus:ring-cyber-neon-primary">
+                            <span class="mr-3 text-sm text-gray-700 dark:text-cyber-text-secondary">اپلیکیشن موبایل</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="features[priority_support]" value="true" 
+                                   class="rounded border-gray-300 dark:border-cyber-neon-primary/30 text-primary-600 dark:text-cyber-neon-primary focus:ring-primary-500 dark:focus:ring-cyber-neon-primary">
+                            <span class="mr-3 text-sm text-gray-700 dark:text-cyber-text-secondary">پشتیبانی اولویت‌دار</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="features[api_access]" value="true" 
+                                   class="rounded border-gray-300 dark:border-cyber-neon-primary/30 text-primary-600 dark:text-cyber-neon-primary focus:ring-primary-500 dark:focus:ring-cyber-neon-primary">
+                            <span class="mr-3 text-sm text-gray-700 dark:text-cyber-text-secondary">دسترسی API</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Features JSON Field (Hidden) -->
+            {{ form.features }}
+            {% if form.features.errors %}
+                {% for error in form.features.errors %}
+                    <p class="form-error">{{ error }}</p>
+                {% endfor %}
+            {% endif %}
+        </div>
+        
+        <!-- Form Actions -->
+        <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 cyber-card">
+            <div class="flex justify-end space-x-4 space-x-reverse">
+                <a href="{% url 'core:tenants:billing:subscription_plans' %}" 
+                   class="bg-gray-500 dark:bg-cyber-bg-elevated hover:bg-gray-600 dark:hover:bg-cyber-bg-elevated/80 text-white px-6 py-3 rounded-lg transition-colors">
+                    انصراف
+                </a>
+                <button type="submit" 
+                        class="bg-primary-600 dark:bg-cyber-neon-primary hover:bg-primary-700 dark:hover:bg-cyber-neon-primary/80 text-white px-6 py-3 rounded-lg transition-colors cyber-button">
+                    {% if form_action == 'create' %}ایجاد پلن{% else %}به‌روزرسانی پلن{% endif %}
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.dark .form-label {
+    color: #B8BCC8;
+}
+
+.form-group input, .form-group select, .form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #D1D5DB;
+    border-radius: 0.5rem;
+    background-color: white;
+    color: #111827;
+    font-size: 0.875rem;
+}
+
+.dark .form-group input, .dark .form-group select, .dark .form-group textarea {
+    border-color: rgba(0, 212, 255, 0.3);
+    background-color: #252A3A;
+    color: #FFFFFF;
+}
+
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none;
+    ring: 2px;
+    ring-color: #3B82F6;
+    border-color: #3B82F6;
+}
+
+.dark .form-group input:focus, .dark .form-group select:focus, .dark .form-group textarea:focus {
+    ring-color: #00D4FF;
+    border-color: #00D4FF;
+}
+
+.form-error {
+    color: #DC2626;
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+.dark .form-error {
+    color: #FF4757;
+}
+
+.form-help {
+    color: #6B7280;
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+.dark .form-help {
+    color: #9CA3AF;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function subscriptionPlanForm() {
+    return {
+        monthlyPrice: 0,
+        yearlyPrice: 0,
+        
+        init() {
+            this.monthlyPrice = parseFloat(document.getElementById('id_monthly_price_toman').value) || 0;
+            this.yearlyPrice = parseFloat(document.getElementById('id_yearly_price_toman').value) || 0;
+            
+            // Watch for changes
+            document.getElementById('id_monthly_price_toman').addEventListener('input', (e) => {
+                this.monthlyPrice = parseFloat(e.target.value) || 0;
+            });
+            
+            document.getElementById('id_yearly_price_toman').addEventListener('input', (e) => {
+                this.yearlyPrice = parseFloat(e.target.value) || 0;
+            });
+            
+            // Initialize features checkboxes
+            this.initializeFeatures();
+        },
+        
+        get discountPercentage() {
+            if (this.monthlyPrice > 0 && this.yearlyPrice > 0) {
+                const monthlyYearly = this.monthlyPrice * 12;
+                const discount = monthlyYearly - this.yearlyPrice;
+                return Math.round((discount / monthlyYearly) * 100);
+            }
+            return 0;
+        },
+        
+        get yearlySavings() {
+            if (this.monthlyPrice > 0 && this.yearlyPrice > 0) {
+                return (this.monthlyPrice * 12) - this.yearlyPrice;
+            }
+            return 0;
+        },
+        
+        formatCurrency(amount) {
+            return new Intl.NumberFormat('fa-IR').format(amount);
+        },
+        
+        initializeFeatures() {
+            // Get existing features from the hidden field
+            const featuresField = document.getElementById('id_features');
+            let features = {};
+            
+            try {
+                features = JSON.parse(featuresField.value || '{}');
+            } catch (e) {
+                features = {};
+            }
+            
+            // Set checkboxes based on existing features
+            Object.keys(features).forEach(key => {
+                const checkbox = document.querySelector(`input[name="features[${key}]"]`);
+                if (checkbox && features[key]) {
+                    checkbox.checked = true;
+                }
+            });
+            
+            // Add event listeners to update the hidden field
+            document.querySelectorAll('input[name^="features["]').forEach(checkbox => {
+                checkbox.addEventListener('change', this.updateFeaturesField);
+            });
+        },
+        
+        updateFeaturesField() {
+            const features = {};
+            document.querySelectorAll('input[name^="features["]').forEach(checkbox => {
+                const key = checkbox.name.match(/features\[(.+)\]/)[1];
+                features[key] = checkbox.checked;
+            });
+            
+            document.getElementById('id_features').value = JSON.stringify(features);
+        }
+    }
+}
+</script>
+{% endblock %}

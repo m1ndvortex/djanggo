@@ -1,0 +1,715 @@
+{% extends "admin_panel/base_admin.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "User Impersonation" %} - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.impersonation-card {
+    border: 1px solid #e5e7eb;
+    dark:border-cyber-neon-primary/20;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background: white;
+    dark:bg-cyber-bg-surface;
+    transition: all 0.3s ease;
+}
+
+.impersonation-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    dark:box-shadow: 0 4px 12px rgba(0, 212, 255, 0.1);
+}
+
+.user-card {
+    border: 1px solid #d1d5db;
+    dark:border-cyber-bg-elevated;
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background: #f9fafb;
+    dark:bg-cyber-bg-elevated;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.user-card:hover {
+    background: #f3f4f6;
+    dark:bg-cyber-bg-surface;
+    border-color: #9ca3af;
+    dark:border-color: #00D4FF;
+}
+
+.impersonate-btn {
+    background: #dc2626;
+    dark:bg-red-600;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.impersonate-btn:hover {
+    background: #b91c1c;
+    dark:bg-red-700;
+    transform: scale(1.05);
+}
+
+.impersonate-btn:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.active-session {
+    background: #fef3c7;
+    dark:bg-rgba(255, 183, 0, 0.1);
+    border-color: #f59e0b;
+    dark:border-color: #FFB800;
+}
+
+.terminate-btn {
+    background: #ef4444;
+    dark:bg-red-500;
+    color: white;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.terminate-btn:hover {
+    background: #dc2626;
+    dark:bg-red-600;
+    transform: scale(1.05);
+}
+
+.search-container {
+    background: white;
+    dark:bg-cyber-bg-surface;
+    border: 1px solid #e5e7eb;
+    dark:border-cyber-neon-primary/20;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.search-input {
+    border: 1px solid #d1d5db;
+    dark:border-cyber-neon-primary/30;
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    background: white;
+    dark:bg-cyber-bg-primary;
+    color: #374151;
+    dark:color: #FFFFFF;
+    width: 100%;
+    transition: all 0.2s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    dark:border-color: #00D4FF;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    dark:box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+}
+
+.cyber-card-impersonation {
+    background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.cyber-neon-text {
+    color: #00D4FF;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+.user-role-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.role-owner {
+    background: #dcfce7;
+    color: #166534;
+    dark:bg-rgba(0, 255, 136, 0.1);
+    dark:color: #00FF88;
+}
+
+.role-accountant {
+    background: #dbeafe;
+    color: #1e40af;
+    dark:bg-rgba(0, 212, 255, 0.1);
+    dark:color: #00D4FF;
+}
+
+.role-salesperson {
+    background: #fef3c7;
+    color: #92400e;
+    dark:bg-rgba(255, 183, 0, 0.1);
+    dark:color: #FFB800;
+}
+
+.hijack-integration {
+    border-left: 4px solid #3b82f6;
+    dark:border-left-color: #00D4FF;
+    padding-left: 1rem;
+    margin: 1rem 0;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">{% trans "User Impersonation" %}</h1>
+        <div class="flex space-x-4">
+            <a href="{% url 'admin_panel:impersonation_audit' %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                {% trans "View Audit Log" %}
+            </a>
+            <a href="{% url 'admin_panel:impersonation_stats' %}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                {% trans "View Statistics" %}
+            </a>
+        </div>
+    </div>
+
+    <!-- Security Warning -->
+    <div class="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="mr-3">
+                <h3 class="text-sm font-medium text-red-800">{% trans "Security Warning" %}</h3>
+                <div class="mt-2 text-sm text-red-700">
+                    <p>{% trans "User impersonation is a powerful security feature. All impersonation sessions are logged and audited. Only use this feature for legitimate support and troubleshooting purposes." %}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Sessions -->
+    {% if active_sessions %}
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">{% trans "Active Impersonation Sessions" %}</h2>
+        {% for session in active_sessions %}
+        <div class="impersonation-card active-session">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h3 class="font-medium">{{ session.admin_username }} → {{ session.target_username }}</h3>
+                    <p class="text-sm text-gray-600">
+                        {% trans "Tenant:" %} {{ session.tenant_domain }} | 
+                        {% trans "Started:" %} {{ session.start_time|date:"Y-m-d H:i" }} |
+                        {% trans "Duration:" %} {{ session.duration }}
+                    </p>
+                    {% if session.is_suspicious %}
+                    <p class="text-sm text-red-600 font-medium">⚠️ {% trans "Flagged as suspicious" %}</p>
+                    {% endif %}
+                </div>
+                <div class="flex space-x-2">
+                    <a href="{% url 'admin_panel:impersonation_session_detail' session.session_id %}" 
+                       class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                        {% trans "Details" %}
+                    </a>
+                    <button onclick="terminateSession('{{ session.session_id }}')" 
+                            class="terminate-btn">
+                        {% trans "Terminate" %}
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- User Search -->
+    <div class="search-container dark:cyber-card-impersonation">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-cyber-text-primary mb-4">
+            {% trans "Search Users" %}
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label for="userSearch" class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                    {% trans "Search by username or email" %}
+                </label>
+                <input type="text" id="userSearch" class="search-input" 
+                       placeholder="{% trans 'Enter username or email...' %}"
+                       onkeyup="filterUsers(this.value)">
+            </div>
+            
+            <div>
+                <label for="tenantFilter" class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                    {% trans "Filter by tenant" %}
+                </label>
+                <select id="tenantFilter" class="search-input" onchange="filterByTenant(this.value)">
+                    <option value="">{% trans "All Tenants" %}</option>
+                    {% for tenant_data in tenants_with_users %}
+                    <option value="{{ tenant_data.tenant.schema_name }}">{{ tenant_data.tenant.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label for="roleFilter" class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                    {% trans "Filter by role" %}
+                </label>
+                <select id="roleFilter" class="search-input" onchange="filterByRole(this.value)">
+                    <option value="">{% trans "All Roles" %}</option>
+                    <option value="owner">{% trans "Owner" %}</option>
+                    <option value="accountant">{% trans "Accountant" %}</option>
+                    <option value="salesperson">{% trans "Salesperson" %}</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="mt-4 flex items-center space-x-4 space-x-reverse">
+            <button onclick="clearFilters()" 
+                    class="bg-gray-500 dark:bg-cyber-bg-elevated text-white px-4 py-2 rounded hover:bg-gray-600 dark:hover:bg-cyber-bg-surface transition-colors">
+                {% trans "Clear Filters" %}
+            </button>
+            
+            <span id="userCount" class="text-sm text-gray-600 dark:text-cyber-text-secondary">
+                {% trans "Showing all users" %}
+            </span>
+        </div>
+    </div>
+
+    <!-- Django-Hijack Integration Notice -->
+    <div class="hijack-integration bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-500/30 rounded-lg p-4 mb-6">
+        <div class="flex items-center">
+            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 ml-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+            </svg>
+            <div class="mr-3">
+                <h3 class="text-sm font-medium text-blue-800 dark:text-blue-300">{% trans "Django-Hijack Integration" %}</h3>
+                <p class="text-sm text-blue-700 dark:text-blue-400 mt-1">
+                    {% trans "This interface uses django-hijack for secure user impersonation. All sessions are logged and audited." %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users by Tenant -->
+    <div id="usersList">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">
+            {% trans "Users Available for Impersonation" %}
+        </h2>
+        
+        {% for tenant_data in tenants_with_users %}
+        <div class="impersonation-card dark:cyber-card-impersonation tenant-card" data-tenant="{{ tenant_data.tenant.schema_name }}">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-cyber-text-primary">
+                    {{ tenant_data.tenant.name }}
+                </h3>
+                <div class="text-sm text-gray-500 dark:text-cyber-text-muted">
+                    <span class="bg-gray-100 dark:bg-cyber-bg-elevated px-2 py-1 rounded">
+                        {{ tenant_data.tenant.domain_url }}
+                    </span>
+                </div>
+            </div>
+            
+            {% for user in tenant_data.users %}
+            <div class="user-card user-item" 
+                 data-username="{{ user.username }}" 
+                 data-email="{{ user.email }}" 
+                 data-role="{{ user.role }}"
+                 data-tenant="{{ tenant_data.tenant.schema_name }}">
+                <div class="flex-1">
+                    <div class="flex items-center space-x-3 space-x-reverse">
+                        <div class="font-medium text-gray-900 dark:text-cyber-text-primary">
+                            {{ user.get_full_name|default:user.username }}
+                        </div>
+                        <span class="user-role-badge role-{{ user.role }}">
+                            {{ user.get_role_display }}
+                        </span>
+                    </div>
+                    <div class="text-sm text-gray-600 dark:text-cyber-text-secondary mt-1">
+                        <span class="font-medium">{% trans "Email:" %}</span> {{ user.email }} |
+                        <span class="font-medium">{% trans "Last login:" %}</span> {{ user.last_login|date:"Y-m-d H:i"|default:"Never" }}
+                        {% if not user.is_active %}
+                        <span class="text-red-600 dark:text-red-400 font-medium">{% trans "(Inactive)" %}</span>
+                        {% endif %}
+                    </div>
+                    {% if user.date_joined %}
+                    <div class="text-xs text-gray-500 dark:text-cyber-text-muted mt-1">
+                        {% trans "Joined:" %} {{ user.date_joined|date:"Y-m-d" }}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="flex items-center space-x-2 space-x-reverse">
+                    {% if user.is_active %}
+                    <!-- Django-Hijack Integration Button -->
+                    <button onclick="showImpersonationModal('{{ user.id }}', '{{ user.username }}', '{{ tenant_data.tenant.schema_name }}', '{{ user.get_full_name|default:user.username }}')" 
+                            class="impersonate-btn"
+                            title="{% trans 'Start impersonation session using django-hijack' %}">
+                        <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
+                        </svg>
+                        {% trans "Impersonate" %}
+                    </button>
+                    
+                    <a href="{% url 'admin_panel:impersonation_audit' %}?target={{ user.username }}" 
+                       class="text-blue-600 dark:text-cyber-neon-primary hover:text-blue-800 dark:hover:text-cyber-neon-primary/80 text-sm"
+                       title="{% trans 'View impersonation history for this user' %}">
+                        {% trans "History" %}
+                    </a>
+                    {% else %}
+                    <span class="text-gray-400 dark:text-cyber-text-muted text-sm">{% trans "Inactive" %}</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            
+            {% if tenant_data.users|length == 10 %}
+            <div class="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-500/30 rounded">
+                <p class="text-sm text-yellow-800 dark:text-yellow-300">
+                    <svg class="w-4 h-4 inline ml-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                    {% trans "Showing first 10 users. Use search filters to find more users." %}
+                </p>
+            </div>
+            {% endif %}
+        </div>
+        {% empty %}
+        <div class="text-center py-12">
+            <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-cyber-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-cyber-text-primary">{% trans "No users found" %}</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-cyber-text-muted">
+                {% trans "No active tenants with users found, or all users are filtered out." %}
+            </p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Impersonation Confirmation Modal -->
+<div id="impersonationModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">{% trans "Confirm Impersonation" %}</h3>
+            
+            <form id="impersonationForm" method="post" action="{% url 'admin_panel:start_impersonation' %}">
+                {% csrf_token %}
+                <input type="hidden" id="userId" name="user_id">
+                <input type="hidden" id="tenantSchema" name="tenant_schema">
+                
+                <div class="mb-4">
+                    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-500/30 rounded-lg p-3 mb-4">
+                        <div class="flex items-center">
+                            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 ml-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                            <div class="mr-3">
+                                <h4 class="text-sm font-medium text-blue-800 dark:text-blue-300">{% trans "Django-Hijack Impersonation" %}</h4>
+                                <p class="text-sm text-blue-700 dark:text-blue-400">
+                                    {% trans "You are about to impersonate user:" %} <strong id="targetUsername"></strong>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg p-3">
+                        <div class="flex items-center">
+                            <svg class="w-5 h-5 text-red-600 dark:text-red-400 ml-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                            <div class="mr-3">
+                                <h4 class="text-sm font-medium text-red-800 dark:text-red-300">{% trans "Security Warning" %}</h4>
+                                <p class="text-sm text-red-700 dark:text-red-400">
+                                    {% trans "This action will be logged and audited. Only proceed if you have a legitimate reason." %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="reason" class="block text-sm font-medium text-gray-700 mb-2">
+                        {% trans "Reason for impersonation (optional):" %}
+                    </label>
+                    <textarea id="reason" name="reason" rows="3" 
+                              class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                              placeholder="{% trans 'e.g., Customer support request, troubleshooting issue...' %}"></textarea>
+                </div>
+                
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="hideImpersonationModal()" 
+                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">
+                        {% trans "Cancel" %}
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700">
+                        {% trans "Start Impersonation" %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Global variables for filtering
+let allUsers = [];
+let filteredUsers = [];
+
+// Initialize user data for filtering
+document.addEventListener('DOMContentLoaded', function() {
+    // Collect all user data
+    const userItems = document.querySelectorAll('.user-item');
+    allUsers = Array.from(userItems).map(item => ({
+        element: item,
+        username: item.dataset.username,
+        email: item.dataset.email,
+        role: item.dataset.role,
+        tenant: item.dataset.tenant
+    }));
+    filteredUsers = [...allUsers];
+    updateUserCount();
+});
+
+function showImpersonationModal(userId, username, tenantSchema, fullName) {
+    document.getElementById('userId').value = userId;
+    document.getElementById('tenantSchema').value = tenantSchema;
+    document.getElementById('targetUsername').textContent = fullName || username;
+    document.getElementById('impersonationModal').classList.remove('hidden');
+    
+    // Focus on reason textarea
+    setTimeout(() => {
+        document.getElementById('reason').focus();
+    }, 100);
+}
+
+function hideImpersonationModal() {
+    document.getElementById('impersonationModal').classList.add('hidden');
+    document.getElementById('reason').value = '';
+}
+
+function terminateSession(sessionId) {
+    if (confirm('{% trans "Are you sure you want to terminate this impersonation session?" %}')) {
+        ZargarAdmin.showLoading();
+        
+        fetch('{% url "admin_panel:terminate_impersonation" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: 'session_id=' + sessionId + '&reason=admin_termination'
+        })
+        .then(response => response.json())
+        .then(data => {
+            ZargarAdmin.hideLoading();
+            if (data.success) {
+                ZargarAdmin.showMessage('{% trans "Session terminated successfully" %}', 'success');
+                location.reload();
+            } else {
+                ZargarAdmin.showMessage('{% trans "Error terminating session:" %} ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            ZargarAdmin.hideLoading();
+            ZargarAdmin.showMessage('{% trans "Error terminating session" %}', 'error');
+        });
+    }
+}
+
+// User filtering functions
+function filterUsers(searchTerm) {
+    const term = searchTerm.toLowerCase().trim();
+    
+    filteredUsers = allUsers.filter(user => {
+        const matchesSearch = !term || 
+            user.username.toLowerCase().includes(term) || 
+            user.email.toLowerCase().includes(term);
+        
+        const tenantFilter = document.getElementById('tenantFilter').value;
+        const matchesTenant = !tenantFilter || user.tenant === tenantFilter;
+        
+        const roleFilter = document.getElementById('roleFilter').value;
+        const matchesRole = !roleFilter || user.role === roleFilter;
+        
+        return matchesSearch && matchesTenant && matchesRole;
+    });
+    
+    updateUserDisplay();
+    updateUserCount();
+}
+
+function filterByTenant(tenantSchema) {
+    const searchTerm = document.getElementById('userSearch').value;
+    filterUsers(searchTerm);
+}
+
+function filterByRole(role) {
+    const searchTerm = document.getElementById('userSearch').value;
+    filterUsers(searchTerm);
+}
+
+function clearFilters() {
+    document.getElementById('userSearch').value = '';
+    document.getElementById('tenantFilter').value = '';
+    document.getElementById('roleFilter').value = '';
+    
+    filteredUsers = [...allUsers];
+    updateUserDisplay();
+    updateUserCount();
+}
+
+function updateUserDisplay() {
+    // Hide all users first
+    allUsers.forEach(user => {
+        user.element.style.display = 'none';
+    });
+    
+    // Show filtered users
+    filteredUsers.forEach(user => {
+        user.element.style.display = 'flex';
+    });
+    
+    // Hide/show tenant cards based on whether they have visible users
+    const tenantCards = document.querySelectorAll('.tenant-card');
+    tenantCards.forEach(card => {
+        const tenantSchema = card.dataset.tenant;
+        const hasVisibleUsers = filteredUsers.some(user => user.tenant === tenantSchema);
+        card.style.display = hasVisibleUsers ? 'block' : 'none';
+    });
+}
+
+function updateUserCount() {
+    const countElement = document.getElementById('userCount');
+    const total = allUsers.length;
+    const filtered = filteredUsers.length;
+    
+    if (filtered === total) {
+        countElement.textContent = `{% trans "Showing all" %} ${ZargarAdmin.formatPersianNumber(total)} {% trans "users" %}`;
+    } else {
+        countElement.textContent = `{% trans "Showing" %} ${ZargarAdmin.formatPersianNumber(filtered)} {% trans "of" %} ${ZargarAdmin.formatPersianNumber(total)} {% trans "users" %}`;
+    }
+}
+
+// Enhanced modal interactions
+document.getElementById('impersonationModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        hideImpersonationModal();
+    }
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // Escape key to close modal
+    if (e.key === 'Escape' && !document.getElementById('impersonationModal').classList.contains('hidden')) {
+        hideImpersonationModal();
+    }
+    
+    // Ctrl+F to focus search
+    if (e.ctrlKey && e.key === 'f') {
+        e.preventDefault();
+        document.getElementById('userSearch').focus();
+    }
+});
+
+// Form validation
+document.getElementById('impersonationForm').addEventListener('submit', function(e) {
+    const reason = document.getElementById('reason').value.trim();
+    
+    if (!reason) {
+        if (!confirm('{% trans "No reason provided. Are you sure you want to proceed without specifying a reason?" %}')) {
+            e.preventDefault();
+            document.getElementById('reason').focus();
+            return;
+        }
+    }
+    
+    // Show loading state
+    ZargarAdmin.showLoading();
+    
+    // Disable submit button to prevent double submission
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '{% trans "Starting Impersonation..." %}';
+});
+
+// Auto-refresh active sessions every 30 seconds
+setInterval(function() {
+    const activeSessions = document.querySelectorAll('.active-session').length;
+    if (activeSessions > 0) {
+        // Only refresh the active sessions section, not the whole page
+        fetch(window.location.href, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newActiveSessions = doc.querySelector('.active-sessions-container');
+            const currentActiveSessions = document.querySelector('.active-sessions-container');
+            
+            if (newActiveSessions && currentActiveSessions) {
+                currentActiveSessions.innerHTML = newActiveSessions.innerHTML;
+            }
+        })
+        .catch(error => {
+            console.log('Auto-refresh failed:', error);
+        });
+    }
+}, 30000);
+
+// Highlight search terms
+function highlightSearchTerm(text, term) {
+    if (!term) return text;
+    
+    const regex = new RegExp(`(${term})`, 'gi');
+    return text.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-600">$1</mark>');
+}
+
+// Enhanced search with highlighting
+document.getElementById('userSearch').addEventListener('input', function(e) {
+    const searchTerm = e.target.value;
+    filterUsers(searchTerm);
+    
+    // Add highlighting to search results
+    if (searchTerm.trim()) {
+        filteredUsers.forEach(user => {
+            const usernameEl = user.element.querySelector('.font-medium');
+            const emailEl = user.element.querySelector('.text-sm');
+            
+            if (usernameEl) {
+                const originalText = usernameEl.textContent;
+                usernameEl.innerHTML = highlightSearchTerm(originalText, searchTerm);
+            }
+        });
+    } else {
+        // Remove highlighting
+        allUsers.forEach(user => {
+            const usernameEl = user.element.querySelector('.font-medium');
+            if (usernameEl) {
+                usernameEl.textContent = usernameEl.textContent; // Remove HTML
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,551 @@
+{% extends "base.html" %}
+
+{% block title %}فعالیت‌های مشکوک - زرگر{% endblock %}
+
+{% block content %}
+<div class="min-h-screen {% if is_dark_mode %}bg-gradient-to-br from-cyber-bg-primary via-cyber-bg-secondary to-cyber-bg-surface{% else %}bg-gray-50{% endif %}">
+    
+    <!-- Header -->
+    <header class="{% if is_dark_mode %}bg-cyber-bg-surface/50 border-b border-cyber-neon-primary/20{% else %}bg-white border-b border-gray-200{% endif %} backdrop-blur-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <svg class="h-8 w-8 {% if is_dark_mode %}text-cyber-neon-warning{% else %}text-yellow-600{% endif %} ml-3" 
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <h1 class="text-2xl font-bold {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        فعالیت‌های مشکوک
+                    </h1>
+                </div>
+                
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <a href="{% url 'core:security_dashboard' %}" 
+                       class="{% if is_dark_mode %}text-cyber-neon-primary hover:text-cyber-neon-secondary{% else %}text-blue-600 hover:text-blue-500{% endif %} 
+                              transition-colors duration-200">
+                        بازگشت به داشبورد امنیت
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="px-4 py-6 sm:px-0">
+            
+            <!-- Filters -->
+            <div class="{% if is_dark_mode %}cyber-glass-card{% else %}bg-white shadow rounded-lg{% endif %} mb-6">
+                <div class="p-6">
+                    <h3 class="text-lg font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %} mb-4">
+                        فیلترها و جستجو
+                    </h3>
+                    
+                    <form method="get" class="space-y-4">
+                        <!-- Basic Filters Row -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <!-- Activity Type Filter -->
+                            <div>
+                                <label class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-1">
+                                    نوع فعالیت
+                                </label>
+                                <select name="activity_type" 
+                                        class="w-full rounded-lg border {% if is_dark_mode %}bg-cyber-bg-elevated border-cyber-neon-primary/20 text-cyber-text-primary{% else %}bg-white border-gray-300 text-gray-900{% endif %} 
+                                               focus:ring-2 {% if is_dark_mode %}focus:ring-cyber-neon-primary focus:border-cyber-neon-primary{% else %}focus:ring-blue-500 focus:border-blue-500{% endif %}">
+                                    <option value="">همه انواع</option>
+                                    {% for value, label in activity_types %}
+                                    <option value="{{ value }}" {% if current_filters.activity_type == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <!-- Risk Level Filter -->
+                            <div>
+                                <label class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-1">
+                                    سطح خطر
+                                </label>
+                                <select name="risk_level" 
+                                        class="w-full rounded-lg border {% if is_dark_mode %}bg-cyber-bg-elevated border-cyber-neon-primary/20 text-cyber-text-primary{% else %}bg-white border-gray-300 text-gray-900{% endif %} 
+                                               focus:ring-2 {% if is_dark_mode %}focus:ring-cyber-neon-primary focus:border-cyber-neon-primary{% else %}focus:ring-blue-500 focus:border-blue-500{% endif %}">
+                                    <option value="">همه سطوح</option>
+                                    {% for value, label in risk_levels %}
+                                    <option value="{{ value }}" {% if current_filters.risk_level == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <!-- Investigation Status Filter -->
+                            <div>
+                                <label class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-1">
+                                    وضعیت بررسی
+                                </label>
+                                <select name="is_investigated" 
+                                        class="w-full rounded-lg border {% if is_dark_mode %}bg-cyber-bg-elevated border-cyber-neon-primary/20 text-cyber-text-primary{% else %}bg-white border-gray-300 text-gray-900{% endif %} 
+                                               focus:ring-2 {% if is_dark_mode %}focus:ring-cyber-neon-primary focus:border-cyber-neon-primary{% else %}focus:ring-blue-500 focus:border-blue-500{% endif %}">
+                                    <option value="">همه</option>
+                                    <option value="false" {% if current_filters.is_investigated == 'false' %}selected{% endif %}>بررسی نشده</option>
+                                    <option value="true" {% if current_filters.is_investigated == 'true' %}selected{% endif %}>بررسی شده</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Search -->
+                            <div>
+                                <label class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-1">
+                                    جستجو
+                                </label>
+                                <input type="text" name="search" value="{{ current_filters.search }}" 
+                                       placeholder="کاربر، IP، User Agent..."
+                                       class="w-full rounded-lg border {% if is_dark_mode %}bg-cyber-bg-elevated border-cyber-neon-primary/20 text-cyber-text-primary placeholder-cyber-text-muted{% else %}bg-white border-gray-300 text-gray-900 placeholder-gray-500{% endif %} 
+                                              focus:ring-2 {% if is_dark_mode %}focus:ring-cyber-neon-primary focus:border-cyber-neon-primary{% else %}focus:ring-blue-500 focus:border-blue-500{% endif %}">
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-4 space-x-reverse">
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="is_false_positive" value="false" 
+                                           {% if current_filters.is_false_positive == 'false' %}checked{% endif %}
+                                           class="rounded border-gray-300 {% if is_dark_mode %}bg-cyber-bg-elevated border-cyber-neon-primary/20 text-cyber-neon-primary focus:ring-cyber-neon-primary{% else %}text-blue-600 focus:ring-blue-500{% endif %}">
+                                    <span class="mr-2 text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                                        فقط تهدیدات واقعی
+                                    </span>
+                                </label>
+                            </div>
+                            
+                            <div class="flex space-x-2 space-x-reverse">
+                                <a href="{% url 'core:suspicious_activities' %}" 
+                                   class="px-4 py-2 text-sm font-medium rounded-lg border 
+                                          {% if is_dark_mode %}border-cyber-neon-primary/20 text-cyber-text-secondary hover:bg-cyber-bg-elevated{% else %}border-gray-300 text-gray-700 hover:bg-gray-50{% endif %} 
+                                          transition-colors duration-200">
+                                    پاک کردن فیلترها
+                                </a>
+                                <button type="submit" 
+                                        class="px-4 py-2 text-sm font-medium rounded-lg 
+                                               {% if is_dark_mode %}bg-cyber-neon-primary text-cyber-bg-primary hover:bg-cyber-neon-secondary{% else %}bg-blue-600 text-white hover:bg-blue-700{% endif %} 
+                                               transition-colors duration-200">
+                                    اعمال فیلترها
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Activities List -->
+            <div class="{% if is_dark_mode %}cyber-glass-card{% else %}bg-white shadow rounded-lg{% endif %}">
+                <div class="px-6 py-4 border-b {% if is_dark_mode %}border-cyber-neon-primary/20{% else %}border-gray-200{% endif %}">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                            فعالیت‌های مشکوک
+                            <span class="text-sm font-normal {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} persian-numbers">
+                                ({{ page_obj.paginator.count }} فعالیت)
+                            </span>
+                        </h3>
+                        
+                        <!-- Bulk Actions -->
+                        <div class="flex space-x-2 space-x-reverse">
+                            <button onclick="bulkInvestigate()" 
+                                    class="px-4 py-2 text-sm font-medium rounded-lg border 
+                                           {% if is_dark_mode %}border-cyber-neon-primary/20 text-cyber-text-primary hover:bg-cyber-bg-elevated{% else %}border-gray-300 text-gray-700 hover:bg-gray-50{% endif %} 
+                                           transition-colors duration-200">
+                                بررسی گروهی
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    {% if activities %}
+                    <table class="min-w-full divide-y {% if is_dark_mode %}divide-cyber-neon-primary/20{% else %}divide-gray-200{% endif %}">
+                        <thead class="{% if is_dark_mode %}bg-cyber-bg-elevated/30{% else %}bg-gray-50{% endif %}">
+                            <tr>
+                                <th class="px-6 py-3 text-right">
+                                    <input type="checkbox" id="selectAll" 
+                                           class="rounded border-gray-300 {% if is_dark_mode %}bg-cyber-bg-elevated border-cyber-neon-primary/20 text-cyber-neon-primary focus:ring-cyber-neon-primary{% else %}text-blue-600 focus:ring-blue-500{% endif %}">
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                    نوع فعالیت
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                    سطح خطر
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                    کاربر
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                    آدرس IP
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                    اعتماد
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                    زمان
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                    وضعیت
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                    عملیات
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y {% if is_dark_mode %}divide-cyber-neon-primary/10{% else %}divide-gray-200{% endif %}">
+                            {% for activity in activities %}
+                            <tr class="{% if is_dark_mode %}hover:bg-cyber-bg-elevated/20{% else %}hover:bg-gray-50{% endif %} transition-colors duration-150">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <input type="checkbox" name="selected_activities" value="{{ activity.pk }}" 
+                                           class="activity-checkbox rounded border-gray-300 {% if is_dark_mode %}bg-cyber-bg-elevated border-cyber-neon-primary/20 text-cyber-neon-primary focus:ring-cyber-neon-primary{% else %}text-blue-600 focus:ring-blue-500{% endif %}">
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="h-8 w-8 rounded-full flex items-center justify-center
+                                                    {% if activity.risk_level == 'critical' %}bg-red-500
+                                                    {% elif activity.risk_level == 'high' %}bg-orange-500
+                                                    {% elif activity.risk_level == 'medium' %}bg-yellow-500
+                                                    {% else %}bg-blue-500{% endif %}">
+                                            <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="mr-3">
+                                            <div class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                                {{ activity.get_activity_type_display }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                                 {% if activity.risk_level == 'critical' %}bg-red-100 text-red-800
+                                                 {% elif activity.risk_level == 'high' %}bg-orange-100 text-orange-800
+                                                 {% elif activity.risk_level == 'medium' %}bg-yellow-100 text-yellow-800
+                                                 {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                        {{ activity.get_risk_level_display }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                    {% if activity.user %}
+                                        {{ activity.user.username }}
+                                    {% else %}
+                                        <span class="{% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">ناشناس</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-mono {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                                    {{ activity.ip_address }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="h-2 rounded-full 
+                                                        {% if activity.confidence_score >= 0.8 %}bg-red-500
+                                                        {% elif activity.confidence_score >= 0.6 %}bg-orange-500
+                                                        {% elif activity.confidence_score >= 0.4 %}bg-yellow-500
+                                                        {% else %}bg-blue-500{% endif %}" 
+                                                 style="width: {{ activity.confidence_score|floatformat:0 }}%"></div>
+                                        </div>
+                                        <span class="text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} persian-numbers">
+                                            {{ activity.confidence_score|floatformat:1 }}%
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} persian-numbers">
+                                    {{ activity.created_at|date:"Y/m/d H:i" }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if activity.is_investigated %}
+                                        {% if activity.is_false_positive %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                <svg class="h-3 w-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                                مثبت کاذب
+                                            </span>
+                                        {% else %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                <svg class="h-3 w-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                                                </svg>
+                                                تهدید واقعی
+                                            </span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                            <svg class="h-3 w-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                            نیاز به بررسی
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <div class="flex space-x-2 space-x-reverse">
+                                        <button onclick="viewDetails({{ activity.pk }})" 
+                                                class="{% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %} hover:underline">
+                                            جزئیات
+                                        </button>
+                                        {% if not activity.is_investigated %}
+                                        <button onclick="investigateActivity({{ activity.pk }})" 
+                                                class="{% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %} hover:underline">
+                                            بررسی
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <div class="text-center py-12">
+                        <svg class="mx-auto h-12 w-12 {% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-400{% endif %}" 
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                            هیچ فعالیت مشکوکی یافت نشد
+                        </h3>
+                        <p class="mt-1 text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                            با فیلترهای انتخاب شده هیچ فعالیت مشکوکی وجود ندارد.
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Pagination -->
+                {% if is_paginated %}
+                <div class="px-6 py-4 border-t {% if is_dark_mode %}border-cyber-neon-primary/20{% else %}border-gray-200{% endif %}">
+                    <div class="flex items-center justify-between">
+                        <div class="text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} persian-numbers">
+                            نمایش {{ page_obj.start_index }} تا {{ page_obj.end_index }} از {{ page_obj.paginator.count }} فعالیت
+                        </div>
+                        
+                        <nav class="flex space-x-2 space-x-reverse">
+                            {% if page_obj.has_previous %}
+                            <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}" 
+                               class="px-3 py-2 text-sm font-medium rounded-lg border 
+                                      {% if is_dark_mode %}border-cyber-neon-primary/20 text-cyber-text-primary hover:bg-cyber-bg-elevated{% else %}border-gray-300 text-gray-700 hover:bg-gray-50{% endif %} 
+                                      transition-colors duration-200">
+                                قبلی
+                            </a>
+                            {% endif %}
+                            
+                            <span class="px-3 py-2 text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %} persian-numbers">
+                                صفحه {{ page_obj.number }} از {{ page_obj.paginator.num_pages }}
+                            </span>
+                            
+                            {% if page_obj.has_next %}
+                            <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}" 
+                               class="px-3 py-2 text-sm font-medium rounded-lg border 
+                                      {% if is_dark_mode %}border-cyber-neon-primary/20 text-cyber-text-primary hover:bg-cyber-bg-elevated{% else %}border-gray-300 text-gray-700 hover:bg-gray-50{% endif %} 
+                                      transition-colors duration-200">
+                                بعدی
+                            </a>
+                            {% endif %}
+                        </nav>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Investigation Modal -->
+<div id="investigationModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        
+        <div class="inline-block align-bottom {% if is_dark_mode %}cyber-glass-card{% else %}bg-white{% endif %} rounded-lg text-right overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <form id="investigationForm" method="post">
+                {% csrf_token %}
+                <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="mt-3 text-center sm:mt-0 sm:mr-4 sm:text-right">
+                            <h3 class="text-lg leading-6 font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}" id="modal-title">
+                                بررسی فعالیت مشکوک
+                            </h3>
+                            <div class="mt-2">
+                                <p class="text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                                    لطفاً نتیجه بررسی خود را مشخص کنید.
+                                </p>
+                                
+                                <div class="mt-4 space-y-3">
+                                    <label class="flex items-center">
+                                        <input type="radio" name="is_false_positive" value="true" 
+                                               class="{% if is_dark_mode %}bg-cyber-bg-elevated border-cyber-neon-primary/20 text-cyber-neon-primary focus:ring-cyber-neon-primary{% else %}text-blue-600 focus:ring-blue-500{% endif %}">
+                                        <span class="mr-2 text-sm {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                            مثبت کاذب (تهدید واقعی نیست)
+                                        </span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="radio" name="is_false_positive" value="false" 
+                                               class="{% if is_dark_mode %}bg-cyber-bg-elevated border-cyber-neon-primary/20 text-cyber-neon-primary focus:ring-cyber-neon-primary{% else %}text-blue-600 focus:ring-blue-500{% endif %}">
+                                        <span class="mr-2 text-sm {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                            تهدید واقعی
+                                        </span>
+                                    </label>
+                                </div>
+                                
+                                <textarea name="investigation_notes" rows="3" 
+                                          class="mt-3 w-full rounded-lg border {% if is_dark_mode %}bg-cyber-bg-elevated border-cyber-neon-primary/20 text-cyber-text-primary placeholder-cyber-text-muted{% else %}bg-white border-gray-300 text-gray-900 placeholder-gray-500{% endif %} 
+                                                 focus:ring-2 {% if is_dark_mode %}focus:ring-cyber-neon-primary focus:border-cyber-neon-primary{% else %}focus:ring-blue-500 focus:border-blue-500{% endif %}"
+                                          placeholder="توضیحات بررسی..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="{% if is_dark_mode %}bg-cyber-bg-elevated/30{% else %}bg-gray-50{% endif %} px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="submit" 
+                            class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 
+                                   {% if is_dark_mode %}bg-cyber-neon-secondary text-cyber-bg-primary hover:bg-cyber-neon-primary{% else %}bg-green-600 text-white hover:bg-green-700{% endif %} 
+                                   text-base font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 
+                                   {% if is_dark_mode %}focus:ring-cyber-neon-secondary{% else %}focus:ring-green-500{% endif %} 
+                                   sm:mr-3 sm:w-auto sm:text-sm transition-colors duration-200">
+                        ثبت بررسی
+                    </button>
+                    <button type="button" onclick="closeInvestigationModal()" 
+                            class="mt-3 w-full inline-flex justify-center rounded-lg border 
+                                   {% if is_dark_mode %}border-cyber-neon-primary/20 text-cyber-text-primary hover:bg-cyber-bg-elevated{% else %}border-gray-300 text-gray-700 hover:bg-gray-50{% endif %} 
+                                   shadow-sm px-4 py-2 text-base font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 
+                                   {% if is_dark_mode %}focus:ring-cyber-neon-primary{% else %}focus:ring-blue-500{% endif %} 
+                                   sm:mt-0 sm:w-auto sm:text-sm transition-colors duration-200">
+                        انصراف
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentActivityId = null;
+
+function investigateActivity(activityId) {
+    currentActivityId = activityId;
+    document.getElementById('investigationModal').classList.remove('hidden');
+    document.getElementById('investigationForm').action = `/admin/security/suspicious-activities/${activityId}/investigate/`;
+}
+
+function closeInvestigationModal() {
+    document.getElementById('investigationModal').classList.add('hidden');
+    currentActivityId = null;
+}
+
+function viewDetails(activityId) {
+    // This would open a detailed view modal or navigate to detail page
+    console.log('View details for activity:', activityId);
+}
+
+function bulkInvestigate() {
+    const selected = document.querySelectorAll('input[name="selected_activities"]:checked');
+    if (selected.length === 0) {
+        alert('لطفاً حداقل یک فعالیت را انتخاب کنید.');
+        return;
+    }
+    
+    // Implement bulk investigation logic
+    console.log('Bulk investigate:', Array.from(selected).map(cb => cb.value));
+}
+
+// Select all functionality
+document.getElementById('selectAll').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.activity-checkbox');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+});
+
+document.getElementById('investigationForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch(this.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'HX-Request': 'true'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            closeInvestigationModal();
+            location.reload(); // Refresh to show updated status
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+});
+
+// Close modal when clicking outside
+document.getElementById('investigationModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeInvestigationModal();
+    }
+});
+</script>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize cybersecurity theme animations for dark mode
+    if (window.currentTheme === 'dark' && window.Motion) {
+        const cards = document.querySelectorAll('.cyber-glass-card');
+        cards.forEach((card, index) => {
+            window.Motion.animate(card, {
+                opacity: [0, 1],
+                y: [20, 0],
+                scale: [0.95, 1]
+            }, {
+                duration: 0.6,
+                delay: index * 0.1,
+                ease: [0.4, 0, 0.2, 1]
+            });
+        });
+        
+        // Animate table rows with enhanced cybersecurity effects
+        const tableRows = document.querySelectorAll('tbody tr');
+        tableRows.forEach(row => {
+            row.addEventListener('mouseenter', function() {
+                if (window.currentTheme === 'dark') {
+                    window.Motion.animate(row, {
+                        scale: [1, 1.01],
+                        boxShadow: ['0 0 0 rgba(0, 255, 136, 0)', '0 0 15px rgba(0, 255, 136, 0.2)']
+                    }, {
+                        duration: 0.2,
+                        ease: [0.4, 0, 0.2, 1]
+                    });
+                }
+            });
+            
+            row.addEventListener('mouseleave', function() {
+                if (window.currentTheme === 'dark') {
+                    window.Motion.animate(row, {
+                        scale: [1.01, 1],
+                        boxShadow: ['0 0 15px rgba(0, 255, 136, 0.2)', '0 0 0 rgba(0, 255, 136, 0)']
+                    }, {
+                        duration: 0.2,
+                        ease: [0.4, 0, 0.2, 1]
+                    });
+                }
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

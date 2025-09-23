@@ -1,0 +1,396 @@
+{% extends 'base_rtl.html' %}
+{% load static %}
+{% load persian_tags %}
+
+{% block title %}
+{% if object %}ویرایش حساب{% else %}حساب جدید{% endif %} - زرگر
+{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/accounting-forms.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-6">
+    <!-- Header Section -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
+        <div class="mb-4 lg:mb-0">
+            <h1 class="text-3xl font-bold 
+                       {% if is_dark_mode %}text-cyber-text-primary{% else %}text-light-text-primary{% endif %}">
+                {% if object %}ویرایش حساب{% else %}حساب جدید{% endif %}
+            </h1>
+            <p class="mt-2 
+                     {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-light-text-secondary{% endif %}">
+                {% if object %}
+                    ویرایش حساب {{ object.account_code }} - {{ object.account_name_persian }}
+                {% else %}
+                    ایجاد حساب جدید در فهرست حساب‌ها
+                {% endif %}
+            </p>
+        </div>
+        
+        <div class="flex flex-wrap gap-3">
+            <a href="{% url 'accounting:chart_of_accounts_list' %}" 
+               class="btn-outline-cyber flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                بازگشت به فهرست
+            </a>
+        </div>
+    </div>
+
+    <!-- Form Section -->
+    <div class="form-container-cyber">
+        <div class="card-cyber">
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Form Errors -->
+                {% if form.non_field_errors %}
+                <div class="form-error-cyber">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 form-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                        <div>
+                            {% for error in form.non_field_errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="form-grid-cyber">
+                    <!-- Basic Information Section -->
+                    <div class="form-section-cyber">
+                        <h3 class="form-section-title">اطلاعات پایه</h3>
+                        
+                        <!-- Account Code -->
+                        <div class="form-field-cyber">
+                            <label for="{{ form.account_code.id_for_label }}" class="form-label-cyber">
+                                {{ form.account_code.label }}
+                                <span class="required-indicator">*</span>
+                            </label>
+                            {{ form.account_code }}
+                            {% if form.account_code.errors %}
+                                <div class="form-error-list">
+                                    {% for error in form.account_code.errors %}
+                                        <div class="form-error-item">
+                                            <svg class="form-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01"></path>
+                                            </svg>
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.account_code.help_text %}
+                                <div class="form-help-cyber">{{ form.account_code.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Persian Account Name -->
+                        <div class="form-field-cyber">
+                            <label for="{{ form.account_name_persian.id_for_label }}" class="form-label-cyber">
+                                {{ form.account_name_persian.label }}
+                                <span class="required-indicator">*</span>
+                            </label>
+                            {{ form.account_name_persian }}
+                            {% if form.account_name_persian.errors %}
+                                <div class="form-error-list">
+                                    {% for error in form.account_name_persian.errors %}
+                                        <div class="form-error-item">
+                                            <svg class="form-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01"></path>
+                                            </svg>
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- English Account Name -->
+                        <div class="form-field-cyber">
+                            <label for="{{ form.account_name_english.id_for_label }}" class="form-label-cyber">
+                                {{ form.account_name_english.label }}
+                            </label>
+                            {{ form.account_name_english }}
+                            {% if form.account_name_english.errors %}
+                                <div class="form-error-list">
+                                    {% for error in form.account_name_english.errors %}
+                                        <div class="form-error-item">
+                                            <svg class="form-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01"></path>
+                                            </svg>
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Classification Section -->
+                    <div class="form-section-cyber">
+                        <h3 class="form-section-title">طبقه‌بندی حساب</h3>
+                        
+                        <!-- Account Type -->
+                        <div class="form-field-cyber">
+                            <label for="{{ form.account_type.id_for_label }}" class="form-label-cyber">
+                                {{ form.account_type.label }}
+                                <span class="required-indicator">*</span>
+                            </label>
+                            {{ form.account_type }}
+                            {% if form.account_type.errors %}
+                                <div class="form-error-list">
+                                    {% for error in form.account_type.errors %}
+                                        <div class="form-error-item">
+                                            <svg class="form-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01"></path>
+                                            </svg>
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Account Category -->
+                        <div class="form-field-cyber">
+                            <label for="{{ form.account_category.id_for_label }}" class="form-label-cyber">
+                                {{ form.account_category.label }}
+                                <span class="required-indicator">*</span>
+                            </label>
+                            {{ form.account_category }}
+                            {% if form.account_category.errors %}
+                                <div class="form-error-list">
+                                    {% for error in form.account_category.errors %}
+                                        <div class="form-error-item">
+                                            <svg class="form-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01"></path>
+                                            </svg>
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Parent Account -->
+                        <div class="form-field-cyber">
+                            <label for="{{ form.parent_account.id_for_label }}" class="form-label-cyber">
+                                {{ form.parent_account.label }}
+                            </label>
+                            {{ form.parent_account }}
+                            {% if form.parent_account.errors %}
+                                <div class="form-error-list">
+                                    {% for error in form.parent_account.errors %}
+                                        <div class="form-error-item">
+                                            <svg class="form-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01"></path>
+                                            </svg>
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Normal Balance -->
+                        <div class="form-field-cyber">
+                            <label for="{{ form.normal_balance.id_for_label }}" class="form-label-cyber">
+                                {{ form.normal_balance.label }}
+                                <span class="required-indicator">*</span>
+                            </label>
+                            {{ form.normal_balance }}
+                            {% if form.normal_balance.errors %}
+                                <div class="form-error-list">
+                                    {% for error in form.normal_balance.errors %}
+                                        <div class="form-error-item">
+                                            <svg class="form-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01"></path>
+                                            </svg>
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Section -->
+                <div class="form-section-cyber">
+                    <h3 class="form-section-title">تنظیمات حساب</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Allow Posting -->
+                        <div class="form-field-cyber">
+                            <div class="form-inline-group">
+                                {{ form.allow_posting }}
+                                <label for="{{ form.allow_posting.id_for_label }}" class="form-inline-label">
+                                    {{ form.allow_posting.label }}
+                                </label>
+                            </div>
+                            {% if form.allow_posting.help_text %}
+                                <div class="form-help-cyber">{{ form.allow_posting.help_text }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Description Section -->
+                <div class="form-section-cyber">
+                    <h3 class="form-section-title">توضیحات</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Description -->
+                        <div class="form-field-cyber">
+                            <label for="{{ form.description.id_for_label }}" class="form-label-cyber">
+                                {{ form.description.label }}
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="form-error-list">
+                                    {% for error in form.description.errors %}
+                                        <div class="form-error-item">
+                                            <svg class="form-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01"></path>
+                                            </svg>
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="form-field-cyber">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label-cyber">
+                                {{ form.notes.label }}
+                            </label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                                <div class="form-error-list">
+                                    {% for error in form.notes.errors %}
+                                        <div class="form-error-item">
+                                            <svg class="form-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01"></path>
+                                            </svg>
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="form-actions-cyber">
+                    <div class="form-actions-left">
+                        <button type="submit" class="btn-primary-cyber">
+                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            {% if object %}به‌روزرسانی حساب{% else %}ایجاد حساب{% endif %}
+                        </button>
+                        
+                        <a href="{% url 'accounting:chart_of_accounts_list' %}" class="btn-outline-cyber">
+                            انصراف
+                        </a>
+                    </div>
+                    
+                    <div class="form-actions-right">
+                        <span class="{% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">
+                            فیلدهای دارای * الزامی هستند
+                        </span>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Persian number formatting
+    const persianElements = document.querySelectorAll('.persian-numbers');
+    persianElements.forEach(element => {
+        if (window.PersianNumbers) {
+            element.textContent = window.PersianNumbers.toPersian(element.textContent);
+        }
+    });
+    
+    // Auto-update normal balance based on account type
+    const accountTypeSelect = document.querySelector('select[name="account_type"]');
+    const normalBalanceSelect = document.querySelector('select[name="normal_balance"]');
+    
+    if (accountTypeSelect && normalBalanceSelect) {
+        const expectedBalances = {
+            'asset': 'debit',
+            'expense': 'debit',
+            'cost_of_goods_sold': 'debit',
+            'liability': 'credit',
+            'equity': 'credit',
+            'revenue': 'credit'
+        };
+        
+        accountTypeSelect.addEventListener('change', function() {
+            const selectedType = this.value;
+            if (expectedBalances[selectedType]) {
+                normalBalanceSelect.value = expectedBalances[selectedType];
+                
+                // Add visual feedback
+                normalBalanceSelect.style.borderColor = '#00FF88';
+                setTimeout(() => {
+                    normalBalanceSelect.style.borderColor = '';
+                }, 1000);
+            }
+        });
+    }
+    
+    // Form validation feedback
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const requiredFields = form.querySelectorAll('[required]');
+            let hasErrors = false;
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    field.classList.add('error');
+                    hasErrors = true;
+                } else {
+                    field.classList.remove('error');
+                }
+            });
+            
+            if (hasErrors) {
+                e.preventDefault();
+                alert('لطفاً تمام فیلدهای الزامی را پر کنید.');
+            }
+        });
+    }
+    
+    // Add cybersecurity theme effects for dark mode
+    if (document.body.classList.contains('dark')) {
+        const inputs = document.querySelectorAll('.form-input-cyber, .form-select-cyber, .form-textarea-cyber');
+        inputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                this.style.boxShadow = '0 0 20px rgba(0, 212, 255, 0.3)';
+            });
+            
+            input.addEventListener('blur', function() {
+                this.style.boxShadow = '';
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

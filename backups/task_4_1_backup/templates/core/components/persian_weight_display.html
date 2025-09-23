@@ -1,0 +1,257 @@
+{% load persian_tags %}
+{# Persian Weight Display Component #}
+{# Usage: {% include 'core/components/persian_weight_display.html' with weight=100 unit='gram' show_conversions=True %} #}
+
+<div class="persian-weight-display persian-number-display"
+     data-persian-weight
+     data-weight="{{ weight|default:0 }}"
+     data-unit="{{ unit|default:'gram' }}"
+     data-use-persian-digits="{{ use_persian_digits|default:'true' }}"
+     data-show-unit-name="{{ show_unit_name|default:'true' }}"
+     data-precision="{{ precision|default:3 }}"
+     title="وزن: {{ weight|default:0 }} {{ unit|default:'gram' }}">
+    
+    <div class="primary-weight">
+        {% if weight or weight == 0 %}
+            {% persian_weight weight unit|default:'gram' use_persian_digits|default:True show_unit_name|default:True %}
+        {% else %}
+            <span class="placeholder-text">
+                {% if use_persian_digits|default:True %}۰ گرم{% else %}0 gram{% endif %}
+            </span>
+        {% endif %}
+    </div>
+    
+    {% if show_conversions and weight %}
+        <div class="weight-conversions" 
+             data-weight-conversions
+             data-weight-grams="{% if unit == 'gram' %}{{ weight }}{% else %}{{ weight|weight_to_grams:unit }}{% endif %}"
+             data-target-units="{{ conversion_units|default:'gram,mesghal,soot' }}"
+             data-use-persian-digits="{{ use_persian_digits|default:'true' }}">
+            
+            {# Conversions will be populated by JavaScript #}
+            <div class="conversion-loading">
+                <span class="loading-text">در حال محاسبه...</span>
+            </div>
+        </div>
+    {% endif %}
+    
+    {% if show_icon %}
+        <span class="weight-icon">
+            {% if unit == 'gram' %}
+                <svg class="w-4 h-4 inline-block mr-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 3L2 12h3v8h14v-8h3L12 3zm0 2.5L18.5 12H17v6H7v-6H5.5L12 5.5z"/>
+                </svg>
+            {% elif unit == 'mesghal' %}
+                <!-- مثقال -->
+                <svg class="w-4 h-4 inline-block mr-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+            {% elif unit == 'soot' %}
+                <!-- سوت -->
+                <svg class="w-4 h-4 inline-block mr-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                </svg>
+            {% endif %}
+        </span>
+    {% endif %}
+</div>
+
+<style>
+.persian-weight-display {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    font-family: 'Vazir', 'Tahoma', sans-serif;
+    direction: rtl;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.primary-weight {
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.weight-conversions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.weight-conversion-item {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.weight-conversion-item:hover {
+    transform: translateY(-1px);
+}
+
+.weight-conversion-item[data-unit="gram"] {
+    background-color: #dbeafe;
+    color: #1e40af;
+    border-color: #bfdbfe;
+}
+
+.weight-conversion-item[data-unit="mesghal"] {
+    background-color: #fef3c7;
+    color: #92400e;
+    border-color: #fde68a;
+}
+
+.weight-conversion-item[data-unit="soot"] {
+    background-color: #d1fae5;
+    color: #065f46;
+    border-color: #a7f3d0;
+}
+
+.weight-icon {
+    opacity: 0.7;
+    margin-left: 0.25rem;
+}
+
+.placeholder-text {
+    opacity: 0.6;
+    font-style: italic;
+}
+
+.conversion-loading {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-style: italic;
+}
+
+/* Theme-specific styles */
+.light-mode .persian-weight-display {
+    color: #374151;
+}
+
+.light-mode .weight-conversion-item {
+    background-color: #f3f4f6;
+    color: #4b5563;
+    border-color: #e5e7eb;
+}
+
+.light-mode .weight-conversion-item:hover {
+    background-color: #e5e7eb;
+    border-color: #d1d5db;
+}
+
+.dark-mode .persian-weight-display {
+    color: #e5e7eb;
+}
+
+.dark-mode .weight-conversion-item {
+    background-color: #374151;
+    color: #d1d5db;
+    border-color: #4b5563;
+}
+
+.dark-mode .weight-conversion-item:hover {
+    background-color: #4b5563;
+    border-color: #6b7280;
+}
+
+.dark-mode .weight-conversion-item[data-unit="gram"] {
+    background-color: #1e3a8a;
+    color: #bfdbfe;
+    border-color: #3b82f6;
+}
+
+.dark-mode .weight-conversion-item[data-unit="mesghal"] {
+    background-color: #92400e;
+    color: #fde68a;
+    border-color: #f59e0b;
+}
+
+.dark-mode .weight-conversion-item[data-unit="soot"] {
+    background-color: #065f46;
+    color: #a7f3d0;
+    border-color: #10b981;
+}
+
+.cyber-theme .persian-weight-display {
+    color: #ffffff;
+}
+
+.cyber-theme .weight-conversion-item {
+    background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    color: #ffffff;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.cyber-theme .weight-conversion-item:hover {
+    border-color: #00D4FF;
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+    transform: translateY(-2px);
+}
+
+.cyber-theme .weight-conversion-item[data-unit="gram"] {
+    border-color: rgba(0, 212, 255, 0.4);
+}
+
+.cyber-theme .weight-conversion-item[data-unit="mesghal"] {
+    border-color: rgba(255, 107, 53, 0.4);
+}
+
+.cyber-theme .weight-conversion-item[data-unit="soot"] {
+    border-color: rgba(0, 255, 136, 0.4);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .weight-conversions {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .weight-conversion-item {
+        justify-content: center;
+        text-align: center;
+    }
+}
+
+/* Animation for loading state */
+.conversion-loading .loading-text {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+</style>
+
+<script>
+// Custom template filter for weight conversion (if not available in backend)
+document.addEventListener('DOMContentLoaded', function() {
+    // This will be handled by the main persian-number-display.js
+    // Just ensure the weight conversions are properly initialized
+    const weightElements = document.querySelectorAll('[data-weight-conversions]');
+    weightElements.forEach(element => {
+        const loadingElement = element.querySelector('.conversion-loading');
+        if (loadingElement) {
+            // Hide loading text once JavaScript takes over
+            setTimeout(() => {
+                loadingElement.style.display = 'none';
+            }, 100);
+        }
+    });
+});
+</script>

@@ -1,0 +1,330 @@
+{% extends 'base_rtl.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}مدیریت طلای قرضی{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/layaway-dashboard.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="layaway-dashboard" x-data="layawayDashboard()">
+    <!-- Header -->
+    <div class="dashboard-header">
+        <div class="header-content">
+            <h1 class="page-title">
+                <i class="fas fa-handshake"></i>
+                مدیریت طلای قرضی
+            </h1>
+            <div class="header-actions">
+                <a href="{% url 'customers:layaway_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    قرارداد جدید
+                </a>
+                <a href="{% url 'customers:layaway_reminders' %}" class="btn btn-outline-info">
+                    <i class="fas fa-bell"></i>
+                    یادآوری‌ها
+                </a>
+                <a href="{% url 'customers:layaway_reports' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-chart-bar"></i>
+                    گزارشات
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="summary-cards">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="summary-card active-plans">
+                    <div class="card-icon">
+                        <i class="fas fa-file-contract"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>{{ summary.active_plans }}</h3>
+                        <p>قرارداد فعال</p>
+                        <small class="text-muted">از {{ summary.total_plans }} کل قرارداد</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="summary-card total-value">
+                    <div class="card-icon">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>{{ summary.total_value|floatformat:0 }}</h3>
+                        <p>ارزش کل (تومان)</p>
+                        <small class="text-success">{{ summary.collection_rate|floatformat:1 }}% وصول شده</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="summary-card outstanding-balance">
+                    <div class="card-icon">
+                        <i class="fas fa-hourglass-half"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>{{ summary.outstanding_balance|floatformat:0 }}</h3>
+                        <p>مانده بدهی (تومان)</p>
+                        <small class="text-info">{{ summary.active_plans }} قرارداد فعال</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="summary-card overdue-amount">
+                    <div class="card-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>{{ summary.overdue_count }}</h3>
+                        <p>معوقات</p>
+                        <small class="text-danger">{{ summary.overdue_rate|floatformat:1 }}% از فعال‌ها</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="dashboard-content">
+        <div class="row">
+            <!-- Active Plans -->
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">
+                            <i class="fas fa-list"></i>
+                            قراردادهای فعال
+                        </h5>
+                        <a href="{% url 'customers:layaway_list' %}" class="btn btn-sm btn-outline-primary">
+                            مشاهده همه
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        {% if active_plans %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>شماره قرارداد</th>
+                                            <th>مشتری</th>
+                                            <th>کالا</th>
+                                            <th>مبلغ کل</th>
+                                            <th>مانده</th>
+                                            <th>درصد تکمیل</th>
+                                            <th>وضعیت</th>
+                                            <th>عملیات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for plan in active_plans %}
+                                        <tr>
+                                            <td>
+                                                <a href="{% url 'customers:layaway_detail' plan.pk %}" class="plan-number">
+                                                    {{ plan.plan_number }}
+                                                </a>
+                                            </td>
+                                            <td>{{ plan.customer.full_persian_name }}</td>
+                                            <td>{{ plan.jewelry_item.name }}</td>
+                                            <td class="text-success">{{ plan.total_amount|floatformat:0 }} تومان</td>
+                                            <td class="text-warning">{{ plan.remaining_balance|floatformat:0 }} تومان</td>
+                                            <td>
+                                                <div class="progress" style="height: 20px;">
+                                                    <div class="progress-bar" role="progressbar" 
+                                                         style="width: {{ plan.completion_percentage }}%"
+                                                         aria-valuenow="{{ plan.completion_percentage }}" 
+                                                         aria-valuemin="0" aria-valuemax="100">
+                                                        {{ plan.completion_percentage|floatformat:0 }}%
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {% if plan.is_overdue %}
+                                                    <span class="badge badge-danger">معوق</span>
+                                                {% else %}
+                                                    <span class="badge badge-success">جاری</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="{% url 'customers:layaway_detail' plan.pk %}" 
+                                                       class="btn btn-outline-primary" title="جزئیات">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="empty-state">
+                                <i class="fas fa-file-contract fa-3x text-muted"></i>
+                                <h5>هیچ قرارداد فعالی وجود ندارد</h5>
+                                <p class="text-muted">برای شروع، یک قرارداد طلای قرضی جدید ایجاد کنید.</p>
+                                <a href="{% url 'customers:layaway_create' %}" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i>
+                                    قرارداد جدید
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Overdue Plans -->
+                {% if overdue_plans %}
+                <div class="card mb-4">
+                    <div class="card-header bg-danger text-white">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            معوقات
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        {% for plan in overdue_plans %}
+                        <div class="overdue-item">
+                            <div class="overdue-info">
+                                <strong>{{ plan.customer.full_persian_name }}</strong>
+                                <small class="text-muted d-block">{{ plan.plan_number }}</small>
+                                <span class="text-danger">{{ plan.days_overdue }} روز تاخیر</span>
+                            </div>
+                            <div class="overdue-amount">
+                                <strong class="text-danger">{{ plan.next_payment_amount|floatformat:0 }}</strong>
+                                <small class="text-muted d-block">تومان</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        <a href="{% url 'customers:layaway_list' %}?overdue=true" class="btn btn-sm btn-outline-danger btn-block mt-2">
+                            مشاهده همه معوقات
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Upcoming Payments -->
+                {% if upcoming_payments %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-calendar-alt"></i>
+                            پرداخت‌های آتی (۷ روز آینده)
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        {% for payment in upcoming_payments %}
+                        <div class="upcoming-payment">
+                            <div class="payment-info">
+                                <strong>{{ payment.layaway_plan.customer.full_persian_name }}</strong>
+                                <small class="text-muted d-block">{{ payment.layaway_plan.plan_number }}</small>
+                                <span class="text-info">{{ payment.due_date }}</span>
+                            </div>
+                            <div class="payment-amount">
+                                <strong class="text-success">{{ payment.amount|floatformat:0 }}</strong>
+                                <small class="text-muted d-block">تومان</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Recent Payments -->
+                {% if recent_payments %}
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-money-bill-wave"></i>
+                            آخرین پرداخت‌ها
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        {% for payment in recent_payments %}
+                        <div class="recent-payment">
+                            <div class="payment-info">
+                                <strong>{{ payment.layaway_plan.customer.full_persian_name }}</strong>
+                                <small class="text-muted d-block">{{ payment.layaway_plan.plan_number }}</small>
+                                <span class="text-muted">{{ payment.payment_date }}</span>
+                            </div>
+                            <div class="payment-amount">
+                                <strong class="text-success">{{ payment.amount|floatformat:0 }}</strong>
+                                <small class="text-muted d-block">{{ payment.get_payment_method_display }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Statistics Chart -->
+    {% if monthly_stats %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="card-title">
+                <i class="fas fa-chart-line"></i>
+                آمار تکمیل قراردادها (۶ ماه اخیر)
+            </h5>
+        </div>
+        <div class="card-body">
+            <canvas id="monthlyStatsChart" height="100"></canvas>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/layaway-dashboard.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Monthly statistics chart
+{% if monthly_stats %}
+const monthlyData = {{ monthly_stats|safe }};
+const ctx = document.getElementById('monthlyStatsChart').getContext('2d');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: monthlyData.map(item => item.month),
+        datasets: [{
+            label: 'قراردادهای تکمیل شده',
+            data: monthlyData.map(item => item.completed),
+            borderColor: '#28a745',
+            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: true
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+{% endif %}
+
+// Alpine.js component
+function layawayDashboard() {
+    return {
+        init() {
+            console.log('Layaway dashboard initialized');
+        }
+    }
+}
+</script>
+{% endblock %}

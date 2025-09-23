@@ -1,0 +1,425 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}تاریخچه پشتیبان‌گیری{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-card {
+        transition: all 0.3s ease;
+    }
+    
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        font-weight: 600;
+    }
+    
+    .status-completed { background-color: #10b981; color: white; }
+    .status-running { background-color: #3b82f6; color: white; }
+    .status-failed { background-color: #ef4444; color: white; }
+    .status-pending { background-color: #f59e0b; color: white; }
+    .status-cancelled { background-color: #6b7280; color: white; }
+    
+    /* Dark mode cybersecurity theme */
+    [data-theme="dark"] .filter-card {
+        background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 100%);
+        border: 1px solid rgba(0, 212, 255, 0.2);
+        backdrop-filter: blur(16px);
+    }
+    
+    [data-theme="dark"] .table-row:hover {
+        background: rgba(0, 212, 255, 0.05);
+        border-color: rgba(0, 212, 255, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-6" x-data="backupHistory()">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">تاریخچه پشتیبان‌گیری</h1>
+            <p class="text-gray-600 dark:text-gray-300 mt-2">مشاهده و مدیریت تمام پشتیبان‌های انجام شده</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{% url 'admin_panel:backup_management' %}" 
+               class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                بازگشت
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-card bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+        <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">فیلترها</h2>
+        
+        <form method="get" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    وضعیت
+                </label>
+                <select name="status" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                    <option value="">همه وضعیت‌ها</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>
+                        {% if value == 'completed' %}تکمیل شده
+                        {% elif value == 'running' %}در حال اجرا
+                        {% elif value == 'failed' %}ناموفق
+                        {% elif value == 'pending' %}در انتظار
+                        {% elif value == 'cancelled' %}لغو شده
+                        {% else %}{{ label }}{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    نوع پشتیبان
+                </label>
+                <select name="type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                    <option value="">همه انواع</option>
+                    {% for value, label in type_choices %}
+                    <option value="{{ value }}" {% if type_filter == value %}selected{% endif %}>
+                        {% if value == 'full_system' %}پشتیبان کامل سیستم
+                        {% elif value == 'tenant_only' %}پشتیبان تک تنانت
+                        {% elif value == 'configuration' %}پشتیبان پیکربندی
+                        {% elif value == 'database_only' %}فقط پایگاه داده
+                        {% else %}{{ label }}{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    از تاریخ
+                </label>
+                <input type="date" name="date_from" value="{{ date_from }}"
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    تا تاریخ
+                </label>
+                <input type="date" name="date_to" value="{{ date_to }}"
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+            </div>
+            
+            <div class="md:col-span-2 lg:col-span-4 flex gap-3">
+                <button type="submit" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                    اعمال فیلتر
+                </button>
+                <a href="{% url 'admin_panel:backup_history' %}" 
+                   class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                    پاک کردن فیلتر
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Backup History Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-bold text-gray-900 dark:text-white">
+                تاریخچه پشتیبان‌گیری ({{ page_obj.paginator.count }} مورد)
+            </h2>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            نام پشتیبان
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            نوع
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            وضعیت
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            حجم
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            تاریخ ایجاد
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            مدت زمان
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            عملیات
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for backup in backups %}
+                    <tr class="table-row hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        data-backup-status="{{ backup.status }}" data-job-id="{{ backup.job_id }}">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10">
+                                    {% if backup.status == 'completed' %}
+                                        <div class="h-10 w-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                                            <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                            </svg>
+                                        </div>
+                                    {% elif backup.status == 'running' %}
+                                        <div class="h-10 w-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                                            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                            </svg>
+                                        </div>
+                                    {% elif backup.status == 'failed' %}
+                                        <div class="h-10 w-10 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                                            <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                        </div>
+                                    {% else %}
+                                        <div class="h-10 w-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center">
+                                            <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="mr-4">
+                                    <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                        {{ backup.name }}
+                                    </div>
+                                    {% if backup.tenant_schema %}
+                                        <div class="text-sm text-gray-500 dark:text-gray-400">
+                                            تنانت: {{ backup.tenant_schema }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="text-sm text-gray-900 dark:text-white">
+                                {% if backup.backup_type == 'full_system' %}پشتیبان کامل سیستم
+                                {% elif backup.backup_type == 'tenant_only' %}پشتیبان تک تنانت
+                                {% elif backup.backup_type == 'configuration' %}پشتیبان پیکربندی
+                                {% elif backup.backup_type == 'database_only' %}فقط پایگاه داده
+                                {% else %}{{ backup.get_backup_type_display }}{% endif %}
+                            </span>
+                        </td>
+                        
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="status-badge status-{{ backup.status }}">
+                                {% if backup.status == 'completed' %}تکمیل شده
+                                {% elif backup.status == 'running' %}در حال اجرا
+                                {% elif backup.status == 'failed' %}ناموفق
+                                {% elif backup.status == 'pending' %}در انتظار
+                                {% elif backup.status == 'cancelled' %}لغو شده
+                                {% else %}{{ backup.get_status_display }}{% endif %}
+                            </span>
+                            {% if backup.status == 'running' %}
+                                <div class="mt-1">
+                                    <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                                        <div class="bg-blue-600 h-2 rounded-full progress-fill" 
+                                             style="width: {{ backup.progress_percentage }}%"></div>
+                                    </div>
+                                    <span class="text-xs text-gray-600 dark:text-gray-400 progress-text">{{ backup.progress_percentage }}%</span>
+                                </div>
+                            {% endif %}
+                        </td>
+                        
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {% if backup.file_size_human %}
+                                {{ backup.file_size_human }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {{ backup.created_at|date:"Y/m/d H:i" }}
+                        </td>
+                        
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {% if backup.duration %}
+                                {{ backup.duration }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex items-center gap-2">
+                                <a href="{% url 'admin_panel:backup_job_detail' backup.job_id %}" 
+                                   class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                                   title="مشاهده جزئیات">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                </a>
+                                
+                                {% if backup.status == 'completed' %}
+                                    <button @click="downloadBackup('{{ backup.job_id }}')"
+                                            class="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 p-2 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/30"
+                                            title="دانلود پشتیبان">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                        </svg>
+                                    </button>
+                                {% endif %}
+                                
+                                {% if backup.status == 'running' %}
+                                    <button @click="cancelBackup('{{ backup.job_id }}')"
+                                            class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30"
+                                            title="لغو پشتیبان‌گیری">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center">
+                            <svg class="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h6l2 2h6a2 2 0 012 2v4a2 2 0 01-2 2H5z"></path>
+                            </svg>
+                            <p class="text-gray-600 dark:text-gray-400">هیچ پشتیبانی با این فیلترها یافت نشد</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-700 dark:text-gray-300">
+                    نمایش {{ page_obj.start_index }} تا {{ page_obj.end_index }} از {{ page_obj.paginator.count }} مورد
+                </div>
+                
+                <div class="flex gap-2">
+                    {% if page_obj.has_previous %}
+                        <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}"
+                           class="px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                            قبلی
+                        </a>
+                    {% endif %}
+                    
+                    <span class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg">
+                        صفحه {{ page_obj.number }} از {{ page_obj.paginator.num_pages }}
+                    </span>
+                    
+                    {% if page_obj.has_next %}
+                        <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}"
+                           class="px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                            بعدی
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function backupHistory() {
+    return {
+        init() {
+            // Auto-refresh running backups every 30 seconds
+            setInterval(() => {
+                this.refreshRunningBackups();
+            }, 30000);
+        },
+        
+        refreshRunningBackups() {
+            const runningBackups = document.querySelectorAll('[data-backup-status="running"]');
+            runningBackups.forEach(element => {
+                const jobId = element.dataset.jobId;
+                if (jobId) {
+                    this.updateBackupStatus(jobId, element);
+                }
+            });
+        },
+        
+        async updateBackupStatus(jobId, element) {
+            try {
+                const response = await fetch(`{% url 'admin_panel:backup_status_api' %}?job_id=${jobId}`);
+                const data = await response.json();
+                
+                if (data.status !== 'running') {
+                    // Reload page if backup completed or failed
+                    window.location.reload();
+                } else {
+                    // Update progress bar
+                    const progressBar = element.querySelector('.progress-fill');
+                    if (progressBar) {
+                        progressBar.style.width = `${data.progress}%`;
+                    }
+                    
+                    const progressText = element.querySelector('.progress-text');
+                    if (progressText) {
+                        progressText.textContent = `${data.progress}%`;
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating backup status:', error);
+            }
+        },
+        
+        async downloadBackup(jobId) {
+            try {
+                // This would trigger a download of the backup file
+                window.location.href = `/admin/backup/download/${jobId}/`;
+            } catch (error) {
+                console.error('Error downloading backup:', error);
+                alert('خطا در دانلود پشتیبان');
+            }
+        },
+        
+        async cancelBackup(jobId) {
+            if (!confirm('آیا از لغو این پشتیبان‌گیری اطمینان دارید؟')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/admin/backup/cancel/${jobId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('خطا در لغو پشتیبان‌گیری');
+                }
+            } catch (error) {
+                console.error('Error cancelling backup:', error);
+                alert('خطا در لغو پشتیبان‌گیری');
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

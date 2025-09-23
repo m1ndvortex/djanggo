@@ -1,0 +1,293 @@
+<!-- Inventory Valuation Preview Template -->
+<div class="report-preview">
+    <div class="report-header text-center mb-6">
+        <h3 class="text-lg font-bold 
+                   {% if is_dark_mode %}
+                   text-cyber-text-primary
+                   {% else %}
+                   text-gray-900
+                   {% endif %}">
+            {{ data.report_title_persian }}
+        </h3>
+        <p class="text-sm 
+                 {% if is_dark_mode %}
+                 text-cyber-text-secondary
+                 {% else %}
+                 text-gray-600
+                 {% endif %} 
+                 persian-numbers">
+            تا تاریخ {{ data.as_of_date_shamsi }}
+        </p>
+        <p class="text-xs 
+                 {% if is_dark_mode %}
+                 text-cyber-text-muted
+                 {% else %}
+                 text-gray-500
+                 {% endif %} 
+                 persian-numbers">
+            قیمت طلا: {{ data.gold_price_per_gram_formatted }} تومان در گرم
+        </p>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="p-4 rounded-lg text-center
+                    {% if is_dark_mode %}
+                    bg-cyber-bg-surface/60 border border-cyber-border-glass
+                    {% else %}
+                    bg-gray-50 border border-gray-200
+                    {% endif %}">
+            <p class="text-sm 
+                     {% if is_dark_mode %}
+                     text-cyber-text-secondary
+                     {% else %}
+                     text-gray-600
+                     {% endif %}">
+                کل ارزش موجودی
+            </p>
+            <p class="text-xl font-bold persian-numbers
+                     {% if is_dark_mode %}
+                     text-cyber-neon-success
+                     {% else %}
+                     text-green-600
+                     {% endif %}">
+                {{ data.total_inventory_value_formatted }}
+            </p>
+        </div>
+        
+        <div class="p-4 rounded-lg text-center
+                    {% if is_dark_mode %}
+                    bg-cyber-bg-surface/60 border border-cyber-border-glass
+                    {% else %}
+                    bg-gray-50 border border-gray-200
+                    {% endif %}">
+            <p class="text-sm 
+                     {% if is_dark_mode %}
+                     text-cyber-text-secondary
+                     {% else %}
+                     text-gray-600
+                     {% endif %}">
+                تعداد اقلام
+            </p>
+            <p class="text-xl font-bold persian-numbers
+                     {% if is_dark_mode %}
+                     text-cyber-neon-primary
+                     {% else %}
+                     text-blue-600
+                     {% endif %}">
+                {{ data.total_items_count_formatted }}
+            </p>
+        </div>
+        
+        <div class="p-4 rounded-lg text-center
+                    {% if is_dark_mode %}
+                    bg-cyber-bg-surface/60 border border-cyber-border-glass
+                    {% else %}
+                    bg-gray-50 border border-gray-200
+                    {% endif %}">
+            <p class="text-sm 
+                     {% if is_dark_mode %}
+                     text-cyber-text-secondary
+                     {% else %}
+                     text-gray-600
+                     {% endif %}">
+                کل وزن
+            </p>
+            <p class="text-xl font-bold persian-numbers
+                     {% if is_dark_mode %}
+                     text-cyber-neon-secondary
+                     {% else %}
+                     text-green-600
+                     {% endif %}">
+                {{ data.total_weight_formatted }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Categories -->
+    {% for category in data.categories %}
+    <div class="mb-6">
+        <div class="flex items-center justify-between mb-3 p-3 rounded-lg
+                    {% if is_dark_mode %}
+                    bg-cyber-bg-surface/60 border border-cyber-border-glass
+                    {% else %}
+                    bg-gray-100 border border-gray-200
+                    {% endif %}">
+            <h4 class="text-lg font-semibold 
+                       {% if is_dark_mode %}
+                       text-cyber-text-primary
+                       {% else %}
+                       text-gray-900
+                       {% endif %}">
+                {{ category.category_name }}
+            </h4>
+            <div class="text-sm 
+                       {% if is_dark_mode %}
+                       text-cyber-text-secondary
+                       {% else %}
+                       text-gray-600
+                       {% endif %}">
+                <span class="persian-numbers">{{ category.category_items_count }}</span> قلم - 
+                <span class="persian-numbers">{{ category.category_total_value_formatted }}</span>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b 
+                              {% if is_dark_mode %}
+                              border-cyber-border-glass bg-cyber-bg-surface/40
+                              {% else %}
+                              border-gray-200 bg-gray-50
+                              {% endif %}">
+                        <th class="text-right py-2 px-3 font-medium 
+                                   {% if is_dark_mode %}
+                                   text-cyber-text-secondary
+                                   {% else %}
+                                   text-gray-700
+                                   {% endif %}">
+                            کد کالا
+                        </th>
+                        <th class="text-right py-2 px-3 font-medium 
+                                   {% if is_dark_mode %}
+                                   text-cyber-text-secondary
+                                   {% else %}
+                                   text-gray-700
+                                   {% endif %}">
+                            نام کالا
+                        </th>
+                        <th class="text-right py-2 px-3 font-medium 
+                                   {% if is_dark_mode %}
+                                   text-cyber-text-secondary
+                                   {% else %}
+                                   text-gray-700
+                                   {% endif %}">
+                            موجودی
+                        </th>
+                        <th class="text-right py-2 px-3 font-medium 
+                                   {% if is_dark_mode %}
+                                   text-cyber-text-secondary
+                                   {% else %}
+                                   text-gray-700
+                                   {% endif %}">
+                            وزن
+                        </th>
+                        <th class="text-right py-2 px-3 font-medium 
+                                   {% if is_dark_mode %}
+                                   text-cyber-text-secondary
+                                   {% else %}
+                                   text-gray-700
+                                   {% endif %}">
+                            عیار
+                        </th>
+                        <th class="text-right py-2 px-3 font-medium 
+                                   {% if is_dark_mode %}
+                                   text-cyber-text-secondary
+                                   {% else %}
+                                   text-gray-700
+                                   {% endif %}">
+                            ارزش کل
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in category.items %}
+                    <tr class="border-b 
+                              {% if is_dark_mode %}
+                              border-cyber-border-glass hover:bg-cyber-bg-elevated/40
+                              {% else %}
+                              border-gray-100 hover:bg-gray-50
+                              {% endif %} 
+                              transition-colors">
+                        <td class="py-2 px-3 persian-numbers
+                                   {% if is_dark_mode %}
+                                   text-cyber-text-secondary
+                                   {% else %}
+                                   text-gray-600
+                                   {% endif %}">
+                            {{ item.sku }}
+                        </td>
+                        <td class="py-2 px-3 
+                                   {% if is_dark_mode %}
+                                   text-cyber-text-primary
+                                   {% else %}
+                                   text-gray-900
+                                   {% endif %}">
+                            {{ item.name }}
+                            {% if item.is_low_stock %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium mr-2
+                                             {% if is_dark_mode %}
+                                             bg-cyber-neon-warning/20 text-cyber-neon-warning
+                                             {% else %}
+                                             bg-yellow-100 text-yellow-800
+                                             {% endif %}">
+                                    موجودی کم
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="py-2 px-3 text-right persian-numbers
+                                   {% if is_dark_mode %}
+                                   text-cyber-text-primary
+                                   {% else %}
+                                   text-gray-900
+                                   {% endif %}">
+                            {{ item.quantity }}
+                        </td>
+                        <td class="py-2 px-3 text-right persian-numbers
+                                   {% if is_dark_mode %}
+                                   text-cyber-text-secondary
+                                   {% else %}
+                                   text-gray-600
+                                   {% endif %}">
+                            {{ item.weight_grams_formatted }}
+                        </td>
+                        <td class="py-2 px-3 text-right persian-numbers
+                                   {% if is_dark_mode %}
+                                   text-cyber-text-secondary
+                                   {% else %}
+                                   text-gray-600
+                                   {% endif %}">
+                            {{ item.karat }}
+                        </td>
+                        <td class="py-2 px-3 text-right persian-numbers font-medium
+                                   {% if is_dark_mode %}
+                                   text-cyber-neon-success
+                                   {% else %}
+                                   text-green-600
+                                   {% endif %}">
+                            {{ item.total_item_value_formatted }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="border-t font-semibold
+                              {% if is_dark_mode %}
+                              border-cyber-border-glass bg-cyber-bg-surface/60
+                              {% else %}
+                              border-gray-300 bg-gray-100
+                              {% endif %}">
+                        <td colspan="5" class="py-2 px-3 text-right 
+                                              {% if is_dark_mode %}
+                                              text-cyber-text-primary
+                                              {% else %}
+                                              text-gray-900
+                                              {% endif %}">
+                            جمع {{ category.category_name }}:
+                        </td>
+                        <td class="py-2 px-3 text-right persian-numbers
+                                   {% if is_dark_mode %}
+                                   text-cyber-neon-success
+                                   {% else %}
+                                   text-green-600
+                                   {% endif %}">
+                            {{ category.category_total_value_formatted }}
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+</div>

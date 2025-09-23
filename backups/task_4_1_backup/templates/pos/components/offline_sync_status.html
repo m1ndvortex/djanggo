@@ -1,0 +1,429 @@
+{% load static %}
+
+<!-- Offline Sync Status Component -->
+<div class="offline-sync-status fixed top-16 left-4 z-40" 
+     x-data="offlineSyncStatus()" 
+     x-init="init()">
+    
+    <!-- Connection Status Indicator -->
+    <div class="connection-indicator mb-2 p-3 rounded-lg backdrop-blur-sm transition-all duration-300
+                {% if is_dark_mode %}
+                bg-cyber-bg-surface/80 border border-cyber-neon-primary/30
+                {% else %}
+                bg-white/80 border border-gray-200
+                {% endif %}"
+         :class="{
+             'border-green-500 bg-green-900/20': isOnline,
+             'border-red-500 bg-red-900/20': !isOnline,
+             'border-yellow-500 bg-yellow-900/20': isSyncing
+         }">
+        
+        <div class="flex items-center space-x-2 space-x-reverse">
+            <!-- Status Icon -->
+            <div class="flex-shrink-0">
+                <div x-show="isOnline && !isSyncing" 
+                     class="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+                <div x-show="!isOnline" 
+                     class="w-3 h-3 rounded-full bg-red-500"></div>
+                <div x-show="isSyncing" 
+                     class="w-3 h-3 rounded-full bg-yellow-500 animate-spin">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                </div>
+            </div>
+            
+            <!-- Status Text -->
+            <div class="text-sm font-medium">
+                <span x-show="isOnline && !isSyncing" 
+                      class="{% if is_dark_mode %}text-cyber-neon-success{% else %}text-green-600{% endif %}">
+                    آنلاین
+                </span>
+                <span x-show="!isOnline" 
+                      class="{% if is_dark_mode %}text-cyber-neon-danger{% else %}text-red-600{% endif %}">
+                    آفلاین
+                </span>
+                <span x-show="isSyncing" 
+                      class="{% if is_dark_mode %}text-cyber-neon-warning{% else %}text-yellow-600{% endif %}">
+                    در حال همگام‌سازی...
+                </span>
+            </div>
+            
+            <!-- Pending Count Badge -->
+            <div x-show="pendingCount > 0" 
+                 class="flex-shrink-0 px-2 py-1 text-xs font-bold rounded-full
+                        {% if is_dark_mode %}
+                        bg-cyber-neon-warning/20 text-cyber-neon-warning border border-cyber-neon-warning/30
+                        {% else %}
+                        bg-yellow-100 text-yellow-800 border border-yellow-200
+                        {% endif %}">
+                <span class="persian-numbers" x-text="pendingCount"></span>
+            </div>
+        </div>
+        
+        <!-- Last Sync Time -->
+        <div x-show="lastSyncTime" 
+             class="mt-1 text-xs 
+                   {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+            آخرین همگام‌سازی: <span x-text="formatLastSyncTime()"></span>
+        </div>
+    </div>
+    
+    <!-- Sync Queue Summary (when offline) -->
+    <div x-show="!isOnline && pendingCount > 0" 
+         class="sync-queue-summary p-3 rounded-lg backdrop-blur-sm transition-all duration-300
+                {% if is_dark_mode %}
+                bg-cyber-bg-surface/80 border border-cyber-neon-warning/30
+                {% else %}
+                bg-yellow-50/80 border border-yellow-200
+                {% endif %}">
+        
+        <div class="flex items-center justify-between mb-2">
+            <h4 class="text-sm font-bold 
+                      {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                صف همگام‌سازی
+            </h4>
+            <button @click="showQueueDetails = !showQueueDetails" 
+                    class="text-xs 
+                           {% if is_dark_mode %}text-cyber-neon-primary hover:text-cyber-neon-secondary{% else %}text-blue-600 hover:text-blue-800{% endif %}">
+                <span x-show="!showQueueDetails">نمایش جزئیات</span>
+                <span x-show="showQueueDetails">مخفی کردن</span>
+            </button>
+        </div>
+        
+        <div class="text-xs space-y-1 
+                   {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+            <div class="flex justify-between">
+                <span>تراکنش‌های در انتظار:</span>
+                <span class="persian-numbers font-medium" x-text="pendingCount"></span>
+            </div>
+            <div class="flex justify-between">
+                <span>حجم داده:</span>
+                <span class="persian-numbers font-medium" x-text="formatDataSize(queueSize)"></span>
+            </div>
+        </div>
+        
+        <!-- Queue Details -->
+        <div x-show="showQueueDetails" 
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 transform scale-95"
+             x-transition:enter-end="opacity-100 transform scale-100"
+             class="mt-3 pt-3 space-y-2
+                   {% if is_dark_mode %}border-t border-cyber-neon-primary/20{% else %}border-t border-gray-200{% endif %}">
+            
+            <template x-for="item in queueItems.slice(0, 3)" :key="item.id">
+                <div class="flex items-center justify-between text-xs">
+                    <div class="flex-1 truncate">
+                        <span class="font-medium" x-text="item.transaction_number"></span>
+                        <span class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}" 
+                              x-text="' - ' + item.customer_name"></span>
+                    </div>
+                    <div class="flex-shrink-0 persian-numbers font-medium
+                               {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}" 
+                         x-text="formatCurrency(item.total_amount)"></div>
+                </div>
+            </template>
+            
+            <div x-show="queueItems.length > 3" 
+                 class="text-xs text-center 
+                       {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                و <span class="persian-numbers" x-text="queueItems.length - 3"></span> مورد دیگر...
+            </div>
+        </div>
+        
+        <!-- Manual Sync Button -->
+        <button @click="manualSync()" 
+                :disabled="isSyncing"
+                class="w-full mt-3 px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200
+                       {% if is_dark_mode %}
+                       bg-cyber-neon-primary/20 border border-cyber-neon-primary/30 text-cyber-neon-primary
+                       hover:bg-cyber-neon-primary/30 disabled:opacity-50
+                       {% else %}
+                       bg-blue-50 border border-blue-200 text-blue-600
+                       hover:bg-blue-100 disabled:opacity-50
+                       {% endif %}">
+            <span x-show="!isSyncing">همگام‌سازی دستی</span>
+            <span x-show="isSyncing">در حال همگام‌سازی...</span>
+        </button>
+    </div>
+    
+    <!-- Sync Error Alert -->
+    <div x-show="syncError" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 transform translate-y-2"
+         x-transition:enter-end="opacity-100 transform translate-y-0"
+         class="sync-error-alert mt-2 p-3 rounded-lg backdrop-blur-sm
+                {% if is_dark_mode %}
+                bg-cyber-bg-surface/80 border border-cyber-neon-danger/50
+                {% else %}
+                bg-red-50/80 border border-red-200
+                {% endif %}">
+        
+        <div class="flex items-start space-x-2 space-x-reverse">
+            <svg class="w-4 h-4 mt-0.5 flex-shrink-0 
+                       {% if is_dark_mode %}text-cyber-neon-danger{% else %}text-red-500{% endif %}" 
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div class="flex-1">
+                <p class="text-xs font-medium 
+                         {% if is_dark_mode %}text-cyber-neon-danger{% else %}text-red-800{% endif %}">
+                    خطا در همگام‌سازی
+                </p>
+                <p class="text-xs mt-1 
+                         {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-red-600{% endif %}" 
+                   x-text="syncError"></p>
+            </div>
+            <button @click="syncError = null" 
+                    class="flex-shrink-0 
+                           {% if is_dark_mode %}text-cyber-text-secondary hover:text-cyber-text-primary{% else %}text-red-400 hover:text-red-600{% endif %}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <button @click="retrySync()" 
+                class="w-full mt-2 px-2 py-1 text-xs font-medium rounded transition-colors
+                       {% if is_dark_mode %}
+                       bg-cyber-neon-danger/20 text-cyber-neon-danger hover:bg-cyber-neon-danger/30
+                       {% else %}
+                       bg-red-100 text-red-700 hover:bg-red-200
+                       {% endif %}">
+            تلاش مجدد
+        </button>
+    </div>
+</div>
+
+<script>
+function offlineSyncStatus() {
+    return {
+        isOnline: navigator.onLine,
+        isSyncing: false,
+        pendingCount: 0,
+        queueSize: 0,
+        queueItems: [],
+        lastSyncTime: null,
+        syncError: null,
+        showQueueDetails: false,
+        deviceId: null,
+        
+        init() {
+            this.deviceId = this.getDeviceId();
+            this.setupEventListeners();
+            this.loadOfflineQueue();
+            this.startPeriodicSync();
+        },
+        
+        setupEventListeners() {
+            // Online/offline events
+            window.addEventListener('online', () => {
+                this.isOnline = true;
+                this.syncError = null;
+                this.autoSync();
+            });
+            
+            window.addEventListener('offline', () => {
+                this.isOnline = false;
+            });
+            
+            // Listen for new offline transactions
+            window.addEventListener('offline-transaction-created', (event) => {
+                this.addToQueue(event.detail.transaction);
+            });
+            
+            // Listen for sync completion
+            window.addEventListener('sync-completed', (event) => {
+                this.handleSyncCompletion(event.detail);
+            });
+        },
+        
+        getDeviceId() {
+            let deviceId = localStorage.getItem('pos_device_id');
+            if (!deviceId) {
+                deviceId = 'POS-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('pos_device_id', deviceId);
+            }
+            return deviceId;
+        },
+        
+        loadOfflineQueue() {
+            const savedQueue = localStorage.getItem('pos_offline_queue');
+            if (savedQueue) {
+                this.queueItems = JSON.parse(savedQueue);
+                this.pendingCount = this.queueItems.length;
+                this.queueSize = this.calculateQueueSize();
+            }
+        },
+        
+        saveOfflineQueue() {
+            localStorage.setItem('pos_offline_queue', JSON.stringify(this.queueItems));
+        },
+        
+        addToQueue(transaction) {
+            transaction.offline_timestamp = Date.now();
+            transaction.offline_id = this.generateOfflineId();
+            this.queueItems.push(transaction);
+            this.pendingCount = this.queueItems.length;
+            this.queueSize = this.calculateQueueSize();
+            this.saveOfflineQueue();
+        },
+        
+        generateOfflineId() {
+            return 'offline_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        },
+        
+        calculateQueueSize() {
+            return JSON.stringify(this.queueItems).length;
+        },
+        
+        async manualSync() {
+            if (this.isSyncing || !this.isOnline) return;
+            
+            await this.performSync();
+        },
+        
+        async autoSync() {
+            if (!this.isOnline || this.queueItems.length === 0) return;
+            
+            // Auto-sync with a small delay to avoid immediate sync on connection
+            setTimeout(() => {
+                this.performSync();
+            }, 2000);
+        },
+        
+        async performSync() {
+            if (this.queueItems.length === 0) return;
+            
+            this.isSyncing = true;
+            this.syncError = null;
+            
+            try {
+                const response = await fetch('{% url "pos:api_offline_sync" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': this.getCSRFToken()
+                    },
+                    body: JSON.stringify({
+                        device_id: this.deviceId,
+                        device_name: 'POS Terminal',
+                        transactions: this.queueItems
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.handleSyncSuccess(data.sync_results);
+                } else {
+                    throw new Error(data.error || 'Sync failed');
+                }
+                
+            } catch (error) {
+                this.handleSyncError(error.message);
+            } finally {
+                this.isSyncing = false;
+            }
+        },
+        
+        handleSyncSuccess(syncResults) {
+            // Remove successfully synced transactions
+            const syncedIds = syncResults.synced || [];
+            this.queueItems = this.queueItems.filter(item => 
+                !syncedIds.includes(item.offline_id)
+            );
+            
+            this.pendingCount = this.queueItems.length;
+            this.queueSize = this.calculateQueueSize();
+            this.lastSyncTime = new Date();
+            this.saveOfflineQueue();
+            
+            // Show success notification
+            if (syncedIds.length > 0) {
+                window.POSInterface?.showNotification(
+                    `${syncedIds.length} تراکنش با موفقیت همگام‌سازی شد`,
+                    'success'
+                );
+            }
+            
+            // Handle conflicts if any
+            if (syncResults.conflicts && syncResults.conflicts.length > 0) {
+                this.handleSyncConflicts(syncResults.conflicts);
+            }
+        },
+        
+        handleSyncError(errorMessage) {
+            this.syncError = errorMessage;
+            
+            window.POSInterface?.showNotification(
+                'خطا در همگام‌سازی: ' + errorMessage,
+                'error'
+            );
+        },
+        
+        handleSyncConflicts(conflicts) {
+            // Dispatch event for conflict resolution UI
+            window.dispatchEvent(new CustomEvent('sync-conflicts-detected', {
+                detail: { conflicts }
+            }));
+        },
+        
+        async retrySync() {
+            this.syncError = null;
+            await this.performSync();
+        },
+        
+        startPeriodicSync() {
+            // Attempt sync every 30 seconds when online
+            setInterval(() => {
+                if (this.isOnline && !this.isSyncing && this.queueItems.length > 0) {
+                    this.autoSync();
+                }
+            }, 30000);
+        },
+        
+        formatLastSyncTime() {
+            if (!this.lastSyncTime) return '';
+            
+            const now = new Date();
+            const diff = Math.floor((now - this.lastSyncTime) / 1000);
+            
+            if (diff < 60) return 'همین الان';
+            if (diff < 3600) return Math.floor(diff / 60) + ' دقیقه پیش';
+            if (diff < 86400) return Math.floor(diff / 3600) + ' ساعت پیش';
+            
+            return this.lastSyncTime.toLocaleDateString('fa-IR');
+        },
+        
+        formatDataSize(bytes) {
+            if (bytes < 1024) return bytes + ' بایت';
+            if (bytes < 1048576) return Math.round(bytes / 1024) + ' کیلوبایت';
+            return Math.round(bytes / 1048576) + ' مگابایت';
+        },
+        
+        formatCurrency(amount) {
+            if (!amount) return '۰ تومان';
+            
+            const formatted = new Intl.NumberFormat('fa-IR').format(amount);
+            return this.toPersianDigits(formatted) + ' تومان';
+        },
+        
+        toPersianDigits(str) {
+            const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+            const englishDigits = '0123456789';
+            
+            return str.toString().replace(/[0-9]/g, function(w) {
+                return persianDigits[englishDigits.indexOf(w)];
+            });
+        },
+        
+        getCSRFToken() {
+            const token = document.querySelector('[name=csrfmiddlewaretoken]');
+            return token ? token.value : window.zargarConfig?.csrfToken || '';
+        }
+    }
+}
+</script>

@@ -1,0 +1,696 @@
+{% extends "base_rtl.html" %}
+{% load static %}
+
+{% block title %}داشبورد فروشگاه - زرگر{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/tenant-dashboard.css' %}">
+<script src="{% static 'js/tenant-dashboard.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen 
+     {% if user.theme_preference == 'dark' %}
+     bg-gradient-to-br from-cyber-bg-primary via-cyber-bg-secondary to-cyber-bg-surface
+     {% else %}
+     bg-gradient-to-br from-gray-50 to-gray-100
+     {% endif %}"
+     x-data="tenantDashboard()" 
+     x-init="initDashboard()"
+     :class="{ 'dark': darkMode, 'light': !darkMode }">
+    
+    <!-- Enhanced Header with Navigation -->
+    <header class="{% if user.theme_preference == 'dark' %}cyber-glass-header{% else %}bg-white/80 backdrop-blur-sm border-b border-gray-200{% endif %} sticky top-0 z-40"
+            :class="{ 'cyber-glass-header': darkMode, 'bg-white/80 backdrop-blur-sm border-b border-gray-200': !darkMode }">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <!-- Logo and Title -->
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <div class="{% if user.theme_preference == 'dark' %}cyber-logo-container{% else %}bg-blue-600 p-2 rounded-lg{% endif %}"
+                         :class="{ 'cyber-logo-container': darkMode, 'bg-blue-600 p-2 rounded-lg': !darkMode }">
+                        <svg class="h-8 w-8 {% if user.theme_preference == 'dark' %}text-cyber-neon-primary{% else %}text-white{% endif %}" 
+                             fill="currentColor" viewBox="0 0 24 24"
+                             :class="{ 'text-cyber-neon-primary': darkMode, 'text-white': !darkMode }">
+                            <path d="M12 2L2 7v10c0 5.55 3.84 9.74 9 11 5.16-1.26 9-5.45 9-11V7l-10-5z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold {% if user.theme_preference == 'dark' %}text-cyber-text-primary cyber-glow-text{% else %}text-gray-900{% endif %}"
+                            :class="{ 'text-cyber-text-primary cyber-glow-text': darkMode, 'text-gray-900': !darkMode }">
+                            داشبورد فروشگاه
+                        </h1>
+                        {% if tenant_name %}
+                        <p class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}"
+                           :class="{ 'text-cyber-neon-primary': darkMode, 'text-blue-600': !darkMode }">
+                            {{ tenant_name }}
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Navigation Menu with Neon Glow Effects -->
+                <nav class="hidden md:flex items-center space-x-6 space-x-reverse">
+                    <a href="/" 
+                       class="{% if user.theme_preference == 'dark' %}cyber-nav-link active{% else %}nav-link active{% endif %}"
+                       :class="{ 'cyber-nav-link active': darkMode, 'nav-link active': !darkMode }">
+                        داشبورد
+                    </a>
+                    <a href="/jewelry/" 
+                       class="{% if user.theme_preference == 'dark' %}cyber-nav-link{% else %}nav-link{% endif %}"
+                       :class="{ 'cyber-nav-link': darkMode, 'nav-link': !darkMode }">
+                        موجودی
+                    </a>
+                    <a href="/customers/" 
+                       class="{% if user.theme_preference == 'dark' %}cyber-nav-link{% else %}nav-link{% endif %}"
+                       :class="{ 'cyber-nav-link': darkMode, 'nav-link': !darkMode }">
+                        مشتریان
+                    </a>
+                    <a href="/gold-installments/" 
+                       class="{% if user.theme_preference == 'dark' %}cyber-nav-link{% else %}nav-link{% endif %}"
+                       :class="{ 'cyber-nav-link': darkMode, 'nav-link': !darkMode }">
+                        اقساط طلا
+                    </a>
+                    <a href="/reports/" 
+                       class="{% if user.theme_preference == 'dark' %}cyber-nav-link{% else %}nav-link{% endif %}"
+                       :class="{ 'cyber-nav-link': darkMode, 'nav-link': !darkMode }">
+                        گزارشات
+                    </a>
+                </nav>
+                
+                <!-- User Menu -->
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <!-- Current Time (Persian) -->
+                    <div class="hidden sm:block text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}"
+                         :class="{ 'text-cyber-text-secondary': darkMode, 'text-gray-600': !darkMode }">
+                        <span id="current-persian-time"></span>
+                    </div>
+                    
+                    <!-- User Info -->
+                    <div class="flex items-center space-x-2 space-x-reverse">
+                        <div class="{% if user.theme_preference == 'dark' %}cyber-avatar{% else %}bg-blue-100 p-2 rounded-full{% endif %}"
+                             :class="{ 'cyber-avatar': darkMode, 'bg-blue-100 p-2 rounded-full': !darkMode }">
+                            <svg class="h-5 w-5 {% if user.theme_preference == 'dark' %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}" 
+                                 fill="currentColor" viewBox="0 0 24 24"
+                                 :class="{ 'text-cyber-neon-primary': darkMode, 'text-blue-600': !darkMode }">
+                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                            </svg>
+                        </div>
+                        <div class="hidden sm:block">
+                            <p class="text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %}"
+                               :class="{ 'text-cyber-text-primary': darkMode, 'text-gray-900': !darkMode }">
+                                {{ user.full_persian_name }}
+                            </p>
+                            <p class="text-xs {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}"
+                               :class="{ 'text-cyber-text-secondary': darkMode, 'text-gray-500': !darkMode }">
+                                {{ user.get_role_display }}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Logout Button -->
+                    <a href="/auth/logout/" 
+                       class="{% if user.theme_preference == 'dark' %}cyber-logout-btn{% else %}logout-btn{% endif %}"
+                       :class="{ 'cyber-logout-btn': darkMode, 'logout-btn': !darkMode }">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                        </svg>
+                        <span class="hidden sm:inline">خروج</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Dashboard Content -->
+    <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        
+        <!-- Key Metrics Grid with Cybersecurity Color Coding -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            
+            <!-- Today's Sales Card with #00FF88 for positive metrics -->
+            <div class="{% if user.theme_preference == 'dark' %}cyber-metric-card{% else %}metric-card{% endif %} 
+                        {% if user.theme_preference == 'dark' %}animate-fade-in-up{% endif %}"
+                 :class="{ 'cyber-metric-card animate-fade-in-up': darkMode, 'metric-card': !darkMode }"
+                 x-data="{ value: {{ sales_metrics.today.value|default:0 }} }">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center">
+                            <div class="{% if user.theme_preference == 'dark' %}cyber-icon-container success{% else %}icon-container success{% endif %}"
+                                 :class="{ 'cyber-icon-container success': darkMode, 'icon-container success': !darkMode }">
+                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <div class="mr-3">
+                                <p class="text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}"
+                                   :class="{ 'text-cyber-text-secondary': darkMode, 'text-gray-500': !darkMode }">
+                                    فروش امروز
+                                </p>
+                                <p class="text-2xl font-bold {% if user.theme_preference == 'dark' %}text-cyber-neon-secondary cyber-number-glow{% else %}text-gray-900{% endif %} persian-numbers"
+                                   :class="{ 'text-cyber-neon-secondary cyber-number-glow': darkMode, 'text-gray-900': !darkMode }"
+                                   x-text="formatCurrency(value)">
+                                    {{ sales_metrics.today.value_display|default:"۰ تومان" }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mt-2 flex items-center text-sm">
+                            <span class="{% if user.theme_preference == 'dark' %}text-cyber-neon-secondary{% else %}text-green-600{% endif %} persian-numbers"
+                                  :class="{ 'text-cyber-neon-secondary': darkMode, 'text-green-600': !darkMode }">
+                                {{ sales_metrics.today.count|default:0 }} فقره
+                            </span>
+                            <span class="{% if user.theme_preference == 'dark' %}text-cyber-text-muted{% else %}text-gray-500{% endif %} mr-2"
+                                  :class="{ 'text-cyber-text-muted': darkMode, 'text-gray-500': !darkMode }">
+                                فروش انجام شده
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Customers Card -->
+            <div class="{% if user.theme_preference == 'dark' %}cyber-metric-card{% else %}metric-card{% endif %} 
+                        {% if user.theme_preference == 'dark' %}animate-fade-in-up{% endif %}"
+                 :class="{ 'cyber-metric-card animate-fade-in-up': darkMode, 'metric-card': !darkMode }"
+                 style="animation-delay: 0.1s"
+                 x-data="{ value: {{ customer_metrics.total_customers|default:0 }} }">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center">
+                            <div class="{% if user.theme_preference == 'dark' %}cyber-icon-container primary{% else %}icon-container primary{% endif %}"
+                                 :class="{ 'cyber-icon-container primary': darkMode, 'icon-container primary': !darkMode }">
+                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+                                </svg>
+                            </div>
+                            <div class="mr-3">
+                                <p class="text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}"
+                                   :class="{ 'text-cyber-text-secondary': darkMode, 'text-gray-500': !darkMode }">
+                                    کل مشتریان
+                                </p>
+                                <p class="text-2xl font-bold {% if user.theme_preference == 'dark' %}text-cyber-neon-secondary cyber-number-glow{% else %}text-gray-900{% endif %} persian-numbers"
+                                   :class="{ 'text-cyber-neon-secondary cyber-number-glow': darkMode, 'text-gray-900': !darkMode }"
+                                   x-text="formatNumber(value)">
+                                    {{ customer_metrics.total_customers|default:0 }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mt-2 flex items-center text-sm">
+                            <span class="{% if user.theme_preference == 'dark' %}text-cyber-neon-secondary{% else %}text-green-600{% endif %} persian-numbers"
+                                  :class="{ 'text-cyber-neon-secondary': darkMode, 'text-green-600': !darkMode }">
+                                +{{ customer_metrics.new_customers_this_month|default:0 }}
+                            </span>
+                            <span class="{% if user.theme_preference == 'dark' %}text-cyber-text-muted{% else %}text-gray-500{% endif %} mr-2"
+                                  :class="{ 'text-cyber-text-muted': darkMode, 'text-gray-500': !darkMode }">
+                                این ماه
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inventory Value Card -->
+            <div class="{% if user.theme_preference == 'dark' %}cyber-metric-card{% else %}metric-card{% endif %} 
+                        {% if user.theme_preference == 'dark' %}animate-fade-in-up{% endif %}"
+                 :class="{ 'cyber-metric-card animate-fade-in-up': darkMode, 'metric-card': !darkMode }"
+                 style="animation-delay: 0.2s"
+                 x-data="{ value: {{ inventory_metrics.total_value.amount|default:0 }} }">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center">
+                            <div class="{% if user.theme_preference == 'dark' %}cyber-icon-container tertiary{% else %}icon-container tertiary{% endif %}"
+                                 :class="{ 'cyber-icon-container tertiary': darkMode, 'icon-container tertiary': !darkMode }">
+                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                                </svg>
+                            </div>
+                            <div class="mr-3">
+                                <p class="text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}"
+                                   :class="{ 'text-cyber-text-secondary': darkMode, 'text-gray-500': !darkMode }">
+                                    ارزش موجودی
+                                </p>
+                                <p class="text-2xl font-bold {% if user.theme_preference == 'dark' %}text-cyber-neon-secondary cyber-number-glow{% else %}text-gray-900{% endif %} persian-numbers"
+                                   :class="{ 'text-cyber-neon-secondary cyber-number-glow': darkMode, 'text-gray-900': !darkMode }"
+                                   x-text="formatCurrency(value)">
+                                    {{ inventory_metrics.total_value.display|default:"۰ تومان" }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mt-2 flex items-center text-sm">
+                            <span class="{% if user.theme_preference == 'dark' %}text-cyber-neon-secondary{% else %}text-blue-600{% endif %} persian-numbers"
+                                  :class="{ 'text-cyber-neon-secondary': darkMode, 'text-blue-600': !darkMode }">
+                                {{ inventory_metrics.in_stock|default:0 }} قطعه
+                            </span>
+                            <span class="{% if user.theme_preference == 'dark' %}text-cyber-text-muted{% else %}text-gray-500{% endif %} mr-2"
+                                  :class="{ 'text-cyber-text-muted': darkMode, 'text-gray-500': !darkMode }">
+                                در انبار
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Installments Card with #FF4757 for alerts -->
+            <div class="{% if user.theme_preference == 'dark' %}cyber-metric-card{% else %}metric-card{% endif %} 
+                        {% if user.theme_preference == 'dark' %}animate-fade-in-up{% endif %}"
+                 :class="{ 'cyber-metric-card animate-fade-in-up': darkMode, 'metric-card': !darkMode }"
+                 style="animation-delay: 0.3s"
+                 x-data="{ 
+                     count: {{ gold_installment_metrics.overdue_contracts.count|default:0 }},
+                     value: {{ gold_installment_metrics.outstanding_balance.value_toman|default:0 }}
+                 }">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center">
+                            <div class="{% if user.theme_preference == 'dark' %}cyber-icon-container warning{% else %}icon-container warning{% endif %}"
+                                 :class="{ 'cyber-icon-container warning': darkMode, 'icon-container warning': !darkMode }">
+                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <div class="mr-3">
+                                <p class="text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}"
+                                   :class="{ 'text-cyber-text-secondary': darkMode, 'text-gray-500': !darkMode }">
+                                    اقساط معوق
+                                </p>
+                                <p class="text-2xl font-bold {% if user.theme_preference == 'dark' %}text-cyber-neon-danger cyber-number-glow{% else %}text-gray-900{% endif %} persian-numbers"
+                                   :class="{ 'text-cyber-neon-danger cyber-number-glow': darkMode, 'text-gray-900': !darkMode }"
+                                   x-text="formatNumber(count)">
+                                    {{ gold_installment_metrics.overdue_contracts.count|default:0 }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mt-2 flex items-center text-sm">
+                            <span class="{% if user.theme_preference == 'dark' %}text-cyber-neon-danger{% else %}text-red-600{% endif %} persian-numbers"
+                                  :class="{ 'text-cyber-neon-danger': darkMode, 'text-red-600': !darkMode }"
+                                  x-text="formatCurrency(value)">
+                                {{ gold_installment_metrics.outstanding_balance.value_display|default:"۰ تومان" }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gold Price Widget with Neon Borders -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            
+            <!-- Real-time Gold Price Card with Jewelry-specific Cybersecurity Styling -->
+            <div class="{% if user.theme_preference == 'dark' %}cyber-gold-price-card{% else %}gold-price-card{% endif %} 
+                        {% if user.theme_preference == 'dark' %}animate-fade-in-up{% endif %}"
+                 :class="{ 'cyber-gold-price-card animate-fade-in-up': darkMode, 'gold-price-card': !darkMode }"
+                 style="animation-delay: 0.4s"
+                 x-data="goldPriceWidget()">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %}"
+                        :class="{ 'text-cyber-text-primary': darkMode, 'text-gray-900': !darkMode }">
+                        قیمت طلا (زنده)
+                    </h3>
+                    <div class="{% if user.theme_preference == 'dark' %}cyber-live-indicator{% else %}live-indicator{% endif %}"
+                         :class="{ 'cyber-live-indicator': darkMode, 'live-indicator': !darkMode }">
+                        <span class="animate-pulse"></span>
+                        زنده
+                    </div>
+                </div>
+                
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="{% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}"
+                              :class="{ 'text-cyber-text-secondary': darkMode, 'text-gray-600': !darkMode }">طلای ۱۸ عیار</span>
+                        <span class="font-bold {% if user.theme_preference == 'dark' %}text-cyber-neon-secondary cyber-number-glow{% else %}text-gray-900{% endif %} persian-numbers"
+                              :class="{ 'text-cyber-neon-secondary cyber-number-glow': darkMode, 'text-gray-900': !darkMode }"
+                              x-text="formatCurrency(goldPrices['18k'])">
+                            {{ gold_price_data.current_prices.18k.display|default:"۳,۵۰۰,۰۰۰ تومان" }}
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="{% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}"
+                              :class="{ 'text-cyber-text-secondary': darkMode, 'text-gray-600': !darkMode }">طلای ۲۱ عیار</span>
+                        <span class="font-bold {% if user.theme_preference == 'dark' %}text-cyber-neon-secondary cyber-number-glow{% else %}text-gray-900{% endif %} persian-numbers"
+                              :class="{ 'text-cyber-neon-secondary cyber-number-glow': darkMode, 'text-gray-900': !darkMode }"
+                              x-text="formatCurrency(goldPrices['21k'])">
+                            {{ gold_price_data.current_prices.21k.display|default:"۴,۰۸۳,۳۳۳ تومان" }}
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="{% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}"
+                              :class="{ 'text-cyber-text-secondary': darkMode, 'text-gray-600': !darkMode }">طلای ۲۴ عیار</span>
+                        <span class="font-bold {% if user.theme_preference == 'dark' %}text-cyber-neon-secondary cyber-number-glow{% else %}text-gray-900{% endif %} persian-numbers"
+                              :class="{ 'text-cyber-neon-secondary cyber-number-glow': darkMode, 'text-gray-900': !darkMode }"
+                              x-text="formatCurrency(goldPrices['24k'])">
+                            {{ gold_price_data.current_prices.24k.display|default:"۴,۶۶۶,۶۶۶ تومان" }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="mt-4 pt-4 border-t {% if user.theme_preference == 'dark' %}border-cyber-neon-primary/20{% else %}border-gray-200{% endif %}"
+                     :class="{ 'border-cyber-neon-primary/20': darkMode, 'border-gray-200': !darkMode }">
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="{% if user.theme_preference == 'dark' %}text-cyber-text-muted{% else %}text-gray-500{% endif %}"
+                              :class="{ 'text-cyber-text-muted': darkMode, 'text-gray-500': !darkMode }">
+                            آخرین بروزرسانی
+                        </span>
+                        <span class="{% if user.theme_preference == 'dark' %}text-cyber-neon-primary{% else %}text-blue-600{% endif %} persian-numbers"
+                              :class="{ 'text-cyber-neon-primary': darkMode, 'text-blue-600': !darkMode }"
+                              x-text="lastUpdated">
+                            چند لحظه پیش
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer Insights Widget with Cybersecurity Color Coding -->
+            <div class="{% if user.theme_preference == 'dark' %}cyber-insight-card{% else %}insight-card{% endif %} 
+                        {% if user.theme_preference == 'dark' %}animate-fade-in-up{% endif %}"
+                 :class="{ 'cyber-insight-card animate-fade-in-up': darkMode, 'insight-card': !darkMode }"
+                 style="animation-delay: 0.5s">
+                <h3 class="text-lg font-semibold {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %} mb-4"
+                    :class="{ 'text-cyber-text-primary': darkMode, 'text-gray-900': !darkMode }">
+                    بینش مشتریان
+                </h3>
+                
+                <div class="space-y-4">
+                    <!-- VIP Customers with #00FF88 for positive metrics -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="{% if user.theme_preference == 'dark' %}cyber-mini-icon success{% else %}mini-icon success{% endif %}"
+                                 :class="{ 'cyber-mini-icon success': darkMode, 'mini-icon success': !darkMode }">
+                                <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                </svg>
+                            </div>
+                            <span class="mr-2 {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}"
+                                  :class="{ 'text-cyber-text-secondary': darkMode, 'text-gray-600': !darkMode }">
+                                مشتریان VIP
+                            </span>
+                        </div>
+                        <span class="font-bold {% if user.theme_preference == 'dark' %}text-cyber-neon-secondary{% else %}text-gray-900{% endif %} persian-numbers"
+                              :class="{ 'text-cyber-neon-secondary': darkMode, 'text-gray-900': !darkMode }">
+                            {{ customer_metrics.vip_customers|default:0 }}
+                        </span>
+                    </div>
+                    
+                    <!-- Engagement Rate with #00FF88 for positive metrics -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="{% if user.theme_preference == 'dark' %}cyber-mini-icon primary{% else %}mini-icon primary{% endif %}"
+                                 :class="{ 'cyber-mini-icon primary': darkMode, 'mini-icon primary': !darkMode }">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                                </svg>
+                            </div>
+                            <span class="mr-2 {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}"
+                                  :class="{ 'text-cyber-text-secondary': darkMode, 'text-gray-600': !darkMode }">
+                                نرخ مشارکت
+                            </span>
+                        </div>
+                        <span class="font-bold {% if user.theme_preference == 'dark' %}text-cyber-neon-secondary{% else %}text-gray-900{% endif %} persian-numbers"
+                              :class="{ 'text-cyber-neon-secondary': darkMode, 'text-gray-900': !darkMode }">
+                            %{{ customer_metrics.engagement_rate|floatformat:1|default:"۰" }}
+                        </span>
+                    </div>
+                    
+                    <!-- Birthday Customers -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="{% if user.theme_preference == 'dark' %}cyber-mini-icon tertiary{% else %}mini-icon tertiary{% endif %}"
+                                 :class="{ 'cyber-mini-icon tertiary': darkMode, 'mini-icon tertiary': !darkMode }">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
+                            <span class="mr-2 {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}"
+                                  :class="{ 'text-cyber-text-secondary': darkMode, 'text-gray-600': !darkMode }">
+                                تولد این ماه
+                            </span>
+                        </div>
+                        <span class="font-bold {% if user.theme_preference == 'dark' %}text-cyber-neon-secondary{% else %}text-gray-900{% endif %} persian-numbers"
+                              :class="{ 'text-cyber-neon-secondary': darkMode, 'text-gray-900': !darkMode }">
+                            {{ customer_metrics.birthday_customers_this_month|length|default:0 }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Installments Summary with Persian Calendar and Cybersecurity Card Styling -->
+            <div class="{% if user.theme_preference == 'dark' %}cyber-installment-card{% else %}installment-card{% endif %} 
+                        {% if user.theme_preference == 'dark' %}animate-fade-in-up{% endif %}"
+                 :class="{ 'cyber-installment-card animate-fade-in-up': darkMode, 'installment-card': !darkMode }"
+                 style="animation-delay: 0.6s">
+                <h3 class="text-lg font-semibold {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %} mb-4"
+                    :class="{ 'text-cyber-text-primary': darkMode, 'text-gray-900': !darkMode }">
+                    خلاصه اقساط
+                </h3>
+                
+                <div class="space-y-4">
+                    <!-- Active Contracts -->
+                    <div class="{% if user.theme_preference == 'dark' %}cyber-installment-item{% else %}installment-item{% endif %}"
+                         :class="{ 'cyber-installment-item': darkMode, 'installment-item': !darkMode }">
+                        <div class="flex justify-between items-center">
+                            <span class="{% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}"
+                                  :class="{ 'text-cyber-text-secondary': darkMode, 'text-gray-600': !darkMode }">
+                                قراردادهای فعال
+                            </span>
+                            <span class="font-bold {% if user.theme_preference == 'dark' %}text-cyber-neon-secondary{% else %}text-gray-900{% endif %} persian-numbers"
+                                  :class="{ 'text-cyber-neon-secondary': darkMode, 'text-gray-900': !darkMode }">
+                                {{ gold_installment_metrics.contract_counts.active|default:0 }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Outstanding Balance -->
+                    <div class="{% if user.theme_preference == 'dark' %}cyber-installment-item{% else %}installment-item{% endif %}"
+                         :class="{ 'cyber-installment-item': darkMode, 'installment-item': !darkMode }">
+                        <div class="flex justify-between items-center">
+                            <span class="{% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}"
+                                  :class="{ 'text-cyber-text-secondary': darkMode, 'text-gray-600': !darkMode }">
+                                مانده طلا
+                            </span>
+                            <span class="font-bold {% if user.theme_preference == 'dark' %}text-cyber-neon-secondary{% else %}text-gray-900{% endif %} persian-numbers"
+                                  :class="{ 'text-cyber-neon-secondary': darkMode, 'text-gray-900': !darkMode }">
+                                {{ gold_installment_metrics.outstanding_balance.gold_weight_display|default:"۰ گرم" }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Persian Calendar Date Display -->
+                    <div class="{% if user.theme_preference == 'dark' %}cyber-installment-item{% else %}installment-item{% endif %}"
+                         :class="{ 'cyber-installment-item': darkMode, 'installment-item': !darkMode }">
+                        <div class="flex justify-between items-center">
+                            <span class="{% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}"
+                                  :class="{ 'text-cyber-text-secondary': darkMode, 'text-gray-600': !darkMode }">
+                                تاریخ شمسی امروز
+                            </span>
+                            <span class="font-bold {% if user.theme_preference == 'dark' %}text-cyber-neon-primary{% else %}text-blue-600{% endif %} persian-numbers"
+                                  :class="{ 'text-cyber-neon-primary': darkMode, 'text-blue-600': !darkMode }"
+                                  id="persian-date-display">
+                                ۱۴۰۳/۰۶/۳۱
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Overdue Alert with #FF4757 for alerts -->
+                    {% if gold_installment_metrics.overdue_contracts.count > 0 %}
+                    <div class="{% if user.theme_preference == 'dark' %}cyber-alert-item danger{% else %}alert-item danger{% endif %}"
+                         :class="{ 'cyber-alert-item danger': darkMode, 'alert-item danger': !darkMode }">
+                        <div class="flex items-center">
+                            <svg class="h-4 w-4 {% if user.theme_preference == 'dark' %}text-cyber-neon-danger{% else %}text-red-500{% endif %} ml-2" 
+                                 :class="{ 'text-cyber-neon-danger': darkMode, 'text-red-500': !darkMode }"
+                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                            </svg>
+                            <span class="{% if user.theme_preference == 'dark' %}text-cyber-neon-danger{% else %}text-red-600{% endif %} persian-numbers"
+                                  :class="{ 'text-cyber-neon-danger': darkMode, 'text-red-600': !darkMode }">
+                                {{ gold_installment_metrics.overdue_contracts.count }} قرارداد معوق
+                            </span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activities and Quick Actions -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- Recent Activities -->
+            <div class="{% if is_dark_mode %}cyber-activity-card{% else %}activity-card{% endif %} 
+                        {% if is_dark_mode %}animate-fade-in-up{% endif %}"
+                 style="animation-delay: 0.7s">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        فعالیت‌های اخیر
+                    </h3>
+                    <a href="/reports/activities/" 
+                       class="text-sm {% if is_dark_mode %}text-cyber-neon-primary hover:text-cyber-neon-secondary{% else %}text-blue-600 hover:text-blue-500{% endif %}">
+                        مشاهده همه
+                    </a>
+                </div>
+                
+                <div class="space-y-3">
+                    {% for activity in recent_activities|slice:":5" %}
+                    <div class="{% if is_dark_mode %}cyber-activity-item{% else %}activity-item{% endif %}">
+                        <div class="flex items-start">
+                            <div class="{% if is_dark_mode %}cyber-activity-icon{% else %}activity-icon{% endif %}">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <div class="mr-3 flex-1">
+                                <p class="text-sm {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                    {{ activity.description }}
+                                </p>
+                                <p class="text-xs {% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-500{% endif %} persian-numbers">
+                                    {{ activity.user }} - {{ activity.timestamp|timesince }} پیش
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8">
+                        <p class="{% if user.theme_preference == 'dark' %}text-cyber-text-muted{% else %}text-gray-500{% endif %}"
+                           :class="{ 'text-cyber-text-muted': darkMode, 'text-gray-500': !darkMode }">
+                            هیچ فعالیت اخیری یافت نشد
+                        </p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="{% if is_dark_mode %}cyber-actions-card{% else %}actions-card{% endif %} 
+                        {% if is_dark_mode %}animate-fade-in-up{% endif %}"
+                 style="animation-delay: 0.8s">
+                <h3 class="text-lg font-semibold {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %} mb-4">
+                    عملیات سریع
+                </h3>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <a href="/jewelry/add/" 
+                       class="{% if is_dark_mode %}cyber-quick-action{% else %}quick-action{% endif %}">
+                        <div class="{% if is_dark_mode %}cyber-action-icon primary{% else %}action-icon primary{% endif %}">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                            </svg>
+                        </div>
+                        <span class="text-sm font-medium">افزودن کالا</span>
+                    </a>
+                    
+                    <a href="/customers/add/" 
+                       class="{% if is_dark_mode %}cyber-quick-action{% else %}quick-action{% endif %}">
+                        <div class="{% if is_dark_mode %}cyber-action-icon success{% else %}action-icon success{% endif %}">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                            </svg>
+                        </div>
+                        <span class="text-sm font-medium">مشتری جدید</span>
+                    </a>
+                    
+                    <a href="/gold-installments/add/" 
+                       class="{% if is_dark_mode %}cyber-quick-action{% else %}quick-action{% endif %}">
+                        <div class="{% if is_dark_mode %}cyber-action-icon warning{% else %}action-icon warning{% endif %}">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <span class="text-sm font-medium">قرارداد قسطی</span>
+                    </a>
+                    
+                    <a href="/reports/" 
+                       class="{% if is_dark_mode %}cyber-quick-action{% else %}quick-action{% endif %}">
+                        <div class="{% if is_dark_mode %}cyber-action-icon tertiary{% else %}action-icon tertiary{% endif %}">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 00-2 2h2a2 2 0 002-2z"/>
+                            </svg>
+                        </div>
+                        <span class="text-sm font-medium">گزارشات</span>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Quick Actions Card -->
+            <div class="{% if user.theme_preference == 'dark' %}cyber-actions-card{% else %}actions-card{% endif %} 
+                        {% if user.theme_preference == 'dark' %}animate-fade-in-up{% endif %}"
+                 :class="{ 'cyber-actions-card animate-fade-in-up': darkMode, 'actions-card': !darkMode }"
+                 style="animation-delay: 0.8s">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %}"
+                        :class="{ 'text-cyber-text-primary': darkMode, 'text-gray-900': !darkMode }">
+                        عملیات سریع
+                    </h3>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- Add Jewelry Item -->
+                    <a href="/jewelry/add/" 
+                       class="{% if user.theme_preference == 'dark' %}cyber-quick-action{% else %}quick-action{% endif %}"
+                       :class="{ 'cyber-quick-action': darkMode, 'quick-action': !darkMode }">
+                        <div class="{% if user.theme_preference == 'dark' %}cyber-action-icon primary{% else %}action-icon primary{% endif %}"
+                             :class="{ 'cyber-action-icon primary': darkMode, 'action-icon primary': !darkMode }">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                            </svg>
+                        </div>
+                        <span class="text-sm font-medium">افزودن کالا</span>
+                    </a>
+                    
+                    <!-- Add Customer -->
+                    <a href="/customers/add/" 
+                       class="{% if user.theme_preference == 'dark' %}cyber-quick-action{% else %}quick-action{% endif %}"
+                       :class="{ 'cyber-quick-action': darkMode, 'quick-action': !darkMode }">
+                        <div class="{% if user.theme_preference == 'dark' %}cyber-action-icon success{% else %}action-icon success{% endif %}"
+                             :class="{ 'cyber-action-icon success': darkMode, 'action-icon success': !darkMode }">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                        </div>
+                        <span class="text-sm font-medium">مشتری جدید</span>
+                    </a>
+                    
+                    <!-- New Installment Contract -->
+                    <a href="/gold-installments/add/" 
+                       class="{% if user.theme_preference == 'dark' %}cyber-quick-action{% else %}quick-action{% endif %}"
+                       :class="{ 'cyber-quick-action': darkMode, 'quick-action': !darkMode }">
+                        <div class="{% if user.theme_preference == 'dark' %}cyber-action-icon warning{% else %}action-icon warning{% endif %}"
+                             :class="{ 'cyber-action-icon warning': darkMode, 'action-icon warning': !darkMode }">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                        <span class="text-sm font-medium">قرارداد قسطی</span>
+                    </a>
+                    
+                    <!-- View Reports -->
+                    <a href="/reports/" 
+                       class="{% if user.theme_preference == 'dark' %}cyber-quick-action{% else %}quick-action{% endif %}"
+                       :class="{ 'cyber-quick-action': darkMode, 'quick-action': !darkMode }">
+                        <div class="{% if user.theme_preference == 'dark' %}cyber-action-icon tertiary{% else %}action-icon tertiary{% endif %}"
+                             :class="{ 'cyber-action-icon tertiary': darkMode, 'action-icon tertiary': !darkMode }">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                        </div>
+                        <span class="text-sm font-medium">گزارشات</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

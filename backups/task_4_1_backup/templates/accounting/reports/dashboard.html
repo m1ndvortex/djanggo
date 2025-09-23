@@ -1,0 +1,434 @@
+{% extends 'base_rtl.html' %}
+{% load static %}
+{% load persian_tags %}
+
+{% block title %}گزارش‌های مالی - زرگر{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/accounting-dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-6">
+    <!-- Header Section -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
+        <div class="mb-4 lg:mb-0">
+            <h1 class="text-3xl font-bold 
+                       {% if is_dark_mode %}text-cyber-text-primary{% else %}text-light-text-primary{% endif %}">
+                گزارش‌های مالی
+            </h1>
+            <p class="mt-2 
+                     {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-light-text-secondary{% endif %}">
+                تولید گزارش‌های مالی با اصطلاحات فارسی و تقویم شمسی
+            </p>
+        </div>
+    </div>
+
+    <!-- Quick Report Generation -->
+    <div class="card-cyber mb-8">
+        <h3 class="text-lg font-semibold mb-6 
+                  {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+            تولید سریع گزارش
+        </h3>
+        
+        <form method="get" action="{% url 'accounting:trial_balance_report' %}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- Report Type -->
+            <div>
+                <label class="block text-sm font-medium mb-2 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                    نوع گزارش
+                </label>
+                <select name="report_type" id="report-type" class="form-select-cyber">
+                    <option value="trial_balance">تراز آزمایشی</option>
+                    <option value="profit_loss">صورت سود و زیان</option>
+                    <option value="balance_sheet">ترازنامه</option>
+                </select>
+            </div>
+            
+            <!-- Fiscal Year -->
+            <div>
+                <label class="block text-sm font-medium mb-2 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                    سال مالی
+                </label>
+                <input type="text" 
+                       name="year" 
+                       value="{{ current_shamsi_year }}"
+                       placeholder="1402"
+                       class="form-input-cyber"
+                       dir="ltr">
+            </div>
+            
+            <!-- Period Month (for Trial Balance) -->
+            <div id="month-field">
+                <label class="block text-sm font-medium mb-2 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                    ماه دوره
+                </label>
+                <select name="month" class="form-select-cyber">
+                    {% for month_num, month_name in shamsi_months %}
+                    <option value="{{ month_num }}" {% if current_shamsi_month == month_num %}selected{% endif %}>
+                        {{ month_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Generate Button -->
+            <div class="flex items-end">
+                <button type="submit" class="btn-primary-cyber w-full">
+                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    تولید گزارش
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Report Categories -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <!-- Financial Position Reports -->
+        <div class="card-cyber">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="p-3 rounded-lg 
+                           {% if is_dark_mode %}bg-cyber-neon-primary/10{% else %}bg-blue-100{% endif %}">
+                    <svg class="w-8 h-8 
+                               {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}" 
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold 
+                              {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        گزارش‌های وضعیت مالی
+                    </h3>
+                    <p class="text-sm 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                        تراز و ترازنامه
+                    </p>
+                </div>
+            </div>
+            
+            <div class="space-y-4">
+                <a href="{% url 'accounting:trial_balance_report' %}" 
+                   class="flex items-center justify-between p-4 rounded-lg border transition-all duration-200
+                          {% if is_dark_mode %}border-cyber-border-glass hover:bg-cyber-bg-surface{% else %}border-gray-200 hover:bg-gray-50{% endif %}">
+                    <div>
+                        <h4 class="font-medium 
+                                  {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                            تراز آزمایشی
+                        </h4>
+                        <p class="text-sm 
+                                 {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            مانده حساب‌ها در دوره مالی
+                        </p>
+                    </div>
+                    <svg class="w-5 h-5 
+                               {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}" 
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
+                
+                <a href="{% url 'accounting:balance_sheet_report' %}" 
+                   class="flex items-center justify-between p-4 rounded-lg border transition-all duration-200
+                          {% if is_dark_mode %}border-cyber-border-glass hover:bg-cyber-bg-surface{% else %}border-gray-200 hover:bg-gray-50{% endif %}">
+                    <div>
+                        <h4 class="font-medium 
+                                  {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                            ترازنامه
+                        </h4>
+                        <p class="text-sm 
+                                 {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            دارایی‌ها، بدهی‌ها و حقوق صاحبان سهام
+                        </p>
+                    </div>
+                    <svg class="w-5 h-5 
+                               {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}" 
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
+            </div>
+        </div>
+
+        <!-- Performance Reports -->
+        <div class="card-cyber">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="p-3 rounded-lg 
+                           {% if is_dark_mode %}bg-cyber-neon-secondary/10{% else %}bg-green-100{% endif %}">
+                    <svg class="w-8 h-8 
+                               {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}" 
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold 
+                              {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        گزارش‌های عملکرد
+                    </h3>
+                    <p class="text-sm 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                        سود و زیان
+                    </p>
+                </div>
+            </div>
+            
+            <div class="space-y-4">
+                <a href="{% url 'accounting:profit_loss_report' %}" 
+                   class="flex items-center justify-between p-4 rounded-lg border transition-all duration-200
+                          {% if is_dark_mode %}border-cyber-border-glass hover:bg-cyber-bg-surface{% else %}border-gray-200 hover:bg-gray-50{% endif %}">
+                    <div>
+                        <h4 class="font-medium 
+                                  {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                            صورت سود و زیان
+                        </h4>
+                        <p class="text-sm 
+                                 {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            درآمدها، هزینه‌ها و سود خالص
+                        </p>
+                    </div>
+                    <svg class="w-5 h-5 
+                               {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}" 
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
+            </div>
+        </div>
+
+        <!-- Detailed Reports -->
+        <div class="card-cyber">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="p-3 rounded-lg 
+                           {% if is_dark_mode %}bg-cyber-neon-tertiary/10{% else %}bg-orange-100{% endif %}">
+                    <svg class="w-8 h-8 
+                               {% if is_dark_mode %}text-cyber-neon-tertiary{% else %}text-orange-600{% endif %}" 
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold 
+                              {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        گزارش‌های تفصیلی
+                    </h3>
+                    <p class="text-sm 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                        دفاتر و تراکنش‌ها
+                    </p>
+                </div>
+            </div>
+            
+            <div class="space-y-4">
+                <a href="{% url 'accounting:general_ledger' %}" 
+                   class="flex items-center justify-between p-4 rounded-lg border transition-all duration-200
+                          {% if is_dark_mode %}border-cyber-border-glass hover:bg-cyber-bg-surface{% else %}border-gray-200 hover:bg-gray-50{% endif %}">
+                    <div>
+                        <h4 class="font-medium 
+                                  {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                            دفتر کل
+                        </h4>
+                        <p class="text-sm 
+                                 {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            خلاصه حساب‌ها در دوره
+                        </p>
+                    </div>
+                    <svg class="w-5 h-5 
+                               {% if is_dark_mode %}text-cyber-neon-tertiary{% else %}text-orange-600{% endif %}" 
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
+                
+                <a href="{% url 'accounting:subsidiary_ledger' %}" 
+                   class="flex items-center justify-between p-4 rounded-lg border transition-all duration-200
+                          {% if is_dark_mode %}border-cyber-border-glass hover:bg-cyber-bg-surface{% else %}border-gray-200 hover:bg-gray-50{% endif %}">
+                    <div>
+                        <h4 class="font-medium 
+                                  {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                            دفتر معین
+                        </h4>
+                        <p class="text-sm 
+                                 {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            جزئیات تراکنش‌های حساب
+                        </p>
+                    </div>
+                    <svg class="w-5 h-5 
+                               {% if is_dark_mode %}text-cyber-neon-tertiary{% else %}text-orange-600{% endif %}" 
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Features -->
+    <div class="mt-8">
+        <div class="card-cyber">
+            <h3 class="text-lg font-semibold mb-6 
+                      {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                ویژگی‌های گزارش‌گیری
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <div class="p-4 rounded-lg mb-4 
+                               {% if is_dark_mode %}bg-cyber-neon-primary/10{% else %}bg-blue-100{% endif %}">
+                        <svg class="w-8 h-8 mx-auto 
+                                   {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}" 
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <h4 class="font-medium mb-2 
+                              {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        تقویم شمسی
+                    </h4>
+                    <p class="text-sm 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                        تمام گزارش‌ها با تقویم شمسی و سال مالی ایرانی
+                    </p>
+                </div>
+                
+                <div class="text-center">
+                    <div class="p-4 rounded-lg mb-4 
+                               {% if is_dark_mode %}bg-cyber-neon-secondary/10{% else %}bg-green-100{% endif %}">
+                        <svg class="w-8 h-8 mx-auto 
+                                   {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}" 
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <h4 class="font-medium mb-2 
+                              {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        اصطلاحات فارسی
+                    </h4>
+                    <p class="text-sm 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                        استفاده از اصطلاحات حسابداری فارسی و ایرانی
+                    </p>
+                </div>
+                
+                <div class="text-center">
+                    <div class="p-4 rounded-lg mb-4 
+                               {% if is_dark_mode %}bg-cyber-neon-tertiary/10{% else %}bg-orange-100{% endif %}">
+                        <svg class="w-8 h-8 mx-auto 
+                                   {% if is_dark_mode %}text-cyber-neon-tertiary{% else %}text-orange-600{% endif %}" 
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <h4 class="font-medium mb-2 
+                              {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        خروجی متنوع
+                    </h4>
+                    <p class="text-sm 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                        امکان خروجی PDF، Excel و چاپ مستقیم
+                    </p>
+                </div>
+                
+                <div class="text-center">
+                    <div class="p-4 rounded-lg mb-4 
+                               {% if is_dark_mode %}bg-cyber-neon-warning/10{% else %}bg-yellow-100{% endif %}">
+                        <svg class="w-8 h-8 mx-auto 
+                                   {% if is_dark_mode %}text-cyber-neon-warning{% else %}text-yellow-600{% endif %}" 
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                    <h4 class="font-medium mb-2 
+                              {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        تولید سریع
+                    </h4>
+                    <p class="text-sm 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                        تولید فوری گزارش‌ها با چند کلیک
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Persian number formatting
+    const persianElements = document.querySelectorAll('.persian-numbers');
+    persianElements.forEach(element => {
+        if (window.PersianNumbers) {
+            element.textContent = window.PersianNumbers.toPersian(element.textContent);
+        }
+    });
+    
+    // Handle report type change
+    const reportTypeSelect = document.getElementById('report-type');
+    const monthField = document.getElementById('month-field');
+    const form = reportTypeSelect.closest('form');
+    
+    reportTypeSelect.addEventListener('change', function() {
+        const selectedType = this.value;
+        
+        // Show/hide month field based on report type
+        if (selectedType === 'trial_balance') {
+            monthField.style.display = 'block';
+        } else {
+            monthField.style.display = 'none';
+        }
+        
+        // Update form action based on report type
+        const baseUrl = '{% url "accounting:reports_dashboard" %}';
+        switch (selectedType) {
+            case 'trial_balance':
+                form.action = '{% url "accounting:trial_balance_report" %}';
+                break;
+            case 'profit_loss':
+                form.action = '{% url "accounting:profit_loss_report" %}';
+                break;
+            case 'balance_sheet':
+                form.action = '{% url "accounting:balance_sheet_report" %}';
+                break;
+            default:
+                form.action = baseUrl;
+        }
+    });
+    
+    // Add card hover effects for cybersecurity theme
+    if (document.body.classList.contains('dark')) {
+        const cards = document.querySelectorAll('.card-cyber');
+        cards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+                this.style.boxShadow = '0 16px 50px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.05)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.03)';
+            });
+        });
+        
+        // Add hover effects to report links
+        const reportLinks = document.querySelectorAll('a[href*="report"]');
+        reportLinks.forEach(link => {
+            link.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateX(4px)';
+                this.style.boxShadow = '0 4px 16px rgba(0, 212, 255, 0.1)';
+            });
+            
+            link.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateX(0)';
+                this.style.boxShadow = '';
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

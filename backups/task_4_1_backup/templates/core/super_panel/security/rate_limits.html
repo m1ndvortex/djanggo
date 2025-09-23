@@ -1,0 +1,443 @@
+{% extends "base.html" %}
+
+{% block title %}محدودیت‌های نرخ - زرگر{% endblock %}
+
+{% block content %}
+<div class="min-h-screen {% if is_dark_mode %}bg-gradient-to-br from-cyber-bg-primary via-cyber-bg-secondary to-cyber-bg-surface{% else %}bg-gray-50{% endif %}">
+    
+    <!-- Header -->
+    <header class="{% if is_dark_mode %}bg-cyber-bg-surface/50 border-b border-cyber-neon-primary/20{% else %}bg-white border-b border-gray-200{% endif %} backdrop-blur-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <svg class="h-8 w-8 {% if is_dark_mode %}text-cyber-neon-danger{% else %}text-red-600{% endif %} ml-3" 
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636"></path>
+                    </svg>
+                    <h1 class="text-2xl font-bold {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        محدودیت‌های نرخ
+                    </h1>
+                </div>
+                
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <a href="{% url 'core:security_dashboard' %}" 
+                       class="{% if is_dark_mode %}text-cyber-neon-primary hover:text-cyber-neon-secondary{% else %}text-blue-600 hover:text-blue-500{% endif %} 
+                              transition-colors duration-200">
+                        بازگشت به داشبورد امنیت
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="px-4 py-6 sm:px-0">
+            
+            <!-- Filters -->
+            <div class="{% if is_dark_mode %}cyber-glass-card{% else %}bg-white shadow rounded-lg{% endif %} mb-6">
+                <div class="p-6">
+                    <h3 class="text-lg font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %} mb-4">
+                        فیلترها و جستجو
+                    </h3>
+                    
+                    <form method="get" class="space-y-4">
+                        <!-- Basic Filters Row -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <!-- Limit Type Filter -->
+                            <div>
+                                <label class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-1">
+                                    نوع محدودیت
+                                </label>
+                                <select name="limit_type" 
+                                        class="w-full rounded-lg border {% if is_dark_mode %}bg-cyber-bg-elevated border-cyber-neon-primary/20 text-cyber-text-primary{% else %}bg-white border-gray-300 text-gray-900{% endif %} 
+                                               focus:ring-2 {% if is_dark_mode %}focus:ring-cyber-neon-primary focus:border-cyber-neon-primary{% else %}focus:ring-blue-500 focus:border-blue-500{% endif %}">
+                                    <option value="">همه انواع</option>
+                                    {% for value, label in limit_types %}
+                                    <option value="{{ value }}" {% if current_filters.limit_type == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <!-- Block Status Filter -->
+                            <div>
+                                <label class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-1">
+                                    وضعیت مسدودی
+                                </label>
+                                <select name="is_blocked" 
+                                        class="w-full rounded-lg border {% if is_dark_mode %}bg-cyber-bg-elevated border-cyber-neon-primary/20 text-cyber-text-primary{% else %}bg-white border-gray-300 text-gray-900{% endif %} 
+                                               focus:ring-2 {% if is_dark_mode %}focus:ring-cyber-neon-primary focus:border-cyber-neon-primary{% else %}focus:ring-blue-500 focus:border-blue-500{% endif %}">
+                                    <option value="">همه</option>
+                                    <option value="true" {% if current_filters.is_blocked == 'true' %}selected{% endif %}>مسدود شده</option>
+                                    <option value="false" {% if current_filters.is_blocked == 'false' %}selected{% endif %}>مسدود نشده</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Search -->
+                            <div>
+                                <label class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-1">
+                                    جستجو
+                                </label>
+                                <input type="text" name="search" value="{{ current_filters.search }}" 
+                                       placeholder="شناسه، endpoint..."
+                                       class="w-full rounded-lg border {% if is_dark_mode %}bg-cyber-bg-elevated border-cyber-neon-primary/20 text-cyber-text-primary placeholder-cyber-text-muted{% else %}bg-white border-gray-300 text-gray-900 placeholder-gray-500{% endif %} 
+                                              focus:ring-2 {% if is_dark_mode %}focus:ring-cyber-neon-primary focus:border-cyber-neon-primary{% else %}focus:ring-blue-500 focus:border-blue-500{% endif %}">
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-2 space-x-reverse">
+                            <a href="{% url 'core:rate_limits' %}" 
+                               class="px-4 py-2 text-sm font-medium rounded-lg border 
+                                      {% if is_dark_mode %}border-cyber-neon-primary/20 text-cyber-text-secondary hover:bg-cyber-bg-elevated{% else %}border-gray-300 text-gray-700 hover:bg-gray-50{% endif %} 
+                                      transition-colors duration-200">
+                                پاک کردن فیلترها
+                            </a>
+                            <button type="submit" 
+                                    class="px-4 py-2 text-sm font-medium rounded-lg 
+                                           {% if is_dark_mode %}bg-cyber-neon-primary text-cyber-bg-primary hover:bg-cyber-neon-secondary{% else %}bg-blue-600 text-white hover:bg-blue-700{% endif %} 
+                                           transition-colors duration-200">
+                                اعمال فیلترها
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Rate Limits List -->
+            <div class="{% if is_dark_mode %}cyber-glass-card{% else %}bg-white shadow rounded-lg{% endif %}">
+                <div class="px-6 py-4 border-b {% if is_dark_mode %}border-cyber-neon-primary/20{% else %}border-gray-200{% endif %}">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                            محدودیت‌های نرخ
+                            <span class="text-sm font-normal {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} persian-numbers">
+                                ({{ page_obj.paginator.count }} محدودیت)
+                            </span>
+                        </h3>
+                        
+                        <!-- Bulk Actions -->
+                        <div class="flex space-x-2 space-x-reverse">
+                            <button onclick="bulkUnblock()" 
+                                    class="px-4 py-2 text-sm font-medium rounded-lg border 
+                                           {% if is_dark_mode %}border-cyber-neon-secondary/20 text-cyber-neon-secondary hover:bg-cyber-bg-elevated{% else %}border-green-300 text-green-700 hover:bg-green-50{% endif %} 
+                                           transition-colors duration-200">
+                                رفع مسدودی گروهی
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    {% if attempts %}
+                    <table class="min-w-full divide-y {% if is_dark_mode %}divide-cyber-neon-primary/20{% else %}divide-gray-200{% endif %}">
+                        <thead class="{% if is_dark_mode %}bg-cyber-bg-elevated/30{% else %}bg-gray-50{% endif %}">
+                            <tr>
+                                <th class="px-6 py-3 text-right">
+                                    <input type="checkbox" id="selectAll" 
+                                           class="rounded border-gray-300 {% if is_dark_mode %}bg-cyber-bg-elevated border-cyber-neon-primary/20 text-cyber-neon-primary focus:ring-cyber-neon-primary{% else %}text-blue-600 focus:ring-blue-500{% endif %}">
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                    شناسه
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                    نوع محدودیت
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                    Endpoint
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                    تعداد تلاش
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                    وضعیت
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                    آخرین تلاش
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                    مسدود تا
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                    عملیات
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y {% if is_dark_mode %}divide-cyber-neon-primary/10{% else %}divide-gray-200{% endif %}">
+                            {% for attempt in attempts %}
+                            <tr class="{% if is_dark_mode %}hover:bg-cyber-bg-elevated/20{% else %}hover:bg-gray-50{% endif %} transition-colors duration-150">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <input type="checkbox" name="selected_attempts" value="{{ attempt.pk }}" 
+                                           class="attempt-checkbox rounded border-gray-300 {% if is_dark_mode %}bg-cyber-bg-elevated border-cyber-neon-primary/20 text-cyber-neon-primary focus:ring-cyber-neon-primary{% else %}text-blue-600 focus:ring-blue-500{% endif %}">
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="h-8 w-8 rounded-full flex items-center justify-center
+                                                    {% if attempt.is_blocked %}bg-red-500
+                                                    {% else %}bg-green-500{% endif %}">
+                                            <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                {% if attempt.is_blocked %}
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                                      d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636"></path>
+                                                {% else %}
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                {% endif %}
+                                            </svg>
+                                        </div>
+                                        <div class="mr-3">
+                                            <div class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                                {{ attempt.identifier }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                                 {% if attempt.limit_type == 'login' %}bg-blue-100 text-blue-800
+                                                 {% elif attempt.limit_type == 'api_call' %}bg-purple-100 text-purple-800
+                                                 {% elif attempt.limit_type == 'password_reset' %}bg-yellow-100 text-yellow-800
+                                                 {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                        {{ attempt.get_limit_type_display }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                                    {{ attempt.endpoint|default:"-" }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %} persian-numbers">
+                                            {{ attempt.attempts }}
+                                        </div>
+                                        <div class="mr-2 w-16 bg-gray-200 rounded-full h-2">
+                                            {% with limit=attempt.should_be_blocked|yesno:"10,100" %}
+                                            <div class="h-2 rounded-full 
+                                                        {% if attempt.attempts >= 10 %}bg-red-500
+                                                        {% elif attempt.attempts >= 5 %}bg-orange-500
+                                                        {% else %}bg-green-500{% endif %}" 
+                                                 style="width: {{ attempt.attempts|floatformat:0 }}%"></div>
+                                            {% endwith %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if attempt.is_blocked %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                            <svg class="h-3 w-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636"></path>
+                                            </svg>
+                                            مسدود
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            <svg class="h-3 w-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                            فعال
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} persian-numbers">
+                                    {{ attempt.last_attempt|date:"Y/m/d H:i" }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} persian-numbers">
+                                    {% if attempt.blocked_until %}
+                                        {{ attempt.blocked_until|date:"Y/m/d H:i" }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <div class="flex space-x-2 space-x-reverse">
+                                        {% if attempt.is_blocked %}
+                                        <button onclick="unblockAttempt({{ attempt.pk }})" 
+                                                class="{% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %} hover:underline">
+                                            رفع مسدودی
+                                        </button>
+                                        {% endif %}
+                                        <button onclick="viewAttemptDetails({{ attempt.pk }})" 
+                                                class="{% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %} hover:underline">
+                                            جزئیات
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <div class="text-center py-12">
+                        <svg class="mx-auto h-12 w-12 {% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-400{% endif %}" 
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636"></path>
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                            هیچ محدودیت نرخی یافت نشد
+                        </h3>
+                        <p class="mt-1 text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                            با فیلترهای انتخاب شده هیچ محدودیتی وجود ندارد.
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Pagination -->
+                {% if is_paginated %}
+                <div class="px-6 py-4 border-t {% if is_dark_mode %}border-cyber-neon-primary/20{% else %}border-gray-200{% endif %}">
+                    <div class="flex items-center justify-between">
+                        <div class="text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} persian-numbers">
+                            نمایش {{ page_obj.start_index }} تا {{ page_obj.end_index }} از {{ page_obj.paginator.count }} محدودیت
+                        </div>
+                        
+                        <nav class="flex space-x-2 space-x-reverse">
+                            {% if page_obj.has_previous %}
+                            <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}" 
+                               class="px-3 py-2 text-sm font-medium rounded-lg border 
+                                      {% if is_dark_mode %}border-cyber-neon-primary/20 text-cyber-text-primary hover:bg-cyber-bg-elevated{% else %}border-gray-300 text-gray-700 hover:bg-gray-50{% endif %} 
+                                      transition-colors duration-200">
+                                قبلی
+                            </a>
+                            {% endif %}
+                            
+                            <span class="px-3 py-2 text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %} persian-numbers">
+                                صفحه {{ page_obj.number }} از {{ page_obj.paginator.num_pages }}
+                            </span>
+                            
+                            {% if page_obj.has_next %}
+                            <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}" 
+                               class="px-3 py-2 text-sm font-medium rounded-lg border 
+                                      {% if is_dark_mode %}border-cyber-neon-primary/20 text-cyber-text-primary hover:bg-cyber-bg-elevated{% else %}border-gray-300 text-gray-700 hover:bg-gray-50{% endif %} 
+                                      transition-colors duration-200">
+                                بعدی
+                            </a>
+                            {% endif %}
+                        </nav>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+function unblockAttempt(attemptId) {
+    if (confirm('آیا از رفع مسدودی این شناسه اطمینان دارید؟')) {
+        fetch(`/admin/security/rate-limits/${attemptId}/unblock/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'HX-Request': 'true'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload(); // Refresh to show updated status
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+}
+
+function viewAttemptDetails(attemptId) {
+    // This would open a detailed view modal or navigate to detail page
+    console.log('View details for attempt:', attemptId);
+}
+
+function bulkUnblock() {
+    const selected = document.querySelectorAll('input[name="selected_attempts"]:checked');
+    if (selected.length === 0) {
+        alert('لطفاً حداقل یک محدودیت را انتخاب کنید.');
+        return;
+    }
+    
+    if (confirm(`آیا از رفع مسدودی ${selected.length} شناسه انتخاب شده اطمینان دارید؟`)) {
+        // Implement bulk unblock logic
+        const attemptIds = Array.from(selected).map(cb => cb.value);
+        console.log('Bulk unblock:', attemptIds);
+        
+        // This would make API calls to unblock all selected attempts
+        Promise.all(attemptIds.map(id => 
+            fetch(`/admin/security/rate-limits/${id}/unblock/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'HX-Request': 'true'
+                }
+            })
+        )).then(() => {
+            location.reload();
+        }).catch(error => {
+            console.error('Error:', error);
+        });
+    }
+}
+
+// Select all functionality
+document.getElementById('selectAll').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.attempt-checkbox');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+});
+</script>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize cybersecurity theme animations for dark mode
+    if (window.currentTheme === 'dark' && window.Motion) {
+        const cards = document.querySelectorAll('.cyber-glass-card');
+        cards.forEach((card, index) => {
+            window.Motion.animate(card, {
+                opacity: [0, 1],
+                y: [20, 0],
+                scale: [0.95, 1]
+            }, {
+                duration: 0.6,
+                delay: index * 0.1,
+                ease: [0.4, 0, 0.2, 1]
+            });
+        });
+        
+        // Animate table rows with rate limit specific effects
+        const tableRows = document.querySelectorAll('tbody tr');
+        tableRows.forEach(row => {
+            row.addEventListener('mouseenter', function() {
+                if (window.currentTheme === 'dark') {
+                    const isBlocked = row.querySelector('.bg-red-500');
+                    const glowColor = isBlocked ? 'rgba(255, 71, 87, 0.2)' : 'rgba(0, 255, 136, 0.2)';
+                    
+                    window.Motion.animate(row, {
+                        scale: [1, 1.01],
+                        boxShadow: [`0 0 0 ${glowColor.replace('0.2', '0')}`, `0 0 12px ${glowColor}`]
+                    }, {
+                        duration: 0.2,
+                        ease: [0.4, 0, 0.2, 1]
+                    });
+                }
+            });
+            
+            row.addEventListener('mouseleave', function() {
+                if (window.currentTheme === 'dark') {
+                    const isBlocked = row.querySelector('.bg-red-500');
+                    const glowColor = isBlocked ? 'rgba(255, 71, 87, 0.2)' : 'rgba(0, 255, 136, 0.2)';
+                    
+                    window.Motion.animate(row, {
+                        scale: [1.01, 1],
+                        boxShadow: [`0 0 12px ${glowColor}`, `0 0 0 ${glowColor.replace('0.2', '0')}`]
+                    }, {
+                        duration: 0.2,
+                        ease: [0.4, 0, 0.2, 1]
+                    });
+                }
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

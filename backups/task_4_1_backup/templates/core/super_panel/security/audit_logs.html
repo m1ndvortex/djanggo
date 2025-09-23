@@ -1,0 +1,503 @@
+{% extends "base.html" %}
+
+{% block title %}گزارش‌های حسابرسی - زرگر{% endblock %}
+
+{% block content %}
+<div class="min-h-screen {% if is_dark_mode %}bg-gradient-to-br from-cyber-bg-primary via-cyber-bg-secondary to-cyber-bg-surface{% else %}bg-gray-50{% endif %}">
+    
+    <!-- Header -->
+    <header class="{% if is_dark_mode %}bg-cyber-bg-surface/50 border-b border-cyber-neon-primary/20{% else %}bg-white border-b border-gray-200{% endif %} backdrop-blur-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <svg class="h-8 w-8 {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %} ml-3" 
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                    <h1 class="text-2xl font-bold {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        گزارش‌های حسابرسی
+                    </h1>
+                </div>
+                
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <a href="{% url 'core:security_dashboard' %}" 
+                       class="{% if is_dark_mode %}text-cyber-neon-primary hover:text-cyber-neon-secondary{% else %}text-blue-600 hover:text-blue-500{% endif %} 
+                              transition-colors duration-200">
+                        بازگشت به داشبورد امنیت
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="px-4 py-6 sm:px-0">
+            
+            <!-- Filters -->
+            <div class="{% if is_dark_mode %}cyber-glass-card{% else %}bg-white shadow rounded-lg{% endif %} mb-6">
+                <div class="p-6">
+                    <h3 class="text-lg font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %} mb-4">
+                        فیلترها و جستجو
+                    </h3>
+                    
+                    <form method="get" class="space-y-4" x-data="{ showAdvanced: false }">
+                        <!-- Basic Filters Row -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <!-- Action Filter -->
+                            <div>
+                                <label class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-1">
+                                    نوع عملیات
+                                </label>
+                                <select name="action" 
+                                        class="w-full rounded-lg border {% if is_dark_mode %}bg-cyber-bg-elevated border-cyber-neon-primary/20 text-cyber-text-primary{% else %}bg-white border-gray-300 text-gray-900{% endif %} 
+                                               focus:ring-2 {% if is_dark_mode %}focus:ring-cyber-neon-primary focus:border-cyber-neon-primary{% else %}focus:ring-blue-500 focus:border-blue-500{% endif %}">
+                                    <option value="">همه عملیات</option>
+                                    {% for value, label in action_types %}
+                                    <option value="{{ value }}" {% if current_filters.action == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <!-- Model Filter -->
+                            <div>
+                                <label class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-1">
+                                    مدل
+                                </label>
+                                <select name="model_name" 
+                                        class="w-full rounded-lg border {% if is_dark_mode %}bg-cyber-bg-elevated border-cyber-neon-primary/20 text-cyber-text-primary{% else %}bg-white border-gray-300 text-gray-900{% endif %} 
+                                               focus:ring-2 {% if is_dark_mode %}focus:ring-cyber-neon-primary focus:border-cyber-neon-primary{% else %}focus:ring-blue-500 focus:border-blue-500{% endif %}">
+                                    <option value="">همه مدل‌ها</option>
+                                    {% for model in model_names %}
+                                    <option value="{{ model }}" {% if current_filters.model_name == model %}selected{% endif %}>
+                                        {{ model }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <!-- User Filter -->
+                            <div>
+                                <label class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-1">
+                                    کاربر
+                                </label>
+                                <select name="user_id" 
+                                        class="w-full rounded-lg border {% if is_dark_mode %}bg-cyber-bg-elevated border-cyber-neon-primary/20 text-cyber-text-primary{% else %}bg-white border-gray-300 text-gray-900{% endif %} 
+                                               focus:ring-2 {% if is_dark_mode %}focus:ring-cyber-neon-primary focus:border-cyber-neon-primary{% else %}focus:ring-blue-500 focus:border-blue-500{% endif %}">
+                                    <option value="">همه کاربران</option>
+                                    {% for user in users %}
+                                    <option value="{{ user.id }}" {% if current_filters.user_id == user.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ user.username }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <!-- Search -->
+                            <div>
+                                <label class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-1">
+                                    جستجو
+                                </label>
+                                <input type="text" name="search" value="{{ current_filters.search }}" 
+                                       placeholder="کاربر، شیء، IP..."
+                                       class="w-full rounded-lg border {% if is_dark_mode %}bg-cyber-bg-elevated border-cyber-neon-primary/20 text-cyber-text-primary placeholder-cyber-text-muted{% else %}bg-white border-gray-300 text-gray-900 placeholder-gray-500{% endif %} 
+                                              focus:ring-2 {% if is_dark_mode %}focus:ring-cyber-neon-primary focus:border-cyber-neon-primary{% else %}focus:ring-blue-500 focus:border-blue-500{% endif %}">
+                            </div>
+                        </div>
+                        
+                        <!-- Advanced Filters Toggle -->
+                        <div class="flex items-center justify-between">
+                            <button type="button" @click="showAdvanced = !showAdvanced"
+                                    class="text-sm {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %} hover:underline">
+                                <span x-show="!showAdvanced">نمایش فیلترهای پیشرفته</span>
+                                <span x-show="showAdvanced">مخفی کردن فیلترهای پیشرفته</span>
+                            </button>
+                            
+                            <div class="flex space-x-2 space-x-reverse">
+                                <a href="{% url 'core:audit_logs' %}" 
+                                   class="px-4 py-2 text-sm font-medium rounded-lg border 
+                                          {% if is_dark_mode %}border-cyber-neon-primary/20 text-cyber-text-secondary hover:bg-cyber-bg-elevated{% else %}border-gray-300 text-gray-700 hover:bg-gray-50{% endif %} 
+                                          transition-colors duration-200">
+                                    پاک کردن فیلترها
+                                </a>
+                                <button type="submit" 
+                                        class="px-4 py-2 text-sm font-medium rounded-lg 
+                                               {% if is_dark_mode %}bg-cyber-neon-primary text-cyber-bg-primary hover:bg-cyber-neon-secondary{% else %}bg-blue-600 text-white hover:bg-blue-700{% endif %} 
+                                               transition-colors duration-200">
+                                    اعمال فیلترها
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Advanced Filters -->
+                        <div x-show="showAdvanced" 
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 max-h-0"
+                             x-transition:enter-end="opacity-100 max-h-96"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 max-h-96"
+                             x-transition:leave-end="opacity-0 max-h-0"
+                             class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t {% if is_dark_mode %}border-cyber-neon-primary/20{% else %}border-gray-200{% endif %}">
+                            
+                            <!-- Date From -->
+                            <div>
+                                <label class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-1">
+                                    از تاریخ
+                                </label>
+                                <input type="date" name="date_from" value="{{ current_filters.date_from }}" 
+                                       class="w-full rounded-lg border {% if is_dark_mode %}bg-cyber-bg-elevated border-cyber-neon-primary/20 text-cyber-text-primary{% else %}bg-white border-gray-300 text-gray-900{% endif %} 
+                                              focus:ring-2 {% if is_dark_mode %}focus:ring-cyber-neon-primary focus:border-cyber-neon-primary{% else %}focus:ring-blue-500 focus:border-blue-500{% endif %}">
+                            </div>
+                            
+                            <!-- Date To -->
+                            <div>
+                                <label class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-1">
+                                    تا تاریخ
+                                </label>
+                                <input type="date" name="date_to" value="{{ current_filters.date_to }}" 
+                                       class="w-full rounded-lg border {% if is_dark_mode %}bg-cyber-bg-elevated border-cyber-neon-primary/20 text-cyber-text-primary{% else %}bg-white border-gray-300 text-gray-900{% endif %} 
+                                              focus:ring-2 {% if is_dark_mode %}focus:ring-cyber-neon-primary focus:border-cyber-neon-primary{% else %}focus:ring-blue-500 focus:border-blue-500{% endif %}">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Audit Logs List -->
+            <div class="{% if is_dark_mode %}cyber-glass-card{% else %}bg-white shadow rounded-lg{% endif %}">
+                <div class="px-6 py-4 border-b {% if is_dark_mode %}border-cyber-neon-primary/20{% else %}border-gray-200{% endif %}">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                            گزارش‌های حسابرسی
+                            <span class="text-sm font-normal {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} persian-numbers">
+                                ({{ page_obj.paginator.count }} گزارش)
+                            </span>
+                        </h3>
+                        
+                        <!-- Export Button -->
+                        <button class="px-4 py-2 text-sm font-medium rounded-lg border 
+                                       {% if is_dark_mode %}border-cyber-neon-primary/20 text-cyber-text-primary hover:bg-cyber-bg-elevated{% else %}border-gray-300 text-gray-700 hover:bg-gray-50{% endif %} 
+                                       transition-colors duration-200">
+                            <svg class="h-4 w-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            خروجی CSV
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    {% if logs %}
+                    <table class="min-w-full divide-y {% if is_dark_mode %}divide-cyber-neon-primary/20{% else %}divide-gray-200{% endif %}">
+                        <thead class="{% if is_dark_mode %}bg-cyber-bg-elevated/30{% else %}bg-gray-50{% endif %}">
+                            <tr>
+                                <th class="px-6 py-3 text-right text-xs font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                    عملیات
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                    کاربر
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                    مدل
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                    شیء
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                    آدرس IP
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                    زمان
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                    یکپارچگی
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                    عملیات
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y {% if is_dark_mode %}divide-cyber-neon-primary/10{% else %}divide-gray-200{% endif %}">
+                            {% for log in logs %}
+                            <tr class="{% if is_dark_mode %}hover:bg-cyber-bg-elevated/20{% else %}hover:bg-gray-50{% endif %} transition-colors duration-150">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="h-8 w-8 rounded-full flex items-center justify-center
+                                                    {% if log.action in 'create,update,delete' %}bg-blue-500
+                                                    {% elif log.action in 'login,logout' %}bg-green-500
+                                                    {% elif 'admin' in log.action %}bg-orange-500
+                                                    {% else %}bg-gray-500{% endif %}">
+                                            <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                {% if log.action == 'create' %}
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                                {% elif log.action == 'update' %}
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                                {% elif log.action == 'delete' %}
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                {% elif 'login' in log.action %}
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                                                {% else %}
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                                {% endif %}
+                                            </svg>
+                                        </div>
+                                        <div class="mr-3">
+                                            <div class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                                {{ log.get_action_display }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                    {% if log.user %}
+                                        {{ log.user.username }}
+                                    {% else %}
+                                        <span class="{% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">سیستم</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                                    {{ log.model_name|default:"-" }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                                    <div class="max-w-xs truncate" title="{{ log.object_repr }}">
+                                        {{ log.object_repr|default:"-" }}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-mono {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                                    {{ log.ip_address|default:"-" }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} persian-numbers">
+                                    {{ log.created_at|date:"Y/m/d H:i:s" }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if log.verify_integrity %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            <svg class="h-3 w-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                            </svg>
+                                            سالم
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                            <svg class="h-3 w-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                                            </svg>
+                                            دستکاری شده
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <button onclick="viewLogDetails({{ log.pk }})" 
+                                            class="{% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %} hover:underline">
+                                        جزئیات
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <div class="text-center py-12">
+                        <svg class="mx-auto h-12 w-12 {% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-400{% endif %}" 
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                            هیچ گزارش حسابرسی یافت نشد
+                        </h3>
+                        <p class="mt-1 text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                            با فیلترهای انتخاب شده هیچ گزارشی وجود ندارد.
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Pagination -->
+                {% if is_paginated %}
+                <div class="px-6 py-4 border-t {% if is_dark_mode %}border-cyber-neon-primary/20{% else %}border-gray-200{% endif %}">
+                    <div class="flex items-center justify-between">
+                        <div class="text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} persian-numbers">
+                            نمایش {{ page_obj.start_index }} تا {{ page_obj.end_index }} از {{ page_obj.paginator.count }} گزارش
+                        </div>
+                        
+                        <nav class="flex space-x-2 space-x-reverse">
+                            {% if page_obj.has_previous %}
+                            <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}" 
+                               class="px-3 py-2 text-sm font-medium rounded-lg border 
+                                      {% if is_dark_mode %}border-cyber-neon-primary/20 text-cyber-text-primary hover:bg-cyber-bg-elevated{% else %}border-gray-300 text-gray-700 hover:bg-gray-50{% endif %} 
+                                      transition-colors duration-200">
+                                قبلی
+                            </a>
+                            {% endif %}
+                            
+                            <span class="px-3 py-2 text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %} persian-numbers">
+                                صفحه {{ page_obj.number }} از {{ page_obj.paginator.num_pages }}
+                            </span>
+                            
+                            {% if page_obj.has_next %}
+                            <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}" 
+                               class="px-3 py-2 text-sm font-medium rounded-lg border 
+                                      {% if is_dark_mode %}border-cyber-neon-primary/20 text-cyber-text-primary hover:bg-cyber-bg-elevated{% else %}border-gray-300 text-gray-700 hover:bg-gray-50{% endif %} 
+                                      transition-colors duration-200">
+                                بعدی
+                            </a>
+                            {% endif %}
+                        </nav>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Log Details Modal -->
+<div id="logDetailsModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        
+        <div class="inline-block align-bottom {% if is_dark_mode %}cyber-glass-card{% else %}bg-white{% endif %} rounded-lg text-right overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+            <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                        <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                    </div>
+                    <div class="mt-3 text-center sm:mt-0 sm:mr-4 sm:text-right w-full">
+                        <h3 class="text-lg leading-6 font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}" id="modal-title">
+                            جزئیات گزارش حسابرسی
+                        </h3>
+                        <div class="mt-4" id="logDetailsContent">
+                            <!-- Content will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="{% if is_dark_mode %}bg-cyber-bg-elevated/30{% else %}bg-gray-50{% endif %} px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" onclick="closeLogDetailsModal()" 
+                        class="w-full inline-flex justify-center rounded-lg border 
+                               {% if is_dark_mode %}border-cyber-neon-primary/20 text-cyber-text-primary hover:bg-cyber-bg-elevated{% else %}border-gray-300 text-gray-700 hover:bg-gray-50{% endif %} 
+                               shadow-sm px-4 py-2 text-base font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 
+                               {% if is_dark_mode %}focus:ring-cyber-neon-primary{% else %}focus:ring-blue-500{% endif %} 
+                               sm:w-auto sm:text-sm transition-colors duration-200">
+                    بستن
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewLogDetails(logId) {
+    // This would fetch and display detailed log information
+    document.getElementById('logDetailsModal').classList.remove('hidden');
+    
+    // Mock content - in real implementation, this would be fetched from server
+    const content = `
+        <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">شناسه گزارش</label>
+                    <p class="mt-1 text-sm {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %} persian-numbers">${logId}</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">وضعیت یکپارچگی</label>
+                    <p class="mt-1 text-sm text-green-600">سالم</p>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">تغییرات</label>
+                <pre class="mt-1 text-xs {% if is_dark_mode %}bg-cyber-bg-elevated text-cyber-text-primary{% else %}bg-gray-100 text-gray-900{% endif %} p-3 rounded-lg overflow-x-auto">
+{
+  "field1": {
+    "old": "مقدار قدیمی",
+    "new": "مقدار جدید"
+  }
+}
+                </pre>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">جزئیات درخواست</label>
+                <div class="mt-1 text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                    <p>مسیر: /admin/some/path/</p>
+                    <p>روش: POST</p>
+                    <p>User Agent: Mozilla/5.0...</p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('logDetailsContent').innerHTML = content;
+}
+
+function closeLogDetailsModal() {
+    document.getElementById('logDetailsModal').classList.add('hidden');
+}
+
+// Close modal when clicking outside
+document.getElementById('logDetailsModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeLogDetailsModal();
+    }
+});
+</script>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize cybersecurity theme animations for dark mode
+    if (window.currentTheme === 'dark' && window.Motion) {
+        const cards = document.querySelectorAll('.cyber-glass-card');
+        cards.forEach((card, index) => {
+            window.Motion.animate(card, {
+                opacity: [0, 1],
+                y: [20, 0],
+                scale: [0.95, 1]
+            }, {
+                duration: 0.6,
+                delay: index * 0.1,
+                ease: [0.4, 0, 0.2, 1]
+            });
+        });
+        
+        // Animate table rows with audit-specific effects
+        const tableRows = document.querySelectorAll('tbody tr');
+        tableRows.forEach(row => {
+            row.addEventListener('mouseenter', function() {
+                if (window.currentTheme === 'dark') {
+                    window.Motion.animate(row, {
+                        scale: [1, 1.005],
+                        boxShadow: ['0 0 0 rgba(0, 255, 136, 0)', '0 0 8px rgba(0, 255, 136, 0.15)']
+                    }, {
+                        duration: 0.2,
+                        ease: [0.4, 0, 0.2, 1]
+                    });
+                }
+            });
+            
+            row.addEventListener('mouseleave', function() {
+                if (window.currentTheme === 'dark') {
+                    window.Motion.animate(row, {
+                        scale: [1.005, 1],
+                        boxShadow: ['0 0 8px rgba(0, 255, 136, 0.15)', '0 0 0 rgba(0, 255, 136, 0)']
+                    }, {
+                        duration: 0.2,
+                        ease: [0.4, 0, 0.2, 1]
+                    });
+                }
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

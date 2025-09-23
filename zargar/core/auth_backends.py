@@ -101,44 +101,7 @@ class TenantAwareAuthBackend(ModelBackend):
         return is_active or is_active is None
 
 
-class SuperAdminBackend(ModelBackend):
-    """
-    Specialized backend for SuperAdmin authentication.
-    Only works in public schema.
-    """
-    
-    def authenticate(self, request, username=None, password=None, **kwargs):
-        """Authenticate SuperAdmin only."""
-        if connection.schema_name != get_public_schema_name():
-            return None
-        
-        try:
-            from zargar.tenants.admin_models import SuperAdmin
-            
-            try:
-                user = SuperAdmin.objects.get(username=username)
-            except SuperAdmin.DoesNotExist:
-                SuperAdmin().set_password(password)
-                return None
-            
-            if user.check_password(password) and self.user_can_authenticate(user):
-                return user
-                
-        except ImportError:
-            pass
-        
-        return None
-    
-    def get_user(self, user_id):
-        """Get SuperAdmin by ID."""
-        if connection.schema_name != get_public_schema_name():
-            return None
-        
-        try:
-            from zargar.tenants.admin_models import SuperAdmin
-            return SuperAdmin.objects.get(pk=user_id)
-        except (SuperAdmin.DoesNotExist, ImportError):
-            return None
+# SuperAdminBackend removed - now using UnifiedSuperAdminAuthBackend
 
 
 class TenantUserBackend(ModelBackend):

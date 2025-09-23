@@ -1,0 +1,547 @@
+{% extends 'base_rtl.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}مدیریت یادآوری‌های طلای قرضی{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/layaway-dashboard.css' %}" rel="stylesheet">
+<link href="{% static 'css/layaway-forms.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="layaway-reminders" x-data="layawayReminders()">
+    <!-- Header -->
+    <div class="page-header">
+        <div class="header-content">
+            <h1 class="page-title">
+                <i class="fas fa-bell"></i>
+                مدیریت یادآوری‌های طلای قرضی
+            </h1>
+            <div class="header-actions">
+                <a href="{% url 'customers:layaway_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-right"></i>
+                    بازگشت
+                </a>
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#customReminderModal">
+                    <i class="fas fa-plus"></i>
+                    یادآوری سفارشی
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="summary-cards">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="summary-card">
+                    <div class="card-icon">
+                        <i class="fas fa-paper-plane text-primary"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>{{ reminder_stats.sent_reminders|default:0 }}</h3>
+                        <p>یادآوری ارسال شده</p>
+                        <small class="text-muted">در ۳۰ روز اخیر</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="summary-card">
+                    <div class="card-icon">
+                        <i class="fas fa-clock text-warning"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>{{ reminder_stats.pending_reminders|default:0 }}</h3>
+                        <p>در انتظار ارسال</p>
+                        <small class="text-muted">یادآوری‌های برنامه‌ریزی شده</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="summary-card">
+                    <div class="card-icon">
+                        <i class="fas fa-exclamation-triangle text-danger"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>{{ overdue_plans|length }}</h3>
+                        <p>معوقات</p>
+                        <small class="text-danger">نیاز به یادآوری فوری</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="summary-card">
+                    <div class="card-icon">
+                        <i class="fas fa-chart-line text-success"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>{{ success_rate|floatformat:1 }}%</h3>
+                        <p>نرخ موفقیت</p>
+                        <small class="text-success">ارسال یادآوری‌ها</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title">
+                <i class="fas fa-bolt"></i>
+                عملیات سریع
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="post" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="send_upcoming_reminders">
+                <button type="submit" class="btn btn-success mr-2">
+                    <i class="fas fa-paper-plane"></i>
+                    ارسال یادآوری‌های آتی
+                    {% if upcoming_reminders %}
+                        <span class="badge badge-light">{{ upcoming_reminders|length }}</span>
+                    {% endif %}
+                </button>
+            </form>
+            
+            <form method="post" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="send_overdue_reminders">
+                <button type="submit" class="btn btn-danger mr-2">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    ارسال یادآوری معوقات
+                    {% if overdue_plans %}
+                        <span class="badge badge-light">{{ overdue_plans|length }}</span>
+                    {% endif %}
+                </button>
+            </form>
+            
+            <button type="button" class="btn btn-info" @click="refreshReminders">
+                <i class="fas fa-sync-alt"></i>
+                بروزرسانی
+            </button>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Upcoming Reminders -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-calendar-alt"></i>
+                        یادآوری‌های آتی
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_reminders %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>مشتری</th>
+                                        <th>نوع</th>
+                                        <th>تاریخ ارسال</th>
+                                        <th>روش ارسال</th>
+                                        <th>عملیات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for reminder in upcoming_reminders %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ reminder.layaway_plan.customer.full_persian_name }}</strong>
+                                            <small class="text-muted d-block">{{ reminder.layaway_plan.plan_number }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-info">{{ reminder.get_reminder_type_display }}</span>
+                                        </td>
+                                        <td>{{ reminder.scheduled_date }}</td>
+                                        <td>{{ reminder.get_delivery_method_display }}</td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                    @click="sendSingleReminder({{ reminder.id }})">
+                                                <i class="fas fa-paper-plane"></i>
+                                                ارسال
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-calendar-check fa-3x text-muted"></i>
+                            <h5>یادآوری آتی وجود ندارد</h5>
+                            <p class="text-muted">همه یادآوری‌ها ارسال شده‌اند.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Reminders -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-history"></i>
+                        یادآوری‌های اخیر
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_reminders %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>مشتری</th>
+                                        <th>نوع</th>
+                                        <th>تاریخ ارسال</th>
+                                        <th>وضعیت</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for reminder in recent_reminders %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ reminder.layaway_plan.customer.full_persian_name }}</strong>
+                                            <small class="text-muted d-block">{{ reminder.layaway_plan.plan_number }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-secondary">{{ reminder.get_reminder_type_display }}</span>
+                                        </td>
+                                        <td>{{ reminder.sent_date|date:"Y/m/d H:i" }}</td>
+                                        <td>
+                                            {% if reminder.is_sent %}
+                                                <span class="badge badge-success">ارسال شده</span>
+                                            {% else %}
+                                                <span class="badge badge-warning">در انتظار</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-bell-slash fa-3x text-muted"></i>
+                            <h5>یادآوری اخیری وجود ندارد</h5>
+                            <p class="text-muted">هنوز یادآوری‌ای ارسال نشده است.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overdue Plans -->
+    {% if overdue_plans %}
+    <div class="card mt-4">
+        <div class="card-header bg-danger text-white">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-exclamation-triangle"></i>
+                قراردادهای معوق - نیاز به یادآوری فوری
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>مشتری</th>
+                            <th>شماره قرارداد</th>
+                            <th>مبلغ معوق</th>
+                            <th>روز تاخیر</th>
+                            <th>آخرین یادآوری</th>
+                            <th>عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for plan in overdue_plans %}
+                        <tr>
+                            <td>
+                                <strong>{{ plan.customer.full_persian_name }}</strong>
+                                <small class="text-muted d-block">{{ plan.customer.phone_number }}</small>
+                            </td>
+                            <td>
+                                <a href="{% url 'customers:layaway_detail' plan.pk %}" class="plan-number">
+                                    {{ plan.plan_number }}
+                                </a>
+                            </td>
+                            <td class="text-danger">
+                                <strong>{{ plan.next_payment_amount|floatformat:0 }} تومان</strong>
+                            </td>
+                            <td>
+                                <span class="badge badge-danger">{{ plan.days_overdue }} روز</span>
+                            </td>
+                            <td>
+                                {% with plan.reminders.first as last_reminder %}
+                                    {% if last_reminder %}
+                                        {{ last_reminder.sent_date|date:"Y/m/d" }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                {% endwith %}
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-danger" 
+                                        @click="sendOverdueReminder({{ plan.id }})">
+                                    <i class="fas fa-bell"></i>
+                                    یادآوری فوری
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Custom Reminder Modal -->
+    <div class="modal fade" id="customReminderModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create_custom_reminder">
+                    
+                    <div class="modal-header">
+                        <h5 class="modal-title">ایجاد یادآوری سفارشی</h5>
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label required">انتخاب قرارداد:</label>
+                                    <select name="plan_id" class="form-control select2" required>
+                                        <option value="">انتخاب قرارداد...</option>
+                                        {% for plan in overdue_plans %}
+                                        <option value="{{ plan.id }}">
+                                            {{ plan.plan_number }} - {{ plan.customer.full_persian_name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label required">نوع یادآوری:</label>
+                                    <select name="reminder_type" class="form-control" required>
+                                        <option value="upcoming">پرداخت آتی</option>
+                                        <option value="overdue">پرداخت معوق</option>
+                                        <option value="final_notice">اخطار نهایی</option>
+                                        <option value="completion">تکمیل قرارداد</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label required">روش ارسال:</label>
+                            <select name="delivery_method" class="form-control" required>
+                                <option value="sms">پیامک</option>
+                                <option value="email">ایمیل</option>
+                                <option value="phone_call">تماس تلفنی</option>
+                                <option value="in_person">حضوری</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label required">متن یادآوری:</label>
+                            <textarea name="custom_message" class="form-control" rows="5" required
+                                      placeholder="متن یادآوری خود را وارد کنید..."></textarea>
+                            <small class="form-text text-muted">
+                                می‌توانید از متغیرهای زیر استفاده کنید:
+                                {{customer_name}}, {{plan_number}}, {{jewelry_item}}, {{next_payment_amount}}
+                            </small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">قالب‌های آماده:</label>
+                            <div class="btn-group-vertical btn-group-sm w-100">
+                                <button type="button" class="btn btn-outline-info text-right" 
+                                        @click="setTemplate('upcoming')">
+                                    قالب یادآوری پرداخت آتی
+                                </button>
+                                <button type="button" class="btn btn-outline-warning text-right" 
+                                        @click="setTemplate('overdue')">
+                                    قالب یادآوری معوقات
+                                </button>
+                                <button type="button" class="btn btn-outline-danger text-right" 
+                                        @click="setTemplate('final')">
+                                    قالب اخطار نهایی
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">انصراف</button>
+                        <button type="submit" class="btn btn-primary">ارسال یادآوری</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/layaway-dashboard.js' %}"></script>
+<script>
+function layawayReminders() {
+    return {
+        init() {
+            this.initializeSelect2();
+        },
+        
+        initializeSelect2() {
+            if (typeof $ !== 'undefined' && $.fn.select2) {
+                $('.select2').select2({
+                    theme: 'bootstrap4',
+                    width: '100%',
+                    placeholder: 'انتخاب کنید...',
+                    allowClear: true
+                });
+            }
+        },
+        
+        async sendSingleReminder(reminderId) {
+            try {
+                const response = await fetch('{% url "customers:layaway_ajax" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: new URLSearchParams({
+                        action: 'send_reminder',
+                        reminder_id: reminderId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.showNotification('یادآوری با موفقیت ارسال شد', 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    this.showNotification(data.error || 'خطا در ارسال یادآوری', 'error');
+                }
+            } catch (error) {
+                console.error('Error sending reminder:', error);
+                this.showNotification('خطا در ارسال یادآوری', 'error');
+            }
+        },
+        
+        async sendOverdueReminder(planId) {
+            // Create a quick overdue reminder
+            try {
+                const response = await fetch('{% url "customers:layaway_reminders" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: new URLSearchParams({
+                        action: 'create_custom_reminder',
+                        plan_id: planId,
+                        reminder_type: 'overdue',
+                        delivery_method: 'sms',
+                        custom_message: this.getOverdueTemplate()
+                    })
+                });
+                
+                if (response.ok) {
+                    this.showNotification('یادآوری معوقات ارسال شد', 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    this.showNotification('خطا در ارسال یادآوری', 'error');
+                }
+            } catch (error) {
+                console.error('Error sending overdue reminder:', error);
+                this.showNotification('خطا در ارسال یادآوری', 'error');
+            }
+        },
+        
+        refreshReminders() {
+            location.reload();
+        },
+        
+        setTemplate(type) {
+            const textarea = document.querySelector('[name="custom_message"]');
+            if (!textarea) return;
+            
+            let template = '';
+            
+            switch (type) {
+                case 'upcoming':
+                    template = `سلام {{customer_name}} عزیز،
+
+یادآوری پرداخت قسط طلای قرضی:
+شماره قرارداد: {{plan_number}}
+مبلغ قسط: {{next_payment_amount}} تومان
+تاریخ سررسید: {{next_payment_date}}
+
+برای پرداخت به فروشگاه مراجعه فرمایید.
+
+با تشکر`;
+                    break;
+                    
+                case 'overdue':
+                    template = this.getOverdueTemplate();
+                    break;
+                    
+                case 'final':
+                    template = `{{customer_name}} محترم،
+
+اخطار نهایی پرداخت طلای قرضی:
+شماره قرارداد: {{plan_number}}
+مبلغ معوق: {{next_payment_amount}} تومان
+تعداد روز تاخیر: {{days_overdue}} روز
+
+در صورت عدم پرداخت ظرف ۴۸ ساعت، اقدامات قانونی آغاز خواهد شد.
+
+فروشگاه طلا و جواهر`;
+                    break;
+            }
+            
+            textarea.value = template;
+        },
+        
+        getOverdueTemplate() {
+            return `سلام {{customer_name}} عزیز،
+
+قسط طلای قرضی شما معوق شده است:
+شماره قرارداد: {{plan_number}}
+مبلغ معوق: {{next_payment_amount}} تومان
+تعداد روز تاخیر: {{days_overdue}} روز
+
+لطفاً در اسرع وقت برای پرداخت اقدام فرمایید.
+
+با تشکر`;
+        },
+        
+        showNotification(message, type = 'info') {
+            // Use the notification function from layaway-dashboard.js
+            if (window.LayawayDashboard && window.LayawayDashboard.showNotification) {
+                window.LayawayDashboard.showNotification(message, type);
+            } else {
+                alert(message);
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

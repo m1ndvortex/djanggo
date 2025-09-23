@@ -1,0 +1,838 @@
+{% extends 'base_rtl.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}تولید گزارش - زرگر{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/reports.css' %}">
+<script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/fa.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen p-6 
+            {% if is_dark_mode %}
+            bg-gradient-to-br from-cyber-bg-primary via-cyber-bg-secondary to-cyber-bg-surface
+            {% else %}
+            bg-gray-50
+            {% endif %}">
+
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h1 class="text-3xl font-bold 
+                           {% if is_dark_mode %}
+                           text-cyber-text-primary bg-gradient-to-r from-cyber-neon-primary to-cyber-neon-secondary bg-clip-text text-transparent
+                           {% else %}
+                           text-gray-900
+                           {% endif %}">
+                    تولید گزارش جدید
+                </h1>
+                <p class="mt-2 
+                         {% if is_dark_mode %}
+                         text-cyber-text-secondary
+                         {% else %}
+                         text-gray-600
+                         {% endif %}">
+                    انتخاب قالب و پارامترهای گزارش
+                </p>
+            </div>
+
+            <a href="{% url 'reports:dashboard' %}" class="inline-flex items-center px-4 py-2 rounded-lg font-medium transition-all duration-300
+                      {% if is_dark_mode %}
+                      bg-cyber-bg-surface/80 border border-cyber-border-glass text-cyber-text-primary
+                      hover:border-cyber-neon-primary/30 hover:bg-cyber-bg-elevated/80
+                      {% else %}
+                      bg-white border border-gray-300 text-gray-700 hover:bg-gray-50
+                      {% endif %}">
+                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                بازگشت به داشبورد
+            </a>
+        </div>
+    </div>
+
+    <!-- Report Generation Form -->
+    <div class="max-w-4xl mx-auto">
+        <form id="reportGenerationForm" method="post" x-data="reportGenerator()" @submit.prevent="generateReport()">
+            {% csrf_token %}
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                <!-- Main Form -->
+                <div class="lg:col-span-2 space-y-6">
+
+                    <!-- Template Selection -->
+                    <div class="p-6 rounded-xl 
+                                {% if is_dark_mode %}
+                                bg-gradient-to-br from-cyber-bg-surface/80 to-cyber-bg-elevated/80 
+                                border border-cyber-border-glass backdrop-blur-sm
+                                {% else %}
+                                bg-white border border-gray-200 shadow-sm
+                                {% endif %}">
+
+                        <h2 class="text-xl font-bold mb-6 
+                                   {% if is_dark_mode %}
+                                   text-cyber-text-primary
+                                   {% else %}
+                                   text-gray-900
+                                   {% endif %}">
+                            انتخاب نوع گزارش
+                        </h2>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {% for template in report_templates %}
+                            <label class="relative cursor-pointer">
+                                <input type="radio" name="template_id" value="{{ template.id }}" class="sr-only peer" {%
+                                    if selected_template and selected_template.id==template.id %}checked{% endif %}
+                                    x-model="selectedTemplate" @change="updateTemplateSelection({{ template.id }})">
+
+                                <div class="p-4 rounded-lg border-2 transition-all duration-300
+                                           peer-checked:border-2
+                                           {% if is_dark_mode %}
+                                           bg-cyber-bg-surface/60 border-cyber-border-glass
+                                           peer-checked:border-cyber-neon-primary peer-checked:bg-cyber-bg-elevated/80
+                                           hover:border-cyber-neon-primary/30 hover:bg-cyber-bg-elevated/60
+                                           {% else %}
+                                           bg-gray-50 border-gray-200
+                                           peer-checked:border-blue-500 peer-checked:bg-blue-50
+                                           hover:border-gray-300 hover:bg-gray-100
+                                           {% endif %}">
+
+                                    <div class="flex items-start justify-between">
+                                        <div class="flex-1">
+                                            <h3 class="font-medium 
+                                                       {% if is_dark_mode %}
+                                                       text-cyber-text-primary
+                                                       {% else %}
+                                                       text-gray-900
+                                                       {% endif %}">
+                                                {{ template.name_persian|default:template.name }}
+                                            </h3>
+                                            <p class="text-sm mt-1 
+                                                     {% if is_dark_mode %}
+                                                     text-cyber-text-secondary
+                                                     {% else %}
+                                                     text-gray-600
+                                                     {% endif %}">
+                                                {{ template.description|truncatechars:80 }}
+                                            </p>
+                                            <div class="flex items-center mt-2 space-x-2 space-x-reverse">
+                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                                             {% if is_dark_mode %}
+                                                             bg-cyber-neon-primary/20 text-cyber-neon-primary
+                                                             {% else %}
+                                                             bg-blue-100 text-blue-800
+                                                             {% endif %}">
+                                                    {{ template.get_report_type_display }}
+                                                </span>
+                                                <span class="text-xs 
+                                                           {% if is_dark_mode %}
+                                                           text-cyber-text-muted
+                                                           {% else %}
+                                                           text-gray-400
+                                                           {% endif %}">
+                                                    {{ template.get_default_output_format_display }}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Check Icon -->
+                                        <div class="peer-checked:block hidden">
+                                            <svg class="w-5 h-5 
+                                                       {% if is_dark_mode %}
+                                                       text-cyber-neon-primary
+                                                       {% else %}
+                                                       text-blue-600
+                                                       {% endif %}" fill="currentColor" viewBox="0 0 20 20"
+                                                alt="انتخاب شده">
+                                                <path fill-rule="evenodd"
+                                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                                    clip-rule="evenodd"></path>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Date Range Selection -->
+                    <div class="p-6 rounded-xl 
+                                {% if is_dark_mode %}
+                                bg-gradient-to-br from-cyber-bg-surface/80 to-cyber-bg-elevated/80 
+                                border border-cyber-border-glass backdrop-blur-sm
+                                {% else %}
+                                bg-white border border-gray-200 shadow-sm
+                                {% endif %}">
+
+                        <h2 class="text-xl font-bold mb-6 
+                                   {% if is_dark_mode %}
+                                   text-cyber-text-primary
+                                   {% else %}
+                                   text-gray-900
+                                   {% endif %}">
+                            بازه زمانی گزارش
+                        </h2>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- From Date -->
+                            <div>
+                                <label for="dateFromShamsi" class="block text-sm font-medium mb-2 
+                                             {% if is_dark_mode %}
+                                             text-cyber-text-primary
+                                             {% else %}
+                                             text-gray-700
+                                             {% endif %}">
+                                    از تاریخ (شمسی)
+                                </label>
+                                <input type="text" name="date_from_shamsi" id="dateFromShamsi"
+                                    value="{{ default_date_from }}" placeholder="۱۴۰۳/۰۶/۰۱"
+                                    aria-label="تاریخ شروع به فرمت شمسی" class="w-full px-4 py-3 rounded-lg border transition-all duration-300 persian-numbers
+                                              {% if is_dark_mode %}
+                                              bg-cyber-bg-surface/60 border-cyber-border-glass text-cyber-text-primary
+                                              focus:border-cyber-neon-primary focus:ring-2 focus:ring-cyber-neon-primary/20
+                                              {% else %}
+                                              bg-white border-gray-300 text-gray-900
+                                              focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20
+                                              {% endif %}">
+                            </div>
+
+                            <!-- To Date -->
+                            <div>
+                                <label class="block text-sm font-medium mb-2 
+                                             {% if is_dark_mode %}
+                                             text-cyber-text-primary
+                                             {% else %}
+                                             text-gray-700
+                                             {% endif %}">
+                                    تا تاریخ (شمسی)
+                                </label>
+                                <input type="text" name="date_to_shamsi" id="dateToShamsi" value="{{ default_date_to }}"
+                                    placeholder="۱۴۰۳/۰۶/۳۰" class="w-full px-4 py-3 rounded-lg border transition-all duration-300 persian-numbers
+                                              {% if is_dark_mode %}
+                                              bg-cyber-bg-surface/60 border-cyber-border-glass text-cyber-text-primary
+                                              focus:border-cyber-neon-primary focus:ring-2 focus:ring-cyber-neon-primary/20
+                                              {% else %}
+                                              bg-white border-gray-300 text-gray-900
+                                              focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20
+                                              {% endif %}">
+                            </div>
+                        </div>
+
+                        <!-- Quick Date Ranges -->
+                        <div class="mt-4">
+                            <p class="text-sm font-medium mb-3 
+                                     {% if is_dark_mode %}
+                                     text-cyber-text-secondary
+                                     {% else %}
+                                     text-gray-600
+                                     {% endif %}">
+                                بازه‌های پیش‌فرض:
+                            </p>
+                            <div class="flex flex-wrap gap-2">
+                                <button type="button" @click="setQuickDateRange('this_month')" class="px-3 py-2 text-sm rounded-lg transition-all duration-300
+                                               {% if is_dark_mode %}
+                                               bg-cyber-bg-surface/60 border border-cyber-border-glass text-cyber-text-primary
+                                               hover:border-cyber-neon-primary/30 hover:bg-cyber-bg-elevated/60
+                                               {% else %}
+                                               bg-gray-100 text-gray-700 hover:bg-gray-200
+                                               {% endif %}">
+                                    این ماه
+                                </button>
+                                <button type="button" @click="setQuickDateRange('last_month')" class="px-3 py-2 text-sm rounded-lg transition-all duration-300
+                                               {% if is_dark_mode %}
+                                               bg-cyber-bg-surface/60 border border-cyber-border-glass text-cyber-text-primary
+                                               hover:border-cyber-neon-primary/30 hover:bg-cyber-bg-elevated/60
+                                               {% else %}
+                                               bg-gray-100 text-gray-700 hover:bg-gray-200
+                                               {% endif %}">
+                                    ماه گذشته
+                                </button>
+                                <button type="button" @click="setQuickDateRange('this_quarter')" class="px-3 py-2 text-sm rounded-lg transition-all duration-300
+                                               {% if is_dark_mode %}
+                                               bg-cyber-bg-surface/60 border border-cyber-border-glass text-cyber-text-primary
+                                               hover:border-cyber-neon-primary/30 hover:bg-cyber-bg-elevated/60
+                                               {% else %}
+                                               bg-gray-100 text-gray-700 hover:bg-gray-200
+                                               {% endif %}">
+                                    این فصل
+                                </button>
+                                <button type="button" @click="setQuickDateRange('this_year')" class="px-3 py-2 text-sm rounded-lg transition-all duration-300
+                                               {% if is_dark_mode %}
+                                               bg-cyber-bg-surface/60 border border-cyber-border-glass text-cyber-text-primary
+                                               hover:border-cyber-neon-primary/30 hover:bg-cyber-bg-elevated/60
+                                               {% else %}
+                                               bg-gray-100 text-gray-700 hover:bg-gray-200
+                                               {% endif %}">
+                                    امسال
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Report Parameters -->
+                    <div x-show="selectedTemplate" x-transition:enter="transition ease-out duration-300"
+                        x-transition:enter-start="opacity-0 transform scale-95"
+                        x-transition:enter-end="opacity-100 transform scale-100" class="p-6 rounded-xl 
+                                {% if is_dark_mode %}
+                                bg-gradient-to-br from-cyber-bg-surface/80 to-cyber-bg-elevated/80 
+                                border border-cyber-border-glass backdrop-blur-sm
+                                {% else %}
+                                bg-white border border-gray-200 shadow-sm
+                                {% endif %}">
+
+                        <h2 class="text-xl font-bold mb-6 
+                                   {% if is_dark_mode %}
+                                   text-cyber-text-primary
+                                   {% else %}
+                                   text-gray-900
+                                   {% endif %}">
+                            پارامترهای گزارش
+                        </h2>
+
+                        <!-- Gold Price Parameter (for inventory valuation) -->
+                        <div x-show="templateType === 'inventory_valuation'" class="mb-6">
+                            <label class="block text-sm font-medium mb-2 
+                                         {% if is_dark_mode %}
+                                         text-cyber-text-primary
+                                         {% else %}
+                                         text-gray-700
+                                         {% endif %}">
+                                قیمت طلا (تومان در گرم)
+                            </label>
+                            <div class="flex items-center space-x-3 space-x-reverse">
+                                <input type="number" name="gold_price_per_gram" id="goldPriceInput"
+                                    placeholder="۱۲۵۰۰۰۰" class="flex-1 px-4 py-3 rounded-lg border transition-all duration-300 persian-numbers
+                                              {% if is_dark_mode %}
+                                              bg-cyber-bg-surface/60 border-cyber-border-glass text-cyber-text-primary
+                                              focus:border-cyber-neon-primary focus:ring-2 focus:ring-cyber-neon-primary/20
+                                              {% else %}
+                                              bg-white border-gray-300 text-gray-900
+                                              focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20
+                                              {% endif %}">
+                                <button type="button" @click="fetchCurrentGoldPrice()" class="px-4 py-3 rounded-lg font-medium transition-all duration-300
+                                               {% if is_dark_mode %}
+                                               bg-cyber-neon-secondary/20 text-cyber-neon-secondary border border-cyber-neon-secondary/30
+                                               hover:bg-cyber-neon-secondary/30 hover:border-cyber-neon-secondary/50
+                                               {% else %}
+                                               bg-green-100 text-green-700 hover:bg-green-200
+                                               {% endif %}">
+                                    قیمت فعلی
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Aging Periods (for customer aging) -->
+                        <div x-show="templateType === 'customer_aging'" class="mb-6">
+                            <label class="block text-sm font-medium mb-2 
+                                         {% if is_dark_mode %}
+                                         text-cyber-text-primary
+                                         {% else %}
+                                         text-gray-700
+                                         {% endif %}">
+                                دوره‌های سنی (روز)
+                            </label>
+                            <input type="text" name="aging_periods" value="30,60,90,120" placeholder="30,60,90,120"
+                                class="w-full px-4 py-3 rounded-lg border transition-all duration-300 persian-numbers
+                                          {% if is_dark_mode %}
+                                          bg-cyber-bg-surface/60 border-cyber-border-glass text-cyber-text-primary
+                                          focus:border-cyber-neon-primary focus:ring-2 focus:ring-cyber-neon-primary/20
+                                          {% else %}
+                                          bg-white border-gray-300 text-gray-900
+                                          focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20
+                                          {% endif %}">
+                            <p class="text-xs mt-1 
+                                     {% if is_dark_mode %}
+                                     text-cyber-text-muted
+                                     {% else %}
+                                     text-gray-500
+                                     {% endif %}">
+                                دوره‌ها را با کاما جدا کنید (مثال: 30,60,90,120)
+                            </p>
+                        </div>
+
+                        <!-- Include Zero Balances -->
+                        <div class="mb-6">
+                            <label class="flex items-center">
+                                <input type="checkbox" name="include_zero_balances" class="rounded border-gray-300 
+                                              {% if is_dark_mode %}
+                                              text-cyber-neon-primary focus:ring-cyber-neon-primary/20 bg-cyber-bg-surface border-cyber-border-glass
+                                              {% else %}
+                                              text-blue-600 focus:ring-blue-500/20
+                                              {% endif %}">
+                                <span class="mr-2 text-sm 
+                                           {% if is_dark_mode %}
+                                           text-cyber-text-primary
+                                           {% else %}
+                                           text-gray-700
+                                           {% endif %}">
+                                    نمایش موارد با مانده صفر
+                                </span>
+                            </label>
+                        </div>
+
+                        <!-- Output Format -->
+                        <div>
+                            <label class="block text-sm font-medium mb-2 
+                                         {% if is_dark_mode %}
+                                         text-cyber-text-primary
+                                         {% else %}
+                                         text-gray-700
+                                         {% endif %}">
+                                فرمت خروجی
+                            </label>
+                            <select name="output_format" class="w-full px-4 py-3 rounded-lg border transition-all duration-300
+                                           {% if is_dark_mode %}
+                                           bg-cyber-bg-surface/60 border-cyber-border-glass text-cyber-text-primary
+                                           focus:border-cyber-neon-primary focus:ring-2 focus:ring-cyber-neon-primary/20
+                                           {% else %}
+                                           bg-white border-gray-300 text-gray-900
+                                           focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20
+                                           {% endif %}">
+                                <option value="pdf">PDF</option>
+                                <option value="excel">Excel</option>
+                                <option value="csv">CSV</option>
+                                <option value="json">JSON</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <div class="space-y-6">
+
+                    <!-- Generate Button -->
+                    <div class="p-6 rounded-xl 
+                                {% if is_dark_mode %}
+                                bg-gradient-to-br from-cyber-bg-surface/80 to-cyber-bg-elevated/80 
+                                border border-cyber-border-glass backdrop-blur-sm
+                                {% else %}
+                                bg-white border border-gray-200 shadow-sm
+                                {% endif %}">
+
+                        <button type="submit" :disabled="!selectedTemplate || loading" class="w-full px-6 py-4 rounded-lg font-bold text-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed
+                                       {% if is_dark_mode %}
+                                       bg-gradient-to-r from-cyber-neon-primary to-cyber-neon-secondary text-cyber-bg-primary
+                                       hover:from-cyber-neon-primary/90 hover:to-cyber-neon-secondary/90
+                                       shadow-lg shadow-cyber-neon-primary/20 hover:shadow-xl hover:shadow-cyber-neon-primary/30
+                                       {% else %}
+                                       bg-gradient-to-r from-blue-600 to-blue-700 text-white
+                                       hover:from-blue-700 hover:to-blue-800
+                                       shadow-lg hover:shadow-xl
+                                       {% endif %}">
+
+                            <span x-show="!loading" class="flex items-center justify-center">
+                                <svg class="w-6 h-6 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                    </path>
+                                </svg>
+                                تولید گزارش
+                            </span>
+
+                            <span x-show="loading" class="flex items-center justify-center">
+                                <svg class="animate-spin w-6 h-6 ml-2" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                        stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                    </path>
+                                </svg>
+                                در حال تولید...
+                            </span>
+                        </button>
+
+                        <p class="text-xs text-center mt-3 
+                                 {% if is_dark_mode %}
+                                 text-cyber-text-muted
+                                 {% else %}
+                                 text-gray-500
+                                 {% endif %}">
+                            تولید گزارش ممکن است چند دقیقه طول بکشد
+                        </p>
+                    </div>
+
+                    <!-- Template Info -->
+                    <div x-show="selectedTemplate" x-transition:enter="transition ease-out duration-300"
+                        x-transition:enter-start="opacity-0 transform scale-95"
+                        x-transition:enter-end="opacity-100 transform scale-100" class="p-6 rounded-xl 
+                                {% if is_dark_mode %}
+                                bg-gradient-to-br from-cyber-bg-surface/80 to-cyber-bg-elevated/80 
+                                border border-cyber-border-glass backdrop-blur-sm
+                                {% else %}
+                                bg-white border border-gray-200 shadow-sm
+                                {% endif %}">
+
+                        <h3 class="text-lg font-semibold mb-4 
+                                   {% if is_dark_mode %}
+                                   text-cyber-text-primary
+                                   {% else %}
+                                   text-gray-900
+                                   {% endif %}">
+                            اطلاعات قالب
+                        </h3>
+
+                        <div class="space-y-3">
+                            <div>
+                                <p class="text-sm font-medium 
+                                         {% if is_dark_mode %}
+                                         text-cyber-text-secondary
+                                         {% else %}
+                                         text-gray-600
+                                         {% endif %}">
+                                    نوع گزارش:
+                                </p>
+                                <p class="text-sm 
+                                         {% if is_dark_mode %}
+                                         text-cyber-text-primary
+                                         {% else %}
+                                         text-gray-900
+                                         {% endif %}" x-text="templateTypeDisplay">
+                                </p>
+                            </div>
+
+                            <div>
+                                <p class="text-sm font-medium 
+                                         {% if is_dark_mode %}
+                                         text-cyber-text-secondary
+                                         {% else %}
+                                         text-gray-600
+                                         {% endif %}">
+                                    فرمت پیش‌فرض:
+                                </p>
+                                <p class="text-sm 
+                                         {% if is_dark_mode %}
+                                         text-cyber-text-primary
+                                         {% else %}
+                                         text-gray-900
+                                         {% endif %}" x-text="templateFormat">
+                                </p>
+                            </div>
+
+                            <div>
+                                <p class="text-sm font-medium 
+                                         {% if is_dark_mode %}
+                                         text-cyber-text-secondary
+                                         {% else %}
+                                         text-gray-600
+                                         {% endif %}">
+                                    توضیحات:
+                                </p>
+                                <p class="text-sm 
+                                         {% if is_dark_mode %}
+                                         text-cyber-text-primary
+                                         {% else %}
+                                         text-gray-900
+                                         {% endif %}" x-text="templateDescription">
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Help -->
+                    <div class="p-6 rounded-xl 
+                                {% if is_dark_mode %}
+                                bg-gradient-to-br from-cyber-bg-surface/80 to-cyber-bg-elevated/80 
+                                border border-cyber-border-glass backdrop-blur-sm
+                                {% else %}
+                                bg-white border border-gray-200 shadow-sm
+                                {% endif %}">
+
+                        <h3 class="text-lg font-semibold mb-4 
+                                   {% if is_dark_mode %}
+                                   text-cyber-text-primary
+                                   {% else %}
+                                   text-gray-900
+                                   {% endif %}">
+                            راهنما
+                        </h3>
+
+                        <div class="space-y-3 text-sm 
+                                   {% if is_dark_mode %}
+                                   text-cyber-text-secondary
+                                   {% else %}
+                                   text-gray-600
+                                   {% endif %}">
+                            <p>• ابتدا نوع گزارش مورد نظر را انتخاب کنید</p>
+                            <p>• بازه زمانی گزارش را مشخص کنید</p>
+                            <p>• پارامترهای اضافی را تنظیم کنید</p>
+                            <p>• فرمت خروجی دلخواه را انتخاب کنید</p>
+                            <p>• پس از تولید، گزارش در لیست گزارش‌ها قابل دسترسی خواهد بود</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Progress Modal -->
+<div x-show="showProgressModal" x-transition:enter="transition ease-out duration-300"
+    x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm
+            {% if is_dark_mode %}bg-cyber-bg-primary/90{% else %}bg-black/50{% endif %}"
+    @click.self="showProgressModal = false">
+
+    <div class="max-w-md w-full mx-4 p-6 rounded-xl 
+                {% if is_dark_mode %}
+                bg-gradient-to-br from-cyber-bg-surface to-cyber-bg-elevated 
+                border border-cyber-border-glass backdrop-blur-sm
+                {% else %}
+                bg-white border border-gray-200 shadow-xl
+                {% endif %}">
+
+        <div class="text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4
+                        {% if is_dark_mode %}
+                        bg-cyber-neon-primary/20 text-cyber-neon-primary
+                        {% else %}
+                        bg-blue-100 text-blue-600
+                        {% endif %}">
+                <svg class="animate-spin h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                    </path>
+                </svg>
+            </div>
+
+            <h3 class="text-lg font-medium mb-2 
+                       {% if is_dark_mode %}
+                       text-cyber-text-primary
+                       {% else %}
+                       text-gray-900
+                       {% endif %}">
+                در حال تولید گزارش
+            </h3>
+
+            <p class="text-sm mb-4 
+                     {% if is_dark_mode %}
+                     text-cyber-text-secondary
+                     {% else %}
+                     text-gray-600
+                     {% endif %}">
+                لطفاً صبر کنید، گزارش شما در حال آماده‌سازی است...
+            </p>
+
+            <!-- Progress Bar -->
+            <div class="w-full rounded-full h-2 mb-4
+                        {% if is_dark_mode %}
+                        bg-cyber-bg-surface
+                        {% else %}
+                        bg-gray-200
+                        {% endif %}">
+                <div class="h-2 rounded-full transition-all duration-300
+                           {% if is_dark_mode %}
+                           bg-gradient-to-r from-cyber-neon-primary to-cyber-neon-secondary
+                           {% else %}
+                           bg-gradient-to-r from-blue-600 to-blue-700
+                           {% endif %}" :style="`width: ${progress}%`"></div>
+            </div>
+
+            <p class="text-xs 
+                     {% if is_dark_mode %}
+                     text-cyber-text-muted
+                     {% else %}
+                     text-gray-500
+                     {% endif %}" x-text="`${progress}% تکمیل شده`">
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/reports-generator.js' %}"></script>
+<script>
+    function reportGenerator() {
+        return {
+            selectedTemplate: {% if selected_template %}{ { selected_template.id } } {% else %} null{% endif %},
+        templateType: '',
+            templateTypeDisplay: '',
+                templateFormat: '',
+                    templateDescription: '',
+                        loading: false,
+                            showProgressModal: false,
+                                progress: 0,
+
+                                    templates: { { report_templates | safe } },
+
+        init() {
+            {% if selected_template %}
+            this.updateTemplateSelection({{ selected_template.id }});
+        {% endif %}
+
+        // Initialize Persian date pickers
+        this.initializeDatePickers();
+    },
+
+    updateTemplateSelection(templateId) {
+        const template = this.templates.find(t => t.id === templateId);
+        if (template) {
+            this.templateType = template.report_type;
+            this.templateTypeDisplay = template.report_type_display;
+            this.templateFormat = template.default_output_format_display;
+            this.templateDescription = template.description;
+        }
+    },
+
+    initializeDatePickers() {
+        // Initialize Flatpickr with Persian calendar support
+        flatpickr("#dateFromShamsi", {
+            locale: "fa",
+            dateFormat: "Y/m/d",
+            altInput: true,
+            altFormat: "Y/m/d"
+        });
+
+        flatpickr("#dateToShamsi", {
+            locale: "fa",
+            dateFormat: "Y/m/d",
+            altInput: true,
+            altFormat: "Y/m/d"
+        });
+    },
+
+    setQuickDateRange(range) {
+        const today = new Date();
+        let fromDate, toDate;
+
+        switch (range) {
+            case 'this_month':
+                fromDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                toDate = today;
+                break;
+            case 'last_month':
+                fromDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                toDate = new Date(today.getFullYear(), today.getMonth(), 0);
+                break;
+            case 'this_quarter':
+                const quarter = Math.floor(today.getMonth() / 3);
+                fromDate = new Date(today.getFullYear(), quarter * 3, 1);
+                toDate = today;
+                break;
+            case 'this_year':
+                fromDate = new Date(today.getFullYear(), 0, 1);
+                toDate = today;
+                break;
+        }
+
+        // Convert to Persian dates and set inputs
+        if (window.PersianDate) {
+            const pFromDate = new PersianDate(fromDate);
+            const pToDate = new PersianDate(toDate);
+
+            document.getElementById('dateFromShamsi').value = pFromDate.format('YYYY/MM/DD');
+            document.getElementById('dateToShamsi').value = pToDate.format('YYYY/MM/DD');
+        }
+    },
+        
+        async fetchCurrentGoldPrice() {
+        try {
+            const response = await fetch('{% url "reports:ajax_gold_price" %}');
+            const data = await response.json();
+
+            if (data.success) {
+                document.getElementById('goldPriceInput').value = data.price_per_gram;
+                this.$dispatch('show-notification', {
+                    message: 'قیمت طلا به‌روزرسانی شد',
+                    type: 'success'
+                });
+            }
+        } catch (error) {
+            this.$dispatch('show-notification', {
+                message: 'خطا در دریافت قیمت طلا',
+                type: 'error'
+            });
+        }
+    },
+        
+        async generateReport() {
+        if (!this.selectedTemplate) {
+            this.$dispatch('show-notification', {
+                message: 'لطفاً نوع گزارش را انتخاب کنید',
+                type: 'warning'
+            });
+            return;
+        }
+
+        this.loading = true;
+        this.showProgressModal = true;
+        this.progress = 0;
+
+        try {
+            const formData = new FormData(document.getElementById('reportGenerationForm'));
+
+            const response = await fetch('{% url "reports:generate" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Start progress monitoring
+                this.monitorProgress(data.report_id);
+            } else {
+                throw new Error(data.error || 'خطا در تولید گزارش');
+            }
+
+        } catch (error) {
+            this.loading = false;
+            this.showProgressModal = false;
+            this.$dispatch('show-notification', {
+                message: error.message,
+                type: 'error'
+            });
+        }
+    },
+        
+        async monitorProgress(reportId) {
+        const checkProgress = async () => {
+            try {
+                const response = await fetch(`/reports/ajax/status/${reportId}/`);
+                const data = await response.json();
+
+                this.progress = data.progress || 0;
+
+                if (data.status === 'completed') {
+                    this.progress = 100;
+                    setTimeout(() => {
+                        this.loading = false;
+                        this.showProgressModal = false;
+                        window.location.href = data.download_url || `/reports/detail/${reportId}/`;
+                    }, 1000);
+                } else if (data.status === 'failed') {
+                    throw new Error(data.error_message || 'خطا در تولید گزارش');
+                } else {
+                    // Continue monitoring
+                    setTimeout(checkProgress, 2000);
+                }
+            } catch (error) {
+                this.loading = false;
+                this.showProgressModal = false;
+                this.$dispatch('show-notification', {
+                    message: error.message,
+                    type: 'error'
+                });
+            }
+        };
+
+        checkProgress();
+    }
+    }
+}
+</script>
+{% endblock %}

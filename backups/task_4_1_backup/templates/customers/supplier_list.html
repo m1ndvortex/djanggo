@@ -1,0 +1,372 @@
+{% extends "base_rtl.html" %}
+{% load static %}
+
+{% block title %}لیست تامین‌کنندگان - زرگر{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/supplier-management.css' %}">
+<script src="{% static 'js/supplier-management.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen 
+     {% if user.theme_preference == 'dark' %}
+     bg-gradient-to-br from-cyber-bg-primary via-cyber-bg-secondary to-cyber-bg-surface
+     {% else %}
+     bg-gradient-to-br from-gray-50 to-gray-100
+     {% endif %}"
+     x-data="supplierList()" 
+     x-init="initList()"
+     :class="{ 'dark': darkMode, 'light': !darkMode }">
+
+    <!-- Header -->
+    <header class="{% if user.theme_preference == 'dark' %}cyber-glass-header{% else %}bg-white/80 backdrop-blur-sm border-b border-gray-200{% endif %} sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <div class="{% if user.theme_preference == 'dark' %}cyber-logo-container{% else %}bg-blue-600 p-2 rounded-lg{% endif %}">
+                        <svg class="h-8 w-8 {% if user.theme_preference == 'dark' %}text-cyber-neon-primary{% else %}text-white{% endif %}" 
+                             fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M19 7h-3V6a4 4 0 0 0-8 0v1H5a1 1 0 0 0-1 1v11a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V8a1 1 0 0 0-1-1zM10 6a2 2 0 0 1 4 0v1h-4V6zm6 14H8a1 1 0 0 1-1-1V9h2v1a1 1 0 0 0 2 0V9h2v1a1 1 0 0 0 2 0V9h2v10a1 1 0 0 1-1 1z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold {% if user.theme_preference == 'dark' %}text-cyber-text-primary cyber-glow-text{% else %}text-gray-900{% endif %}">
+                            لیست تامین‌کنندگان
+                        </h1>
+                        <p class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}">
+                            جستجو، فیلتر و مدیریت تامین‌کنندگان
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <a href="{% url 'customers:supplier_create' %}" 
+                       class="{% if user.theme_preference == 'dark' %}cyber-button-primary{% else %}bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700{% endif %} inline-flex items-center">
+                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        تامین‌کننده جدید
+                    </a>
+                    <a href="{% url 'customers:supplier_dashboard' %}" 
+                       class="{% if user.theme_preference == 'dark' %}cyber-button-secondary{% else %}bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700{% endif %}">
+                        بازگشت به داشبورد
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        
+        <!-- Search and Filters -->
+        <div class="{% if user.theme_preference == 'dark' %}cyber-glass-card{% else %}bg-white rounded-lg shadow{% endif %} p-6 mb-6">
+            <form method="get" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    
+                    <!-- Search -->
+                    <div>
+                        <label class="block text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-2">
+                            جستجو
+                        </label>
+                        <input type="text" 
+                               name="search" 
+                               value="{{ current_filters.search }}"
+                               placeholder="نام، تلفن، ایمیل..."
+                               class="w-full {% if user.theme_preference == 'dark' %}cyber-input{% else %}border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500{% endif %}">
+                    </div>
+                    
+                    <!-- Supplier Type -->
+                    <div>
+                        <label class="block text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-2">
+                            نوع تامین‌کننده
+                        </label>
+                        <select name="supplier_type" 
+                                class="w-full {% if user.theme_preference == 'dark' %}cyber-input{% else %}border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500{% endif %}">
+                            <option value="">همه انواع</option>
+                            {% for value, label in supplier_types %}
+                            <option value="{{ value }}" {% if current_filters.supplier_type == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Status -->
+                    <div>
+                        <label class="block text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-2">
+                            وضعیت
+                        </label>
+                        <select name="status" 
+                                class="w-full {% if user.theme_preference == 'dark' %}cyber-input{% else %}border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500{% endif %}">
+                            <option value="">همه وضعیت‌ها</option>
+                            <option value="active" {% if current_filters.status == 'active' %}selected{% endif %}>فعال</option>
+                            <option value="inactive" {% if current_filters.status == 'inactive' %}selected{% endif %}>غیرفعال</option>
+                            <option value="preferred" {% if current_filters.status == 'preferred' %}selected{% endif %}>ترجیحی</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Sort -->
+                    <div>
+                        <label class="block text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-700{% endif %} mb-2">
+                            مرتب‌سازی
+                        </label>
+                        <select name="sort" 
+                                class="w-full {% if user.theme_preference == 'dark' %}cyber-input{% else %}border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500{% endif %}">
+                            <option value="-created_at" {% if current_filters.sort == '-created_at' %}selected{% endif %}>جدیدترین</option>
+                            <option value="created_at" {% if current_filters.sort == 'created_at' %}selected{% endif %}>قدیمی‌ترین</option>
+                            <option value="name" {% if current_filters.sort == 'name' %}selected{% endif %}>نام (الف-ی)</option>
+                            <option value="-name" {% if current_filters.sort == '-name' %}selected{% endif %}>نام (ی-الف)</option>
+                            <option value="-total_amount" {% if current_filters.sort == '-total_amount' %}selected{% endif %}>بیشترین خرید</option>
+                            <option value="-total_orders" {% if current_filters.sort == '-total_orders' %}selected{% endif %}>بیشترین سفارش</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="flex justify-between items-center">
+                    <div class="flex space-x-2 space-x-reverse">
+                        <button type="submit" 
+                                class="{% if user.theme_preference == 'dark' %}cyber-button-primary{% else %}bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700{% endif %}">
+                            اعمال فیلتر
+                        </button>
+                        <a href="{% url 'customers:supplier_list' %}" 
+                           class="{% if user.theme_preference == 'dark' %}cyber-button-secondary{% else %}bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700{% endif %}">
+                            پاک کردن فیلتر
+                        </a>
+                    </div>
+                    
+                    <div class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">
+                        {{ suppliers|length }} تامین‌کننده یافت شد
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Suppliers List -->
+        <div class="{% if user.theme_preference == 'dark' %}cyber-glass-card{% else %}bg-white rounded-lg shadow{% endif %} overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y {% if user.theme_preference == 'dark' %}divide-cyber-neon-primary/20{% else %}divide-gray-200{% endif %}">
+                    <thead class="{% if user.theme_preference == 'dark' %}cyber-glass-base{% else %}bg-gray-50{% endif %}">
+                        <tr>
+                            <th class="px-6 py-3 text-right text-xs font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                تامین‌کننده
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                نوع
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                تماس
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                سفارشات
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                مجموع خرید
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                وضعیت
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-500{% endif %} uppercase tracking-wider">
+                                عملیات
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="{% if user.theme_preference == 'dark' %}cyber-glass-base{% else %}bg-white{% endif %} divide-y {% if user.theme_preference == 'dark' %}divide-cyber-neon-primary/10{% else %}divide-gray-200{% endif %}">
+                        {% for supplier in suppliers %}
+                        <tr class="{% if user.theme_preference == 'dark' %}hover:cyber-glass-hover{% else %}hover:bg-gray-50{% endif %} transition-colors duration-200">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="{% if user.theme_preference == 'dark' %}cyber-avatar{% else %}bg-gray-100 p-2 rounded-full{% endif %}">
+                                        <svg class="h-5 w-5 {% if user.theme_preference == 'dark' %}text-cyber-neon-primary{% else %}text-gray-600{% endif %}" 
+                                             fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M19 7h-3V6a4 4 0 0 0-8 0v1H5a1 1 0 0 0-1 1v11a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V8a1 1 0 0 0-1-1zM10 6a2 2 0 0 1 4 0v1h-4V6zm6 14H8a1 1 0 0 1-1-1V9h2v1a1 1 0 0 0 2 0V9h2v1a1 1 0 0 0 2 0V9h2v10a1 1 0 0 1-1 1z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="mr-3">
+                                        <div class="text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                            {{ supplier.persian_name|default:supplier.name }}
+                                        </div>
+                                        {% if supplier.contact_person %}
+                                        <div class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">
+                                            {{ supplier.contact_person }}
+                                        </div>
+                                        {% endif %}
+                                        {% if supplier.is_preferred %}
+                                        <span class="{% if user.theme_preference == 'dark' %}cyber-badge success{% else %}bg-green-100 text-green-800 px-2 py-1 rounded text-xs{% endif %}">
+                                            ترجیحی
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="{% if user.theme_preference == 'dark' %}cyber-badge primary{% else %}bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm{% endif %}">
+                                    {{ supplier.get_supplier_type_display }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-secondary{% else %}text-gray-900{% endif %}">
+                                    {{ supplier.phone_number }}
+                                </div>
+                                {% if supplier.email %}
+                                <div class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">
+                                    {{ supplier.email }}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-neon-secondary{% else %}text-gray-900{% endif %} persian-numbers">
+                                    {{ supplier.total_orders }}
+                                </div>
+                                {% if supplier.last_order_date %}
+                                <div class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-muted{% else %}text-gray-500{% endif %} persian-numbers">
+                                    آخرین: {{ supplier.last_order_date|date:"Y/m/d" }}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium {% if user.theme_preference == 'dark' %}text-cyber-neon-secondary{% else %}text-gray-900{% endif %} persian-numbers">
+                                    {{ supplier.total_amount|floatformat:0 }}
+                                </div>
+                                <div class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">
+                                    تومان
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="{% if supplier.is_active %}{% if user.theme_preference == 'dark' %}cyber-badge success{% else %}bg-green-100 text-green-800 px-2 py-1 rounded text-sm{% endif %}{% else %}{% if user.theme_preference == 'dark' %}cyber-badge danger{% else %}bg-red-100 text-red-800 px-2 py-1 rounded text-sm{% endif %}{% endif %}">
+                                    {% if supplier.is_active %}فعال{% else %}غیرفعال{% endif %}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex items-center space-x-2 space-x-reverse">
+                                    <a href="{% url 'customers:supplier_detail' supplier.pk %}" 
+                                       class="{% if user.theme_preference == 'dark' %}text-cyber-neon-primary hover:text-cyber-neon-secondary{% else %}text-blue-600 hover:text-blue-900{% endif %}">
+                                        مشاهده
+                                    </a>
+                                    <a href="{% url 'customers:supplier_update' supplier.pk %}" 
+                                       class="{% if user.theme_preference == 'dark' %}text-cyber-neon-tertiary hover:text-cyber-neon-warning{% else %}text-yellow-600 hover:text-yellow-900{% endif %}">
+                                        ویرایش
+                                    </a>
+                                    <button @click="toggleSupplierStatus({{ supplier.pk }}, 'preferred')"
+                                            class="{% if user.theme_preference == 'dark' %}text-cyber-neon-secondary hover:text-cyber-neon-primary{% else %}text-green-600 hover:text-green-900{% endif %}">
+                                        {% if supplier.is_preferred %}حذف ترجیح{% else %}ترجیحی{% endif %}
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="px-6 py-12 text-center">
+                                <div class="{% if user.theme_preference == 'dark' %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">
+                                    <svg class="mx-auto h-12 w-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                              d="M19 7h-3V6a4 4 0 0 0-8 0v1H5a1 1 0 0 0-1 1v11a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V8a1 1 0 0 0-1-1zM10 6a2 2 0 0 1 4 0v1h-4V6zm6 14H8a1 1 0 0 1-1-1V9h2v1a1 1 0 0 0 2 0V9h2v1a1 1 0 0 0 2 0V9h2v10a1 1 0 0 1-1 1z"/>
+                                    </svg>
+                                    <p class="text-lg font-medium mb-2">هیچ تامین‌کننده‌ای یافت نشد</p>
+                                    <p class="mb-4">با فیلترهای مختلف جستجو کنید یا تامین‌کننده جدید اضافه کنید</p>
+                                    <a href="{% url 'customers:supplier_create' %}" 
+                                       class="{% if user.theme_preference == 'dark' %}cyber-button-primary{% else %}bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700{% endif %} inline-flex items-center">
+                                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                        </svg>
+                                        تامین‌کننده جدید
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="flex items-center justify-between mt-6">
+            <div class="text-sm {% if user.theme_preference == 'dark' %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">
+                نمایش {{ page_obj.start_index }} تا {{ page_obj.end_index }} از {{ page_obj.paginator.count }} تامین‌کننده
+            </div>
+            
+            <nav class="flex items-center space-x-2 space-x-reverse">
+                {% if page_obj.has_previous %}
+                <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}" 
+                   class="{% if user.theme_preference == 'dark' %}cyber-button-secondary{% else %}bg-gray-300 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-400{% endif %}">
+                    قبلی
+                </a>
+                {% endif %}
+                
+                <span class="{% if user.theme_preference == 'dark' %}text-cyber-text-primary{% else %}text-gray-900{% endif %} px-3 py-2">
+                    صفحه {{ page_obj.number }} از {{ page_obj.paginator.num_pages }}
+                </span>
+                
+                {% if page_obj.has_next %}
+                <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}" 
+                   class="{% if user.theme_preference == 'dark' %}cyber-button-secondary{% else %}bg-gray-300 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-400{% endif %}">
+                    بعدی
+                </a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+    </main>
+</div>
+
+<script>
+function supplierList() {
+    return {
+        darkMode: localStorage.getItem('theme') === 'dark',
+        loading: false,
+        
+        initList() {
+            console.log('Supplier list initialized');
+        },
+        
+        toggleSupplierStatus(supplierId, field) {
+            this.loading = true;
+            
+            fetch('{% url "customers:supplier_ajax" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': window.csrfToken
+                },
+                body: `action=toggle_${field}&supplier_id=${supplierId}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    this.showMessage(data.message, 'success');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    this.showMessage(data.error, 'error');
+                }
+            })
+            .catch(error => {
+                this.showMessage('خطا در ارتباط با سرور', 'error');
+            })
+            .finally(() => {
+                this.loading = false;
+            });
+        },
+        
+        showMessage(message, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `fixed top-20 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
+                type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' :
+                type === 'error' ? 'bg-red-100 text-red-800 border border-red-200' :
+                'bg-blue-100 text-blue-800 border border-blue-200'
+            }`;
+            messageDiv.textContent = message;
+            
+            document.body.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+        }
+    }
+}
+</script>
+{% endblock %}

@@ -32,7 +32,7 @@ class SuperAdminRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
     """
     Mixin that requires the user to be a superadmin.
     """
-    login_url = reverse_lazy('admin_panel:login')
+    login_url = reverse_lazy('admin_panel:unified_login')
     
     def test_func(self):
         """Test if user is a superadmin."""
@@ -185,40 +185,7 @@ class UnifiedAdminDashboardView(SuperAdminRequiredMixin, TemplateView):
         return context
 
 
-class AdminLoginView(TemplateView):
-    """
-    Login view for super-admin panel.
-    """
-    template_name = 'admin_panel/login.html'
-    
-    def post(self, request):
-        """Handle login form submission."""
-        from django.contrib.auth import authenticate, login
-        
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        
-        if username and password:
-            user = authenticate(request, username=username, password=password)
-            if user and isinstance(user, SuperAdmin) and user.is_superuser:
-                login(request, user)
-                return redirect('admin_panel:dashboard')
-            else:
-                messages.error(request, 'نام کاربری یا رمز عبور اشتباه است.')
-        
-        return self.get(request)
 
-
-class AdminLogoutView(TemplateView):
-    """
-    Logout view for super-admin panel.
-    """
-    
-    def get(self, request):
-        """Handle logout."""
-        from django.contrib.auth import logout
-        logout(request)
-        return redirect('admin_panel:login')
 
 
 class UserImpersonationView(SuperAdminRequiredMixin, TemplateView):

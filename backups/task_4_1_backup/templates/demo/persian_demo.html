@@ -1,0 +1,260 @@
+{% load persian_tags %}
+<!DOCTYPE html>
+<html dir="{% persian_direction %}" lang="{% persian_lang %}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نمایش سیستم فارسی‌سازی زرگر</title>
+    <style>
+        body {
+            font-family: 'Vazir', 'Tahoma', sans-serif;
+            direction: rtl;
+            text-align: right;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #007bff;
+        }
+        
+        .demo-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-right: 4px solid #007bff;
+        }
+        
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .demo-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .persian-number {
+            font-size: 1.2em;
+            color: #007bff;
+            font-weight: bold;
+        }
+        
+        .business-term {
+            background: #e3f2fd;
+            padding: 5px 10px;
+            border-radius: 4px;
+            display: inline-block;
+            margin: 2px;
+        }
+        
+        .theme-toggle-demo {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .date-demo {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .rtl-demo {
+            border: 2px dashed #28a745;
+            padding: 15px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body class="{% rtl_class %}">
+    <div class="container">
+        <div class="header">
+            <h1>🏺 سیستم فارسی‌سازی پلتفرم زرگر</h1>
+            <p>نمایش قابلیت‌های فارسی‌سازی و RTL در سیستم مدیریت جواهرات</p>
+        </div>
+
+        <!-- Persian Numbers Demo -->
+        <div class="demo-section">
+            <h2>🔢 نمایش اعداد فارسی</h2>
+            <div class="demo-grid">
+                <div class="demo-card">
+                    <h3>ارقام انگلیسی → فارسی</h3>
+                    <p>عدد انگلیسی: 1234567890</p>
+                    <p class="persian-number">عدد فارسی: {{ "1234567890"|persian_number }}</p>
+                </div>
+                <div class="demo-card">
+                    <h3>درصد فارسی</h3>
+                    <p>درصد: {{ 85.5|percentage_persian }}</p>
+                    <p>درصد: {{ 100|percentage_persian }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Currency Demo -->
+        <div class="demo-section">
+            <h2>💰 نمایش ارز و قیمت</h2>
+            <div class="demo-grid">
+                <div class="demo-card">
+                    <h3>قیمت‌های مختلف</h3>
+                    <p>{{ 1000|persian_currency }}</p>
+                    <p>{{ 1234567|persian_currency }}</p>
+                    <p>{{ 50000000|persian_currency }}</p>
+                </div>
+                <div class="demo-card">
+                    <h3>قیمت طلا</h3>
+                    <p>قیمت هر گرم طلا: {{ 2500000|persian_currency }}</p>
+                    <p>قیمت کل: {{ 12750000|persian_currency }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weight Demo -->
+        <div class="demo-section">
+            <h2>⚖️ نمایش وزن و واحدهای سنتی</h2>
+            <div class="demo-grid">
+                <div class="demo-card">
+                    <h3>وزن به گرم</h3>
+                    <p>{{ 10.500|persian_weight }}</p>
+                    <p>{{ 25.750|persian_weight }}</p>
+                    <p>{{ 100.250|persian_weight }}</p>
+                </div>
+                <div class="demo-card">
+                    <h3>واحدهای سنتی ایرانی</h3>
+                    <p>{{ 10.500|to_mithqal }}</p>
+                    <p>{{ 10.500|to_soot }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Karat Demo -->
+        <div class="demo-section">
+            <h2>💎 نمایش عیار طلا</h2>
+            <div class="demo-grid">
+                <div class="demo-card">
+                    <h3>عیارهای مختلف</h3>
+                    <p>{{ 18|karat_display }}</p>
+                    <p>{{ 21|karat_display }}</p>
+                    <p>{{ 24|karat_display }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Business Terms Demo -->
+        <div class="demo-section">
+            <h2>📋 اصطلاحات تجاری فارسی</h2>
+            <div class="demo-card">
+                <h3>واژگان کلیدی</h3>
+                <span class="business-term">{% persian_business_term 'jewelry' %}</span>
+                <span class="business-term">{% persian_business_term 'gold' %}</span>
+                <span class="business-term">{% persian_business_term 'weight' %}</span>
+                <span class="business-term">{% persian_business_term 'karat' %}</span>
+                <span class="business-term">{% persian_business_term 'customer' %}</span>
+                <span class="business-term">{% persian_business_term 'invoice' %}</span>
+                <span class="business-term">{% persian_business_term 'payment' %}</span>
+                <span class="business-term">{% persian_business_term 'inventory' %}</span>
+                <span class="business-term">{% persian_business_term 'sales' %}</span>
+                <span class="business-term">{% persian_business_term 'accounting' %}</span>
+                <span class="business-term">{% persian_business_term 'reports' %}</span>
+                <span class="business-term">{% persian_business_term 'dashboard' %}</span>
+            </div>
+        </div>
+
+        <!-- Date Demo -->
+        <div class="demo-section">
+            <h2>📅 تاریخ و زمان فارسی</h2>
+            <div class="date-demo">
+                <h3>تاریخ و زمان فعلی</h3>
+                <p>سال فارسی: {% current_persian_year %}</p>
+                <p>تاریخ امروز: {% current_persian_date %}</p>
+                <p>تاریخ و زمان: {% current_persian_datetime %}</p>
+            </div>
+        </div>
+
+        <!-- RTL Layout Demo -->
+        <div class="demo-section">
+            <h2>↩️ نمایش چیدمان RTL</h2>
+            <div class="rtl-demo">
+                <h3>متن فارسی با چیدمان راست به چپ</h3>
+                <p>این متن به صورت راست به چپ نمایش داده می‌شود. اعداد {{ "123"|persian_number }} و ارقام {{ 1000|persian_currency }} به درستی در متن فارسی قرار می‌گیرند.</p>
+                <p>جهت متن: {% persian_direction %}</p>
+                <p>کلاس RTL: {% rtl_class %}</p>
+            </div>
+        </div>
+
+        <!-- Theme Toggle Demo -->
+        <div class="demo-section">
+            <h2>🎨 تغییر پوسته</h2>
+            <div class="theme-toggle-demo">
+                {% theme_toggle_button %}
+                <p>دکمه تغییر پوسته بین حالت روشن و تاریک</p>
+            </div>
+        </div>
+
+        <!-- Persian Date Picker Demo -->
+        <div class="demo-section">
+            <h2>📆 انتخابگر تاریخ فارسی</h2>
+            <div class="demo-card">
+                <h3>ویجت انتخاب تاریخ</h3>
+                {% persian_date_picker "demo_date" %}
+                <p>انتخابگر تاریخ با تقویم شمسی</p>
+            </div>
+        </div>
+
+        <!-- Persian Number Input Demo -->
+        <div class="demo-section">
+            <h2>🔢 ورودی اعداد فارسی</h2>
+            <div class="demo-card">
+                <h3>فیلد ورودی عدد</h3>
+                {% persian_number_input "demo_number" placeholder="عدد را وارد کنید" %}
+                <p>ورودی خودکار اعداد فارسی با فرمت‌بندی</p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="demo-section" style="text-align: center; margin-top: 40px;">
+            <h3>✅ سیستم فارسی‌سازی کامل</h3>
+            <p>تمامی قابلیت‌های فارسی‌سازی با موفقیت پیاده‌سازی شده است</p>
+            <ul style="list-style: none; padding: 0;">
+                <li>✓ تبدیل ارقام انگلیسی به فارسی</li>
+                <li>✓ فرمت‌بندی ارز و وزن</li>
+                <li>✓ واحدهای سنتی ایرانی (مثقال، سوت)</li>
+                <li>✓ چیدمان RTL</li>
+                <li>✓ تاریخ شمسی</li>
+                <li>✓ اصطلاحات تجاری فارسی</li>
+                <li>✓ ویجت‌های فارسی</li>
+                <li>✓ تغییر پوسته</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Add some interactivity for demo
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Persian localization demo loaded successfully!');
+            console.log('Direction:', document.dir);
+            console.log('Language:', document.lang);
+        });
+    </script>
+</body>
+</html>

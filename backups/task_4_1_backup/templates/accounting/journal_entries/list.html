@@ -1,0 +1,387 @@
+{% extends 'base_rtl.html' %}
+{% load static %}
+{% load persian_tags %}
+
+{% block title %}اسناد حسابداری - زرگر{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/accounting-tables.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-6">
+    <!-- Header Section -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
+        <div class="mb-4 lg:mb-0">
+            <h1 class="text-3xl font-bold 
+                       {% if is_dark_mode %}text-cyber-text-primary{% else %}text-light-text-primary{% endif %}">
+                اسناد حسابداری
+            </h1>
+            <p class="mt-2 
+                     {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-light-text-secondary{% endif %}">
+                مدیریت ثبت اسناد حسابداری با سیستم دوطرفه
+            </p>
+        </div>
+        
+        <div class="flex flex-wrap gap-3">
+            <a href="{% url 'accounting:journal_entries_create' %}" 
+               class="btn-primary-cyber flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                سند جدید
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="card-cyber mb-6">
+        <form method="get" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <!-- Search Input -->
+            <div>
+                <label class="block text-sm font-medium mb-2 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                    جستجو
+                </label>
+                <input type="text" 
+                       name="search" 
+                       value="{{ search_query }}"
+                       placeholder="شماره سند، شرح یا مرجع"
+                       class="form-input-cyber">
+            </div>
+            
+            <!-- Status Filter -->
+            <div>
+                <label class="block text-sm font-medium mb-2 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                    وضعیت
+                </label>
+                <select name="status" class="form-select-cyber">
+                    <option value="">همه وضعیت‌ها</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Entry Type Filter -->
+            <div>
+                <label class="block text-sm font-medium mb-2 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                    نوع سند
+                </label>
+                <select name="type" class="form-select-cyber">
+                    <option value="">همه انواع</option>
+                    {% for value, label in entry_types %}
+                    <option value="{{ value }}" {% if selected_type == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Date From -->
+            <div>
+                <label class="block text-sm font-medium mb-2 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                    از تاریخ
+                </label>
+                <input type="date" 
+                       name="date_from" 
+                       value="{{ date_from }}"
+                       class="form-input-cyber">
+            </div>
+            
+            <!-- Date To -->
+            <div>
+                <label class="block text-sm font-medium mb-2 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                    تا تاریخ
+                </label>
+                <input type="date" 
+                       name="date_to" 
+                       value="{{ date_to }}"
+                       class="form-input-cyber">
+            </div>
+            
+            <!-- Filter Buttons -->
+            <div class="md:col-span-5 flex items-center gap-2">
+                <button type="submit" class="btn-secondary-cyber">
+                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    فیلتر
+                </button>
+                <a href="{% url 'accounting:journal_entries_list' %}" 
+                   class="btn-outline-cyber">
+                    پاک کردن
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Journal Entries Table -->
+    <div class="card-cyber">
+        {% if entries %}
+        <div class="overflow-x-auto">
+            <table class="table-cyber">
+                <thead>
+                    <tr>
+                        <th class="text-right">شماره سند</th>
+                        <th class="text-right">تاریخ</th>
+                        <th class="text-right">نوع سند</th>
+                        <th class="text-right">شرح</th>
+                        <th class="text-right">مرجع</th>
+                        <th class="text-right">مجموع بدهکار</th>
+                        <th class="text-right">مجموع بستانکار</th>
+                        <th class="text-right">وضعیت</th>
+                        <th class="text-center">عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in entries %}
+                    <tr class="table-row-cyber">
+                        <td class="font-mono font-medium 
+                                  {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}">
+                            {{ entry.entry_number }}
+                        </td>
+                        <td>
+                            <div class="text-sm">
+                                <div class="font-medium 
+                                           {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                    {{ entry.entry_date_shamsi }}
+                                </div>
+                                <div class="{% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">
+                                    {{ entry.entry_date|date:"Y-m-d" }}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge-cyber badge-{{ entry.entry_type }}">
+                                {{ entry.get_entry_type_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="max-w-xs">
+                                <p class="font-medium 
+                                         {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                    {{ entry.description|truncatechars:50 }}
+                                </p>
+                                {% if entry.notes %}
+                                <p class="text-sm 
+                                         {% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">
+                                    {{ entry.notes|truncatechars:30 }}
+                                </p>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            {% if entry.reference_number %}
+                            <span class="font-mono text-sm 
+                                        {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                                {{ entry.reference_number }}
+                            </span>
+                            {% else %}
+                            <span class="text-sm 
+                                        {% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-400{% endif %}">
+                                -
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-left">
+                            <span class="font-medium persian-numbers
+                                        {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}">
+                                {{ entry.total_debit|persian_currency }}
+                            </span>
+                        </td>
+                        <td class="text-left">
+                            <span class="font-medium persian-numbers
+                                        {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}">
+                                {{ entry.total_credit|persian_currency }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge-cyber 
+                                        {% if entry.status == 'posted' %}badge-success
+                                        {% elif entry.status == 'draft' %}badge-warning
+                                        {% elif entry.status == 'pending' %}badge-info
+                                        {% else %}badge-danger{% endif %}">
+                                {{ entry.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <a href="{% url 'accounting:journal_entries_detail' entry.pk %}" 
+                                   class="btn-icon-cyber" 
+                                   title="جزئیات">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                </a>
+                                
+                                {% if entry.status != 'posted' %}
+                                <a href="{% url 'accounting:journal_entries_edit' entry.pk %}" 
+                                   class="btn-icon-cyber" 
+                                   title="ویرایش">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                    </svg>
+                                </a>
+                                {% endif %}
+                                
+                                {% if entry.can_be_posted %}
+                                <button onclick="postJournalEntry({{ entry.pk }})" 
+                                        class="btn-icon-cyber text-green-600" 
+                                        title="ثبت سند">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="flex items-center justify-between mt-6 pt-6 border-t
+                   {% if is_dark_mode %}border-cyber-border-glass{% else %}border-gray-200{% endif %}">
+            <div class="text-sm 
+                       {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                نمایش {{ page_obj.start_index }} تا {{ page_obj.end_index }} از {{ page_obj.paginator.count }} سند
+            </div>
+            
+            <div class="flex items-center gap-2">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" 
+                   class="btn-outline-cyber">
+                    قبلی
+                </a>
+                {% endif %}
+                
+                <span class="px-3 py-2 text-sm 
+                           {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-700{% endif %}">
+                    صفحه <span class="persian-numbers">{{ page_obj.number }}</span> از <span class="persian-numbers">{{ page_obj.paginator.num_pages }}</span>
+                </span>
+                
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" 
+                   class="btn-outline-cyber">
+                    بعدی
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-12">
+            <svg class="mx-auto h-16 w-16 
+                       {% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-400{% endif %}" 
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <h3 class="mt-4 text-lg font-medium 
+                      {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                هیچ سندی یافت نشد
+            </h3>
+            <p class="mt-2 text-sm 
+                     {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                {% if search_query or selected_status or selected_type or date_from or date_to %}
+                    نتیجه‌ای برای فیلترهای انتخابی یافت نشد. فیلترها را تغییر دهید یا پاک کنید.
+                {% else %}
+                    هنوز سندی ثبت نشده است. اولین سند حسابداری خود را ایجاد کنید.
+                {% endif %}
+            </p>
+            <div class="mt-6">
+                {% if search_query or selected_status or selected_type or date_from or date_to %}
+                <a href="{% url 'accounting:journal_entries_list' %}" 
+                   class="btn-outline-cyber ml-3">
+                    پاک کردن فیلترها
+                </a>
+                {% endif %}
+                <a href="{% url 'accounting:journal_entries_create' %}" 
+                   class="btn-primary-cyber">
+                    ایجاد سند جدید
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Persian number formatting
+    const persianElements = document.querySelectorAll('.persian-numbers');
+    persianElements.forEach(element => {
+        if (window.PersianNumbers) {
+            element.textContent = window.PersianNumbers.toPersian(element.textContent);
+        }
+    });
+    
+    // Add table row hover effects for cybersecurity theme
+    if (document.body.classList.contains('dark')) {
+        const tableRows = document.querySelectorAll('.table-row-cyber');
+        tableRows.forEach(row => {
+            row.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = 'rgba(37, 42, 58, 0.8)';
+                this.style.transform = 'translateX(4px)';
+            });
+            
+            row.addEventListener('mouseleave', function() {
+                this.style.backgroundColor = '';
+                this.style.transform = 'translateX(0)';
+            });
+        });
+    }
+    
+    // Auto-submit form on filter change
+    const filterSelects = document.querySelectorAll('select[name="status"], select[name="type"]');
+    filterSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            this.form.submit();
+        });
+    });
+});
+
+// Post journal entry function
+function postJournalEntry(entryId) {
+    if (!confirm('آیا مطمئن هستید که می‌خواهید این سند را ثبت کنید؟\nپس از ثبت، امکان ویرایش وجود نخواهد داشت.')) {
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('entry_id', entryId);
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    
+    fetch('{% url "accounting:post_journal_entry" %}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('خطا: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('خطا در ثبت سند. لطفاً دوباره تلاش کنید.');
+    });
+}
+</script>
+{% endblock %}

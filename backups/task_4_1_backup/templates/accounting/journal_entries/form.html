@@ -1,0 +1,757 @@
+{% extends 'base_rtl.html' %}
+{% load static %}
+{% load persian_tags %}
+
+{% block title %}
+{% if object %}ویرایش سند{% else %}سند جدید{% endif %} - زرگر
+{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/accounting-forms.css' %}">
+<style>
+.formset-form {
+    border: 1px solid;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.light .formset-form {
+    border-color: #e5e7eb;
+    background-color: #f9fafb;
+}
+
+.dark .formset-form {
+    border-color: rgba(255, 255, 255, 0.06);
+    background: linear-gradient(145deg, rgba(37, 42, 58, 0.6) 0%, rgba(26, 29, 41, 0.7) 100%);
+}
+
+.formset-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid;
+}
+
+.light .formset-header {
+    border-color: #e5e7eb;
+}
+
+.dark .formset-header {
+    border-color: rgba(255, 255, 255, 0.06);
+}
+
+.balance-display {
+    position: sticky;
+    top: 20px;
+    z-index: 10;
+}
+
+.balance-card {
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid;
+}
+
+.light .balance-card {
+    background-color: white;
+    border-color: #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.dark .balance-card {
+    background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 100%);
+    border-color: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.balance-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.balance-amount {
+    font-family: 'Vazirmatn', 'Courier New', monospace;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.balance-balanced {
+    color: #10b981;
+}
+
+.dark .balance-balanced {
+    color: #00FF88;
+    text-shadow: 0 0 5px rgba(0, 255, 136, 0.3);
+}
+
+.balance-unbalanced {
+    color: #ef4444;
+}
+
+.dark .balance-unbalanced {
+    color: #FF4757;
+    text-shadow: 0 0 5px rgba(255, 71, 87, 0.3);
+}
+
+.line-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr auto;
+    gap: 0.75rem;
+    align-items: end;
+}
+
+@media (max-width: 768px) {
+    .line-grid {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-6">
+    <!-- Header Section -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
+        <div class="mb-4 lg:mb-0">
+            <h1 class="text-3xl font-bold 
+                       {% if is_dark_mode %}text-cyber-text-primary{% else %}text-light-text-primary{% endif %}">
+                {% if object %}ویرایش سند حسابداری{% else %}سند حسابداری جدید{% endif %}
+            </h1>
+            <p class="mt-2 
+                     {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-light-text-secondary{% endif %}">
+                {% if object %}
+                    ویرایش سند {{ object.entry_number }}
+                {% else %}
+                    ایجاد سند حسابداری جدید با سیستم دوطرفه
+                {% endif %}
+            </p>
+        </div>
+        
+        <div class="flex flex-wrap gap-3">
+            <a href="{% url 'accounting:journal_entries_list' %}" 
+               class="btn-outline-cyber flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                بازگشت به فهرست
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <!-- Main Form -->
+        <div class="lg:col-span-3">
+            <div class="card-cyber">
+                <form method="post" id="journal-entry-form" class="space-y-6">
+                    {% csrf_token %}
+                    
+                    <!-- Form Errors -->
+                    {% if form.non_field_errors %}
+                    <div class="form-error-cyber">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 form-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                            </svg>
+                            <div>
+                                {% for error in form.non_field_errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Entry Header -->
+                    <div class="form-section-cyber">
+                        <h3 class="form-section-title">اطلاعات سند</h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <!-- Entry Type -->
+                            <div class="form-field-cyber">
+                                <label for="{{ form.entry_type.id_for_label }}" class="form-label-cyber">
+                                    {{ form.entry_type.label }}
+                                    <span class="required-indicator">*</span>
+                                </label>
+                                {{ form.entry_type }}
+                                {% if form.entry_type.errors %}
+                                    <div class="form-error-list">
+                                        {% for error in form.entry_type.errors %}
+                                            <div class="form-error-item">
+                                                <svg class="form-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01"></path>
+                                                </svg>
+                                                {{ error }}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Entry Date -->
+                            <div class="form-field-cyber">
+                                <label for="{{ form.entry_date.id_for_label }}" class="form-label-cyber">
+                                    {{ form.entry_date.label }}
+                                    <span class="required-indicator">*</span>
+                                </label>
+                                {{ form.entry_date }}
+                                {% if form.entry_date.errors %}
+                                    <div class="form-error-list">
+                                        {% for error in form.entry_date.errors %}
+                                            <div class="form-error-item">
+                                                <svg class="form-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01"></path>
+                                                </svg>
+                                                {{ error }}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Reference Number -->
+                            <div class="form-field-cyber">
+                                <label for="{{ form.reference_number.id_for_label }}" class="form-label-cyber">
+                                    {{ form.reference_number.label }}
+                                </label>
+                                {{ form.reference_number }}
+                                {% if form.reference_number.errors %}
+                                    <div class="form-error-list">
+                                        {% for error in form.reference_number.errors %}
+                                            <div class="form-error-item">
+                                                <svg class="form-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01"></path>
+                                                </svg>
+                                                {{ error }}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="form-field-cyber">
+                            <label for="{{ form.description.id_for_label }}" class="form-label-cyber">
+                                {{ form.description.label }}
+                                <span class="required-indicator">*</span>
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="form-error-list">
+                                    {% for error in form.description.errors %}
+                                        <div class="form-error-item">
+                                            <svg class="form-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01"></path>
+                                            </svg>
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="form-field-cyber">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label-cyber">
+                                {{ form.notes.label }}
+                            </label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                                <div class="form-error-list">
+                                    {% for error in form.notes.errors %}
+                                        <div class="form-error-item">
+                                            <svg class="form-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01"></path>
+                                            </svg>
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Journal Entry Lines -->
+                    <div class="form-section-cyber">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="form-section-title mb-0">ردیف‌های سند</h3>
+                            <button type="button" id="add-line" class="btn-secondary-cyber">
+                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                </svg>
+                                افزودن ردیف
+                            </button>
+                        </div>
+
+                        <!-- Formset Management Fields -->
+                        {{ formset.management_form }}
+
+                        <!-- Formset Errors -->
+                        {% if formset.non_form_errors %}
+                        <div class="form-error-cyber mb-4">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-5 h-5 form-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                                </svg>
+                                <div>
+                                    {% for error in formset.non_form_errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Lines Header -->
+                        <div class="line-grid mb-4 font-medium 
+                                   {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-700{% endif %}">
+                            <div>حساب و شرح</div>
+                            <div class="text-center">بدهکار</div>
+                            <div class="text-center">بستانکار</div>
+                            <div class="text-center">مرکز هزینه</div>
+                            <div class="text-center">عملیات</div>
+                        </div>
+
+                        <!-- Journal Entry Lines -->
+                        <div id="formset-container">
+                            {% for form in formset %}
+                            <div class="formset-form line-form" data-form-index="{{ forloop.counter0 }}">
+                                {% for hidden in form.hidden_fields %}
+                                    {{ hidden }}
+                                {% endfor %}
+                                
+                                <div class="line-grid">
+                                    <!-- Account and Description -->
+                                    <div class="space-y-3">
+                                        <div class="form-field-cyber">
+                                            <label class="form-label-cyber text-sm">حساب</label>
+                                            {{ form.account }}
+                                            {% if form.account.errors %}
+                                                <div class="form-error-list">
+                                                    {% for error in form.account.errors %}
+                                                        <div class="form-error-item text-xs">{{ error }}</div>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="form-field-cyber">
+                                            <label class="form-label-cyber text-sm">شرح</label>
+                                            {{ form.description }}
+                                            {% if form.description.errors %}
+                                                <div class="form-error-list">
+                                                    {% for error in form.description.errors %}
+                                                        <div class="form-error-item text-xs">{{ error }}</div>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <!-- Debit Amount -->
+                                    <div class="form-field-cyber">
+                                        <label class="form-label-cyber text-sm">مبلغ بدهکار</label>
+                                        {{ form.debit_amount }}
+                                        {% if form.debit_amount.errors %}
+                                            <div class="form-error-list">
+                                                {% for error in form.debit_amount.errors %}
+                                                    <div class="form-error-item text-xs">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Credit Amount -->
+                                    <div class="form-field-cyber">
+                                        <label class="form-label-cyber text-sm">مبلغ بستانکار</label>
+                                        {{ form.credit_amount }}
+                                        {% if form.credit_amount.errors %}
+                                            <div class="form-error-list">
+                                                {% for error in form.credit_amount.errors %}
+                                                    <div class="form-error-item text-xs">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Cost Center -->
+                                    <div class="form-field-cyber">
+                                        <label class="form-label-cyber text-sm">مرکز هزینه</label>
+                                        {{ form.cost_center }}
+                                        {% if form.cost_center.errors %}
+                                            <div class="form-error-list">
+                                                {% for error in form.cost_center.errors %}
+                                                    <div class="form-error-item text-xs">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Delete Button -->
+                                    <div class="flex items-center justify-center">
+                                        {% if form.DELETE %}
+                                            {{ form.DELETE }}
+                                        {% endif %}
+                                        <button type="button" class="btn-icon-cyber text-red-600 delete-line" title="حذف ردیف">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Empty Form Template (Hidden) -->
+                        <div id="empty-form" style="display: none;">
+                            <div class="formset-form line-form" data-form-index="__prefix__">
+                                {% for hidden in formset.empty_form.hidden_fields %}
+                                    {{ hidden }}
+                                {% endfor %}
+                                
+                                <div class="line-grid">
+                                    <div class="space-y-3">
+                                        <div class="form-field-cyber">
+                                            <label class="form-label-cyber text-sm">حساب</label>
+                                            {{ formset.empty_form.account }}
+                                        </div>
+                                        <div class="form-field-cyber">
+                                            <label class="form-label-cyber text-sm">شرح</label>
+                                            {{ formset.empty_form.description }}
+                                        </div>
+                                    </div>
+                                    <div class="form-field-cyber">
+                                        <label class="form-label-cyber text-sm">مبلغ بدهکار</label>
+                                        {{ formset.empty_form.debit_amount }}
+                                    </div>
+                                    <div class="form-field-cyber">
+                                        <label class="form-label-cyber text-sm">مبلغ بستانکار</label>
+                                        {{ formset.empty_form.credit_amount }}
+                                    </div>
+                                    <div class="form-field-cyber">
+                                        <label class="form-label-cyber text-sm">مرکز هزینه</label>
+                                        {{ formset.empty_form.cost_center }}
+                                    </div>
+                                    <div class="flex items-center justify-center">
+                                        <button type="button" class="btn-icon-cyber text-red-600 delete-line" title="حذف ردیف">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="form-actions-cyber">
+                        <div class="form-actions-left">
+                            <button type="submit" class="btn-primary-cyber" id="save-entry">
+                                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                {% if object %}به‌روزرسانی سند{% else %}ذخیره سند{% endif %}
+                            </button>
+                            
+                            {% if object and object.can_be_posted %}
+                            <button type="button" class="btn-secondary-cyber" id="post-entry" data-entry-id="{{ object.pk }}">
+                                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                ثبت سند
+                            </button>
+                            {% endif %}
+                            
+                            <a href="{% url 'accounting:journal_entries_list' %}" class="btn-outline-cyber">
+                                انصراف
+                            </a>
+                        </div>
+                        
+                        <div class="form-actions-right">
+                            <span class="{% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">
+                                سند باید متعادل باشد (مجموع بدهکار = مجموع بستانکار)
+                            </span>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Balance Display Sidebar -->
+        <div class="lg:col-span-1">
+            <div class="balance-display">
+                <div class="balance-card">
+                    <h4 class="font-semibold mb-4 
+                              {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        تراز سند
+                    </h4>
+                    
+                    <div class="space-y-3">
+                        <div class="balance-row">
+                            <span class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                                مجموع بدهکار:
+                            </span>
+                            <span id="total-debit" class="balance-amount persian-numbers">۰</span>
+                        </div>
+                        
+                        <div class="balance-row">
+                            <span class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                                مجموع بستانکار:
+                            </span>
+                            <span id="total-credit" class="balance-amount persian-numbers">۰</span>
+                        </div>
+                        
+                        <div class="balance-row border-t pt-3 
+                                   {% if is_dark_mode %}border-cyber-border-glass{% else %}border-gray-200{% endif %}">
+                            <span class="font-semibold 
+                                        {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                تفاوت:
+                            </span>
+                            <span id="balance-difference" class="balance-amount persian-numbers">۰</span>
+                        </div>
+                        
+                        <div class="text-center pt-3">
+                            <div id="balance-status" class="px-3 py-2 rounded-lg text-sm font-medium">
+                                <!-- Status will be updated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let formIndex = {{ formset.total_form_count }};
+    
+    // Initialize balance calculation
+    updateBalance();
+    
+    // Add event listeners for amount inputs
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('amount-input') || 
+            e.target.name.includes('debit_amount') || 
+            e.target.name.includes('credit_amount')) {
+            updateBalance();
+        }
+    });
+    
+    // Add line functionality
+    document.getElementById('add-line').addEventListener('click', function() {
+        addNewLine();
+    });
+    
+    // Delete line functionality
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.delete-line')) {
+            e.preventDefault();
+            deleteFormLine(e.target.closest('.line-form'));
+        }
+    });
+    
+    // Post entry functionality
+    const postButton = document.getElementById('post-entry');
+    if (postButton) {
+        postButton.addEventListener('click', function() {
+            postJournalEntry(this.dataset.entryId);
+        });
+    }
+    
+    // Prevent both debit and credit on same line
+    document.addEventListener('input', function(e) {
+        if (e.target.name.includes('debit_amount') || e.target.name.includes('credit_amount')) {
+            const form = e.target.closest('.line-form');
+            const debitInput = form.querySelector('[name*="debit_amount"]');
+            const creditInput = form.querySelector('[name*="credit_amount"]');
+            
+            if (e.target.name.includes('debit_amount') && parseFloat(e.target.value) > 0) {
+                creditInput.value = '';
+            } else if (e.target.name.includes('credit_amount') && parseFloat(e.target.value) > 0) {
+                debitInput.value = '';
+            }
+            
+            updateBalance();
+        }
+    });
+    
+    function addNewLine() {
+        const container = document.getElementById('formset-container');
+        const emptyForm = document.getElementById('empty-form').innerHTML;
+        const newForm = emptyForm.replace(/__prefix__/g, formIndex);
+        
+        const div = document.createElement('div');
+        div.innerHTML = newForm;
+        const newFormElement = div.firstElementChild;
+        
+        container.appendChild(newFormElement);
+        
+        // Update form count
+        const totalForms = document.getElementById('id_lines-TOTAL_FORMS');
+        totalForms.value = parseInt(totalForms.value) + 1;
+        
+        formIndex++;
+        
+        // Add animation
+        newFormElement.style.opacity = '0';
+        newFormElement.style.transform = 'translateY(-10px)';
+        setTimeout(() => {
+            newFormElement.style.transition = 'all 0.3s ease';
+            newFormElement.style.opacity = '1';
+            newFormElement.style.transform = 'translateY(0)';
+        }, 10);
+    }
+    
+    function deleteFormLine(formElement) {
+        const deleteCheckbox = formElement.querySelector('[name*="DELETE"]');
+        if (deleteCheckbox) {
+            deleteCheckbox.checked = true;
+            formElement.style.opacity = '0.5';
+            formElement.style.pointerEvents = 'none';
+        } else {
+            // For new forms that haven't been saved yet
+            formElement.style.transition = 'all 0.3s ease';
+            formElement.style.opacity = '0';
+            formElement.style.transform = 'translateY(-10px)';
+            setTimeout(() => {
+                formElement.remove();
+                updateBalance();
+            }, 300);
+        }
+        updateBalance();
+    }
+    
+    function updateBalance() {
+        let totalDebit = 0;
+        let totalCredit = 0;
+        
+        document.querySelectorAll('.line-form').forEach(form => {
+            if (form.style.opacity === '0.5') return; // Skip deleted forms
+            
+            const debitInput = form.querySelector('[name*="debit_amount"]');
+            const creditInput = form.querySelector('[name*="credit_amount"]');
+            
+            if (debitInput && debitInput.value) {
+                totalDebit += parseFloat(debitInput.value) || 0;
+            }
+            
+            if (creditInput && creditInput.value) {
+                totalCredit += parseFloat(creditInput.value) || 0;
+            }
+        });
+        
+        const difference = Math.abs(totalDebit - totalCredit);
+        const isBalanced = difference < 0.01; // Allow for small rounding differences
+        
+        // Update display
+        document.getElementById('total-debit').textContent = formatCurrency(totalDebit);
+        document.getElementById('total-credit').textContent = formatCurrency(totalCredit);
+        document.getElementById('balance-difference').textContent = formatCurrency(difference);
+        
+        // Update status
+        const statusElement = document.getElementById('balance-status');
+        if (isBalanced && totalDebit > 0) {
+            statusElement.textContent = 'سند متعادل است ✓';
+            statusElement.className = 'px-3 py-2 rounded-lg text-sm font-medium balance-balanced';
+            if (document.body.classList.contains('dark')) {
+                statusElement.style.background = 'rgba(0, 255, 136, 0.2)';
+                statusElement.style.border = '1px solid rgba(0, 255, 136, 0.3)';
+            } else {
+                statusElement.style.background = '#dcfce7';
+                statusElement.style.border = '1px solid #16a34a';
+            }
+        } else {
+            statusElement.textContent = 'سند نامتعادل است ✗';
+            statusElement.className = 'px-3 py-2 rounded-lg text-sm font-medium balance-unbalanced';
+            if (document.body.classList.contains('dark')) {
+                statusElement.style.background = 'rgba(255, 71, 87, 0.2)';
+                statusElement.style.border = '1px solid rgba(255, 71, 87, 0.3)';
+            } else {
+                statusElement.style.background = '#fef2f2';
+                statusElement.style.border = '1px solid #dc2626';
+            }
+        }
+        
+        // Enable/disable save button
+        const saveButton = document.getElementById('save-entry');
+        const postButton = document.getElementById('post-entry');
+        
+        if (isBalanced && totalDebit > 0) {
+            saveButton.disabled = false;
+            if (postButton) postButton.disabled = false;
+        } else {
+            if (postButton) postButton.disabled = true;
+        }
+    }
+    
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('fa-IR', {
+            style: 'currency',
+            currency: 'IRR',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(amount).replace('ریال', 'تومان');
+    }
+    
+    function postJournalEntry(entryId) {
+        if (!confirm('آیا مطمئن هستید که می‌خواهید این سند را ثبت کنید؟\nپس از ثبت، امکان ویرایش وجود نخواهد داشت.')) {
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('entry_id', entryId);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        
+        fetch('{% url "accounting:post_journal_entry" %}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                window.location.href = '{% url "accounting:journal_entries_list" %}';
+            } else {
+                alert('خطا: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('خطا در ثبت سند. لطفاً دوباره تلاش کنید.');
+        });
+    }
+    
+    // Initialize Persian number formatting
+    const persianElements = document.querySelectorAll('.persian-numbers');
+    persianElements.forEach(element => {
+        if (window.PersianNumbers) {
+            element.textContent = window.PersianNumbers.toPersian(element.textContent);
+        }
+    });
+    
+    // Add cybersecurity theme effects for dark mode
+    if (document.body.classList.contains('dark')) {
+        const inputs = document.querySelectorAll('.form-input-cyber, .form-select-cyber, .form-textarea-cyber');
+        inputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                this.style.boxShadow = '0 0 20px rgba(0, 212, 255, 0.3)';
+            });
+            
+            input.addEventListener('blur', function() {
+                this.style.boxShadow = '';
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

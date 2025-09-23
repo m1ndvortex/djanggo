@@ -1,0 +1,596 @@
+{% extends 'base_rtl.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}ایجاد قرارداد طلای قرضی{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/layaway-forms.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="layaway-create" x-data="layawayCreate()">
+    <!-- Header -->
+    <div class="page-header">
+        <div class="header-content">
+            <h1 class="page-title">
+                <i class="fas fa-plus-circle"></i>
+                ایجاد قرارداد طلای قرضی جدید
+            </h1>
+            <div class="header-actions">
+                <a href="{% url 'customers:layaway_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-right"></i>
+                    بازگشت
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <form method="post" class="layaway-form" @submit="validateForm">
+        {% csrf_token %}
+        
+        <div class="row">
+            <!-- Customer and Item Selection -->
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">
+                            <i class="fas fa-user-plus"></i>
+                            اطلاعات مشتری و کالا
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Customer Selection -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.customer.id_for_label }}" class="form-label required">
+                                        {{ form.customer.label }}
+                                    </label>
+                                    <select name="{{ form.customer.name }}" 
+                                            id="{{ form.customer.id_for_label }}"
+                                            class="form-control select2"
+                                            x-model="selectedCustomer"
+                                            @change="loadCustomerHistory"
+                                            required>
+                                        <option value="">انتخاب مشتری...</option>
+                                        {% for customer in customers %}
+                                        <option value="{{ customer.id }}">
+                                            {{ customer.full_persian_name }} - {{ customer.phone_number }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    {% if form.customer.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.customer.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Customer History (shown when customer selected) -->
+                                <div x-show="customerHistory" class="customer-history mt-3">
+                                    <h6 class="text-muted">سابقه مشتری:</h6>
+                                    <div class="history-stats">
+                                        <small class="text-info">
+                                            <span x-text="customerHistory?.total_plans || 0"></span> قرارداد قبلی
+                                        </small>
+                                        <small class="text-success">
+                                            <span x-text="customerHistory?.current_balance || 0"></span> تومان مانده فعلی
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Jewelry Item Selection -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.jewelry_item.id_for_label }}" class="form-label required">
+                                        {{ form.jewelry_item.label }}
+                                    </label>
+                                    <select name="{{ form.jewelry_item.name }}" 
+                                            id="{{ form.jewelry_item.id_for_label }}"
+                                            class="form-control select2"
+                                            x-model="selectedItem"
+                                            @change="loadItemDetails"
+                                            required>
+                                        <option value="">انتخاب کالا...</option>
+                                        {% for item in jewelry_items %}
+                                        <option value="{{ item.id }}" 
+                                                data-price="{{ item.selling_price|default:0 }}"
+                                                data-weight="{{ item.weight_grams|default:0 }}"
+                                                data-karat="{{ item.karat|default:0 }}">
+                                            {{ item.name }} - {{ item.sku }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    {% if form.jewelry_item.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.jewelry_item.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Item Details (shown when item selected) -->
+                                <div x-show="itemDetails" class="item-details mt-3">
+                                    <h6 class="text-muted">مشخصات کالا:</h6>
+                                    <div class="details-grid">
+                                        <small class="text-info">
+                                            وزن: <span x-text="itemDetails?.weight_grams || 0"></span> گرم
+                                        </small>
+                                        <small class="text-info">
+                                            عیار: <span x-text="itemDetails?.karat || 0"></span>
+                                        </small>
+                                        <small class="text-success">
+                                            قیمت پیشنهادی: <span x-text="formatNumber(itemDetails?.selling_price || 0)"></span> تومان
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financial Terms -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title">
+                            <i class="fas fa-calculator"></i>
+                            شرایط مالی
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Total Amount -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.total_amount.id_for_label }}" class="form-label required">
+                                        {{ form.total_amount.label }}
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="number" 
+                                               name="{{ form.total_amount.name }}" 
+                                               id="{{ form.total_amount.id_for_label }}"
+                                               class="form-control"
+                                               x-model="totalAmount"
+                                               @input="calculateInstallments"
+                                               step="1000"
+                                               min="1000"
+                                               required>
+                                        <div class="input-group-append">
+                                            <span class="input-group-text">تومان</span>
+                                        </div>
+                                    </div>
+                                    {% if form.total_amount.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.total_amount.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Down Payment -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.down_payment.id_for_label }}" class="form-label">
+                                        {{ form.down_payment.label }}
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="number" 
+                                               name="{{ form.down_payment.name }}" 
+                                               id="{{ form.down_payment.id_for_label }}"
+                                               class="form-control"
+                                               x-model="downPayment"
+                                               @input="calculateInstallments"
+                                               step="1000"
+                                               min="0">
+                                        <div class="input-group-append">
+                                            <span class="input-group-text">تومان</span>
+                                        </div>
+                                    </div>
+                                    <small class="form-text text-muted">
+                                        درصد پیش پرداخت: <span x-text="downPaymentPercentage"></span>%
+                                    </small>
+                                    {% if form.down_payment.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.down_payment.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Payment Frequency -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.payment_frequency.id_for_label }}" class="form-label required">
+                                        {{ form.payment_frequency.label }}
+                                    </label>
+                                    <select name="{{ form.payment_frequency.name }}" 
+                                            id="{{ form.payment_frequency.id_for_label }}"
+                                            class="form-control"
+                                            x-model="paymentFrequency"
+                                            @change="calculateInstallments"
+                                            required>
+                                        {% for value, label in form.payment_frequency.field.choices %}
+                                        <option value="{{ value }}">{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    {% if form.payment_frequency.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.payment_frequency.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Number of Payments -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.number_of_payments.id_for_label }}" class="form-label required">
+                                        {{ form.number_of_payments.label }}
+                                    </label>
+                                    <input type="number" 
+                                           name="{{ form.number_of_payments.name }}" 
+                                           id="{{ form.number_of_payments.id_for_label }}"
+                                           class="form-control"
+                                           x-model="numberOfPayments"
+                                           @input="calculateInstallments"
+                                           min="1"
+                                           max="120"
+                                           required>
+                                    {% if form.number_of_payments.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.number_of_payments.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Calculation Results -->
+                        <div x-show="calculationResults" class="calculation-results mt-4">
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading">محاسبات قسط:</h6>
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <strong>مانده قابل پرداخت:</strong><br>
+                                        <span class="text-primary" x-text="formatNumber(calculationResults?.remaining_amount || 0)"></span> تومان
+                                    </div>
+                                    <div class="col-md-3">
+                                        <strong>مبلغ هر قسط:</strong><br>
+                                        <span class="text-success" x-text="formatNumber(calculationResults?.installment_amount || 0)"></span> تومان
+                                    </div>
+                                    <div class="col-md-3">
+                                        <strong>تاریخ تکمیل:</strong><br>
+                                        <span class="text-info" x-text="calculationResults?.completion_date || ''"></span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <strong>کل اقساط:</strong><br>
+                                        <span class="text-warning" x-text="calculationResults?.total_payments || 0"></span> قسط
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Information -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title">
+                            <i class="fas fa-info-circle"></i>
+                            اطلاعات تکمیلی
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Start Date -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.start_date.id_for_label }}" class="form-label required">
+                                        {{ form.start_date.label }}
+                                    </label>
+                                    <input type="date" 
+                                           name="{{ form.start_date.name }}" 
+                                           id="{{ form.start_date.id_for_label }}"
+                                           class="form-control"
+                                           x-model="startDate"
+                                           @change="calculateInstallments"
+                                           required>
+                                    {% if form.start_date.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.start_date.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Grace Period -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.grace_period_days.id_for_label }}" class="form-label">
+                                        {{ form.grace_period_days.label }}
+                                    </label>
+                                    <input type="number" 
+                                           name="{{ form.grace_period_days.name }}" 
+                                           id="{{ form.grace_period_days.id_for_label }}"
+                                           class="form-control"
+                                           value="7"
+                                           min="0"
+                                           max="30">
+                                    <small class="form-text text-muted">
+                                        تعداد روزهای مهلت پس از سررسید هر قسط
+                                    </small>
+                                    {% if form.grace_period_days.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.grace_period_days.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="form-group">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                {{ form.notes.label }}
+                            </label>
+                            <textarea name="{{ form.notes.name }}" 
+                                      id="{{ form.notes.id_for_label }}"
+                                      class="form-control"
+                                      rows="3"
+                                      placeholder="یادداشت‌های اضافی در مورد این قرارداد..."></textarea>
+                            {% if form.notes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.notes.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Contract Template -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="card-title">
+                            <i class="fas fa-file-contract"></i>
+                            قالب قرارداد
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        {% if contract_templates %}
+                        <div class="form-group">
+                            <label class="form-label">انتخاب قالب:</label>
+                            <select class="form-control" x-model="selectedTemplate">
+                                {% for template in contract_templates %}
+                                <option value="{{ template.id }}" 
+                                        {% if template.is_default %}selected{% endif %}>
+                                    {{ template.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% else %}
+                        <p class="text-muted">قالب قراردادی تعریف نشده است.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h6 class="card-title">
+                            <i class="fas fa-bolt"></i>
+                            عملیات سریع
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <button type="button" class="btn btn-outline-info btn-block mb-2" 
+                                @click="setQuickTerms('3_months')">
+                            <i class="fas fa-clock"></i>
+                            ۳ ماهه (ماهانه)
+                        </button>
+                        <button type="button" class="btn btn-outline-info btn-block mb-2" 
+                                @click="setQuickTerms('6_months')">
+                            <i class="fas fa-clock"></i>
+                            ۶ ماهه (ماهانه)
+                        </button>
+                        <button type="button" class="btn btn-outline-info btn-block mb-2" 
+                                @click="setQuickTerms('12_months')">
+                            <i class="fas fa-clock"></i>
+                            ۱۲ ماهه (ماهانه)
+                        </button>
+                        <button type="button" class="btn btn-outline-warning btn-block" 
+                                @click="setQuickTerms('weekly_6_months')">
+                            <i class="fas fa-calendar-week"></i>
+                            ۶ ماهه (هفتگی)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <button type="submit" class="btn btn-success btn-block btn-lg">
+                            <i class="fas fa-save"></i>
+                            ایجاد قرارداد
+                        </button>
+                        <a href="{% url 'customers:layaway_dashboard' %}" 
+                           class="btn btn-outline-secondary btn-block mt-2">
+                            <i class="fas fa-times"></i>
+                            انصراف
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/layaway-create.js' %}"></script>
+<script>
+function layawayCreate() {
+    return {
+        selectedCustomer: '',
+        selectedItem: '',
+        selectedTemplate: '',
+        totalAmount: 0,
+        downPayment: 0,
+        paymentFrequency: 'monthly',
+        numberOfPayments: 12,
+        startDate: new Date().toISOString().split('T')[0],
+        
+        customerHistory: null,
+        itemDetails: null,
+        calculationResults: null,
+        
+        init() {
+            this.calculateInstallments();
+        },
+        
+        async loadCustomerHistory() {
+            if (!this.selectedCustomer) return;
+            
+            try {
+                const response = await fetch('{% url "customers:layaway_ajax" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: new URLSearchParams({
+                        action: 'get_customer_history',
+                        customer_id: this.selectedCustomer
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    this.customerHistory = data.history;
+                }
+            } catch (error) {
+                console.error('Error loading customer history:', error);
+            }
+        },
+        
+        async loadItemDetails() {
+            if (!this.selectedItem) return;
+            
+            try {
+                const response = await fetch('{% url "customers:layaway_ajax" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: new URLSearchParams({
+                        action: 'get_jewelry_item_details',
+                        item_id: this.selectedItem
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    this.itemDetails = data.item;
+                    if (data.item.selling_price > 0) {
+                        this.totalAmount = data.item.selling_price;
+                        this.calculateInstallments();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading item details:', error);
+            }
+        },
+        
+        async calculateInstallments() {
+            if (!this.totalAmount || !this.numberOfPayments) return;
+            
+            try {
+                const response = await fetch('{% url "customers:layaway_ajax" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: new URLSearchParams({
+                        action: 'calculate_installments',
+                        total_amount: this.totalAmount,
+                        down_payment: this.downPayment || 0,
+                        number_of_payments: this.numberOfPayments,
+                        payment_frequency: this.paymentFrequency
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    this.calculationResults = data.calculation;
+                }
+            } catch (error) {
+                console.error('Error calculating installments:', error);
+            }
+        },
+        
+        setQuickTerms(type) {
+            switch (type) {
+                case '3_months':
+                    this.paymentFrequency = 'monthly';
+                    this.numberOfPayments = 3;
+                    break;
+                case '6_months':
+                    this.paymentFrequency = 'monthly';
+                    this.numberOfPayments = 6;
+                    break;
+                case '12_months':
+                    this.paymentFrequency = 'monthly';
+                    this.numberOfPayments = 12;
+                    break;
+                case 'weekly_6_months':
+                    this.paymentFrequency = 'weekly';
+                    this.numberOfPayments = 24;
+                    break;
+            }
+            this.calculateInstallments();
+        },
+        
+        get downPaymentPercentage() {
+            if (!this.totalAmount || !this.downPayment) return 0;
+            return Math.round((this.downPayment / this.totalAmount) * 100);
+        },
+        
+        formatNumber(num) {
+            return new Intl.NumberFormat('fa-IR').format(num);
+        },
+        
+        validateForm(event) {
+            // Add custom validation logic here
+            if (!this.selectedCustomer || !this.selectedItem) {
+                event.preventDefault();
+                alert('لطفاً مشتری و کالا را انتخاب کنید.');
+                return false;
+            }
+            
+            if (this.totalAmount <= 0) {
+                event.preventDefault();
+                alert('مبلغ کل باید بیشتر از صفر باشد.');
+                return false;
+            }
+            
+            if (this.downPayment >= this.totalAmount) {
+                event.preventDefault();
+                alert('پیش پرداخت نمی‌تواند بیشتر یا مساوی مبلغ کل باشد.');
+                return false;
+            }
+            
+            return true;
+        }
+    }
+}
+</script>
+{% endblock %}

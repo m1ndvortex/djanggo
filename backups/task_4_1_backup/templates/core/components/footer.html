@@ -1,0 +1,283 @@
+<!-- Footer Component -->
+<footer class="mt-auto border-t transition-all duration-300
+              {% if is_dark_mode %}
+              bg-cyber-bg-surface/30 backdrop-blur-sm border-cyber-border-glass
+              {% else %}
+              bg-white border-gray-200
+              {% endif %}">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <!-- Company Info -->
+            <div class="col-span-1 md:col-span-2">
+                <div class="flex items-center space-x-3 rtl:space-x-reverse mb-4">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center
+                                {% if is_dark_mode %}
+                                bg-gradient-to-br from-cyber-neon-primary to-cyber-neon-secondary
+                                {% else %}
+                                bg-gradient-to-br from-blue-600 to-blue-700
+                                {% endif %}">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold
+                                   {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                            زرگر
+                        </h3>
+                        <p class="text-sm
+                                 {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            سیستم مدیریت طلا و جواهرات
+                        </p>
+                    </div>
+                </div>
+                <p class="text-sm leading-relaxed mb-4
+                         {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                    پلتفرم جامع مدیریت کسب‌وکار طلا و جواهرات با قابلیت‌های پیشرفته 
+                    مدیریت موجودی، فروش، مشتریان و گزارش‌گیری تخصصی برای صنعت طلا و جواهرات ایران.
+                </p>
+                
+                <!-- Features -->
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                    <div class="flex items-center space-x-2 rtl:space-x-reverse">
+                        <svg class="w-4 h-4 flex-shrink-0
+                                   {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}" 
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            مدیریت موجودی هوشمند
+                        </span>
+                    </div>
+                    <div class="flex items-center space-x-2 rtl:space-x-reverse">
+                        <svg class="w-4 h-4 flex-shrink-0
+                                   {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}" 
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            سیستم طلای قرضی
+                        </span>
+                    </div>
+                    <div class="flex items-center space-x-2 rtl:space-x-reverse">
+                        <svg class="w-4 h-4 flex-shrink-0
+                                   {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}" 
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            تقویم شمسی
+                        </span>
+                    </div>
+                    <div class="flex items-center space-x-2 rtl:space-x-reverse">
+                        <svg class="w-4 h-4 flex-shrink-0
+                                   {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}" 
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            گزارش‌گیری پیشرفته
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div>
+                <h4 class="text-sm font-semibold mb-4
+                           {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                    دسترسی سریع
+                </h4>
+                <ul class="space-y-2 text-sm">
+                    {% if user.is_authenticated %}
+                        <li>
+                            <a href="{% url 'core:dashboard' %}" 
+                               class="transition-colors duration-200
+                                      {% if is_dark_mode %}
+                                      text-cyber-text-secondary hover:text-cyber-neon-primary
+                                      {% else %}
+                                      text-gray-600 hover:text-blue-600
+                                      {% endif %}">
+                                داشبورد
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'core:inventory' %}" 
+                               class="transition-colors duration-200
+                                      {% if is_dark_mode %}
+                                      text-cyber-text-secondary hover:text-cyber-neon-primary
+                                      {% else %}
+                                      text-gray-600 hover:text-blue-600
+                                      {% endif %}">
+                                مدیریت موجودی
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'core:sales' %}" 
+                               class="transition-colors duration-200
+                                      {% if is_dark_mode %}
+                                      text-cyber-text-secondary hover:text-cyber-neon-primary
+                                      {% else %}
+                                      text-gray-600 hover:text-blue-600
+                                      {% endif %}">
+                                فروش
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'core:customers' %}" 
+                               class="transition-colors duration-200
+                                      {% if is_dark_mode %}
+                                      text-cyber-text-secondary hover:text-cyber-neon-primary
+                                      {% else %}
+                                      text-gray-600 hover:text-blue-600
+                                      {% endif %}">
+                                مشتریان
+                            </a>
+                        </li>
+                    {% else %}
+                        <li>
+                            <a href="{% url 'auth:login' %}" 
+                               class="transition-colors duration-200
+                                      {% if is_dark_mode %}
+                                      text-cyber-text-secondary hover:text-cyber-neon-primary
+                                      {% else %}
+                                      text-gray-600 hover:text-blue-600
+                                      {% endif %}">
+                                ورود به سیستم
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'auth:register' %}" 
+                               class="transition-colors duration-200
+                                      {% if is_dark_mode %}
+                                      text-cyber-text-secondary hover:text-cyber-neon-primary
+                                      {% else %}
+                                      text-gray-600 hover:text-blue-600
+                                      {% endif %}">
+                                ثبت نام
+                            </a>
+                        </li>
+                    {% endif %}
+                    <li>
+                        <a href="{% url 'core:help' %}" 
+                           class="transition-colors duration-200
+                                  {% if is_dark_mode %}
+                                  text-cyber-text-secondary hover:text-cyber-neon-primary
+                                  {% else %}
+                                  text-gray-600 hover:text-blue-600
+                                  {% endif %}">
+                            راهنما
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'core:contact' %}" 
+                           class="transition-colors duration-200
+                                  {% if is_dark_mode %}
+                                  text-cyber-text-secondary hover:text-cyber-neon-primary
+                                  {% else %}
+                                  text-gray-600 hover:text-blue-600
+                                  {% endif %}">
+                            تماس با ما
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Support & Info -->
+            <div>
+                <h4 class="text-sm font-semibold mb-4
+                           {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                    پشتیبانی
+                </h4>
+                <ul class="space-y-2 text-sm">
+                    <li>
+                        <a href="{% url 'core:privacy' %}" 
+                           class="transition-colors duration-200
+                                  {% if is_dark_mode %}
+                                  text-cyber-text-secondary hover:text-cyber-neon-primary
+                                  {% else %}
+                                  text-gray-600 hover:text-blue-600
+                                  {% endif %}">
+                            حریم خصوصی
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'core:terms' %}" 
+                           class="transition-colors duration-200
+                                  {% if is_dark_mode %}
+                                  text-cyber-text-secondary hover:text-cyber-neon-primary
+                                  {% else %}
+                                  text-gray-600 hover:text-blue-600
+                                  {% endif %}">
+                            شرایط استفاده
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'core:security' %}" 
+                           class="transition-colors duration-200
+                                  {% if is_dark_mode %}
+                                  text-cyber-text-secondary hover:text-cyber-neon-primary
+                                  {% else %}
+                                  text-gray-600 hover:text-blue-600
+                                  {% endif %}">
+                            امنیت
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'core:api_docs' %}" 
+                           class="transition-colors duration-200
+                                  {% if is_dark_mode %}
+                                  text-cyber-text-secondary hover:text-cyber-neon-primary
+                                  {% else %}
+                                  text-gray-600 hover:text-blue-600
+                                  {% endif %}">
+                            مستندات API
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- Theme indicator -->
+                <div class="mt-4 p-2 rounded-lg text-xs
+                            {% if is_dark_mode %}
+                            bg-cyber-bg-elevated/30 border border-cyber-border-glass
+                            {% else %}
+                            bg-gray-100 border border-gray-200
+                            {% endif %}">
+                    <div class="flex items-center justify-between">
+                        <span class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            تم فعال:
+                        </span>
+                        <span class="font-medium
+                                     {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}">
+                            {% if is_dark_mode %}سایبری{% else %}روشن{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom section -->
+        <div class="mt-8 pt-6 border-t flex flex-col sm:flex-row justify-between items-center
+                    {% if is_dark_mode %}border-cyber-border-glass{% else %}border-gray-200{% endif %}">
+            <div class="text-sm
+                       {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                <p class="mb-2 sm:mb-0">
+                    © ۱۴۰۳ زرگر. تمامی حقوق محفوظ است.
+                </p>
+                <p class="text-xs">
+                    نسخه ۱.۰.۰ - آخرین بروزرسانی: 
+                    <span class="persian-numbers">{{ build_date|default:"۱۴۰۳/۰۶/۲۹" }}</span>
+                </p>
+            </div>
+            
+            <!-- Social links or additional info -->
+            <div class="flex items-center space-x-4 rtl:space-x-reverse mt-4 sm:mt-0">
+                <div class="text-xs
+                           {% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-500{% endif %}">
+                    ساخته شده با ❤️ برای صنعت طلا و جواهرات ایران
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>

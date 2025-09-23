@@ -14,7 +14,7 @@ class SuperAdminRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
     """
     Mixin that requires the user to be a superadmin.
     """
-    login_url = reverse_lazy('core:admin_login')
+    login_url = reverse_lazy('admin_panel:unified_login')
     
     def test_func(self):
         """Test if user is a superadmin."""

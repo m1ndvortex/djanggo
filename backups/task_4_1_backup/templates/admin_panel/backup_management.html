@@ -1,0 +1,473 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}مدیریت پشتیبان‌گیری{% endblock %}
+
+{% block extra_css %}
+<style>
+    .backup-card {
+        transition: all 0.3s ease;
+    }
+    
+    .backup-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        font-weight: 600;
+    }
+    
+    .status-completed { background-color: #10b981; color: white; }
+    .status-running { background-color: #3b82f6; color: white; }
+    .status-failed { background-color: #ef4444; color: white; }
+    .status-pending { background-color: #f59e0b; color: white; }
+    
+    .progress-bar {
+        height: 8px;
+        background-color: #e5e7eb;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #3b82f6, #10b981);
+        transition: width 0.3s ease;
+    }
+    
+    .storage-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-left: 8px;
+    }
+    
+    .storage-connected { background-color: #10b981; }
+    .storage-disconnected { background-color: #ef4444; }
+    
+    /* Dark mode cybersecurity theme */
+    [data-theme="dark"] .backup-card {
+        background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 100%);
+        border: 1px solid rgba(0, 212, 255, 0.2);
+        backdrop-filter: blur(16px);
+    }
+    
+    [data-theme="dark"] .backup-card:hover {
+        box-shadow: 0 12px 40px rgba(0, 212, 255, 0.15), 0 0 20px rgba(0, 212, 255, 0.1);
+        border-color: rgba(0, 212, 255, 0.4);
+    }
+    
+    [data-theme="dark"] .progress-bar {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    [data-theme="dark"] .progress-fill {
+        background: linear-gradient(90deg, #00D4FF, #00FF88);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-6" x-data="backupManagement()">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">مدیریت پشتیبان‌گیری</h1>
+            <p class="text-gray-600 dark:text-gray-300 mt-2">مدیریت پشتیبان‌گیری و بازیابی سیستم</p>
+        </div>
+        <div class="flex gap-3">
+            <button @click="showCreateBackupModal = true" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                پشتیبان‌گیری جدید
+            </button>
+            <a href="{% url 'admin_panel:backup_schedule' %}" 
+               class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                زمان‌بندی
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Total Backups -->
+        <div class="backup-card bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">کل پشتیبان‌ها</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_backups }}</p>
+                </div>
+                <div class="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full">
+                    <svg class="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h6l2 2h6a2 2 0 012 2v4a2 2 0 01-2 2H5z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Rate -->
+        <div class="backup-card bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">نرخ موفقیت</p>
+                    <p class="text-3xl font-bold text-green-600 dark:text-green-400">{{ success_rate }}%</p>
+                </div>
+                <div class="bg-green-100 dark:bg-green-900/30 p-3 rounded-full">
+                    <svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Running Backups -->
+        <div class="backup-card bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">در حال اجرا</p>
+                    <p class="text-3xl font-bold text-blue-600 dark:text-blue-400">{{ running_backups }}</p>
+                </div>
+                <div class="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full">
+                    <svg class="w-8 h-8 text-blue-600 dark:text-blue-400 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Size -->
+        <div class="backup-card bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">حجم کل</p>
+                    <p class="text-3xl font-bold text-purple-600 dark:text-purple-400">{{ total_backup_size }}</p>
+                </div>
+                <div class="bg-purple-100 dark:bg-purple-900/30 p-3 rounded-full">
+                    <svg class="w-8 h-8 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Storage Status -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">وضعیت ذخیره‌سازی</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {% for storage_name, config in storage_status.configuration.items %}
+            <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div class="flex items-center gap-3">
+                    <span class="storage-indicator {% if config.configured %}storage-connected{% else %}storage-disconnected{% endif %}"></span>
+                    <div>
+                        <h3 class="font-medium text-gray-900 dark:text-white">
+                            {% if storage_name == 'cloudflare_r2' %}
+                                Cloudflare R2
+                            {% elif storage_name == 'backblaze_b2' %}
+                                Backblaze B2
+                            {% else %}
+                                {{ storage_name|title }}
+                            {% endif %}
+                        </h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                            {% if config.configured %}
+                                متصل - {{ config.bucket }}
+                            {% else %}
+                                پیکربندی نشده
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <span class="text-sm font-medium {% if config.configured %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+                    {% if config.configured %}فعال{% else %}غیرفعال{% endif %}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Recent Backups and Quick Actions -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Recent Backups -->
+        <div class="lg:col-span-2">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">پشتیبان‌های اخیر</h2>
+                    <a href="{% url 'admin_panel:backup_history' %}" 
+                       class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium">
+                        مشاهده همه
+                    </a>
+                </div>
+                
+                <div class="space-y-4">
+                    {% for backup in recent_backups %}
+                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div class="flex items-center gap-4">
+                            <div class="flex-shrink-0">
+                                {% if backup.status == 'completed' %}
+                                    <div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    </div>
+                                {% elif backup.status == 'running' %}
+                                    <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                        </svg>
+                                    </div>
+                                {% elif backup.status == 'failed' %}
+                                    <div class="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                    </div>
+                                {% else %}
+                                    <div class="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="flex-1">
+                                <h3 class="font-medium text-gray-900 dark:text-white">{{ backup.name }}</h3>
+                                <div class="flex items-center gap-4 mt-1">
+                                    <span class="status-badge status-{{ backup.status }}">
+                                        {% if backup.status == 'completed' %}تکمیل شده
+                                        {% elif backup.status == 'running' %}در حال اجرا
+                                        {% elif backup.status == 'failed' %}ناموفق
+                                        {% else %}در انتظار{% endif %}
+                                    </span>
+                                    <span class="text-sm text-gray-600 dark:text-gray-400">
+                                        {{ backup.created_at|date:"Y/m/d H:i" }}
+                                    </span>
+                                    {% if backup.file_size_human %}
+                                        <span class="text-sm text-gray-600 dark:text-gray-400">
+                                            {{ backup.file_size_human }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                
+                                {% if backup.status == 'running' %}
+                                <div class="mt-2">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: {{ backup.progress_percentage }}%"></div>
+                                    </div>
+                                    <span class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ backup.progress_percentage }}%</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center gap-2">
+                            <a href="{% url 'admin_panel:backup_job_detail' backup.job_id %}" 
+                               class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8">
+                        <svg class="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h6l2 2h6a2 2 0 012 2v4a2 2 0 01-2 2H5z"></path>
+                        </svg>
+                        <p class="text-gray-600 dark:text-gray-400">هیچ پشتیبانی یافت نشد</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="space-y-6">
+            <!-- Active Schedules -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">زمان‌بندی‌های فعال</h2>
+                <div class="space-y-3">
+                    {% for schedule in active_schedules %}
+                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div>
+                            <h3 class="font-medium text-gray-900 dark:text-white text-sm">{{ schedule.name }}</h3>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">
+                                {{ schedule.get_frequency_display }} - {{ schedule.scheduled_time }}
+                            </p>
+                        </div>
+                        <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                    </div>
+                    {% empty %}
+                    <p class="text-gray-600 dark:text-gray-400 text-sm">زمان‌بندی فعالی وجود ندارد</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Recent Restores -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">بازیابی‌های اخیر</h2>
+                <div class="space-y-3">
+                    {% for restore in recent_restores %}
+                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div>
+                            <h3 class="font-medium text-gray-900 dark:text-white text-sm">
+                                {{ restore.get_restore_type_display }}
+                            </h3>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">
+                                {{ restore.created_at|date:"Y/m/d H:i" }}
+                            </p>
+                        </div>
+                        <span class="status-badge status-{{ restore.status }} text-xs">
+                            {% if restore.status == 'completed' %}تکمیل شده
+                            {% elif restore.status == 'running' %}در حال اجرا
+                            {% elif restore.status == 'failed' %}ناموفق
+                            {% else %}در انتظار{% endif %}
+                        </span>
+                    </div>
+                    {% empty %}
+                    <p class="text-gray-600 dark:text-gray-400 text-sm">بازیابی اخیری وجود ندارد</p>
+                    {% endfor %}
+                </div>
+                
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                    <a href="{% url 'admin_panel:tenant_restore' %}" 
+                       class="w-full bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        بازیابی تنانت
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Backup Modal -->
+    <div x-show="showCreateBackupModal" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+         @click.away="showCreateBackupModal = false">
+        
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md mx-4"
+             @click.stop>
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white">پشتیبان‌گیری جدید</h3>
+                <button @click="showCreateBackupModal = false" 
+                        class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <form method="post" action="{% url 'admin_panel:create_backup' %}">
+                {% csrf_token %}
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            نام پشتیبان
+                        </label>
+                        <input type="text" name="backup_name" required
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                               placeholder="مثال: پشتیبان روزانه">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            نوع پشتیبان‌گیری
+                        </label>
+                        <select name="backup_type" required
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                            <option value="full_system">پشتیبان کامل سیستم</option>
+                            <option value="database_only">فقط پایگاه داده</option>
+                            <option value="configuration">فقط پیکربندی</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="flex gap-3 mt-6">
+                    <button type="submit"
+                            class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                        شروع پشتیبان‌گیری
+                    </button>
+                    <button type="button" @click="showCreateBackupModal = false"
+                            class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        انصراف
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function backupManagement() {
+    return {
+        showCreateBackupModal: false,
+        
+        init() {
+            // Auto-refresh running backups every 30 seconds
+            setInterval(() => {
+                this.refreshRunningBackups();
+            }, 30000);
+        },
+        
+        refreshRunningBackups() {
+            // Find running backup elements and update their status
+            const runningBackups = document.querySelectorAll('[data-backup-status="running"]');
+            runningBackups.forEach(element => {
+                const jobId = element.dataset.jobId;
+                if (jobId) {
+                    this.updateBackupStatus(jobId, element);
+                }
+            });
+        },
+        
+        async updateBackupStatus(jobId, element) {
+            try {
+                const response = await fetch(`{% url 'admin_panel:backup_status_api' %}?job_id=${jobId}`);
+                const data = await response.json();
+                
+                if (data.status !== 'running') {
+                    // Reload page if backup completed or failed
+                    window.location.reload();
+                } else {
+                    // Update progress bar
+                    const progressBar = element.querySelector('.progress-fill');
+                    if (progressBar) {
+                        progressBar.style.width = `${data.progress}%`;
+                    }
+                    
+                    const progressText = element.querySelector('.progress-text');
+                    if (progressText) {
+                        progressText.textContent = `${data.progress}%`;
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating backup status:', error);
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

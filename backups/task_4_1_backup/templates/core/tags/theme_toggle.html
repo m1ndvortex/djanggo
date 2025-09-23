@@ -1,0 +1,182 @@
+{% load persian_tags %}
+<div class="theme-toggle-container" x-data="themeToggle()">
+    <button 
+        @click="toggleTheme()" 
+        class="theme-toggle-button relative inline-flex items-center justify-center w-12 h-6 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        :class="isDark ? 'bg-gradient-to-r from-cyan-500 to-blue-600' : 'bg-gray-300'"
+        type="button"
+        :title="isDark ? 'تغییر به حالت روشن' : 'تغییر به حالت تاریک'"
+    >
+        <!-- Toggle Circle -->
+        <span 
+            class="toggle-circle absolute w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 flex items-center justify-center"
+            :class="isDark ? 'translate-x-6' : 'translate-x-1'"
+        >
+            <!-- Light Mode Icon -->
+            <svg 
+                x-show="!isDark" 
+                class="w-3 h-3 text-yellow-500" 
+                fill="currentColor" 
+                viewBox="0 0 20 20"
+            >
+                <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path>
+            </svg>
+            
+            <!-- Dark Mode Icon -->
+            <svg 
+                x-show="isDark" 
+                class="w-3 h-3 text-blue-400" 
+                fill="currentColor" 
+                viewBox="0 0 20 20"
+            >
+                <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+            </svg>
+        </span>
+    </button>
+    
+    <!-- Theme Label (Optional) -->
+    <span class="theme-label mr-3 text-sm font-medium text-gray-700 dark:text-gray-300" x-text="isDark ? 'حالت تاریک' : 'حالت روشن'"></span>
+</div>
+
+<style>
+.theme-toggle-container {
+    display: flex;
+    align-items: center;
+    direction: rtl;
+}
+
+.theme-toggle-button {
+    position: relative;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.theme-toggle-button.dark-mode {
+    background: linear-gradient(135deg, #00D4FF 0%, #00FF88 50%, #FF6B35 100%);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+}
+
+.toggle-circle {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark-mode .toggle-circle {
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+/* RTL Support */
+[dir="rtl"] .toggle-circle {
+    transform: translateX(-1px);
+}
+
+[dir="rtl"] .toggle-circle.translate-x-6 {
+    transform: translateX(-24px);
+}
+
+/* Cybersecurity Theme Enhancements */
+.cyber-theme .theme-toggle-button {
+    background: linear-gradient(135deg, #0B0E1A 0%, #1A1D29 100%);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
+}
+
+.cyber-theme .theme-toggle-button:hover {
+    box-shadow: 0 0 25px rgba(0, 212, 255, 0.4);
+}
+
+.cyber-theme .toggle-circle {
+    background: linear-gradient(135deg, #00D4FF 0%, #00FF88 100%);
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.6);
+}
+</style>
+
+<script>
+function themeToggle() {
+    return {
+        isDark: localStorage.getItem('theme') === 'dark' || 
+                document.documentElement.classList.contains('dark'),
+        
+        init() {
+            // Initialize theme on component load
+            this.applyTheme();
+        },
+        
+        toggleTheme() {
+            this.isDark = !this.isDark;
+            this.applyTheme();
+            this.saveTheme();
+            this.notifyThemeChange();
+        },
+        
+        applyTheme() {
+            if (this.isDark) {
+                document.documentElement.classList.add('dark');
+                document.body.classList.add('cyber-bg-primary', 'cyber-text-primary');
+                document.body.classList.remove('bg-gray-50', 'text-gray-900');
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.body.classList.add('bg-gray-50', 'text-gray-900');
+                document.body.classList.remove('cyber-bg-primary', 'cyber-text-primary');
+            }
+        },
+        
+        saveTheme() {
+            localStorage.setItem('theme', this.isDark ? 'dark' : 'light');
+            
+            // Also save to session for server-side rendering
+            fetch('/api/theme/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                },
+                body: JSON.stringify({
+                    theme: this.isDark ? 'dark' : 'light'
+                })
+            }).catch(error => {
+                console.log('Theme save failed:', error);
+            });
+        },
+        
+        notifyThemeChange() {
+            // Dispatch custom event for other components
+            window.dispatchEvent(new CustomEvent('themeChanged', {
+                detail: { theme: this.isDark ? 'dark' : 'light' }
+            }));
+        }
+    }
+}
+
+// Listen for system theme changes
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+    if (!localStorage.getItem('theme')) {
+        // Only auto-switch if user hasn't manually set a preference
+        const isDark = e.matches;
+        document.documentElement.classList.toggle('dark', isDark);
+        
+        if (isDark) {
+            document.body.classList.add('cyber-bg-primary', 'cyber-text-primary');
+            document.body.classList.remove('bg-gray-50', 'text-gray-900');
+        } else {
+            document.body.classList.add('bg-gray-50', 'text-gray-900');
+            document.body.classList.remove('cyber-bg-primary', 'cyber-text-primary');
+        }
+    }
+});
+
+// Initialize theme on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const savedTheme = localStorage.getItem('theme');
+    const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark = savedTheme === 'dark' || (!savedTheme && systemDark);
+    
+    document.documentElement.classList.toggle('dark', isDark);
+    
+    if (isDark) {
+        document.body.classList.add('cyber-bg-primary', 'cyber-text-primary');
+        document.body.classList.remove('bg-gray-50', 'text-gray-900');
+    } else {
+        document.body.classList.add('bg-gray-50', 'text-gray-900');
+        document.body.classList.remove('cyber-bg-primary', 'cyber-text-primary');
+    }
+});
+</script>

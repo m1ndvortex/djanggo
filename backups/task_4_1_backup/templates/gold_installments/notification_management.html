@@ -1,0 +1,647 @@
+{% extends 'base_rtl.html' %}
+{% load persian_tags %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Notification Management" %} - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/gold-installments.css' %}" rel="stylesheet">
+<style>
+.notification-card {
+    transition: all 0.3s ease;
+    border-left: 4px solid #17a2b8;
+}
+.notification-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+.notification-card.pending { border-left-color: #ffc107; }
+.notification-card.sent { border-left-color: #28a745; }
+.notification-card.failed { border-left-color: #dc3545; }
+.template-preview {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    font-family: 'Vazir', sans-serif;
+    direction: rtl;
+}
+.schedule-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-gray-800">{% trans "Notification Management" %}</h1>
+                    <p class="text-muted">{% trans "Manage payment reminders and customer notifications" %}</p>
+                </div>
+                <div>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-success" onclick="showBulkNotificationModal()">
+                            <i class="fas fa-paper-plane me-2"></i>
+                            {% trans "Send Bulk Notifications" %}
+                        </button>
+                        <a href="{% url 'gold_installments:installment_tracking' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            {% trans "Back to Tracking" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Statistics -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                {% trans "Pending Reminders" %}
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {% persian_number notification_stats.pending_reminders %}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                {% trans "Sent Today" %}
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {% persian_number notification_stats.sent_today %}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-paper-plane fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                {% trans "Scheduled" %}
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {% persian_number notification_stats.scheduled_notifications %}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                {% trans "Overdue Notifications" %}
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {% persian_number notification_stats.overdue_notifications %}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Notification Templates -->
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Notification Templates" %}</h6>
+                    <button class="btn btn-sm btn-outline-primary" onclick="showTemplateEditor()">
+                        <i class="fas fa-plus me-1"></i>{% trans "New Template" %}
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% for template in notification_templates %}
+                    <div class="card notification-card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="card-title">{{ template.title }}</h6>
+                                    <p class="card-text text-muted">{{ template.description }}</p>
+                                </div>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                            data-bs-toggle="dropdown" aria-expanded="false">
+                                        {% trans "Actions" %}
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="previewTemplate('{{ template.type }}')">
+                                                <i class="fas fa-eye me-2"></i>{% trans "Preview" %}
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="editTemplate('{{ template.type }}')">
+                                                <i class="fas fa-edit me-2"></i>{% trans "Edit" %}
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="useTemplate('{{ template.type }}')">
+                                                <i class="fas fa-paper-plane me-2"></i>{% trans "Use Template" %}
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="template-preview mt-2">
+                                <small class="text-muted">{{ template.template }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Scheduling -->
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Notification Scheduling" %}</h6>
+                </div>
+                <div class="card-body">
+                    <form id="scheduleForm">
+                        <div class="mb-3">
+                            <label for="notification_type" class="form-label">{% trans "Notification Type" %}</label>
+                            <select class="form-select" id="notification_type" name="notification_type">
+                                {% for template in notification_templates %}
+                                <option value="{{ template.type }}">{{ template.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="schedule_timing" class="form-label">{% trans "Schedule Timing" %}</label>
+                            <select class="form-select" id="schedule_timing" name="schedule_timing">
+                                {% for option in schedule_options %}
+                                <option value="{{ option.days }}">{{ option.label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="target_contracts" class="form-label">{% trans "Target Contracts" %}</label>
+                            <select class="form-select" id="target_contracts" name="target_contracts">
+                                <option value="all_active">{% trans "All Active Contracts" %}</option>
+                                <option value="overdue_only">{% trans "Overdue Only" %}</option>
+                                <option value="due_soon">{% trans "Due Soon (7 days)" %}</option>
+                                <option value="specific">{% trans "Specific Contracts" %}</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="delivery_method" class="form-label">{% trans "Delivery Method" %}</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="send_sms" name="delivery_method" value="sms" checked>
+                                <label class="form-check-label" for="send_sms">
+                                    <i class="fas fa-sms me-2"></i>{% trans "SMS" %}
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="send_email" name="delivery_method" value="email">
+                                <label class="form-check-label" for="send_email">
+                                    <i class="fas fa-envelope me-2"></i>{% trans "Email" %}
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="button" class="btn btn-primary" onclick="scheduleNotifications()">
+                                <i class="fas fa-calendar-plus me-2"></i>
+                                {% trans "Schedule Notifications" %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Quick Actions" %}</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-warning" onclick="sendOverdueReminders()">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            {% trans "Send All Overdue Reminders" %}
+                        </button>
+                        <button class="btn btn-info" onclick="sendDueSoonReminders()">
+                            <i class="fas fa-clock me-2"></i>
+                            {% trans "Send Due Soon Reminders" %}
+                        </button>
+                        <button class="btn btn-success" onclick="sendPaymentConfirmations()">
+                            <i class="fas fa-check-circle me-2"></i>
+                            {% trans "Send Payment Confirmations" %}
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="viewNotificationHistory()">
+                            <i class="fas fa-history me-2"></i>
+                            {% trans "View Notification History" %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contracts Requiring Notifications -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Contracts Requiring Notifications" %}</h6>
+                </div>
+                <div class="card-body">
+                    {% if contracts %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>
+                                        <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                                    </th>
+                                    <th>{% trans "Contract" %}</th>
+                                    <th>{% trans "Customer" %}</th>
+                                    <th>{% trans "Status" %}</th>
+                                    <th>{% trans "Last Payment" %}</th>
+                                    <th>{% trans "Next Due" %}</th>
+                                    <th>{% trans "Notification Status" %}</th>
+                                    <th>{% trans "Actions" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for contract in contracts %}
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" class="contract-checkbox" value="{{ contract.pk }}">
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'gold_installments:contract_detail' contract.pk %}" class="text-decoration-none">
+                                            {{ contract.contract_number }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <strong>{{ contract.customer.persian_first_name }} {{ contract.customer.persian_last_name }}</strong>
+                                        </div>
+                                        <small class="text-muted">{{ contract.customer.phone_number }}</small>
+                                    </td>
+                                    <td>
+                                        {% if contract.is_overdue %}
+                                            <span class="badge bg-danger">{% trans "Overdue" %}</span>
+                                        {% elif contract.status == 'active' %}
+                                            <span class="badge bg-success">{% trans "Active" %}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ contract.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% with last_payment=contract.payments.first %}
+                                        {% if last_payment %}
+                                            {{ last_payment.payment_date_shamsi }}
+                                            <br><small class="text-muted">{% persian_currency last_payment.payment_amount_toman %}</small>
+                                        {% else %}
+                                            <span class="text-muted">{% trans "No payments" %}</span>
+                                        {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                    <td>
+                                        {% with last_payment=contract.payments.first %}
+                                        {% if last_payment %}
+                                            <!-- Calculate next due date -->
+                                            <span class="text-muted">{% trans "Calculated" %}</span>
+                                        {% else %}
+                                            <span class="text-warning">{% trans "Overdue" %}</span>
+                                        {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                    <td>
+                                        {% if contract.is_overdue %}
+                                            <span class="schedule-badge badge bg-danger">{% trans "Needs Reminder" %}</span>
+                                        {% else %}
+                                            <span class="schedule-badge badge bg-success">{% trans "Up to Date" %}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-sm btn-outline-primary" 
+                                                    onclick="sendIndividualReminder({{ contract.pk }})" 
+                                                    title="{% trans 'Send Reminder' %}">
+                                                <i class="fas fa-bell"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-info" 
+                                                    onclick="scheduleIndividualNotification({{ contract.pk }})" 
+                                                    title="{% trans 'Schedule Notification' %}">
+                                                <i class="fas fa-calendar"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-bell fa-3x text-gray-300 mb-3"></i>
+                        <h5 class="text-gray-600">{% trans "No notifications needed" %}</h5>
+                        <p class="text-muted">{% trans "All contracts are up to date with their payment schedules." %}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template Editor Modal -->
+<div class="modal fade" id="templateEditorModal" tabindex="-1" aria-labelledby="templateEditorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="templateEditorModalLabel">{% trans "Edit Notification Template" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="templateForm">
+                    <div class="mb-3">
+                        <label for="template_title" class="form-label">{% trans "Template Title" %}</label>
+                        <input type="text" class="form-control" id="template_title" name="template_title">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="template_description" class="form-label">{% trans "Description" %}</label>
+                        <input type="text" class="form-control" id="template_description" name="template_description">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="template_content" class="form-label">{% trans "Message Template" %}</label>
+                        <textarea class="form-control persian-textarea" id="template_content" name="template_content" rows="5"></textarea>
+                        <small class="form-text text-muted">
+                            {% trans "Available variables: {customer_name}, {contract_number}, {amount}, {date}, {remaining_weight}" %}
+                        </small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{% trans "Preview" %}</label>
+                        <div class="template-preview" id="template_preview">
+                            {% trans "Template preview will appear here..." %}
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                <button type="button" class="btn btn-primary" onclick="saveTemplate()">{% trans "Save Template" %}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Notification Modal -->
+<div class="modal fade" id="bulkNotificationModal" tabindex="-1" aria-labelledby="bulkNotificationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkNotificationModalLabel">{% trans "Send Bulk Notifications" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="bulkNotificationForm">
+                    <div class="mb-3">
+                        <label for="bulk_template" class="form-label">{% trans "Notification Template" %}</label>
+                        <select class="form-select" id="bulk_template" name="bulk_template">
+                            {% for template in notification_templates %}
+                            <option value="{{ template.type }}">{{ template.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="bulk_target" class="form-label">{% trans "Target Contracts" %}</label>
+                        <select class="form-select" id="bulk_target" name="bulk_target">
+                            <option value="selected">{% trans "Selected Contracts" %}</option>
+                            <option value="overdue">{% trans "All Overdue Contracts" %}</option>
+                            <option value="due_soon">{% trans "Due Soon (7 days)" %}</option>
+                            <option value="all_active">{% trans "All Active Contracts" %}</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{% trans "Delivery Method" %}</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="bulk_sms" name="bulk_delivery" value="sms" checked>
+                            <label class="form-check-label" for="bulk_sms">
+                                {% trans "SMS" %}
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="bulk_email" name="bulk_delivery" value="email">
+                            <label class="form-check-label" for="bulk_email">
+                                {% trans "Email" %}
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h6>{% trans "Confirmation" %}</h6>
+                        <p class="mb-0" id="bulk_confirmation_text">{% trans "Please select target contracts and delivery method." %}</p>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                <button type="button" class="btn btn-primary" onclick="sendBulkNotifications()">
+                    <i class="fas fa-paper-plane me-2"></i>
+                    {% trans "Send Notifications" %}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/gold-installments.js' %}"></script>
+<script>
+function showTemplateEditor(templateType = null) {
+    if (templateType) {
+        // Load existing template data
+        // This would fetch template data from server
+    }
+    
+    const modal = new bootstrap.Modal(document.getElementById('templateEditorModal'));
+    modal.show();
+}
+
+function previewTemplate(templateType) {
+    // Show template preview
+    alert('{% trans "Template preview functionality would be implemented here" %}');
+}
+
+function editTemplate(templateType) {
+    showTemplateEditor(templateType);
+}
+
+function useTemplate(templateType) {
+    document.getElementById('notification_type').value = templateType;
+    document.getElementById('notification_type').focus();
+}
+
+function saveTemplate() {
+    const title = document.getElementById('template_title').value;
+    const description = document.getElementById('template_description').value;
+    const content = document.getElementById('template_content').value;
+    
+    if (title && content) {
+        // Save template to server
+        alert('{% trans "Template saved successfully" %}');
+        bootstrap.Modal.getInstance(document.getElementById('templateEditorModal')).hide();
+    } else {
+        alert('{% trans "Please fill in all required fields" %}');
+    }
+}
+
+function scheduleNotifications() {
+    const form = document.getElementById('scheduleForm');
+    const formData = new FormData(form);
+    
+    // Process scheduling
+    alert('{% trans "Notifications scheduled successfully" %}');
+}
+
+function showBulkNotificationModal() {
+    const modal = new bootstrap.Modal(document.getElementById('bulkNotificationModal'));
+    modal.show();
+}
+
+function sendBulkNotifications() {
+    const selectedContracts = document.querySelectorAll('.contract-checkbox:checked');
+    const target = document.getElementById('bulk_target').value;
+    
+    if (target === 'selected' && selectedContracts.length === 0) {
+        alert('{% trans "Please select at least one contract" %}');
+        return;
+    }
+    
+    // Send bulk notifications
+    alert(`{% trans "Sending notifications to" %} ${selectedContracts.length} {% trans "contracts" %}`);
+    bootstrap.Modal.getInstance(document.getElementById('bulkNotificationModal')).hide();
+}
+
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.contract-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+}
+
+function sendIndividualReminder(contractId) {
+    // Send individual reminder
+    fetch(`/gold-installments/contract/${contractId}/send-reminder/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            reminder_type: 'payment_reminder',
+            send_method: 'sms',
+            message_template: '{% trans "Dear {customer_name}, your payment for contract {contract_number} is due. Please contact us." %}'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('{% trans "Reminder sent successfully" %}');
+        } else {
+            alert('{% trans "Failed to send reminder" %}');
+        }
+    });
+}
+
+function scheduleIndividualNotification(contractId) {
+    // Schedule individual notification
+    alert('{% trans "Notification scheduling functionality would be implemented here" %}');
+}
+
+function sendOverdueReminders() {
+    if (confirm('{% trans "Send reminders to all overdue contracts?" %}')) {
+        alert('{% trans "Overdue reminders sent successfully" %}');
+    }
+}
+
+function sendDueSoonReminders() {
+    if (confirm('{% trans "Send reminders to contracts due soon?" %}')) {
+        alert('{% trans "Due soon reminders sent successfully" %}');
+    }
+}
+
+function sendPaymentConfirmations() {
+    if (confirm('{% trans "Send payment confirmations for recent payments?" %}')) {
+        alert('{% trans "Payment confirmations sent successfully" %}');
+    }
+}
+
+function viewNotificationHistory() {
+    alert('{% trans "Notification history functionality would be implemented here" %}');
+}
+
+// Update bulk confirmation text when selections change
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('contract-checkbox') || e.target.id === 'selectAll') {
+        const selectedCount = document.querySelectorAll('.contract-checkbox:checked').length;
+        const confirmationText = document.getElementById('bulk_confirmation_text');
+        
+        if (confirmationText) {
+            confirmationText.textContent = `{% trans "Ready to send notifications to" %} ${selectedCount} {% trans "selected contracts" %}`;
+        }
+    }
+});
+</script>
+{% endblock %}

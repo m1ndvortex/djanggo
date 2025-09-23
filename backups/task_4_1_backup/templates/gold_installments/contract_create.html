@@ -1,0 +1,422 @@
+{% extends 'base_rtl.html' %}
+{% load persian_tags %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Create Gold Installment Contract" %} - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/gold-installments.css' %}" rel="stylesheet">
+<link href="{% static 'css/persian-forms.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-gray-800">{% trans "Create Gold Installment Contract" %}</h1>
+                    <p class="text-muted">{% trans "Register a new gold installment contract with customer details" %}</p>
+                </div>
+                <div>
+                    <a href="{% url 'gold_installments:dashboard' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        {% trans "Back to Dashboard" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Gold Price Display -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-info d-flex align-items-center">
+                <i class="fas fa-info-circle me-3"></i>
+                <div>
+                    <strong>{% trans "Current Gold Price" %}:</strong>
+                    <span class="ms-2">{% persian_currency current_gold_price %}</span>
+                    <small class="text-muted ms-2">{% trans "per gram (18 karat)" %}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contract Form -->
+    <form method="post" id="contract-form">
+        {% csrf_token %}
+        
+        <div class="row">
+            <!-- Customer Information -->
+            <div class="col-lg-6">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-user me-2"></i>
+                            {% trans "Customer Information" %}
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="{{ form.customer.id_for_label }}" class="form-label">
+                                {{ form.customer.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.customer }}
+                            {% if form.customer.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.customer.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.customer.help_text }}</div>
+                        </div>
+
+                        <!-- Customer Search Results -->
+                        <div id="customer-search-results" class="d-none">
+                            <div class="list-group">
+                                <!-- Dynamic customer search results -->
+                            </div>
+                        </div>
+
+                        <!-- Selected Customer Info -->
+                        <div id="selected-customer-info" class="alert alert-light d-none">
+                            <h6>{% trans "Selected Customer" %}:</h6>
+                            <div id="customer-details"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contract Details -->
+            <div class="col-lg-6">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-file-contract me-2"></i>
+                            {% trans "Contract Details" %}
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="{{ form.contract_date.id_for_label }}" class="form-label">
+                                {{ form.contract_date.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.contract_date }}
+                            {% if form.contract_date.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.contract_date.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="{{ form.initial_gold_weight_grams.id_for_label }}" class="form-label">
+                                        {{ form.initial_gold_weight_grams.label }}
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.initial_gold_weight_grams }}
+                                    {% if form.initial_gold_weight_grams.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.initial_gold_weight_grams.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">{{ form.initial_gold_weight_grams.help_text }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.gold_karat.id_for_label }}" class="form-label">
+                                        {{ form.gold_karat.label }}
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.gold_karat }}
+                                    {% if form.gold_karat.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.gold_karat.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Gold Value Calculator -->
+                        <div class="alert alert-light">
+                            <h6>{% trans "Gold Value Calculator" %}:</h6>
+                            <div id="gold-value-display">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <small class="text-muted">{% trans "Total Value" %}:</small>
+                                        <div id="total-gold-value" class="fw-bold">-</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">{% trans "Pure Gold Value" %}:</small>
+                                        <div id="pure-gold-value" class="fw-bold">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Payment Schedule -->
+            <div class="col-lg-6">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-calendar-alt me-2"></i>
+                            {% trans "Payment Schedule" %}
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="{{ form.payment_schedule.id_for_label }}" class="form-label">
+                                {{ form.payment_schedule.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.payment_schedule }}
+                            {% if form.payment_schedule.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.payment_schedule.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.payment_amount_per_period.id_for_label }}" class="form-label">
+                                {{ form.payment_amount_per_period.label }}
+                            </label>
+                            {{ form.payment_amount_per_period }}
+                            {% if form.payment_amount_per_period.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.payment_amount_per_period.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.payment_amount_per_period.help_text }}</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.early_payment_discount_percentage.id_for_label }}" class="form-label">
+                                {{ form.early_payment_discount_percentage.label }}
+                            </label>
+                            {{ form.early_payment_discount_percentage }}
+                            {% if form.early_payment_discount_percentage.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.early_payment_discount_percentage.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.early_payment_discount_percentage.help_text }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Price Protection -->
+            <div class="col-lg-6">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-shield-alt me-2"></i>
+                            {% trans "Price Protection" %}
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.has_price_protection }}
+                                <label class="form-check-label" for="{{ form.has_price_protection.id_for_label }}">
+                                    {{ form.has_price_protection.label }}
+                                </label>
+                            </div>
+                            {% if form.has_price_protection.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.has_price_protection.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.has_price_protection.help_text }}</div>
+                        </div>
+
+                        <div id="price-protection-options" class="d-none">
+                            <div class="mb-3">
+                                <label for="{{ form.price_ceiling_per_gram.id_for_label }}" class="form-label">
+                                    {{ form.price_ceiling_per_gram.label }}
+                                </label>
+                                {{ form.price_ceiling_per_gram }}
+                                {% if form.price_ceiling_per_gram.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.price_ceiling_per_gram.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">{{ form.price_ceiling_per_gram.help_text }}</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.price_floor_per_gram.id_for_label }}" class="form-label">
+                                    {{ form.price_floor_per_gram.label }}
+                                </label>
+                                {{ form.price_floor_per_gram }}
+                                {% if form.price_floor_per_gram.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.price_floor_per_gram.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">{{ form.price_floor_per_gram.help_text }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contract Terms -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-file-alt me-2"></i>
+                            {% trans "Contract Terms and Conditions" %}
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="{{ form.contract_terms_persian.id_for_label }}" class="form-label">
+                                {{ form.contract_terms_persian.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.contract_terms_persian }}
+                            {% if form.contract_terms_persian.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.contract_terms_persian.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.contract_terms_persian.help_text }}</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.special_conditions.id_for_label }}" class="form-label">
+                                {{ form.special_conditions.label }}
+                            </label>
+                            {{ form.special_conditions }}
+                            {% if form.special_conditions.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.special_conditions.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.special_conditions.help_text }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'gold_installments:dashboard' %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>
+                                {% trans "Cancel" %}
+                            </a>
+                            <div>
+                                <button type="button" class="btn btn-outline-primary me-2" id="preview-contract">
+                                    <i class="fas fa-eye me-2"></i>
+                                    {% trans "Preview Contract" %}
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>
+                                    {% trans "Create Contract" %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Contract Preview Modal -->
+<div class="modal fade" id="contractPreviewModal" tabindex="-1" aria-labelledby="contractPreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="contractPreviewModalLabel">{% trans "Contract Preview" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="contract-preview-content">
+                    <!-- Contract preview will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
+                <button type="button" class="btn btn-primary" onclick="$('#contract-form').submit();">
+                    {% trans "Create Contract" %}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/gold-installments.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Initialize contract creation form
+    GoldInstallments.initContractForm();
+    
+    // Price protection toggle
+    $('#{{ form.has_price_protection.id_for_label }}').change(function() {
+        if ($(this).is(':checked')) {
+            $('#price-protection-options').removeClass('d-none');
+        } else {
+            $('#price-protection-options').addClass('d-none');
+        }
+    });
+    
+    // Gold value calculator
+    function updateGoldValue() {
+        const weight = parseFloat($('#{{ form.initial_gold_weight_grams.id_for_label }}').val()) || 0;
+        const karat = parseInt($('#{{ form.gold_karat.id_for_label }}').val()) || 18;
+        const currentPrice = {{ current_gold_price }};
+        
+        if (weight > 0) {
+            const totalValue = weight * currentPrice;
+            const pureGoldWeight = (weight * karat) / 24;
+            const pureGoldValue = pureGoldWeight * currentPrice;
+            
+            $('#total-gold-value').text(PersianFormatter.formatCurrency(totalValue));
+            $('#pure-gold-value').text(PersianFormatter.formatCurrency(pureGoldValue));
+        } else {
+            $('#total-gold-value').text('-');
+            $('#pure-gold-value').text('-');
+        }
+    }
+    
+    $('#{{ form.initial_gold_weight_grams.id_for_label }}, #{{ form.gold_karat.id_for_label }}').on('input', updateGoldValue);
+    
+    // Contract preview
+    $('#preview-contract').click(function() {
+        // Generate contract preview
+        const formData = new FormData($('#contract-form')[0]);
+        
+        // Show preview modal with contract details
+        $('#contractPreviewModal').modal('show');
+        
+        // TODO: Load actual contract preview via AJAX
+        $('#contract-preview-content').html('<p>{% trans "Contract preview functionality will be implemented here." %}</p>');
+    });
+});
+</script>
+{% endblock %}

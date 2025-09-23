@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} - زرگر{% endblock %}
+
+{% block content %}
+<div class="min-h-screen {% if is_dark_mode %}bg-cyber-bg-primary{% else %}bg-gray-50{% endif %}">
+    <!-- Header -->
+    <div class="{% if is_dark_mode %}bg-cyber-bg-secondary border-b border-cyber-neon-primary/20{% else %}bg-white border-b border-gray-200{% endif %} shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center space-x-reverse space-x-4">
+                    <h1 class="text-2xl font-bold {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        {{ page_title }}
+                    </h1>
+                </div>
+                
+                <div class="flex items-center space-x-reverse space-x-3">
+                    <a href="{% url 'tenant:user_detail' user_obj.pk %}" 
+                       class="inline-flex items-center px-4 py-2 border {% if is_dark_mode %}border-cyber-neon-secondary/30 text-cyber-neon-secondary hover:bg-cyber-bg-surface{% else %}border-green-300 text-green-700 hover:bg-green-50{% endif %} rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200">
+                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        مشاهده جزئیات
+                    </a>
+                    <a href="{% url 'tenant:user_management' %}" 
+                       class="inline-flex items-center px-4 py-2 border {% if is_dark_mode %}border-cyber-neon-primary/30 text-cyber-text-secondary hover:bg-cyber-bg-surface{% else %}border-gray-300 text-gray-700 hover:bg-gray-50{% endif %} rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        بازگشت به لیست کاربران
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="{% if is_dark_mode %}bg-gradient-to-br from-cyber-bg-surface to-cyber-bg-elevated border border-cyber-neon-primary/20{% else %}bg-white border border-gray-200{% endif %} shadow-sm rounded-lg">
+            <div class="px-6 py-4 border-b {% if is_dark_mode %}border-cyber-neon-primary/20{% else %}border-gray-200{% endif %}">
+                <h3 class="text-lg font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">ویرایش اطلاعات کاربر</h3>
+                <p class="mt-1 text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                    اطلاعات کاربر {{ user_obj.full_persian_name }} را ویرایش کنید.
+                </p>
+            </div>
+
+            <form method="post" class="px-6 py-6 space-y-6">
+                {% csrf_token %}
+                
+                <!-- Username (Read-only) -->
+                <div>
+                    <label class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-700{% endif %} mb-2">
+                        نام کاربری
+                    </label>
+                    <input type="text" 
+                           value="{{ user_obj.username }}"
+                           class="block w-full px-3 py-2 border {% if is_dark_mode %}border-cyber-neon-primary/20 bg-cyber-bg-secondary text-cyber-text-secondary{% else %}border-gray-200 bg-gray-50 text-gray-500{% endif %} rounded-md shadow-sm sm:text-sm"
+                           readonly>
+                    <p class="mt-1 text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                        نام کاربری قابل تغییر نیست
+                    </p>
+                </div>
+
+                <!-- Email -->
+                <div>
+                    <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-700{% endif %} mb-2">
+                        ایمیل *
+                    </label>
+                    <input type="email" 
+                           name="{{ form.email.name }}" 
+                           id="{{ form.email.id_for_label }}"
+                           value="{{ form.email.value|default:'' }}"
+                           class="block w-full px-3 py-2 border {% if form.email.errors %}border-red-500{% else %}{% if is_dark_mode %}border-cyber-neon-primary/30 bg-cyber-bg-surface text-cyber-text-primary{% else %}border-gray-300{% endif %}{% endif %} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                           placeholder="example@domain.com"
+                           required>
+                    {% if form.email.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.email.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Names Row -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- First Name -->
+                    <div>
+                        <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-700{% endif %} mb-2">
+                            نام (انگلیسی)
+                        </label>
+                        <input type="text" 
+                               name="{{ form.first_name.name }}" 
+                               id="{{ form.first_name.id_for_label }}"
+                               value="{{ form.first_name.value|default:'' }}"
+                               class="block w-full px-3 py-2 border {% if form.first_name.errors %}border-red-500{% else %}{% if is_dark_mode %}border-cyber-neon-primary/30 bg-cyber-bg-surface text-cyber-text-primary{% else %}border-gray-300{% endif %}{% endif %} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                               placeholder="First Name">
+                        {% if form.first_name.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.first_name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Last Name -->
+                    <div>
+                        <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-700{% endif %} mb-2">
+                            نام خانوادگی (انگلیسی)
+                        </label>
+                        <input type="text" 
+                               name="{{ form.last_name.name }}" 
+                               id="{{ form.last_name.id_for_label }}"
+                               value="{{ form.last_name.value|default:'' }}"
+                               class="block w-full px-3 py-2 border {% if form.last_name.errors %}border-red-500{% else %}{% if is_dark_mode %}border-cyber-neon-primary/30 bg-cyber-bg-surface text-cyber-text-primary{% else %}border-gray-300{% endif %}{% endif %} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                               placeholder="Last Name">
+                        {% if form.last_name.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.last_name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Persian Names Row -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Persian First Name -->
+                    <div>
+                        <label for="{{ form.persian_first_name.id_for_label }}" class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-700{% endif %} mb-2">
+                            نام (فارسی) *
+                        </label>
+                        <input type="text" 
+                               name="{{ form.persian_first_name.name }}" 
+                               id="{{ form.persian_first_name.id_for_label }}"
+                               value="{{ form.persian_first_name.value|default:'' }}"
+                               class="block w-full px-3 py-2 border {% if form.persian_first_name.errors %}border-red-500{% else %}{% if is_dark_mode %}border-cyber-neon-primary/30 bg-cyber-bg-surface text-cyber-text-primary{% else %}border-gray-300{% endif %}{% endif %} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                               placeholder="نام فارسی"
+                               dir="rtl"
+                               required>
+                        {% if form.persian_first_name.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.persian_first_name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Persian Last Name -->
+                    <div>
+                        <label for="{{ form.persian_last_name.id_for_label }}" class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-700{% endif %} mb-2">
+                            نام خانوادگی (فارسی) *
+                        </label>
+                        <input type="text" 
+                               name="{{ form.persian_last_name.name }}" 
+                               id="{{ form.persian_last_name.id_for_label }}"
+                               value="{{ form.persian_last_name.value|default:'' }}"
+                               class="block w-full px-3 py-2 border {% if form.persian_last_name.errors %}border-red-500{% else %}{% if is_dark_mode %}border-cyber-neon-primary/30 bg-cyber-bg-surface text-cyber-text-primary{% else %}border-gray-300{% endif %}{% endif %} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                               placeholder="نام خانوادگی فارسی"
+                               dir="rtl"
+                               required>
+                        {% if form.persian_last_name.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.persian_last_name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Phone Number -->
+                <div>
+                    <label for="{{ form.phone_number.id_for_label }}" class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-700{% endif %} mb-2">
+                        شماره تلفن
+                    </label>
+                    <input type="tel" 
+                           name="{{ form.phone_number.name }}" 
+                           id="{{ form.phone_number.id_for_label }}"
+                           value="{{ form.phone_number.value|default:'' }}"
+                           class="block w-full px-3 py-2 border {% if form.phone_number.errors %}border-red-500{% else %}{% if is_dark_mode %}border-cyber-neon-primary/30 bg-cyber-bg-surface text-cyber-text-primary{% else %}border-gray-300{% endif %}{% endif %} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                           placeholder="09123456789"
+                           dir="ltr">
+                    {% if form.phone_number.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.phone_number.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Role -->
+                <div>
+                    <label for="{{ form.role.id_for_label }}" class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-700{% endif %} mb-2">
+                        نقش کاربر *
+                    </label>
+                    <select name="{{ form.role.name }}" 
+                            id="{{ form.role.id_for_label }}"
+                            class="block w-full px-3 py-2 border {% if form.role.errors %}border-red-500{% else %}{% if is_dark_mode %}border-cyber-neon-primary/30 bg-cyber-bg-surface text-cyber-text-primary{% else %}border-gray-300{% endif %}{% endif %} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            required>
+                        <option value="">نقش را انتخاب کنید</option>
+                        <option value="owner" {% if form.role.value == 'owner' %}selected{% endif %}>مالک</option>
+                        <option value="accountant" {% if form.role.value == 'accountant' %}selected{% endif %}>حسابدار</option>
+                        <option value="salesperson" {% if form.role.value == 'salesperson' %}selected{% endif %}>فروشنده</option>
+                    </select>
+                    {% if form.role.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.role.errors.0 }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                        تغییر نقش کاربر بر سطح دسترسی او تأثیر خواهد گذاشت
+                    </p>
+                </div>
+
+                <!-- Active Status -->
+                <div>
+                    <div class="flex items-center">
+                        <input type="checkbox" 
+                               name="{{ form.is_active.name }}" 
+                               id="{{ form.is_active.id_for_label }}"
+                               {% if form.is_active.value %}checked{% endif %}
+                               class="h-4 w-4 {% if is_dark_mode %}text-cyber-neon-primary focus:ring-cyber-neon-primary border-cyber-neon-primary/30{% else %}text-blue-600 focus:ring-blue-500 border-gray-300{% endif %} rounded">
+                        <label for="{{ form.is_active.id_for_label }}" class="mr-2 block text-sm {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                            کاربر فعال است
+                        </label>
+                    </div>
+                    <p class="mt-1 text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                        کاربران غیرفعال نمی‌توانند وارد سیستم شوند
+                    </p>
+                    {% if form.is_active.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.is_active.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex justify-end space-x-reverse space-x-3 pt-6 border-t {% if is_dark_mode %}border-cyber-neon-primary/20{% else %}border-gray-200{% endif %}">
+                    <a href="{% url 'tenant:user_detail' user_obj.pk %}" 
+                       class="inline-flex items-center px-4 py-2 border {% if is_dark_mode %}border-cyber-neon-primary/30 text-cyber-text-secondary hover:bg-cyber-bg-surface{% else %}border-gray-300 text-gray-700 hover:bg-gray-50{% endif %} rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+                        انصراف
+                    </a>
+                    <button type="submit" 
+                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white {% if is_dark_mode %}bg-gradient-to-r from-cyber-neon-secondary to-cyber-neon-primary hover:from-cyber-neon-secondary/80 hover:to-cyber-neon-primary/80{% else %}bg-green-600 hover:bg-green-700{% endif %} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200">
+                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        ذخیره تغییرات
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Current Status -->
+        <div class="mt-8 {% if is_dark_mode %}bg-gradient-to-br from-cyber-bg-surface to-cyber-bg-elevated border border-cyber-neon-primary/20{% else %}bg-gray-50 border border-gray-200{% endif %} rounded-lg p-6">
+            <h3 class="text-lg font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %} mb-4">وضعیت فعلی کاربر</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 {% if user_obj.is_active %}{% if is_dark_mode %}bg-cyber-neon-secondary/20 text-cyber-neon-secondary{% else %}bg-green-100 text-green-600{% endif %}{% else %}{% if is_dark_mode %}bg-red-900/20 text-red-400{% else %}bg-red-100 text-red-600{% endif %}{% endif %} rounded-lg flex items-center justify-center">
+                            {% if user_obj.is_active %}
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            {% else %}
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="mr-3">
+                        <p class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                            {% if user_obj.is_active %}فعال{% else %}غیرفعال{% endif %}
+                        </p>
+                        <p class="text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">وضعیت حساب</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 {% if user_obj.is_2fa_enabled %}{% if is_dark_mode %}bg-cyber-neon-primary/20 text-cyber-neon-primary{% else %}bg-blue-100 text-blue-600{% endif %}{% else %}{% if is_dark_mode %}bg-cyber-text-muted/20 text-cyber-text-muted{% else %}bg-gray-100 text-gray-400{% endif %}{% endif %} rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="mr-3">
+                        <p class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                            {% if user_obj.is_2fa_enabled %}فعال{% else %}غیرفعال{% endif %}
+                        </p>
+                        <p class="text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">احراز هویت دو مرحله‌ای</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 {% if is_dark_mode %}bg-cyber-neon-tertiary/20 text-cyber-neon-tertiary{% else %}bg-purple-100 text-purple-600{% endif %} rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="mr-3">
+                        <p class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                            {% if user_obj.role == 'owner' %}مالک
+                            {% elif user_obj.role == 'accountant' %}حسابدار
+                            {% elif user_obj.role == 'salesperson' %}فروشنده
+                            {% else %}{{ user_obj.get_role_display }}
+                            {% endif %}
+                        </p>
+                        <p class="text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">نقش کاربر</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Persian input validation
+    const persianFields = ['{{ form.persian_first_name.id_for_label }}', '{{ form.persian_last_name.id_for_label }}'];
+    persianFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('input', function(e) {
+                // Allow Persian characters, spaces, and common punctuation
+                const persianRegex = /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\s\-\.]*$/;
+                if (!persianRegex.test(e.target.value)) {
+                    e.target.setCustomValidity('لطفاً فقط از حروف فارسی استفاده کنید');
+                } else {
+                    e.target.setCustomValidity('');
+                }
+            });
+        }
+    });
+    
+    // Phone number validation
+    const phoneField = document.getElementById('{{ form.phone_number.id_for_label }}');
+    if (phoneField) {
+        phoneField.addEventListener('input', function(e) {
+            // Allow only digits and common phone number characters
+            const phoneRegex = /^[\d\+\-\(\)\s]*$/;
+            if (!phoneRegex.test(e.target.value)) {
+                e.target.setCustomValidity('شماره تلفن نامعتبر است');
+            } else {
+                e.target.setCustomValidity('');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

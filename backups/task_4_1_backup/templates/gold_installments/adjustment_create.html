@@ -1,0 +1,549 @@
+{% extends 'base_rtl.html' %}
+{% load persian_tags %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Gold Weight Adjustment" %} - {{ contract.contract_number }} - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/gold-installments.css' %}" rel="stylesheet">
+<link href="{% static 'css/persian-forms.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-gray-800">{% trans "Gold Weight Adjustment" %}</h1>
+                    <p class="text-muted">
+                        {% trans "Contract" %}: {{ contract.contract_number }} - 
+                        {{ contract.customer.persian_first_name }} {{ contract.customer.persian_last_name }}
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'gold_installments:contract_detail' contract.pk %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        {% trans "Back to Contract" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Warning Alert -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-warning d-flex align-items-center">
+                <i class="fas fa-exclamation-triangle me-3"></i>
+                <div>
+                    <strong>{% trans "Important" %}:</strong>
+                    {% trans "Manual weight adjustments will be permanently recorded in the audit trail. Please ensure all information is accurate before proceeding." %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Adjustment Form -->
+        <div class="col-lg-8">
+            <form method="post" id="adjustment-form">
+                {% csrf_token %}
+                
+                <!-- Current Weight Information -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-weight me-2"></i>
+                            {% trans "Current Weight Information" %}
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="text-center p-3 border rounded bg-light">
+                                    <div class="h5 mb-1 text-primary">
+                                        {% persian_weight contract.initial_gold_weight_grams 'gram' %}
+                                    </div>
+                                    <small class="text-muted">{% trans "Initial Weight" %}</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center p-3 border rounded bg-light">
+                                    <div class="h5 mb-1 text-success">
+                                        {% persian_weight contract.total_gold_weight_paid 'gram' %}
+                                    </div>
+                                    <small class="text-muted">{% trans "Paid Weight" %}</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center p-3 border rounded bg-warning">
+                                    <div class="h5 mb-1 text-dark">
+                                        {% persian_weight contract.remaining_gold_weight_grams 'gram' %}
+                                    </div>
+                                    <small class="text-dark">{% trans "Current Remaining" %}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Adjustment Details -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-edit me-2"></i>
+                            {% trans "Adjustment Details" %}
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.adjustment_date.id_for_label }}" class="form-label">
+                                        {{ form.adjustment_date.label }}
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.adjustment_date }}
+                                    {% if form.adjustment_date.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.adjustment_date.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.weight_before_grams.id_for_label }}" class="form-label">
+                                        {{ form.weight_before_grams.label }}
+                                    </label>
+                                    {{ form.weight_before_grams }}
+                                    {% if form.weight_before_grams.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.weight_before_grams.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">{{ form.weight_before_grams.help_text }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.adjustment_amount_grams.id_for_label }}" class="form-label">
+                                        {{ form.adjustment_amount_grams.label }}
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.adjustment_amount_grams }}
+                                    {% if form.adjustment_amount_grams.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.adjustment_amount_grams.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">{{ form.adjustment_amount_grams.help_text }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">{% trans "Weight After Adjustment" %}</label>
+                                    <div class="form-control bg-light" id="weight-after-display">
+                                        <span class="text-muted">{% trans "Enter adjustment amount to calculate" %}</span>
+                                    </div>
+                                    <div class="form-text">{% trans "Calculated automatically based on adjustment amount" %}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.adjustment_type.id_for_label }}" class="form-label">
+                                        {{ form.adjustment_type.label }}
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.adjustment_type }}
+                                    {% if form.adjustment_type.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.adjustment_type.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.adjustment_reason.id_for_label }}" class="form-label">
+                                        {{ form.adjustment_reason.label }}
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.adjustment_reason }}
+                                    {% if form.adjustment_reason.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.adjustment_reason.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Documentation -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-file-alt me-2"></i>
+                            {% trans "Documentation and Authorization" %}
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">
+                                {{ form.description.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.description.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.description.help_text }}</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.supporting_documents.id_for_label }}" class="form-label">
+                                {{ form.supporting_documents.label }}
+                            </label>
+                            {{ form.supporting_documents }}
+                            {% if form.supporting_documents.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.supporting_documents.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.supporting_documents.help_text }}</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.authorization_notes.id_for_label }}" class="form-label">
+                                {{ form.authorization_notes.label }}
+                            </label>
+                            {{ form.authorization_notes }}
+                            {% if form.authorization_notes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.authorization_notes.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.authorization_notes.help_text }}</div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-user-shield me-2"></i>{% trans "Authorization" %}</h6>
+                            <p class="mb-0">
+                                {% trans "This adjustment will be authorized by" %}: 
+                                <strong>{{ user.get_full_name|default:user.username }}</strong>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Adjustment Preview -->
+                <div class="card shadow mb-4" id="adjustment-preview" style="display: none;">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-eye me-2"></i>
+                            {% trans "Adjustment Preview" %}
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="text-center p-3 border rounded">
+                                    <div class="h6 mb-1 text-muted">{% trans "Before" %}</div>
+                                    <div class="h5 mb-0" id="preview-weight-before">-</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center p-3 border rounded">
+                                    <div class="h6 mb-1 text-muted">{% trans "Adjustment" %}</div>
+                                    <div class="h5 mb-0" id="preview-adjustment-amount">-</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center p-3 border rounded">
+                                    <div class="h6 mb-1 text-muted">{% trans "After" %}</div>
+                                    <div class="h5 mb-0" id="preview-weight-after">-</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="completion-impact" class="mt-3" style="display: none;">
+                            <div class="alert alert-success">
+                                <h6>{% trans "Contract Completion Impact" %}</h6>
+                                <p class="mb-0">
+                                    {% trans "New completion percentage" %}: <span id="new-completion-percentage">-</span>%
+                                </p>
+                            </div>
+                        </div>
+
+                        <div id="negative-weight-warning" class="mt-3" style="display: none;">
+                            <div class="alert alert-danger">
+                                <h6>{% trans "Warning: Negative Weight" %}</h6>
+                                <p class="mb-0">
+                                    {% trans "This adjustment would result in negative weight. Please review the adjustment amount." %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="card shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'gold_installments:contract_detail' contract.pk %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>
+                                {% trans "Cancel" %}
+                            </a>
+                            <div>
+                                <button type="button" class="btn btn-outline-primary me-2" id="preview-adjustment-btn">
+                                    <i class="fas fa-eye me-2"></i>
+                                    {% trans "Preview Adjustment" %}
+                                </button>
+                                <button type="submit" class="btn btn-warning" id="submit-adjustment" disabled>
+                                    <i class="fas fa-balance-scale me-2"></i>
+                                    {% trans "Apply Adjustment" %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Contract Summary Sidebar -->
+        <div class="col-lg-4">
+            <!-- Contract Overview -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Contract Overview" %}</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-muted">{% trans "Contract Number" %}</small>
+                        <div class="fw-bold">{{ contract.contract_number }}</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted">{% trans "Customer" %}</small>
+                        <div>{{ contract.customer.persian_first_name }} {{ contract.customer.persian_last_name }}</div>
+                        <small class="text-muted">{{ contract.customer.phone_number }}</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted">{% trans "Status" %}</small>
+                        <div>
+                            {% if contract.status == 'active' %}
+                                <span class="badge bg-success">{% trans "Active" %}</span>
+                            {% elif contract.status == 'completed' %}
+                                <span class="badge bg-primary">{% trans "Completed" %}</span>
+                            {% elif contract.status == 'defaulted' %}
+                                <span class="badge bg-danger">{% trans "Defaulted" %}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ contract.get_status_display }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="mb-3">
+                        <small class="text-muted">{% trans "Completion Progress" %}</small>
+                        <div class="progress mt-1" style="height: 20px;">
+                            <div class="progress-bar" role="progressbar" 
+                                 style="width: {{ contract.completion_percentage }}%"
+                                 aria-valuenow="{{ contract.completion_percentage }}" 
+                                 aria-valuemin="0" aria-valuemax="100">
+                                {% persian_number contract.completion_percentage %}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Previous Adjustments -->
+            {% if contract.weight_adjustments.exists %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Previous Adjustments" %}</h6>
+                </div>
+                <div class="card-body">
+                    {% for adjustment in contract.weight_adjustments.all|slice:":5" %}
+                    <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                        <div>
+                            <div class="fw-bold {% if adjustment.adjustment_amount_grams > 0 %}text-success{% else %}text-warning{% endif %}">
+                                {% if adjustment.adjustment_amount_grams > 0 %}+{% endif %}{% persian_weight adjustment.adjustment_amount_grams 'gram' %}
+                            </div>
+                            <small class="text-muted">{{ adjustment.adjustment_date_shamsi }}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge {% if adjustment.adjustment_amount_grams > 0 %}bg-success{% else %}bg-warning{% endif %}">
+                                {{ adjustment.get_adjustment_type_display }}
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Adjustment Guidelines -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{% trans "Adjustment Guidelines" %}</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            {% trans "Positive values increase the remaining balance" %}
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-minus-circle text-warning me-2"></i>
+                            {% trans "Negative values decrease the remaining balance" %}
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-shield-alt text-info me-2"></i>
+                            {% trans "All adjustments are permanently recorded" %}
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-user-check text-primary me-2"></i>
+                            {% trans "Adjustments require proper authorization" %}
+                        </li>
+                        <li class="mb-0">
+                            <i class="fas fa-file-alt text-secondary me-2"></i>
+                            {% trans "Detailed documentation is required" %}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/gold-installments.js' %}"></script>
+<script>
+$(document).ready(function() {
+    const initialWeight = {{ contract.initial_gold_weight_grams }};
+    const currentWeight = {{ contract.remaining_gold_weight_grams }};
+    
+    // Update weight after adjustment calculation
+    function updateWeightCalculation() {
+        const weightBefore = parseFloat($('#{{ form.weight_before_grams.id_for_label }}').val()) || 0;
+        const adjustmentAmount = parseFloat($('#{{ form.adjustment_amount_grams.id_for_label }}').val()) || 0;
+        const weightAfter = weightBefore + adjustmentAmount;
+        
+        if (adjustmentAmount !== 0) {
+            $('#weight-after-display').html(
+                '<span class="fw-bold ' + (weightAfter >= 0 ? 'text-success' : 'text-danger') + '">' +
+                PersianFormatter.formatWeight(weightAfter, 'gram') +
+                '</span>'
+            );
+            
+            // Enable submit button if weight is valid
+            if (weightAfter >= 0) {
+                $('#submit-adjustment').prop('disabled', false);
+                $('#negative-weight-warning').hide();
+            } else {
+                $('#submit-adjustment').prop('disabled', true);
+                $('#negative-weight-warning').show();
+            }
+        } else {
+            $('#weight-after-display').html('<span class="text-muted">{% trans "Enter adjustment amount to calculate" %}</span>');
+            $('#submit-adjustment').prop('disabled', true);
+        }
+    }
+    
+    // Preview adjustment
+    function previewAdjustment() {
+        const weightBefore = parseFloat($('#{{ form.weight_before_grams.id_for_label }}').val()) || 0;
+        const adjustmentAmount = parseFloat($('#{{ form.adjustment_amount_grams.id_for_label }}').val()) || 0;
+        const weightAfter = weightBefore + adjustmentAmount;
+        
+        if (adjustmentAmount !== 0) {
+            $('#preview-weight-before').text(PersianFormatter.formatWeight(weightBefore, 'gram'));
+            $('#preview-adjustment-amount').html(
+                '<span class="' + (adjustmentAmount > 0 ? 'text-success' : 'text-warning') + '">' +
+                (adjustmentAmount > 0 ? '+' : '') + PersianFormatter.formatWeight(adjustmentAmount, 'gram') +
+                '</span>'
+            );
+            $('#preview-weight-after').html(
+                '<span class="' + (weightAfter >= 0 ? 'text-success' : 'text-danger') + '">' +
+                PersianFormatter.formatWeight(weightAfter, 'gram') +
+                '</span>'
+            );
+            
+            // Calculate new completion percentage
+            if (initialWeight > 0) {
+                const paidWeight = initialWeight - weightAfter;
+                const newCompletionPercentage = Math.max(0, Math.min(100, (paidWeight / initialWeight) * 100));
+                $('#new-completion-percentage').text(PersianFormatter.formatNumber(newCompletionPercentage.toFixed(1)));
+                $('#completion-impact').show();
+            }
+            
+            $('#adjustment-preview').show();
+        } else {
+            $('#adjustment-preview').hide();
+        }
+    }
+    
+    // Event listeners
+    $('#{{ form.weight_before_grams.id_for_label }}, #{{ form.adjustment_amount_grams.id_for_label }}').on('input', function() {
+        updateWeightCalculation();
+        previewAdjustment();
+    });
+    
+    $('#preview-adjustment-btn').click(function() {
+        previewAdjustment();
+        $('html, body').animate({
+            scrollTop: $('#adjustment-preview').offset().top - 100
+        }, 500);
+    });
+    
+    // Form validation
+    $('#adjustment-form').submit(function(e) {
+        const adjustmentAmount = parseFloat($('#{{ form.adjustment_amount_grams.id_for_label }}').val()) || 0;
+        const weightBefore = parseFloat($('#{{ form.weight_before_grams.id_for_label }}').val()) || 0;
+        const weightAfter = weightBefore + adjustmentAmount;
+        
+        if (weightAfter < 0) {
+            e.preventDefault();
+            alert('{% trans "Adjustment would result in negative weight. Please review the adjustment amount." %}');
+            return false;
+        }
+        
+        if (adjustmentAmount === 0) {
+            e.preventDefault();
+            alert('{% trans "Please enter a non-zero adjustment amount." %}');
+            return false;
+        }
+        
+        // Confirmation dialog
+        const confirmMessage = adjustmentAmount > 0 
+            ? '{% trans "This will increase the remaining gold weight. Are you sure?" %}'
+            : '{% trans "This will decrease the remaining gold weight. Are you sure?" %}';
+            
+        if (!confirm(confirmMessage)) {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    // Initial calculation
+    updateWeightCalculation();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,178 @@
+{% load i18n %}
+
+<div id="hijack-banner" style="
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 999999;
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    color: white;
+    padding: 12px 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 30px rgba(220, 38, 38, 0.3);
+    font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+    direction: rtl;
+    text-align: right;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+">
+    <div style="display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <!-- Warning Icon -->
+            <svg style="width: 20px; height: 20px; flex-shrink: 0;" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+            
+            <div>
+                <strong style="font-size: 16px; text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);">
+                    ⚠️ {% trans "IMPERSONATION ACTIVE" %} ⚠️
+                </strong>
+                <div style="font-size: 12px; opacity: 0.95; margin-top: 4px; line-height: 1.5;">
+                    <span style="background: rgba(255, 255, 255, 0.1); padding: 2px 6px; border-radius: 3px; margin: 0 2px;">
+                        {% trans "Admin" %}: <strong>{{ admin_username }}</strong>
+                    </span>
+                    <span style="margin: 0 4px;">←</span>
+                    <span style="background: rgba(255, 255, 255, 0.1); padding: 2px 6px; border-radius: 3px; margin: 0 2px;">
+                        {% trans "Impersonating" %}: <strong>{{ user.username }}</strong>
+                    </span>
+                    <span style="margin: 0 4px;">|</span>
+                    <span style="background: rgba(255, 255, 255, 0.1); padding: 2px 6px; border-radius: 3px; margin: 0 2px;">
+                        {% trans "Started" %}: {{ start_time|date:"Y-m-d H:i" }}
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <!-- Session Info -->
+            <div style="font-size: 12px; opacity: 0.9; text-align: left;">
+                <div>{% trans "Session ID" %}: {{ session_id|slice:":8" }}...</div>
+                <div id="session-duration">{% trans "Duration" %}: <span id="duration-counter">00:00:00</span></div>
+            </div>
+            
+            <!-- Exit Button -->
+            <form method="post" action="{% url 'admin_panel:end_impersonation' %}" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" id="exitImpersonationBtn" style="
+                    background: rgba(255, 255, 255, 0.15);
+                    border: 2px solid rgba(255, 255, 255, 0.4);
+                    color: white;
+                    padding: 8px 16px;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 13px;
+                    font-weight: 600;
+                    font-family: 'Vazirmatn', sans-serif;
+                    transition: all 0.3s ease;
+                    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+                " onmouseover="this.style.background='rgba(255, 255, 255, 0.25)'; this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(0, 0, 0, 0.3)'" 
+                   onmouseout="this.style.background='rgba(255, 255, 255, 0.15)'; this.style.transform='scale(1)'; this.style.boxShadow='0 2px 8px rgba(0, 0, 0, 0.2)'"
+                   onclick="return confirm('{% trans "Are you sure you want to exit impersonation?" %}')">
+                    <svg style="width: 14px; height: 14px; display: inline-block; margin-left: 4px;" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd" />
+                    </svg>
+                    {% trans "Exit Impersonation" %}
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Push down page content -->
+<div style="height: 60px;"></div>
+
+<script>
+(function() {
+    // Duration counter
+    const startTime = new Date('{{ start_time|date:"c" }}');
+    const durationElement = document.getElementById('duration-counter');
+    
+    function updateDuration() {
+        const now = new Date();
+        const diff = Math.floor((now - startTime) / 1000);
+        
+        const hours = Math.floor(diff / 3600);
+        const minutes = Math.floor((diff % 3600) / 60);
+        const seconds = diff % 60;
+        
+        const formatted = 
+            String(hours).padStart(2, '0') + ':' +
+            String(minutes).padStart(2, '0') + ':' +
+            String(seconds).padStart(2, '0');
+        
+        durationElement.textContent = formatted;
+        
+        // Warning for long sessions (over 2 hours)
+        if (diff > 7200) {
+            durationElement.style.color = '#fbbf24';
+            durationElement.style.fontWeight = 'bold';
+        }
+        
+        // Critical warning for very long sessions (over 4 hours)
+        if (diff > 14400) {
+            durationElement.style.color = '#f87171';
+            durationElement.style.animation = 'blink 1s infinite';
+        }
+    }
+    
+    // Update every second
+    updateDuration();
+    setInterval(updateDuration, 1000);
+    
+    // Add blinking animation for critical warnings
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.5; }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Auto-refresh warning for long sessions
+    if (window.location.pathname !== '/admin/impersonation/') {
+        setTimeout(function() {
+            const now = new Date();
+            const diff = Math.floor((now - startTime) / 1000);
+            
+            if (diff > 7200) { // 2 hours
+                if (confirm('{% trans "You have been impersonating for over 2 hours. Do you want to continue?" %}')) {
+                    // Continue
+                } else {
+                    // End impersonation
+                    document.querySelector('#hijack-banner form').submit();
+                }
+            }
+        }, 7200000); // Check after 2 hours
+    }
+})();
+</script>
+
+<style>
+/* Ensure banner stays on top of everything */
+#hijack-banner {
+    position: fixed !important;
+    top: 0 !important;
+    z-index: 999999 !important;
+}
+
+/* Adjust body padding to account for banner */
+body {
+    padding-top: 60px !important;
+}
+
+/* Handle sticky headers that might conflict */
+.sticky, .fixed {
+    top: 60px !important;
+}
+
+/* Dark mode compatibility */
+@media (prefers-color-scheme: dark) {
+    #hijack-banner {
+        background: linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%);
+    }
+}
+</style>

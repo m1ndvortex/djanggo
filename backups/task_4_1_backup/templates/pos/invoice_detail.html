@@ -1,0 +1,613 @@
+{% extends "pos/base_pos.html" %}
+{% load static %}
+
+{% block title %}فاکتور {{ invoice.invoice_number }} - زرگر{% endblock %}
+
+{% block extra_head %}
+<style>
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .print-only {
+        display: block !important;
+    }
+    
+    body {
+        background: white !important;
+        color: black !important;
+    }
+    
+    .invoice-container {
+        box-shadow: none !important;
+        border: 1px solid #000 !important;
+        margin: 0 !important;
+        padding: 20px !important;
+    }
+}
+
+.invoice-container {
+    {% if is_dark_mode %}
+    background: linear-gradient(135deg, rgba(37, 42, 58, 0.95), rgba(26, 29, 41, 0.95));
+    border: 2px solid rgba(0, 212, 255, 0.3);
+    color: #FFFFFF;
+    {% else %}
+    background: #ffffff;
+    border: 2px solid #e5e7eb;
+    color: #1f2937;
+    {% endif %}
+}
+
+.invoice-header {
+    {% if is_dark_mode %}
+    border-bottom: 2px solid rgba(0, 212, 255, 0.3);
+    {% else %}
+    border-bottom: 2px solid #e5e7eb;
+    {% endif %}
+}
+
+.invoice-section {
+    {% if is_dark_mode %}
+    background: rgba(37, 42, 58, 0.5);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    {% else %}
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    {% endif %}
+}
+
+.invoice-table {
+    {% if is_dark_mode %}
+    background: rgba(37, 42, 58, 0.3);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    {% else %}
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    {% endif %}
+}
+
+.invoice-table th {
+    {% if is_dark_mode %}
+    background: rgba(0, 212, 255, 0.2);
+    color: #00D4FF;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+    {% else %}
+    background: #f3f4f6;
+    color: #374151;
+    border-bottom: 1px solid #d1d5db;
+    {% endif %}
+}
+
+.invoice-table td {
+    {% if is_dark_mode %}
+    border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+    {% else %}
+    border-bottom: 1px solid #f3f4f6;
+    {% endif %}
+}
+
+.total-section {
+    {% if is_dark_mode %}
+    background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(0, 212, 255, 0.1));
+    border: 2px solid rgba(0, 255, 136, 0.3);
+    {% else %}
+    background: linear-gradient(135deg, #ecfdf5, #dbeafe);
+    border: 2px solid #10b981;
+    {% endif %}
+}
+
+.persian-text {
+    font-family: 'Vazirmatn', 'Tahoma', sans-serif;
+    direction: rtl;
+    text-align: right;
+}
+
+.persian-numbers {
+    font-variant-numeric: tabular-nums;
+}
+
+@page {
+    size: A4;
+    margin: 1cm;
+}
+</style>
+{% endblock %}
+
+{% block pos_content %}
+<div class="invoice-page min-h-screen pt-16" x-data="invoiceInterface()" x-init="init()">
+    
+    <!-- Header Actions -->
+    <div class="no-print sticky top-16 z-40 
+                {% if is_dark_mode %}
+                bg-gradient-to-r from-cyber-bg-primary/95 to-cyber-bg-secondary/95
+                border-b border-cyber-neon-primary/30
+                {% else %}
+                bg-white/95 border-b border-gray-200
+                {% endif %}
+                backdrop-blur-sm">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <button @click="goBack()" 
+                            class="p-2 rounded-lg transition-colors
+                                   {% if is_dark_mode %}
+                                   text-cyber-text-primary hover:bg-cyber-bg-surface/50
+                                   {% else %}
+                                   text-gray-600 hover:bg-gray-100
+                                   {% endif %}">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </button>
+                    <h1 class="text-2xl font-bold 
+                              {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        فاکتور {{ invoice.invoice_number }}
+                    </h1>
+                </div>
+                
+                <div class="flex items-center space-x-3 space-x-reverse">
+                    <button @click="printInvoice()" 
+                            class="px-4 py-2 rounded-lg font-medium transition-colors
+                                   {% if is_dark_mode %}
+                                   bg-cyber-neon-primary/20 border border-cyber-neon-primary/30
+                                   text-cyber-neon-primary hover:bg-cyber-neon-primary/30
+                                   {% else %}
+                                   bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100
+                                   {% endif %}">
+                        <div class="flex items-center space-x-2 space-x-reverse">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                            </svg>
+                            <span>چاپ</span>
+                        </div>
+                    </button>
+                    
+                    <button @click="downloadPDF()" 
+                            class="px-4 py-2 rounded-lg font-medium transition-colors
+                                   {% if is_dark_mode %}
+                                   bg-cyber-neon-secondary/20 border border-cyber-neon-secondary/30
+                                   text-cyber-neon-secondary hover:bg-cyber-neon-secondary/30
+                                   {% else %}
+                                   bg-green-50 border border-green-200 text-green-600 hover:bg-green-100
+                                   {% endif %}">
+                        <div class="flex items-center space-x-2 space-x-reverse">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <span>دانلود PDF</span>
+                        </div>
+                    </button>
+                    
+                    <button @click="showEmailModal = true" 
+                            class="px-4 py-2 rounded-lg font-medium transition-colors
+                                   {% if is_dark_mode %}
+                                   bg-cyber-neon-tertiary/20 border border-cyber-neon-tertiary/30
+                                   text-cyber-neon-tertiary hover:bg-cyber-neon-tertiary/30
+                                   {% else %}
+                                   bg-orange-50 border border-orange-200 text-orange-600 hover:bg-orange-100
+                                   {% endif %}">
+                        <div class="flex items-center space-x-2 space-x-reverse">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                            </svg>
+                            <span>ارسال ایمیل</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Invoice Content -->
+    <div class="max-w-4xl mx-auto p-6">
+        <div class="invoice-container rounded-2xl shadow-2xl p-8 persian-text">
+            
+            <!-- Invoice Header -->
+            <div class="invoice-header pb-6 mb-6">
+                <div class="flex items-start justify-between">
+                    <!-- Business Information -->
+                    <div class="flex-1">
+                        <h1 class="text-3xl font-bold mb-2 
+                                  {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}">
+                            {{ tenant.name }}
+                        </h1>
+                        <div class="space-y-1 text-sm 
+                                   {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            <p>{{ tenant.address }}</p>
+                            <p>تلفن: {{ tenant.phone_number }}</p>
+                            {% if tenant.tax_id %}
+                            <p>شناسه مالیاتی: {{ tenant.tax_id }}</p>
+                            {% endif %}
+                            {% if tenant.economic_code %}
+                            <p>کد اقتصادی: {{ tenant.economic_code }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Invoice Info -->
+                    <div class="text-left">
+                        <div class="invoice-section p-4 rounded-lg">
+                            <h2 class="text-xl font-bold mb-3 
+                                      {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                فاکتور فروش
+                            </h2>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                                        شماره فاکتور:
+                                    </span>
+                                    <span class="font-bold persian-numbers 
+                                               {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}">
+                                        {{ invoice.invoice_number }}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                                        تاریخ صدور:
+                                    </span>
+                                    <span class="font-medium persian-numbers 
+                                               {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                        {{ invoice.issue_date_shamsi }}
+                                    </span>
+                                </div>
+                                {% if invoice.due_date %}
+                                <div class="flex justify-between">
+                                    <span class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                                        تاریخ سررسید:
+                                    </span>
+                                    <span class="font-medium persian-numbers 
+                                               {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                        {{ invoice.due_date_shamsi }}
+                                    </span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Customer Information -->
+            <div class="mb-6">
+                <div class="invoice-section p-4 rounded-lg">
+                    <h3 class="font-bold mb-3 
+                              {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        مشخصات خریدار
+                    </h3>
+                    {% if invoice.transaction.customer %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                                نام:
+                            </span>
+                            <span class="font-medium 
+                                       {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                {{ invoice.transaction.customer.full_persian_name }}
+                            </span>
+                        </div>
+                        <div>
+                            <span class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                                تلفن:
+                            </span>
+                            <span class="font-medium persian-numbers 
+                                       {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                {{ invoice.transaction.customer.phone_number }}
+                            </span>
+                        </div>
+                        {% if invoice.transaction.customer.email %}
+                        <div>
+                            <span class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                                ایمیل:
+                            </span>
+                            <span class="font-medium 
+                                       {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                {{ invoice.transaction.customer.email }}
+                            </span>
+                        </div>
+                        {% endif %}
+                        {% if invoice.transaction.customer.address %}
+                        <div class="md:col-span-2">
+                            <span class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                                آدرس:
+                            </span>
+                            <span class="font-medium 
+                                       {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                {{ invoice.transaction.customer.address }}
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <p class="text-center py-4 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                        مشتری نقدی
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Invoice Items -->
+            <div class="mb-6">
+                <div class="invoice-table rounded-lg overflow-hidden">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="text-sm">
+                                <th class="px-4 py-3 text-right">ردیف</th>
+                                <th class="px-4 py-3 text-right">شرح کالا</th>
+                                <th class="px-4 py-3 text-center">کد کالا</th>
+                                <th class="px-4 py-3 text-center">وزن (گرم)</th>
+                                <th class="px-4 py-3 text-center">تعداد</th>
+                                <th class="px-4 py-3 text-center">قیمت واحد</th>
+                                <th class="px-4 py-3 text-center">مجموع</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in invoice.transaction.line_items.all %}
+                            <tr class="text-sm">
+                                <td class="px-4 py-3 persian-numbers">{{ forloop.counter }}</td>
+                                <td class="px-4 py-3 font-medium 
+                                          {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                    {{ item.item_name }}
+                                </td>
+                                <td class="px-4 py-3 text-center persian-numbers 
+                                          {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                                    {{ item.item_sku|default:"-" }}
+                                </td>
+                                <td class="px-4 py-3 text-center persian-numbers 
+                                          {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                                    {% if item.gold_weight_grams %}
+                                        {{ item.gold_weight_grams|floatformat:3 }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-3 text-center persian-numbers 
+                                          {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                    {{ item.quantity }}
+                                </td>
+                                <td class="px-4 py-3 text-center persian-numbers font-medium 
+                                          {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}">
+                                    {{ item.unit_price|floatformat:0 }}
+                                </td>
+                                <td class="px-4 py-3 text-center persian-numbers font-bold 
+                                          {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}">
+                                    {{ item.line_total|floatformat:0 }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Invoice Totals -->
+            <div class="mb-6">
+                <div class="flex justify-end">
+                    <div class="w-full max-w-md">
+                        <div class="total-section p-4 rounded-lg space-y-3">
+                            <div class="flex justify-between text-sm">
+                                <span class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                                    جمع کل:
+                                </span>
+                                <span class="font-medium persian-numbers 
+                                           {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                    {{ invoice.invoice_subtotal|floatformat:0 }} تومان
+                                </span>
+                            </div>
+                            
+                            {% if invoice.invoice_tax_amount > 0 %}
+                            <div class="flex justify-between text-sm">
+                                <span class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                                    مالیات (۹٪):
+                                </span>
+                                <span class="font-medium persian-numbers 
+                                           {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                    {{ invoice.invoice_tax_amount|floatformat:0 }} تومان
+                                </span>
+                            </div>
+                            {% endif %}
+                            
+                            {% if invoice.invoice_discount_amount > 0 %}
+                            <div class="flex justify-between text-sm">
+                                <span class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                                    تخفیف:
+                                </span>
+                                <span class="font-medium persian-numbers 
+                                           {% if is_dark_mode %}text-cyber-neon-danger{% else %}text-red-600{% endif %}">
+                                    {{ invoice.invoice_discount_amount|floatformat:0 }} تومان
+                                </span>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="border-t pt-3 
+                                       {% if is_dark_mode %}border-cyber-neon-primary/30{% else %}border-gray-300{% endif %}">
+                                <div class="flex justify-between">
+                                    <span class="font-bold 
+                                               {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                        مبلغ نهایی:
+                                    </span>
+                                    <span class="font-bold text-lg persian-numbers 
+                                               {% if is_dark_mode %}text-cyber-neon-success{% else %}text-green-600{% endif %}">
+                                        {{ invoice.invoice_total_amount|floatformat:0 }} تومان
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="text-sm 
+                                       {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                                <span>به حروف: </span>
+                                <span class="font-medium" x-text="numberToWords({{ invoice.invoice_total_amount }})"></span>
+                                <span> تومان</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Payment Information -->
+            {% if invoice.transaction.status == 'completed' %}
+            <div class="mb-6">
+                <div class="invoice-section p-4 rounded-lg">
+                    <h3 class="font-bold mb-3 
+                              {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        اطلاعات پرداخت
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                            <span class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                                نوع پرداخت:
+                            </span>
+                            <span class="font-medium 
+                                       {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                                {{ invoice.transaction.get_payment_method_display }}
+                            </span>
+                        </div>
+                        <div>
+                            <span class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                                مبلغ پرداختی:
+                            </span>
+                            <span class="font-medium persian-numbers 
+                                       {% if is_dark_mode %}text-cyber-neon-success{% else %}text-green-600{% endif %}">
+                                {{ invoice.transaction.amount_paid|floatformat:0 }} تومان
+                            </span>
+                        </div>
+                        {% if invoice.transaction.change_amount > 0 %}
+                        <div>
+                            <span class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                                باقی مانده:
+                            </span>
+                            <span class="font-medium persian-numbers 
+                                       {% if is_dark_mode %}text-cyber-neon-warning{% else %}text-yellow-600{% endif %}">
+                                {{ invoice.transaction.change_amount|floatformat:0 }} تومان
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Notes and Terms -->
+            {% if invoice.invoice_notes or invoice.terms_and_conditions %}
+            <div class="mb-6">
+                {% if invoice.terms_and_conditions %}
+                <div class="invoice-section p-4 rounded-lg mb-4">
+                    <h3 class="font-bold mb-3 
+                              {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        شرایط و ضوابط
+                    </h3>
+                    <p class="text-sm leading-relaxed 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                        {{ invoice.terms_and_conditions }}
+                    </p>
+                </div>
+                {% endif %}
+                
+                {% if invoice.invoice_notes %}
+                <div class="invoice-section p-4 rounded-lg">
+                    <h3 class="font-bold mb-3 
+                              {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        توضیحات
+                    </h3>
+                    <p class="text-sm leading-relaxed 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                        {{ invoice.invoice_notes }}
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            <!-- Footer -->
+            <div class="text-center text-xs 
+                       {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                <p>این فاکتور توسط سیستم زرگر تولید شده است</p>
+                <p class="persian-numbers">تاریخ چاپ: {{ current_date_shamsi }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Email Modal -->
+{% include "pos/components/email_invoice_modal.html" %}
+
+<script>
+function invoiceInterface() {
+    return {
+        showEmailModal: false,
+        
+        init() {
+            // Initialize any required data
+        },
+        
+        goBack() {
+            window.history.back();
+        },
+        
+        printInvoice() {
+            window.print();
+        },
+        
+        downloadPDF() {
+            window.open('{% url "pos:invoice_pdf" invoice.id %}', '_blank');
+        },
+        
+        numberToWords(number) {
+            // Persian number to words conversion
+            const ones = ['', 'یک', 'دو', 'سه', 'چهار', 'پنج', 'شش', 'هفت', 'هشت', 'نه'];
+            const tens = ['', '', 'بیست', 'سی', 'چهل', 'پنجاه', 'شصت', 'هفتاد', 'هشتاد', 'نود'];
+            const teens = ['ده', 'یازده', 'دوازده', 'سیزده', 'چهارده', 'پانزده', 'شانزده', 'هفده', 'هجده', 'نوزده'];
+            const hundreds = ['', 'یکصد', 'دویست', 'سیصد', 'چهارصد', 'پانصد', 'ششصد', 'هفتصد', 'هشتصد', 'نهصد'];
+            const scales = ['', 'هزار', 'میلیون', 'میلیارد'];
+            
+            if (number === 0) return 'صفر';
+            
+            let result = '';
+            let scaleIndex = 0;
+            
+            while (number > 0) {
+                let chunk = number % 1000;
+                if (chunk !== 0) {
+                    let chunkText = '';
+                    
+                    // Hundreds
+                    if (chunk >= 100) {
+                        chunkText += hundreds[Math.floor(chunk / 100)] + ' ';
+                        chunk %= 100;
+                    }
+                    
+                    // Tens and ones
+                    if (chunk >= 20) {
+                        chunkText += tens[Math.floor(chunk / 10)] + ' ';
+                        chunk %= 10;
+                        if (chunk > 0) {
+                            chunkText += ones[chunk] + ' ';
+                        }
+                    } else if (chunk >= 10) {
+                        chunkText += teens[chunk - 10] + ' ';
+                    } else if (chunk > 0) {
+                        chunkText += ones[chunk] + ' ';
+                    }
+                    
+                    if (scales[scaleIndex]) {
+                        chunkText += scales[scaleIndex] + ' ';
+                    }
+                    
+                    result = chunkText + result;
+                }
+                
+                number = Math.floor(number / 1000);
+                scaleIndex++;
+            }
+            
+            return result.trim();
+        }
+    }
+}
+</script>
+{% endblock %}

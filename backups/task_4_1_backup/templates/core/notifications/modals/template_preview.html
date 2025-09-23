@@ -1,0 +1,124 @@
+{% load i18n %}
+
+<!-- Template Preview Modal -->
+<div class="modal fade" id="templatePreviewModal" tabindex="-1" aria-labelledby="templatePreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="templatePreviewModalLabel">{% trans "Template Preview" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>{% trans "Template Information" %}</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>{% trans "Type:" %}</strong></td>
+                                <td id="previewType">-</td>
+                            </tr>
+                            <tr>
+                                <td><strong>{% trans "Delivery Methods:" %}</strong></td>
+                                <td id="previewDeliveryMethods">-</td>
+                            </tr>
+                            <tr>
+                                <td><strong>{% trans "Variables:" %}</strong></td>
+                                <td id="previewVariables">-</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>{% trans "Sample Message" %}</h6>
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0" id="previewTitle">{% trans "Message Title" %}</h6>
+                            </div>
+                            <div class="card-body">
+                                <p id="previewContent" class="mb-0">{% trans "Message content will appear here" %}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="row">
+                    <div class="col-12">
+                        <h6>{% trans "Available Variables" %}</h6>
+                        <div id="availableVariables" class="row">
+                            <!-- Variables will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
+                <button type="button" class="btn btn-primary" onclick="usePreviewedTemplate()">
+                    <i class="fas fa-paper-plane me-2"></i>
+                    {% trans "Use This Template" %}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentPreviewedTemplate = null;
+
+function showTemplatePreview(templateData) {
+    // Update template information
+    document.getElementById('previewType').textContent = templateData.template_type || '-';
+    document.getElementById('previewDeliveryMethods').textContent = 
+        templateData.delivery_methods ? templateData.delivery_methods.join(', ').toUpperCase() : '-';
+    
+    // Update message preview
+    document.getElementById('previewTitle').textContent = templateData.title || '{% trans "Message Title" %}';
+    document.getElementById('previewContent').textContent = templateData.content || '{% trans "Message content will appear here" %}';
+    
+    // Update available variables
+    const variablesContainer = document.getElementById('availableVariables');
+    variablesContainer.innerHTML = '';
+    
+    if (templateData.available_variables && Object.keys(templateData.available_variables).length > 0) {
+        Object.entries(templateData.available_variables).forEach(([key, description]) => {
+            const variableDiv = document.createElement('div');
+            variableDiv.className = 'col-md-6 mb-2';
+            variableDiv.innerHTML = `
+                <div class="card card-body p-2">
+                    <code>{${key}}</code>
+                    <small class="text-muted">${description}</small>
+                </div>
+            `;
+            variablesContainer.appendChild(variableDiv);
+        });
+        
+        document.getElementById('previewVariables').textContent = Object.keys(templateData.available_variables).length + ' {% trans "variables" %}';
+    } else {
+        variablesContainer.innerHTML = '<div class="col-12"><p class="text-muted">{% trans "No variables available for this template" %}</p></div>';
+        document.getElementById('previewVariables').textContent = '{% trans "None" %}';
+    }
+    
+    // Store current template for use
+    currentPreviewedTemplate = templateData;
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('templatePreviewModal'));
+    modal.show();
+}
+
+function usePreviewedTemplate() {
+    if (currentPreviewedTemplate && currentPreviewedTemplate.template_type) {
+        // Close preview modal
+        bootstrap.Modal.getInstance(document.getElementById('templatePreviewModal')).hide();
+        
+        // Set template type in single notification modal and show it
+        document.getElementById('singleTemplateType').value = currentPreviewedTemplate.template_type;
+        
+        // Trigger change event to update context fields
+        document.getElementById('singleTemplateType').dispatchEvent(new Event('change'));
+        
+        // Show single notification modal
+        showSingleNotificationModal();
+    }
+}
+</script>

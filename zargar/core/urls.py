@@ -5,8 +5,6 @@ from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from . import views
 from .auth_views import (
-    AdminLoginView, 
-    AdminLogoutView, 
     ThemeToggleView,
     AdminPasswordResetView,
     AdminPasswordResetDoneView,
@@ -45,9 +43,8 @@ urlpatterns = [
     # Super-panel dashboard
     path('', views.SuperPanelDashboardView.as_view(), name='super_panel_dashboard'),
     
-    # Authentication URLs
-    path('login/', AdminLoginView.as_view(), name='admin_login'),
-    path('logout/', AdminLogoutView.as_view(), name='admin_logout'),
+    # Authentication URLs - redirected to unified admin system
+    # Legacy admin login/logout removed - use /super-panel/login/ instead
     
     # Password reset URLs
     path('password-reset/', AdminPasswordResetView.as_view(), name='admin_password_reset'),

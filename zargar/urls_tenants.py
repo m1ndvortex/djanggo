@@ -24,7 +24,7 @@ def health_check(request):
 
 
 urlpatterns = [
-    # Tenant admin (limited access)
+    # Tenant admin (limited access - preserved for tenant users)
     path('admin/', admin.site.urls),
     
     # Health check

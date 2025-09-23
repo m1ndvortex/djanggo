@@ -1,0 +1,557 @@
+{% extends "pos/base_pos.html" %}
+{% load static %}
+
+{% block title %}سیستم فروش اصلی - زرگر{% endblock %}
+
+{% block pos_content %}
+<div class="pos-main-container p-4 max-w-7xl mx-auto" 
+     x-data="posMainData()" 
+     x-init="init()">
+    
+    <!-- Quick Action Buttons Row -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <!-- New Sale Button -->
+        <button @click="startNewSale()" 
+                class="pos-quick-action-btn group relative overflow-hidden
+                       {% if is_dark_mode %}
+                       bg-gradient-to-br from-cyber-neon-primary/20 to-cyber-neon-secondary/20
+                       border-2 border-cyber-neon-primary/30 hover:border-cyber-neon-primary/50
+                       text-cyber-text-primary hover:shadow-neon
+                       {% else %}
+                       bg-gradient-to-br from-blue-50 to-green-50
+                       border-2 border-blue-200 hover:border-blue-300
+                       text-gray-800 hover:shadow-lg
+                       {% endif %}
+                       rounded-xl p-6 transition-all duration-300 transform hover:scale-105">
+            <div class="flex flex-col items-center space-y-3">
+                <div class="w-12 h-12 rounded-full 
+                           {% if is_dark_mode %}
+                           bg-gradient-to-br from-cyber-neon-primary to-cyber-neon-secondary
+                           {% else %}
+                           bg-gradient-to-br from-blue-500 to-green-500
+                           {% endif %} 
+                           flex items-center justify-center group-hover:animate-pulse">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                </div>
+                <span class="text-lg font-bold">فروش جدید</span>
+                <span class="text-sm opacity-75">شروع تراکنش جدید</span>
+            </div>
+        </button>
+
+        <!-- Customer Lookup Button -->
+        <button @click="openCustomerLookup()" 
+                class="pos-quick-action-btn group relative overflow-hidden
+                       {% if is_dark_mode %}
+                       bg-gradient-to-br from-cyber-neon-secondary/20 to-cyber-neon-tertiary/20
+                       border-2 border-cyber-neon-secondary/30 hover:border-cyber-neon-secondary/50
+                       text-cyber-text-primary hover:shadow-neon
+                       {% else %}
+                       bg-gradient-to-br from-green-50 to-orange-50
+                       border-2 border-green-200 hover:border-green-300
+                       text-gray-800 hover:shadow-lg
+                       {% endif %}
+                       rounded-xl p-6 transition-all duration-300 transform hover:scale-105">
+            <div class="flex flex-col items-center space-y-3">
+                <div class="w-12 h-12 rounded-full 
+                           {% if is_dark_mode %}
+                           bg-gradient-to-br from-cyber-neon-secondary to-cyber-neon-tertiary
+                           {% else %}
+                           bg-gradient-to-br from-green-500 to-orange-500
+                           {% endif %} 
+                           flex items-center justify-center group-hover:animate-pulse">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                </div>
+                <span class="text-lg font-bold">جستجوی مشتری</span>
+                <span class="text-sm opacity-75">یافتن مشتری</span>
+            </div>
+        </button>
+
+        <!-- Inventory Search Button -->
+        <button @click="openInventorySearch()" 
+                class="pos-quick-action-btn group relative overflow-hidden
+                       {% if is_dark_mode %}
+                       bg-gradient-to-br from-cyber-neon-tertiary/20 to-cyber-neon-purple/20
+                       border-2 border-cyber-neon-tertiary/30 hover:border-cyber-neon-tertiary/50
+                       text-cyber-text-primary hover:shadow-neon
+                       {% else %}
+                       bg-gradient-to-br from-orange-50 to-purple-50
+                       border-2 border-orange-200 hover:border-orange-300
+                       text-gray-800 hover:shadow-lg
+                       {% endif %}
+                       rounded-xl p-6 transition-all duration-300 transform hover:scale-105">
+            <div class="flex flex-col items-center space-y-3">
+                <div class="w-12 h-12 rounded-full 
+                           {% if is_dark_mode %}
+                           bg-gradient-to-br from-cyber-neon-tertiary to-cyber-neon-purple
+                           {% else %}
+                           bg-gradient-to-br from-orange-500 to-purple-500
+                           {% endif %} 
+                           flex items-center justify-center group-hover:animate-pulse">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+                <span class="text-lg font-bold">جستجوی کالا</span>
+                <span class="text-sm opacity-75">یافتن محصولات</span>
+            </div>
+        </button>
+
+        <!-- Calculator Button -->
+        <button @click="openCalculator()" 
+                class="pos-quick-action-btn group relative overflow-hidden
+                       {% if is_dark_mode %}
+                       bg-gradient-to-br from-cyber-neon-purple/20 to-cyber-neon-primary/20
+                       border-2 border-cyber-neon-purple/30 hover:border-cyber-neon-purple/50
+                       text-cyber-text-primary hover:shadow-neon
+                       {% else %}
+                       bg-gradient-to-br from-purple-50 to-blue-50
+                       border-2 border-purple-200 hover:border-purple-300
+                       text-gray-800 hover:shadow-lg
+                       {% endif %}
+                       rounded-xl p-6 transition-all duration-300 transform hover:scale-105">
+            <div class="flex flex-col items-center space-y-3">
+                <div class="w-12 h-12 rounded-full 
+                           {% if is_dark_mode %}
+                           bg-gradient-to-br from-cyber-neon-purple to-cyber-neon-primary
+                           {% else %}
+                           bg-gradient-to-br from-purple-500 to-blue-500
+                           {% endif %} 
+                           flex items-center justify-center group-hover:animate-pulse">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+                <span class="text-lg font-bold">ماشین حساب</span>
+                <span class="text-sm opacity-75">محاسبه طلا</span>
+            </div>
+        </button>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left Column - Recent Transactions & Quick Stats -->
+        <div class="lg:col-span-1 space-y-6">
+            
+            <!-- Today's Stats Card -->
+            <div class="pos-card
+                        {% if is_dark_mode %}
+                        bg-gradient-to-br from-cyber-bg-surface/80 to-cyber-bg-elevated/80
+                        border border-cyber-neon-primary/20 backdrop-blur-md shadow-cyber
+                        {% else %}
+                        bg-white border border-gray-200 shadow-lg backdrop-blur-sm
+                        {% endif %}
+                        rounded-xl p-6">
+                <h3 class="text-lg font-bold mb-4 
+                          {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                    آمار امروز
+                </h3>
+                
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            تعداد فروش:
+                        </span>
+                        <span class="font-bold persian-numbers
+                                   {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}" 
+                              x-text="todayStats.salesCount">0</span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <span class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            مجموع فروش:
+                        </span>
+                        <span class="font-bold persian-numbers
+                                   {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}" 
+                              x-text="formatCurrency(todayStats.totalSales)">۰ تومان</span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <span class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            وزن طلا فروخته شده:
+                        </span>
+                        <span class="font-bold persian-numbers
+                                   {% if is_dark_mode %}text-cyber-neon-tertiary{% else %}text-orange-600{% endif %}" 
+                              x-text="formatWeight(todayStats.goldWeight)">۰ گرم</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Transactions -->
+            <div class="pos-card
+                        {% if is_dark_mode %}
+                        bg-gradient-to-br from-cyber-bg-surface/80 to-cyber-bg-elevated/80
+                        border border-cyber-neon-primary/20 backdrop-blur-md shadow-cyber
+                        {% else %}
+                        bg-white border border-gray-200 shadow-lg backdrop-blur-sm
+                        {% endif %}
+                        rounded-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold 
+                              {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        آخرین تراکنش‌ها
+                    </h3>
+                    <a href="{% url 'pos:transaction_list' %}" 
+                       class="text-sm 
+                              {% if is_dark_mode %}text-cyber-neon-primary hover:text-cyber-neon-secondary{% else %}text-blue-600 hover:text-blue-800{% endif %} 
+                              transition-colors">
+                        مشاهده همه
+                    </a>
+                </div>
+                
+                <div class="space-y-3" id="recent-transactions">
+                    <div class="text-center py-8 
+                               {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                        <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                        <p>هنوز تراکنشی ثبت نشده است</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Gold Price & Quick Actions -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- Gold Price Display -->
+            <div class="pos-card
+                        {% if is_dark_mode %}
+                        bg-gradient-to-br from-cyber-bg-surface/80 to-cyber-bg-elevated/80
+                        border border-cyber-neon-secondary/30 backdrop-blur-md shadow-cyber
+                        {% else %}
+                        bg-gradient-to-br from-yellow-50 to-orange-50 border border-yellow-200 shadow-lg
+                        {% endif %}
+                        rounded-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold 
+                              {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        قیمت طلا
+                    </h3>
+                    <button @click="refreshGoldPrice()" 
+                            class="p-2 rounded-lg transition-all duration-200
+                                   {% if is_dark_mode %}
+                                   text-cyber-neon-secondary hover:bg-cyber-bg-surface/50
+                                   {% else %}
+                                   text-yellow-600 hover:bg-yellow-100
+                                   {% endif %}">
+                        <svg class="w-5 h-5" :class="{ 'animate-spin': goldPriceLoading }" 
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="text-center p-4 rounded-lg
+                                {% if is_dark_mode %}
+                                bg-cyber-bg-surface/50 border border-cyber-neon-secondary/20
+                                {% else %}
+                                bg-white border border-yellow-200
+                                {% endif %}">
+                        <div class="text-2xl font-bold persian-numbers
+                                   {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-yellow-600{% endif %}" 
+                             x-text="formatCurrency(goldPrices.karat18)">
+                            ۰ تومان
+                        </div>
+                        <div class="text-sm 
+                                   {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            طلای ۱۸ عیار (گرم)
+                        </div>
+                    </div>
+                    
+                    <div class="text-center p-4 rounded-lg
+                                {% if is_dark_mode %}
+                                bg-cyber-bg-surface/50 border border-cyber-neon-secondary/20
+                                {% else %}
+                                bg-white border border-yellow-200
+                                {% endif %}">
+                        <div class="text-2xl font-bold persian-numbers
+                                   {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-yellow-600{% endif %}" 
+                             x-text="formatCurrency(goldPrices.karat21)">
+                            ۰ تومان
+                        </div>
+                        <div class="text-sm 
+                                   {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            طلای ۲۱ عیار (گرم)
+                        </div>
+                    </div>
+                    
+                    <div class="text-center p-4 rounded-lg
+                                {% if is_dark_mode %}
+                                bg-cyber-bg-surface/50 border border-cyber-neon-secondary/20
+                                {% else %}
+                                bg-white border border-yellow-200
+                                {% endif %}">
+                        <div class="text-2xl font-bold persian-numbers
+                                   {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-yellow-600{% endif %}" 
+                             x-text="formatCurrency(goldPrices.karat24)">
+                            ۰ تومان
+                        </div>
+                        <div class="text-sm 
+                                   {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            طلای ۲۴ عیار (گرم)
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4 text-center">
+                    <span class="text-sm 
+                                {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                        آخرین بروزرسانی: 
+                        <span x-text="goldPrices.lastUpdate" class="persian-numbers">
+                            در حال بارگذاری...
+                        </span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Quick Navigation Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <a href="{% url 'pos:transaction_list' %}" 
+                   class="pos-nav-card group
+                          {% if is_dark_mode %}
+                          bg-gradient-to-br from-cyber-bg-surface/80 to-cyber-bg-elevated/80
+                          border border-cyber-neon-primary/20 hover:border-cyber-neon-primary/40
+                          text-cyber-text-primary hover:shadow-neon
+                          {% else %}
+                          bg-white border border-gray-200 hover:border-blue-300
+                          text-gray-800 hover:shadow-lg
+                          {% endif %}
+                          rounded-xl p-4 transition-all duration-300 transform hover:scale-105">
+                    <div class="flex flex-col items-center space-y-2">
+                        <svg class="w-8 h-8 
+                                   {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %} 
+                                   group-hover:animate-pulse" 
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                        <span class="font-medium">تراکنش‌ها</span>
+                    </div>
+                </a>
+
+                <button @click="openSalesHistory()" 
+                        class="pos-nav-card group
+                               {% if is_dark_mode %}
+                               bg-gradient-to-br from-cyber-bg-surface/80 to-cyber-bg-elevated/80
+                               border border-cyber-neon-secondary/20 hover:border-cyber-neon-secondary/40
+                               text-cyber-text-primary hover:shadow-neon
+                               {% else %}
+                               bg-white border border-gray-200 hover:border-green-300
+                               text-gray-800 hover:shadow-lg
+                               {% endif %}
+                               rounded-xl p-4 transition-all duration-300 transform hover:scale-105">
+                    <div class="flex flex-col items-center space-y-2">
+                        <svg class="w-8 h-8 
+                                   {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %} 
+                                   group-hover:animate-pulse" 
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        <span class="font-medium">تاریخچه فروش</span>
+                    </div>
+                </button>
+
+                <button @click="openInventoryManagement()" 
+                        class="pos-nav-card group
+                               {% if is_dark_mode %}
+                               bg-gradient-to-br from-cyber-bg-surface/80 to-cyber-bg-elevated/80
+                               border border-cyber-neon-tertiary/20 hover:border-cyber-neon-tertiary/40
+                               text-cyber-text-primary hover:shadow-neon
+                               {% else %}
+                               bg-white border border-gray-200 hover:border-orange-300
+                               text-gray-800 hover:shadow-lg
+                               {% endif %}
+                               rounded-xl p-4 transition-all duration-300 transform hover:scale-105">
+                    <div class="flex flex-col items-center space-y-2">
+                        <svg class="w-8 h-8 
+                                   {% if is_dark_mode %}text-cyber-neon-tertiary{% else %}text-orange-600{% endif %} 
+                                   group-hover:animate-pulse" 
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                        </svg>
+                        <span class="font-medium">موجودی انبار</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals and Overlays -->
+{% include "pos/components/customer_lookup_modal.html" %}
+{% include "pos/components/inventory_search_modal.html" %}
+{% include "pos/components/calculator_modal.html" %}
+
+<script>
+function posMainData() {
+    return {
+        todayStats: {
+            salesCount: 0,
+            totalSales: 0,
+            goldWeight: 0
+        },
+        goldPrices: {
+            karat18: 0,
+            karat21: 0,
+            karat24: 0,
+            lastUpdate: 'در حال بارگذاری...'
+        },
+        goldPriceLoading: false,
+        
+        init() {
+            this.loadTodayStats();
+            this.loadGoldPrices();
+            this.loadRecentTransactions();
+            
+            // Auto-refresh gold prices every 5 minutes
+            setInterval(() => {
+                this.loadGoldPrices();
+            }, 5 * 60 * 1000);
+        },
+        
+        async loadTodayStats() {
+            try {
+                const response = await fetch('/pos/api/today-stats/');
+                const data = await response.json();
+                if (data.success) {
+                    this.todayStats = data.stats;
+                }
+            } catch (error) {
+                console.error('Error loading today stats:', error);
+            }
+        },
+        
+        async loadGoldPrices() {
+            this.goldPriceLoading = true;
+            try {
+                const response = await fetch('{% url "pos:api_gold_price" %}');
+                const data = await response.json();
+                if (data.success) {
+                    this.goldPrices.karat18 = parseFloat(data.price_data.price_per_gram);
+                    this.goldPrices.karat21 = this.goldPrices.karat18 * 1.167; // 21/18 ratio
+                    this.goldPrices.karat24 = this.goldPrices.karat18 * 1.333; // 24/18 ratio
+                    this.goldPrices.lastUpdate = new Date(data.price_data.timestamp).toLocaleString('fa-IR');
+                }
+            } catch (error) {
+                console.error('Error loading gold prices:', error);
+            } finally {
+                this.goldPriceLoading = false;
+            }
+        },
+        
+        async loadRecentTransactions() {
+            try {
+                const response = await fetch('/pos/api/recent-transactions/');
+                const data = await response.json();
+                if (data.success) {
+                    this.renderRecentTransactions(data.transactions);
+                }
+            } catch (error) {
+                console.error('Error loading recent transactions:', error);
+            }
+        },
+        
+        renderRecentTransactions(transactions) {
+            const container = document.getElementById('recent-transactions');
+            if (transactions.length === 0) {
+                return; // Keep the empty state
+            }
+            
+            container.innerHTML = transactions.map(transaction => `
+                <div class="flex items-center justify-between p-3 rounded-lg 
+                           {% if is_dark_mode %}
+                           bg-cyber-bg-surface/30 border border-cyber-neon-primary/10
+                           {% else %}
+                           bg-gray-50 border border-gray-100
+                           {% endif %}">
+                    <div>
+                        <div class="font-medium 
+                                   {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                            ${transaction.transaction_number}
+                        </div>
+                        <div class="text-sm 
+                                   {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            ${transaction.customer_name || 'مشتری نقدی'}
+                        </div>
+                    </div>
+                    <div class="text-left">
+                        <div class="font-bold persian-numbers
+                                   {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}">
+                            ${this.formatCurrency(transaction.total_amount)}
+                        </div>
+                        <div class="text-sm 
+                                   {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                            ${transaction.transaction_date_shamsi}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        },
+        
+        startNewSale() {
+            window.location.href = '{% url "pos:transaction_create" %}';
+        },
+        
+        openCustomerLookup() {
+            // Open customer lookup modal
+            if (window.POSModals) {
+                window.POSModals.openCustomerLookup();
+            }
+        },
+        
+        openInventorySearch() {
+            // Open inventory search modal
+            if (window.POSModals) {
+                window.POSModals.openInventorySearch();
+            }
+        },
+        
+        openCalculator() {
+            // Open calculator modal
+            if (window.POSModals) {
+                window.POSModals.openCalculator();
+            }
+        },
+        
+        openSalesHistory() {
+            window.location.href = '{% url "pos:daily_sales_report" %}';
+        },
+        
+        openInventoryManagement() {
+            window.location.href = '/inventory/';
+        },
+        
+        refreshGoldPrice() {
+            this.loadGoldPrices();
+        },
+        
+        formatCurrency(amount) {
+            if (!amount) return '۰ تومان';
+            return new Intl.NumberFormat('fa-IR').format(amount) + ' تومان';
+        },
+        
+        formatWeight(weight) {
+            if (!weight) return '۰ گرم';
+            return new Intl.NumberFormat('fa-IR', {
+                minimumFractionDigits: 3,
+                maximumFractionDigits: 3
+            }).format(weight) + ' گرم';
+        }
+    }
+}
+</script>
+{% endblock %}

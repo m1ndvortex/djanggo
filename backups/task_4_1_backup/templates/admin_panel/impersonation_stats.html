@@ -1,0 +1,582 @@
+{% extends "admin_panel/base_admin.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Impersonation Statistics" %} - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.stats-card {
+    background: white;
+    dark:bg-cyber-bg-surface;
+    border: 1px solid #e5e7eb;
+    dark:border-cyber-neon-primary/20;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    dark:box-shadow: 0 4px 12px rgba(0, 212, 255, 0.1);
+}
+
+.metric-card {
+    background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%);
+    dark:background: linear-gradient(145deg, rgba(0,212,255,0.08) 0%, rgba(0,255,136,0.04) 100%);
+    border: 1px solid #e2e8f0;
+    dark:border: 1px solid rgba(0, 212, 255, 0.2);
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.15), 0 0 20px rgba(0, 212, 255, 0.1);
+}
+
+.metric-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #1e293b;
+    dark:color: #00D4FF;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+.metric-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #64748b;
+    dark:color: #B8BCC8;
+    margin-top: 0.5rem;
+}
+
+.chart-container {
+    background: white;
+    dark:bg-cyber-bg-surface;
+    border: 1px solid #e5e7eb;
+    dark:border-cyber-neon-primary/20;
+    border-radius: 8px;
+    padding: 1.5rem;
+    height: 400px;
+}
+
+.table-container {
+    background: white;
+    dark:bg-cyber-bg-surface;
+    border: 1px solid #e5e7eb;
+    dark:border-cyber-neon-primary/20;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table-row {
+    border-bottom: 1px solid #f3f4f6;
+    dark:border-cyber-bg-elevated;
+    transition: background-color 0.2s;
+}
+
+.table-row:hover {
+    background: #f9fafb;
+    dark:bg-cyber-bg-elevated;
+}
+
+.cyber-card-stats {
+    background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.cyber-neon-text {
+    color: #00D4FF;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+.cyber-metric-card {
+    background: linear-gradient(145deg, rgba(0,212,255,0.08) 0%, rgba(0,255,136,0.04) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.cyber-metric-card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.15), 0 0 20px rgba(0, 212, 255, 0.1);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Page Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary">
+                {% trans "Impersonation Statistics" %}
+            </h1>
+            <p class="text-gray-600 dark:text-cyber-text-secondary mt-1">
+                {% trans "Analytics and insights for admin impersonation activities" %}
+            </p>
+        </div>
+        <div class="flex space-x-4 space-x-reverse">
+            <a href="{% url 'admin_panel:user_impersonation' %}" 
+               class="bg-blue-600 dark:bg-cyber-neon-primary text-white dark:text-cyber-bg-primary px-4 py-2 rounded hover:bg-blue-700 dark:hover:bg-cyber-neon-primary/80 transition-colors">
+                {% trans "Back to Impersonation" %}
+            </a>
+            <a href="{% url 'admin_panel:impersonation_audit' %}" 
+               class="bg-green-600 dark:bg-cyber-neon-secondary text-white dark:text-cyber-bg-primary px-4 py-2 rounded hover:bg-green-700 dark:hover:bg-cyber-neon-secondary/80 transition-colors">
+                {% trans "View Audit Log" %}
+            </a>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="metric-card dark:cyber-metric-card">
+            <div class="metric-value persian-numbers">{{ total_sessions }}</div>
+            <div class="metric-label">{% trans "Total Sessions" %}</div>
+        </div>
+        
+        <div class="metric-card dark:cyber-metric-card">
+            <div class="metric-value persian-numbers">{{ active_sessions }}</div>
+            <div class="metric-label">{% trans "Active Sessions" %}</div>
+        </div>
+        
+        <div class="metric-card dark:cyber-metric-card">
+            <div class="metric-value persian-numbers">{{ suspicious_sessions }}</div>
+            <div class="metric-label">{% trans "Suspicious Sessions" %}</div>
+        </div>
+        
+        <div class="metric-card dark:cyber-metric-card">
+            <div class="metric-value persian-numbers">
+                {% if avg_duration %}
+                    {{ avg_duration|floatformat:0 }}m
+                {% else %}
+                    -
+                {% endif %}
+            </div>
+            <div class="metric-label">{% trans "Avg Duration" %}</div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Sessions by Admin Chart -->
+        <div class="chart-container dark:cyber-card-stats">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">
+                {% trans "Sessions by Admin User" %}
+            </h3>
+            <canvas id="adminChart" width="400" height="300"></canvas>
+        </div>
+
+        <!-- Sessions by Tenant Chart -->
+        <div class="chart-container dark:cyber-card-stats">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">
+                {% trans "Sessions by Tenant" %}
+            </h3>
+            <canvas id="tenantChart" width="400" height="300"></canvas>
+        </div>
+    </div>
+
+    <!-- Data Tables Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Top Admins Table -->
+        <div class="stats-card dark:cyber-card-stats">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">
+                {% trans "Most Active Admins" %}
+            </h3>
+            
+            <div class="table-container">
+                <table class="min-w-full">
+                    <thead class="bg-gray-50 dark:bg-cyber-bg-secondary">
+                        <tr>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                                {% trans "Admin" %}
+                            </th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                                {% trans "Sessions" %}
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-cyber-bg-surface divide-y divide-gray-200 dark:divide-cyber-bg-elevated">
+                        {% for admin in sessions_by_admin %}
+                        <tr class="table-row">
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-cyber-text-primary">
+                                {{ admin.admin_username }}
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-cyber-text-secondary persian-numbers">
+                                {{ admin.count }}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="2" class="px-4 py-8 text-center text-gray-500 dark:text-cyber-text-muted">
+                                {% trans "No data available" %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Top Tenants Table -->
+        <div class="stats-card dark:cyber-card-stats">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">
+                {% trans "Most Impersonated Tenants" %}
+            </h3>
+            
+            <div class="table-container">
+                <table class="min-w-full">
+                    <thead class="bg-gray-50 dark:bg-cyber-bg-secondary">
+                        <tr>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                                {% trans "Tenant" %}
+                            </th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                                {% trans "Sessions" %}
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-cyber-bg-surface divide-y divide-gray-200 dark:divide-cyber-bg-elevated">
+                        {% for tenant in sessions_by_tenant %}
+                        <tr class="table-row">
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-cyber-text-primary">
+                                {{ tenant.tenant_domain }}
+                                <div class="text-xs text-gray-500 dark:text-cyber-text-muted">
+                                    {{ tenant.tenant_schema }}
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-cyber-text-secondary persian-numbers">
+                                {{ tenant.count }}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="2" class="px-4 py-8 text-center text-gray-500 dark:text-cyber-text-muted">
+                                {% trans "No data available" %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Sessions -->
+    <div class="stats-card dark:cyber-card-stats">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">
+            {% trans "Recent Impersonation Sessions" %}
+        </h3>
+        
+        <div class="table-container">
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead class="bg-gray-50 dark:bg-cyber-bg-secondary">
+                        <tr>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                                {% trans "Admin → Target" %}
+                            </th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                                {% trans "Tenant" %}
+                            </th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                                {% trans "Start Time" %}
+                            </th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                                {% trans "Duration" %}
+                            </th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                                {% trans "Status" %}
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-cyber-bg-surface divide-y divide-gray-200 dark:divide-cyber-bg-elevated">
+                        {% for session in recent_sessions %}
+                        <tr class="table-row {% if session.is_suspicious %}bg-yellow-50 dark:bg-yellow-900/20{% endif %}">
+                            <td class="px-4 py-3 text-sm">
+                                <div class="font-medium text-gray-900 dark:text-cyber-text-primary">
+                                    {{ session.admin_username }}
+                                </div>
+                                <div class="text-gray-500 dark:text-cyber-text-muted">
+                                    ↓ {{ session.target_username }}
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-900 dark:text-cyber-text-primary">
+                                {{ session.tenant_domain }}
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-cyber-text-secondary">
+                                {{ session.start_time|date:"Y-m-d H:i" }}
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-cyber-text-secondary">
+                                {% if session.duration %}
+                                    {{ session.duration }}
+                                {% else %}
+                                    <span class="text-green-600 dark:text-cyber-neon-secondary">{% trans "Active" %}</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-sm">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                    {% if session.status == 'active' %}bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400
+                                    {% elif session.status == 'ended' %}bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400
+                                    {% elif session.status == 'expired' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400
+                                    {% elif session.status == 'terminated' %}bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400
+                                    {% endif %}">
+                                    {% if session.status == 'active' %}{% trans "Active" %}
+                                    {% elif session.status == 'ended' %}{% trans "Ended" %}
+                                    {% elif session.status == 'expired' %}{% trans "Expired" %}
+                                    {% elif session.status == 'terminated' %}{% trans "Terminated" %}
+                                    {% else %}{{ session.status }}{% endif %}
+                                </span>
+                                
+                                {% if session.is_suspicious %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-500/20 text-yellow-800 dark:text-yellow-400 mr-2">
+                                    <svg class="w-3 h-3 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                    </svg>
+                                    {% trans "Suspicious" %}
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="px-4 py-8 text-center text-gray-500 dark:text-cyber-text-muted">
+                                {% trans "No recent sessions found" %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Options -->
+    <div class="stats-card dark:cyber-card-stats">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">
+            {% trans "Export Statistics" %}
+        </h3>
+        
+        <div class="flex space-x-4 space-x-reverse">
+            <button onclick="exportStats('json')" 
+                    class="bg-blue-600 dark:bg-cyber-neon-primary text-white dark:text-cyber-bg-primary px-4 py-2 rounded hover:bg-blue-700 dark:hover:bg-cyber-neon-primary/80 transition-colors">
+                {% trans "Export as JSON" %}
+            </button>
+            
+            <button onclick="exportStats('csv')" 
+                    class="bg-green-600 dark:bg-cyber-neon-secondary text-white dark:text-cyber-bg-primary px-4 py-2 rounded hover:bg-green-700 dark:hover:bg-cyber-neon-secondary/80 transition-colors">
+                {% trans "Export as CSV" %}
+            </button>
+            
+            <button onclick="generateReport()" 
+                    class="bg-purple-600 dark:bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-700 dark:hover:bg-purple-600 transition-colors">
+                {% trans "Generate Report" %}
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Chart.js configuration
+const chartColors = {
+    primary: '#3b82f6',
+    secondary: '#10b981',
+    tertiary: '#8b5cf6',
+    warning: '#f59e0b',
+    danger: '#ef4444',
+    cyber: {
+        primary: '#00D4FF',
+        secondary: '#00FF88',
+        tertiary: '#FF6B35',
+        warning: '#FFB800',
+        danger: '#FF4757',
+        purple: '#A55EEA'
+    }
+};
+
+// Check if dark mode is active
+const isDarkMode = document.documentElement.classList.contains('dark');
+const colors = isDarkMode ? chartColors.cyber : chartColors;
+
+// Admin Sessions Chart
+const adminCtx = document.getElementById('adminChart').getContext('2d');
+const adminChart = new Chart(adminCtx, {
+    type: 'doughnut',
+    data: {
+        labels: [{% for admin in sessions_by_admin %}'{{ admin.admin_username }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for admin in sessions_by_admin %}{{ admin.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            backgroundColor: [
+                colors.primary,
+                colors.secondary,
+                colors.tertiary,
+                colors.warning,
+                colors.danger,
+                colors.purple || '#8b5cf6'
+            ],
+            borderWidth: isDarkMode ? 2 : 1,
+            borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.8)'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    color: isDarkMode ? '#FFFFFF' : '#374151',
+                    padding: 20,
+                    usePointStyle: true
+                }
+            }
+        }
+    }
+});
+
+// Tenant Sessions Chart
+const tenantCtx = document.getElementById('tenantChart').getContext('2d');
+const tenantChart = new Chart(tenantCtx, {
+    type: 'bar',
+    data: {
+        labels: [{% for tenant in sessions_by_tenant %}'{{ tenant.tenant_domain }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            label: '{% trans "Sessions" %}',
+            data: [{% for tenant in sessions_by_tenant %}{{ tenant.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            backgroundColor: colors.primary,
+            borderColor: colors.primary,
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    color: isDarkMode ? '#B8BCC8' : '#6b7280'
+                },
+                grid: {
+                    color: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                }
+            },
+            x: {
+                ticks: {
+                    color: isDarkMode ? '#B8BCC8' : '#6b7280',
+                    maxRotation: 45
+                },
+                grid: {
+                    color: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                }
+            }
+        }
+    }
+});
+
+function exportStats(format) {
+    const statsData = {
+        summary: {
+            total_sessions: {{ total_sessions }},
+            active_sessions: {{ active_sessions }},
+            suspicious_sessions: {{ suspicious_sessions }},
+            avg_duration: '{{ avg_duration|default:"" }}'
+        },
+        sessions_by_admin: [
+            {% for admin in sessions_by_admin %}
+            {
+                admin_username: '{{ admin.admin_username }}',
+                count: {{ admin.count }}
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        sessions_by_tenant: [
+            {% for tenant in sessions_by_tenant %}
+            {
+                tenant_domain: '{{ tenant.tenant_domain }}',
+                tenant_schema: '{{ tenant.tenant_schema }}',
+                count: {{ tenant.count }}
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        recent_sessions: [
+            {% for session in recent_sessions %}
+            {
+                session_id: '{{ session.session_id }}',
+                admin_username: '{{ session.admin_username }}',
+                target_username: '{{ session.target_username }}',
+                tenant_domain: '{{ session.tenant_domain }}',
+                start_time: '{{ session.start_time|date:"c" }}',
+                duration: '{{ session.duration|default:"" }}',
+                status: '{{ session.status }}',
+                is_suspicious: {{ session.is_suspicious|yesno:"true,false" }}
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ]
+    };
+    
+    if (format === 'json') {
+        const dataStr = JSON.stringify(statsData, null, 2);
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `impersonation_stats_${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+    } else if (format === 'csv') {
+        let csv = 'Metric,Value\n';
+        csv += `Total Sessions,${statsData.summary.total_sessions}\n`;
+        csv += `Active Sessions,${statsData.summary.active_sessions}\n`;
+        csv += `Suspicious Sessions,${statsData.summary.suspicious_sessions}\n`;
+        csv += `Average Duration,${statsData.summary.avg_duration}\n\n`;
+        
+        csv += 'Admin Username,Session Count\n';
+        statsData.sessions_by_admin.forEach(admin => {
+            csv += `${admin.admin_username},${admin.count}\n`;
+        });
+        
+        csv += '\nTenant Domain,Session Count\n';
+        statsData.sessions_by_tenant.forEach(tenant => {
+            csv += `${tenant.tenant_domain},${tenant.count}\n`;
+        });
+        
+        const dataBlob = new Blob([csv], {type: 'text/csv'});
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `impersonation_stats_${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+    }
+    
+    ZargarAdmin.showMessage('{% trans "Statistics exported successfully" %}', 'success');
+}
+
+function generateReport() {
+    ZargarAdmin.showMessage('{% trans "Generating comprehensive report..." %}', 'info');
+    
+    // In a real implementation, this would trigger a backend report generation
+    setTimeout(() => {
+        ZargarAdmin.showMessage('{% trans "Report generation feature coming soon" %}', 'info');
+    }, 2000);
+}
+
+// Auto-refresh statistics every 5 minutes
+setInterval(function() {
+    if ({{ active_sessions }} > 0) {
+        location.reload();
+    }
+}, 300000);
+</script>
+{% endblock %}

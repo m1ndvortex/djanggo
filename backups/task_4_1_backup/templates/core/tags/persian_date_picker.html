@@ -1,0 +1,228 @@
+{% load persian_tags %}
+<div class="persian-date-picker-container" dir="rtl">
+    <div class="relative">
+        <input 
+            type="text" 
+            name="{{ field_name }}" 
+            id="{{ field_id }}"
+            value="{{ field_value|default:'' }}"
+            placeholder="۱۴۰۳/۰۱/۰۱"
+            class="persian-date-input w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-right"
+            autocomplete="off"
+            data-persian-date-picker
+        >
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+        </div>
+    </div>
+    
+    <!-- Persian Calendar Widget (Hidden by default) -->
+    <div class="persian-calendar-widget hidden absolute z-50 mt-1 bg-white border border-gray-300 rounded-md shadow-lg p-4" data-calendar-widget>
+        <div class="persian-calendar-header flex justify-between items-center mb-4">
+            <button type="button" class="persian-calendar-prev-year text-gray-600 hover:text-gray-800">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+            </button>
+            <button type="button" class="persian-calendar-prev-month text-gray-600 hover:text-gray-800">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </button>
+            
+            <div class="persian-calendar-title text-center">
+                <span class="persian-calendar-month-year font-semibold text-gray-800"></span>
+            </div>
+            
+            <button type="button" class="persian-calendar-next-month text-gray-600 hover:text-gray-800">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+            </button>
+            <button type="button" class="persian-calendar-next-year text-gray-600 hover:text-gray-800">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="persian-calendar-days-header grid grid-cols-7 gap-1 mb-2">
+            <div class="text-center text-xs font-medium text-gray-600 p-1">ش</div>
+            <div class="text-center text-xs font-medium text-gray-600 p-1">ی</div>
+            <div class="text-center text-xs font-medium text-gray-600 p-1">د</div>
+            <div class="text-center text-xs font-medium text-gray-600 p-1">س</div>
+            <div class="text-center text-xs font-medium text-gray-600 p-1">چ</div>
+            <div class="text-center text-xs font-medium text-gray-600 p-1">پ</div>
+            <div class="text-center text-xs font-medium text-gray-600 p-1">ج</div>
+        </div>
+        
+        <div class="persian-calendar-days grid grid-cols-7 gap-1">
+            <!-- Days will be populated by JavaScript -->
+        </div>
+        
+        <div class="persian-calendar-footer mt-4 flex justify-between">
+            <button type="button" class="persian-calendar-today text-sm text-blue-600 hover:text-blue-800">امروز</button>
+            <button type="button" class="persian-calendar-clear text-sm text-gray-600 hover:text-gray-800">پاک کردن</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.persian-date-picker-container {
+    position: relative;
+    display: inline-block;
+}
+
+.persian-date-input {
+    font-family: 'Vazir', 'Tahoma', sans-serif;
+    direction: rtl;
+    text-align: right;
+}
+
+.persian-calendar-widget {
+    min-width: 280px;
+    font-family: 'Vazir', 'Tahoma', sans-serif;
+    direction: rtl;
+}
+
+.persian-calendar-day {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.persian-calendar-day:hover {
+    background-color: #f3f4f6;
+}
+
+.persian-calendar-day.selected {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.persian-calendar-day.today {
+    background-color: #fef3c7;
+    color: #92400e;
+    font-weight: bold;
+}
+
+.persian-calendar-day.other-month {
+    color: #d1d5db;
+}
+
+.persian-calendar-day.disabled {
+    color: #d1d5db;
+    cursor: not-allowed;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Persian date picker functionality
+    const dateInputs = document.querySelectorAll('[data-persian-date-picker]');
+    
+    dateInputs.forEach(function(input) {
+        const container = input.closest('.persian-date-picker-container');
+        const widget = container.querySelector('[data-calendar-widget]');
+        
+        // Show calendar on input focus
+        input.addEventListener('focus', function() {
+            widget.classList.remove('hidden');
+            updateCalendar();
+        });
+        
+        // Hide calendar when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!container.contains(e.target)) {
+                widget.classList.add('hidden');
+            }
+        });
+        
+        // Persian number input formatting
+        input.addEventListener('input', function(e) {
+            let value = e.target.value;
+            
+            // Convert English digits to Persian
+            const englishDigits = '0123456789';
+            const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+            
+            for (let i = 0; i < englishDigits.length; i++) {
+                value = value.replace(new RegExp(englishDigits[i], 'g'), persianDigits[i]);
+            }
+            
+            // Format as date (YYYY/MM/DD)
+            value = value.replace(/[^\d۰-۹\/]/g, '');
+            
+            if (value.length > 4 && value.indexOf('/') === -1) {
+                value = value.substring(0, 4) + '/' + value.substring(4);
+            }
+            if (value.length > 7 && value.lastIndexOf('/') === 4) {
+                value = value.substring(0, 7) + '/' + value.substring(7);
+            }
+            
+            e.target.value = value;
+        });
+        
+        function updateCalendar() {
+            // This would be implemented with a Persian calendar library
+            // For now, we'll show a placeholder
+            const daysContainer = widget.querySelector('.persian-calendar-days');
+            const monthYearSpan = widget.querySelector('.persian-calendar-month-year');
+            
+            // Set current Persian month/year
+            const now = new Date();
+            // This would use jdatetime or similar library for accurate conversion
+            monthYearSpan.textContent = 'مهر ۱۴۰۳';
+            
+            // Generate calendar days (simplified)
+            daysContainer.innerHTML = '';
+            for (let i = 1; i <= 30; i++) {
+                const dayElement = document.createElement('div');
+                dayElement.className = 'persian-calendar-day text-sm text-center p-1 cursor-pointer hover:bg-gray-100 rounded';
+                dayElement.textContent = convertToPersianDigits(i.toString());
+                
+                dayElement.addEventListener('click', function() {
+                    const selectedDay = convertToPersianDigits(i.toString().padStart(2, '0'));
+                    input.value = `۱۴۰۳/۰۷/${selectedDay}`;
+                    widget.classList.add('hidden');
+                });
+                
+                daysContainer.appendChild(dayElement);
+            }
+        }
+        
+        function convertToPersianDigits(str) {
+            const englishDigits = '0123456789';
+            const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+            
+            for (let i = 0; i < englishDigits.length; i++) {
+                str = str.replace(new RegExp(englishDigits[i], 'g'), persianDigits[i]);
+            }
+            
+            return str;
+        }
+        
+        // Today button
+        const todayButton = widget.querySelector('.persian-calendar-today');
+        todayButton.addEventListener('click', function() {
+            // Set today's Persian date
+            input.value = '{{ current_persian_date }}';
+            widget.classList.add('hidden');
+        });
+        
+        // Clear button
+        const clearButton = widget.querySelector('.persian-calendar-clear');
+        clearButton.addEventListener('click', function() {
+            input.value = '';
+            widget.classList.add('hidden');
+        });
+    });
+});
+</script>

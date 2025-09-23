@@ -1,0 +1,306 @@
+{% extends 'base_rtl.html' %}
+{% load static %}
+{% load persian_tags %}
+
+{% block title %}حساب‌های بانکی - زرگر{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/accounting-tables.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-6">
+    <!-- Header Section -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
+        <div class="mb-4 lg:mb-0">
+            <h1 class="text-3xl font-bold 
+                       {% if is_dark_mode %}text-cyber-text-primary{% else %}text-light-text-primary{% endif %}">
+                حساب‌های بانکی
+            </h1>
+            <p class="mt-2 
+                     {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-light-text-secondary{% endif %}">
+                مدیریت حساب‌های بانکی و تراکنش‌های مالی
+            </p>
+        </div>
+        
+        <div class="flex flex-wrap gap-3">
+            <a href="{% url 'accounting:bank_accounts_create' %}" 
+               class="btn-primary-cyber flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                حساب بانکی جدید
+            </a>
+        </div>
+    </div>
+
+    <!-- Bank Accounts Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for bank_account in bank_accounts %}
+        <div class="card-cyber">
+            <!-- Bank Account Header -->
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="p-3 rounded-lg 
+                               {% if is_dark_mode %}bg-cyber-neon-primary/10{% else %}bg-blue-100{% endif %}">
+                        <svg class="w-6 h-6 
+                                   {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}" 
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold 
+                                  {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                            {{ bank_account.account_name }}
+                        </h3>
+                        <p class="text-sm 
+                                 {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            {{ bank_account.get_bank_name_display }}
+                        </p>
+                    </div>
+                </div>
+                
+                {% if bank_account.is_default %}
+                <span class="badge-cyber badge-success">
+                    پیش‌فرض
+                </span>
+                {% endif %}
+            </div>
+
+            <!-- Account Details -->
+            <div class="space-y-3 mb-6">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm 
+                                {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                        شماره حساب:
+                    </span>
+                    <span class="font-mono text-sm 
+                                {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        {{ bank_account.account_number }}
+                    </span>
+                </div>
+                
+                {% if bank_account.iban %}
+                <div class="flex justify-between items-center">
+                    <span class="text-sm 
+                                {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                        شبا:
+                    </span>
+                    <span class="font-mono text-xs 
+                                {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        {{ bank_account.iban }}
+                    </span>
+                </div>
+                {% endif %}
+                
+                <div class="flex justify-between items-center">
+                    <span class="text-sm 
+                                {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                        نوع حساب:
+                    </span>
+                    <span class="badge-cyber badge-info">
+                        {{ bank_account.get_account_type_display }}
+                    </span>
+                </div>
+                
+                <div class="flex justify-between items-center">
+                    <span class="text-sm 
+                                {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                        شعبه:
+                    </span>
+                    <span class="text-sm 
+                                {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                        {{ bank_account.bank_branch }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Balance Information -->
+            <div class="border-t pt-4 mb-6 
+                       {% if is_dark_mode %}border-cyber-border-glass{% else %}border-gray-200{% endif %}">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="text-center">
+                        <p class="text-sm 
+                                 {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            مانده جاری
+                        </p>
+                        <p class="text-lg font-bold persian-numbers
+                                 {% if bank_account.current_balance >= 0 %}
+                                     {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}
+                                 {% else %}
+                                     {% if is_dark_mode %}text-cyber-neon-danger{% else %}text-red-600{% endif %}
+                                 {% endif %}">
+                            {{ bank_account.current_balance|persian_currency }}
+                        </p>
+                    </div>
+                    
+                    <div class="text-center">
+                        <p class="text-sm 
+                                 {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                            مانده قابل برداشت
+                        </p>
+                        <p class="text-lg font-bold persian-numbers
+                                 {% if bank_account.available_balance >= 0 %}
+                                     {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}
+                                 {% else %}
+                                     {% if is_dark_mode %}text-cyber-neon-danger{% else %}text-red-600{% endif %}
+                                 {% endif %}">
+                            {{ bank_account.available_balance|persian_currency }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <a href="{% url 'accounting:bank_accounts_detail' bank_account.pk %}" 
+                       class="btn-icon-cyber" 
+                       title="جزئیات">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                    </a>
+                    <a href="{% url 'accounting:bank_accounts_edit' bank_account.pk %}" 
+                       class="btn-icon-cyber" 
+                       title="ویرایش">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                    </a>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full 
+                                {% if bank_account.is_active %}
+                                    {% if is_dark_mode %}bg-cyber-neon-secondary{% else %}bg-green-500{% endif %}
+                                {% else %}
+                                    {% if is_dark_mode %}bg-cyber-neon-danger{% else %}bg-red-500{% endif %}
+                                {% endif %}">
+                    </span>
+                    <span class="text-xs 
+                                {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                        {% if bank_account.is_active %}فعال{% else %}غیرفعال{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <!-- Empty State -->
+        <div class="col-span-full">
+            <div class="card-cyber text-center py-12">
+                <svg class="mx-auto h-16 w-16 
+                           {% if is_dark_mode %}text-cyber-text-muted{% else %}text-gray-400{% endif %}" 
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                </svg>
+                <h3 class="mt-4 text-lg font-medium 
+                          {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                    هیچ حساب بانکی یافت نشد
+                </h3>
+                <p class="mt-2 text-sm 
+                         {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                    هنوز حساب بانکی‌ای ایجاد نشده است. اولین حساب بانکی خود را ایجاد کنید.
+                </p>
+                <div class="mt-6">
+                    <a href="{% url 'accounting:bank_accounts_create' %}" 
+                       class="btn-primary-cyber">
+                        ایجاد حساب بانکی جدید
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Summary Statistics -->
+    {% if bank_accounts %}
+    <div class="mt-8">
+        <div class="card-cyber">
+            <h3 class="text-lg font-semibold mb-4 
+                      {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                خلاصه حساب‌های بانکی
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <p class="text-sm 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                        تعداد کل حساب‌ها
+                    </p>
+                    <p class="text-2xl font-bold persian-numbers
+                             {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}">
+                        {{ bank_accounts|length }}
+                    </p>
+                </div>
+                
+                <div class="text-center">
+                    <p class="text-sm 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                        حساب‌های فعال
+                    </p>
+                    <p class="text-2xl font-bold persian-numbers
+                             {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}">
+                        {{ bank_accounts|active_count }}
+                    </p>
+                </div>
+                
+                <div class="text-center">
+                    <p class="text-sm 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                        مجموع مانده
+                    </p>
+                    <p class="text-2xl font-bold persian-numbers
+                             {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}">
+                        {{ bank_accounts|sum_balance|persian_currency }}
+                    </p>
+                </div>
+                
+                <div class="text-center">
+                    <p class="text-sm 
+                             {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
+                        قابل برداشت
+                    </p>
+                    <p class="text-2xl font-bold persian-numbers
+                             {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}">
+                        {{ bank_accounts|sum_available|persian_currency }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Persian number formatting
+    const persianElements = document.querySelectorAll('.persian-numbers');
+    persianElements.forEach(element => {
+        if (window.PersianNumbers) {
+            element.textContent = window.PersianNumbers.toPersian(element.textContent);
+        }
+    });
+    
+    // Add card hover effects for cybersecurity theme
+    if (document.body.classList.contains('dark')) {
+        const cards = document.querySelectorAll('.card-cyber');
+        cards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+                this.style.boxShadow = '0 16px 50px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.05)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.03)';
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

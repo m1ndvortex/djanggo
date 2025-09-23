@@ -1,0 +1,429 @@
+{% load i18n %}
+
+<!-- Schedule Notification Modal -->
+<div class="modal fade" id="scheduleNotificationModal" tabindex="-1" aria-labelledby="scheduleNotificationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="scheduleNotificationModalLabel">{% trans "Schedule Notification" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="scheduleNotificationForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="scheduleTemplateType" class="form-label">{% trans "Template Type" %}</label>
+                                <select class="form-select" id="scheduleTemplateType" name="template_type" required>
+                                    <option value="">{% trans "Select template type" %}</option>
+                                    <option value="payment_reminder">{% trans "Payment Reminder" %}</option>
+                                    <option value="appointment_reminder">{% trans "Appointment Reminder" %}</option>
+                                    <option value="birthday_greeting">{% trans "Birthday Greeting" %}</option>
+                                    <option value="special_offer">{% trans "Special Offer" %}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="scheduleRecipientType" class="form-label">{% trans "Recipient Type" %}</label>
+                                <select class="form-select" id="scheduleRecipientType" name="recipient_type" required>
+                                    <option value="customer">{% trans "Customer" %}</option>
+                                    <option value="user">{% trans "User" %}</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="scheduleRecipientId" class="form-label">{% trans "Recipient" %}</label>
+                        <select class="form-select" id="scheduleRecipientId" name="recipient_id" required>
+                            <option value="">{% trans "Select recipient" %}</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Scheduling Options -->
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h6 class="mb-0">{% trans "Schedule Settings" %}</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="scheduleDate" class="form-label">{% trans "Date" %}</label>
+                                        <input type="date" class="form-control" id="scheduleDate" name="schedule_date" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="scheduleTime" class="form-label">{% trans "Time" %}</label>
+                                        <input type="time" class="form-control" id="scheduleTime" name="schedule_time" required>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">{% trans "Quick Schedule Options" %}</label>
+                                <div class="btn-group d-block" role="group">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm me-2 mb-2" onclick="setQuickSchedule(1, 'hours')">
+                                        {% trans "1 Hour Later" %}
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm me-2 mb-2" onclick="setQuickSchedule(3, 'hours')">
+                                        {% trans "3 Hours Later" %}
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm me-2 mb-2" onclick="setQuickSchedule(1, 'days')">
+                                        {% trans "Tomorrow" %}
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm me-2 mb-2" onclick="setQuickSchedule(7, 'days')">
+                                        {% trans "Next Week" %}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Delivery Methods -->
+                    <div class="mb-3">
+                        <label class="form-label">{% trans "Delivery Methods" %}</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="scheduleSms" name="delivery_methods" value="sms" checked>
+                            <label class="form-check-label" for="scheduleSms">
+                                <i class="fas fa-sms me-2"></i>{% trans "SMS" %}
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="scheduleEmail" name="delivery_methods" value="email">
+                            <label class="form-check-label" for="scheduleEmail">
+                                <i class="fas fa-envelope me-2"></i>{% trans "Email" %}
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Context Variables -->
+                    <div id="scheduleContextVariables" class="mb-3" style="display: none;">
+                        <label class="form-label">{% trans "Message Variables" %}</label>
+                        <div class="row" id="scheduleContextFields">
+                            <!-- Dynamic context fields will be added here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Preview -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">{% trans "Schedule Summary" %}</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>{% trans "Template:" %}</strong>
+                                    <span id="scheduleSummaryTemplate">{% trans "Not selected" %}</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>{% trans "Recipient:" %}</strong>
+                                    <span id="scheduleSummaryRecipient">{% trans "Not selected" %}</span>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <strong>{% trans "Scheduled for:" %}</strong>
+                                    <span id="scheduleSummaryDateTime">{% trans "Not set" %}</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>{% trans "Delivery:" %}</strong>
+                                    <span id="scheduleSummaryDelivery">{% trans "Not selected" %}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                <button type="button" class="btn btn-primary" onclick="scheduleNotification()">
+                    <i class="fas fa-calendar-plus me-2"></i>
+                    {% trans "Schedule Notification" %}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Template type change handler
+    document.getElementById('scheduleTemplateType').addEventListener('change', function() {
+        updateScheduleContextFields(this.value);
+        updateScheduleSummary();
+    });
+    
+    // Recipient type change handler
+    document.getElementById('scheduleRecipientType').addEventListener('change', function() {
+        loadScheduleRecipients(this.value);
+    });
+    
+    // Recipient selection change handler
+    document.getElementById('scheduleRecipientId').addEventListener('change', updateScheduleSummary);
+    
+    // Date and time change handlers
+    document.getElementById('scheduleDate').addEventListener('change', updateScheduleSummary);
+    document.getElementById('scheduleTime').addEventListener('change', updateScheduleSummary);
+    
+    // Delivery method change handlers
+    document.querySelectorAll('#scheduleNotificationModal input[name="delivery_methods"]').forEach(checkbox => {
+        checkbox.addEventListener('change', updateScheduleSummary);
+    });
+    
+    // Set default date and time (1 hour from now)
+    setQuickSchedule(1, 'hours');
+});
+
+function updateScheduleContextFields(templateType) {
+    const contextVariables = document.getElementById('scheduleContextVariables');
+    const contextFields = document.getElementById('scheduleContextFields');
+    
+    // Clear existing fields
+    contextFields.innerHTML = '';
+    
+    const fieldConfigs = {
+        'payment_reminder': [
+            { name: 'contract_number', label: '{% trans "Contract Number" %}', placeholder: 'GI-2024-001' },
+            { name: 'amount', label: '{% trans "Amount (Toman)" %}', placeholder: '2,500,000' },
+            { name: 'due_date', label: '{% trans "Due Date" %}', placeholder: '1403/07/15' }
+        ],
+        'appointment_reminder': [
+            { name: 'appointment_date', label: '{% trans "Appointment Date" %}', placeholder: '1403/07/20' },
+            { name: 'appointment_time', label: '{% trans "Appointment Time" %}', placeholder: '14:30' },
+            { name: 'service_type', label: '{% trans "Service Type" %}', placeholder: '{% trans "Jewelry repair" %}' }
+        ],
+        'birthday_greeting': [
+            { name: 'age', label: '{% trans "Age" %}', placeholder: '35' },
+            { name: 'special_offer', label: '{% trans "Special Offer" %}', placeholder: '{% trans "10% discount" %}' }
+        ],
+        'special_offer': [
+            { name: 'offer_title', label: '{% trans "Offer Title" %}', placeholder: '{% trans "Special Gold Discount" %}' },
+            { name: 'discount_percentage', label: '{% trans "Discount %" %}', placeholder: '20' },
+            { name: 'expiry_date', label: '{% trans "Expiry Date" %}', placeholder: '1403/08/01' }
+        ]
+    };
+    
+    const fields = fieldConfigs[templateType] || [];
+    
+    if (fields.length > 0) {
+        contextVariables.style.display = 'block';
+        
+        fields.forEach(field => {
+            const colDiv = document.createElement('div');
+            colDiv.className = 'col-md-6 mb-3';
+            
+            colDiv.innerHTML = `
+                <label for="schedule_context_${field.name}" class="form-label">${field.label}</label>
+                <input type="text" class="form-control" id="schedule_context_${field.name}" 
+                       name="schedule_context_${field.name}" placeholder="${field.placeholder}">
+            `;
+            
+            contextFields.appendChild(colDiv);
+        });
+    } else {
+        contextVariables.style.display = 'none';
+    }
+}
+
+function loadScheduleRecipients(recipientType) {
+    const recipientSelect = document.getElementById('scheduleRecipientId');
+    
+    // Clear existing options
+    recipientSelect.innerHTML = '<option value="">{% trans "Loading..." %}</option>';
+    
+    // Simulate loading recipients
+    setTimeout(() => {
+        recipientSelect.innerHTML = '<option value="">{% trans "Select recipient" %}</option>';
+        
+        if (recipientType === 'customer') {
+            const customers = [
+                { id: 1, name: 'احمد رضایی', phone: '09123456789' },
+                { id: 2, name: 'مریم حسینی', phone: '09987654321' },
+                { id: 3, name: 'علی محمدی', phone: '09111222333' }
+            ];
+            
+            customers.forEach(customer => {
+                const option = document.createElement('option');
+                option.value = customer.id;
+                option.textContent = `${customer.name} (${customer.phone})`;
+                recipientSelect.appendChild(option);
+            });
+        } else if (recipientType === 'user') {
+            const users = [
+                { id: 1, name: 'مدیر فروشگاه', role: 'owner' },
+                { id: 2, name: 'حسابدار', role: 'accountant' }
+            ];
+            
+            users.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = `${user.name} (${user.role})`;
+                recipientSelect.appendChild(option);
+            });
+        }
+        
+        updateScheduleSummary();
+    }, 500);
+}
+
+function setQuickSchedule(amount, unit) {
+    const now = new Date();
+    let scheduledTime;
+    
+    if (unit === 'hours') {
+        scheduledTime = new Date(now.getTime() + (amount * 60 * 60 * 1000));
+    } else if (unit === 'days') {
+        scheduledTime = new Date(now.getTime() + (amount * 24 * 60 * 60 * 1000));
+    }
+    
+    // Format date and time for input fields
+    const dateStr = scheduledTime.toISOString().split('T')[0];
+    const timeStr = scheduledTime.toTimeString().split(' ')[0].substring(0, 5);
+    
+    document.getElementById('scheduleDate').value = dateStr;
+    document.getElementById('scheduleTime').value = timeStr;
+    
+    updateScheduleSummary();
+}
+
+function updateScheduleSummary() {
+    const templateType = document.getElementById('scheduleTemplateType').value;
+    const recipientId = document.getElementById('scheduleRecipientId').value;
+    const scheduleDate = document.getElementById('scheduleDate').value;
+    const scheduleTime = document.getElementById('scheduleTime').value;
+    const deliveryMethods = Array.from(document.querySelectorAll('#scheduleNotificationModal input[name="delivery_methods"]:checked'))
+                                .map(cb => cb.value);
+    
+    // Update template display
+    const summaryTemplate = document.getElementById('scheduleSummaryTemplate');
+    if (templateType) {
+        const templateSelect = document.getElementById('scheduleTemplateType');
+        summaryTemplate.textContent = templateSelect.options[templateSelect.selectedIndex].text;
+    } else {
+        summaryTemplate.textContent = '{% trans "Not selected" %}';
+    }
+    
+    // Update recipient display
+    const summaryRecipient = document.getElementById('scheduleSummaryRecipient');
+    if (recipientId) {
+        const recipientSelect = document.getElementById('scheduleRecipientId');
+        summaryRecipient.textContent = recipientSelect.options[recipientSelect.selectedIndex].text;
+    } else {
+        summaryRecipient.textContent = '{% trans "Not selected" %}';
+    }
+    
+    // Update date and time display
+    const summaryDateTime = document.getElementById('scheduleSummaryDateTime');
+    if (scheduleDate && scheduleTime) {
+        const dateTime = new Date(`${scheduleDate}T${scheduleTime}`);
+        const options = { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        };
+        summaryDateTime.textContent = dateTime.toLocaleDateString('fa-IR', options);
+    } else {
+        summaryDateTime.textContent = '{% trans "Not set" %}';
+    }
+    
+    // Update delivery methods
+    const summaryDelivery = document.getElementById('scheduleSummaryDelivery');
+    if (deliveryMethods.length > 0) {
+        summaryDelivery.textContent = deliveryMethods.join(', ').toUpperCase();
+    } else {
+        summaryDelivery.textContent = '{% trans "Not selected" %}';
+    }
+}
+
+function scheduleNotification() {
+    const form = document.getElementById('scheduleNotificationForm');
+    const formData = new FormData(form);
+    
+    // Validate form
+    const templateType = formData.get('template_type');
+    const recipientId = formData.get('recipient_id');
+    const scheduleDate = formData.get('schedule_date');
+    const scheduleTime = formData.get('schedule_time');
+    const deliveryMethods = formData.getAll('delivery_methods');
+    
+    if (!templateType || !recipientId || !scheduleDate || !scheduleTime || deliveryMethods.length === 0) {
+        showNotification('{% trans "Please fill in all required fields" %}', 'error');
+        return;
+    }
+    
+    // Check if scheduled time is in the future
+    const scheduledDateTime = new Date(`${scheduleDate}T${scheduleTime}`);
+    const now = new Date();
+    
+    if (scheduledDateTime <= now) {
+        showNotification('{% trans "Scheduled time must be in the future" %}', 'error');
+        return;
+    }
+    
+    // Prepare data
+    const data = {
+        template_type: templateType,
+        recipient_type: formData.get('recipient_type'),
+        recipient_id: parseInt(recipientId),
+        delivery_methods: deliveryMethods,
+        scheduled_datetime: scheduledDateTime.toISOString(),
+        context: {}
+    };
+    
+    // Add context variables
+    const contextInputs = document.querySelectorAll('#scheduleContextFields input');
+    contextInputs.forEach(input => {
+        const fieldName = input.name.replace('schedule_context_', '');
+        if (input.value) {
+            data.context[fieldName] = input.value;
+        }
+    });
+    
+    // Add customer name
+    const recipientSelect = document.getElementById('scheduleRecipientId');
+    const selectedOption = recipientSelect.options[recipientSelect.selectedIndex];
+    if (selectedOption) {
+        data.context.customer_name = selectedOption.text.split(' (')[0];
+    }
+    
+    // Send request
+    const button = document.querySelector('#scheduleNotificationModal .btn-primary');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>{% trans "Scheduling..." %}';
+    button.disabled = true;
+    
+    fetch('{% url "core:notifications:schedule_ajax" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('scheduleNotificationModal')).hide();
+            form.reset();
+            // Refresh the page to show new scheduled notification
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification(data.error, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error scheduling notification:', error);
+        showNotification('{% trans "Error connecting to server" %}', 'error');
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+</script>

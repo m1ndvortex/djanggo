@@ -1,0 +1,495 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} - زرگر{% endblock %}
+
+{% block content %}
+<div class="min-h-screen {% if is_dark_mode %}bg-cyber-bg-primary{% else %}bg-gray-50{% endif %}">
+    <!-- Header -->
+    <div class="{% if is_dark_mode %}bg-cyber-bg-secondary border-b border-cyber-neon-primary/20{% else %}bg-white border-b border-gray-200{% endif %} shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center space-x-reverse space-x-4">
+                    <div class="flex-shrink-0 h-12 w-12">
+                        <div class="h-12 w-12 rounded-full {% if is_dark_mode %}bg-cyber-neon-primary/20 text-cyber-neon-primary{% else %}bg-gray-200 text-gray-600{% endif %} flex items-center justify-center">
+                            <span class="text-lg font-medium">
+                                {{ user_obj.full_persian_name|first|default:user_obj.username|first }}
+                            </span>
+                        </div>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">
+                            {{ page_title }}
+                        </h1>
+                        <p class="text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                            {{ user_obj.full_persian_name|default:user_obj.username }}
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-reverse space-x-3">
+                    <a href="{% url 'tenant:profile_edit' %}" 
+                       class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white {% if is_dark_mode %}bg-gradient-to-r from-cyber-neon-secondary to-cyber-neon-primary hover:from-cyber-neon-secondary/80 hover:to-cyber-neon-primary/80{% else %}bg-blue-600 hover:bg-blue-700{% endif %} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                        ویرایش پروفایل
+                    </a>
+                    <a href="{% url 'tenant:dashboard' %}" 
+                       class="inline-flex items-center px-4 py-2 border {% if is_dark_mode %}border-cyber-neon-primary/30 text-cyber-text-secondary hover:bg-cyber-bg-surface{% else %}border-gray-300 text-gray-700 hover:bg-gray-50{% endif %} rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z"></path>
+                        </svg>
+                        بازگشت به داشبورد
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Profile Information -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Basic Information -->
+                <div class="{% if is_dark_mode %}bg-gradient-to-br from-cyber-bg-surface to-cyber-bg-elevated border border-cyber-neon-primary/20{% else %}bg-white border border-gray-200{% endif %} shadow-sm rounded-lg">
+                    <div class="px-6 py-4 border-b {% if is_dark_mode %}border-cyber-neon-primary/20{% else %}border-gray-200{% endif %}">
+                        <h3 class="text-lg font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">اطلاعات شخصی</h3>
+                    </div>
+                    <div class="px-6 py-6">
+                        <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                            <div>
+                                <dt class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">نام کاربری</dt>
+                                <dd class="mt-1 text-sm {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">{{ user_obj.username }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">ایمیل</dt>
+                                <dd class="mt-1 text-sm {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">{{ user_obj.email|default:"تعریف نشده" }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">نام (انگلیسی)</dt>
+                                <dd class="mt-1 text-sm {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">{{ user_obj.first_name|default:"تعریف نشده" }} {{ user_obj.last_name|default:"" }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">نام (فارسی)</dt>
+                                <dd class="mt-1 text-sm {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">{{ user_obj.persian_first_name|default:"تعریف نشده" }} {{ user_obj.persian_last_name|default:"" }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">شماره تلفن</dt>
+                                <dd class="mt-1 text-sm {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">{{ user_obj.phone_number|default:"تعریف نشده" }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">تاریخ عضویت</dt>
+                                <dd class="mt-1 text-sm {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">{{ user_obj.date_joined|date:"Y/m/d H:i" }}</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+
+                <!-- Security Settings -->
+                <div class="{% if is_dark_mode %}bg-gradient-to-br from-cyber-bg-surface to-cyber-bg-elevated border border-cyber-neon-secondary/20{% else %}bg-white border border-gray-200{% endif %} shadow-sm rounded-lg">
+                    <div class="px-6 py-4 border-b {% if is_dark_mode %}border-cyber-neon-secondary/20{% else %}border-gray-200{% endif %}">
+                        <h3 class="text-lg font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">تنظیمات امنیتی</h3>
+                    </div>
+                    <div class="px-6 py-6 space-y-6">
+                        <!-- Password Change -->
+                        <div class="flex items-center justify-between p-4 {% if is_dark_mode %}bg-cyber-bg-secondary border border-cyber-neon-primary/20{% else %}bg-gray-50 border border-gray-200{% endif %} rounded-lg">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-6 w-6 {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v-2l-4-4L7.257 8.257A6 6 0 0119 9z"></path>
+                                    </svg>
+                                </div>
+                                <div class="mr-4">
+                                    <h4 class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">تغییر رمز عبور</h4>
+                                    <p class="text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">رمز عبور قوی برای امنیت حساب شما ضروری است</p>
+                                </div>
+                            </div>
+                            {% if can_change_password %}
+                            <a href="{% url 'tenant:password_change' %}" 
+                               class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white {% if is_dark_mode %}bg-cyber-neon-primary hover:bg-cyber-neon-primary/80{% else %}bg-blue-600 hover:bg-blue-700{% endif %} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+                                تغییر رمز عبور
+                            </a>
+                            {% endif %}
+                        </div>
+
+                        <!-- 2FA Settings -->
+                        <div class="{% if is_dark_mode %}bg-cyber-bg-secondary border border-cyber-neon-secondary/20{% else %}bg-gray-50 border border-gray-200{% endif %} rounded-lg p-6" x-data="twoFAStatus()">
+                            <div class="flex items-start justify-between">
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0">
+                                        <div class="w-10 h-10 rounded-lg flex items-center justify-center {% if user_obj.is_2fa_enabled %}{% if is_dark_mode %}bg-cyber-neon-secondary/20 text-cyber-neon-secondary{% else %}bg-green-100 text-green-600{% endif %}{% else %}{% if is_dark_mode %}bg-cyber-text-muted/20 text-cyber-text-muted{% else %}bg-gray-100 text-gray-400{% endif %}{% endif %}">
+                                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="mr-4">
+                                        <div class="flex items-center space-x-reverse space-x-2">
+                                            <h4 class="text-lg font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">احراز هویت دو مرحله‌ای</h4>
+                                            {% if user_obj.is_2fa_enabled %}
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if is_dark_mode %}bg-cyber-neon-secondary/20 text-cyber-neon-secondary{% else %}bg-green-100 text-green-800{% endif %}">
+                                                    <svg class="w-3 h-3 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                                    </svg>
+                                                    فعال
+                                                </span>
+                                            {% else %}
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if is_dark_mode %}bg-cyber-text-muted/20 text-cyber-text-muted{% else %}bg-gray-100 text-gray-600{% endif %}">
+                                                    <svg class="w-3 h-3 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                                                    </svg>
+                                                    غیرفعال
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        <p class="mt-1 text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                                            {% if user_obj.is_2fa_enabled %}
+                                                حساب شما با احراز هویت دو مرحله‌ای محافظت می‌شود
+                                            {% else %}
+                                                لایه امنیتی اضافی برای محافظت از حساب شما
+                                            {% endif %}
+                                        </p>
+                                        
+                                        {% if user_obj.is_2fa_enabled %}
+                                        <!-- 2FA Status Details -->
+                                        <div class="mt-4 space-y-3" x-show="showDetails" x-transition>
+                                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                                <div>
+                                                    <span class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">آخرین استفاده:</span>
+                                                    <span class="{% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}" x-text="lastUsed">در حال بارگذاری...</span>
+                                                </div>
+                                                <div>
+                                                    <span class="{% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">کدهای پشتیبان:</span>
+                                                    <span class="{% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}" x-text="backupTokensCount + ' کد'">در حال بارگذاری...</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="flex flex-wrap gap-2 mt-4">
+                                                <a href="{% url 'tenant:2fa_backup_tokens' %}" 
+                                                   class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white {% if is_dark_mode %}bg-cyber-neon-primary hover:bg-cyber-neon-primary/80{% else %}bg-blue-600 hover:bg-blue-700{% endif %} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+                                                    <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                                                    </svg>
+                                                    کدهای پشتیبان
+                                                </a>
+                                                <a href="{% url 'tenant:2fa_setup' %}" 
+                                                   class="inline-flex items-center px-3 py-1.5 border {% if is_dark_mode %}border-cyber-neon-secondary/30 text-cyber-neon-secondary hover:bg-cyber-neon-secondary/10{% else %}border-green-300 text-green-700 hover:bg-green-50{% endif %} text-xs font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200">
+                                                    <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                                    </svg>
+                                                    تنظیم مجدد
+                                                </a>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="flex flex-col space-y-2">
+                                    {% if user_obj.is_2fa_enabled %}
+                                        <button @click="showDetails = !showDetails" 
+                                                class="inline-flex items-center px-3 py-2 border {% if is_dark_mode %}border-cyber-neon-primary/30 text-cyber-text-secondary hover:bg-cyber-bg-surface{% else %}border-gray-300 text-gray-700 hover:bg-gray-50{% endif %} rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+                                            <span x-text="showDetails ? 'مخفی کردن جزئیات' : 'نمایش جزئیات'">نمایش جزئیات</span>
+                                            <svg class="w-4 h-4 mr-2 transition-transform duration-200" :class="showDetails ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                            </svg>
+                                        </button>
+                                        
+                                        {% if can_disable_2fa %}
+                                        <button @click="showDisableForm = true" 
+                                                class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md {% if is_dark_mode %}text-cyber-neon-tertiary hover:bg-cyber-neon-tertiary/10{% else %}text-red-600 hover:bg-red-50{% endif %} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200">
+                                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                            </svg>
+                                            غیرفعال کردن
+                                        </button>
+                                        {% endif %}
+                                    {% else %}
+                                        {% if can_setup_2fa %}
+                                        <a href="{% url 'tenant:2fa_setup' %}" 
+                                           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white {% if is_dark_mode %}bg-gradient-to-r from-cyber-neon-secondary to-cyber-neon-primary hover:from-cyber-neon-secondary/80 hover:to-cyber-neon-primary/80{% else %}bg-green-600 hover:bg-green-700{% endif %} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200">
+                                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                            </svg>
+                                            راه‌اندازی 2FA
+                                        </a>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Disable 2FA Form Modal -->
+                            {% if user_obj.is_2fa_enabled and can_disable_2fa %}
+                            <div x-show="showDisableForm" x-transition class="mt-6 p-4 {% if is_dark_mode %}bg-cyber-bg-primary border border-cyber-neon-tertiary/20{% else %}bg-red-50 border border-red-200{% endif %} rounded-lg">
+                                <div class="flex">
+                                    <div class="flex-shrink-0">
+                                        <svg class="h-5 w-5 {% if is_dark_mode %}text-cyber-neon-tertiary{% else %}text-red-400{% endif %}" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div class="mr-3 flex-1">
+                                        <h4 class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-red-800{% endif %}">
+                                            غیرفعال کردن احراز هویت دو مرحله‌ای
+                                        </h4>
+                                        <p class="mt-2 text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-red-700{% endif %}">
+                                            با غیرفعال کردن احراز هویت دو مرحله‌ای، امنیت حساب شما کاهش می‌یابد. برای تأیید، رمز عبور خود را وارد کنید.
+                                        </p>
+                                        <form method="post" action="{% url 'tenant:2fa_disable' %}" class="mt-4">
+                                            {% csrf_token %}
+                                            <div class="flex items-end space-x-reverse space-x-3">
+                                                <div class="flex-1">
+                                                    <label for="disable_password" class="block text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-red-800{% endif %}">
+                                                        رمز عبور فعلی
+                                                    </label>
+                                                    <input type="password" 
+                                                           name="password" 
+                                                           id="disable_password"
+                                                           class="mt-1 block w-full px-3 py-2 border {% if is_dark_mode %}border-cyber-neon-primary/30 bg-cyber-bg-surface text-cyber-text-primary{% else %}border-gray-300{% endif %} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                                                           placeholder="رمز عبور خود را وارد کنید"
+                                                           required>
+                                                </div>
+                                                <button type="submit" 
+                                                        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200">
+                                                    غیرفعال کردن
+                                                </button>
+                                                <button type="button" 
+                                                        @click="showDisableForm = false"
+                                                        class="inline-flex items-center px-4 py-2 border {% if is_dark_mode %}border-cyber-neon-primary/30 text-cyber-text-secondary hover:bg-cyber-bg-surface{% else %}border-gray-300 text-gray-700 hover:bg-gray-50{% endif %} rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+                                                    انصراف
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-8">
+                <!-- Status Card -->
+                <div class="{% if is_dark_mode %}bg-gradient-to-br from-cyber-bg-surface to-cyber-bg-elevated border border-cyber-neon-primary/20{% else %}bg-white border border-gray-200{% endif %} shadow-sm rounded-lg">
+                    <div class="px-6 py-4 border-b {% if is_dark_mode %}border-cyber-neon-primary/20{% else %}border-gray-200{% endif %}">
+                        <h3 class="text-lg font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">وضعیت حساب</h3>
+                    </div>
+                    <div class="px-6 py-6 space-y-4">
+                        <!-- Active Status -->
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">وضعیت</span>
+                            {% if user_obj.is_active %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full {% if is_dark_mode %}bg-cyber-neon-secondary/20 text-cyber-neon-secondary{% else %}bg-green-100 text-green-800{% endif %}">
+                                    فعال
+                                </span>
+                            {% else %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full {% if is_dark_mode %}bg-red-900/20 text-red-400{% else %}bg-red-100 text-red-800{% endif %}">
+                                    غیرفعال
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Role -->
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">نقش</span>
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
+                                {% if user_obj.role == 'owner' %}
+                                    {% if is_dark_mode %}bg-cyber-neon-tertiary/20 text-cyber-neon-tertiary{% else %}bg-red-100 text-red-800{% endif %}
+                                {% elif user_obj.role == 'accountant' %}
+                                    {% if is_dark_mode %}bg-cyber-neon-secondary/20 text-cyber-neon-secondary{% else %}bg-green-100 text-green-800{% endif %}
+                                {% else %}
+                                    {% if is_dark_mode %}bg-cyber-neon-primary/20 text-cyber-neon-primary{% else %}bg-blue-100 text-blue-800{% endif %}
+                                {% endif %}">
+                                {% if user_obj.role == 'owner' %}مالک
+                                {% elif user_obj.role == 'accountant' %}حسابدار
+                                {% elif user_obj.role == 'salesperson' %}فروشنده
+                                {% else %}{{ user_obj.get_role_display }}
+                                {% endif %}
+                            </span>
+                        </div>
+
+                        <!-- Theme Preference -->
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">تم ترجیحی</span>
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full {% if is_dark_mode %}bg-cyber-bg-elevated text-cyber-text-secondary{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {% if user_obj.theme_preference == 'dark' %}تاریک{% else %}روشن{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="{% if is_dark_mode %}bg-gradient-to-br from-cyber-bg-surface to-cyber-bg-elevated border border-cyber-neon-secondary/20{% else %}bg-white border border-gray-200{% endif %} shadow-sm rounded-lg">
+                    <div class="px-6 py-4 border-b {% if is_dark_mode %}border-cyber-neon-secondary/20{% else %}border-gray-200{% endif %}">
+                        <h3 class="text-lg font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">دسترسی سریع</h3>
+                    </div>
+                    <div class="px-6 py-6 space-y-3">
+                        <a href="{% url 'tenant:profile_edit' %}" 
+                           class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white {% if is_dark_mode %}bg-gradient-to-r from-cyber-neon-primary to-cyber-neon-secondary hover:from-cyber-neon-primary/80 hover:to-cyber-neon-secondary/80{% else %}bg-blue-600 hover:bg-blue-700{% endif %} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                            ویرایش اطلاعات
+                        </a>
+
+                        <a href="{% url 'tenant:password_change' %}" 
+                           class="w-full inline-flex justify-center items-center px-4 py-2 border {% if is_dark_mode %}border-cyber-neon-warning/30 text-cyber-neon-warning hover:bg-cyber-neon-warning/10{% else %}border-yellow-300 text-yellow-700 hover:bg-yellow-50{% endif %} rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-all duration-200">
+                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v-2l-4-4L7.257 8.257A6 6 0 0119 9z"></path>
+                            </svg>
+                            تغییر رمز عبور
+                        </a>
+
+                        {% if user_obj.can_manage_users %}
+                        <a href="{% url 'tenant:user_management' %}" 
+                           class="w-full inline-flex justify-center items-center px-4 py-2 border {% if is_dark_mode %}border-cyber-neon-tertiary/30 text-cyber-neon-tertiary hover:bg-cyber-neon-tertiary/10{% else %}border-purple-300 text-purple-700 hover:bg-purple-50{% endif %} rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-200">
+                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                            </svg>
+                            مدیریت کاربران
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Account Statistics -->
+                <div class="{% if is_dark_mode %}bg-gradient-to-br from-cyber-bg-surface to-cyber-bg-elevated border border-cyber-neon-primary/20{% else %}bg-white border border-gray-200{% endif %} shadow-sm rounded-lg">
+                    <div class="px-6 py-4 border-b {% if is_dark_mode %}border-cyber-neon-primary/20{% else %}border-gray-200{% endif %}">
+                        <h3 class="text-lg font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">آمار حساب</h3>
+                    </div>
+                    <div class="px-6 py-6 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">آخرین ورود</span>
+                            <span class="text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">
+                                {% if user_obj.last_login %}{{ user_obj.last_login|date:"Y/m/d H:i" }}{% else %}هرگز{% endif %}
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">مدت عضویت</span>
+                            <span class="text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-500{% endif %}">{{ user_obj.date_joined|timesince }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium {% if is_dark_mode %}text-cyber-text-primary{% else %}text-gray-900{% endif %}">امنیت حساب</span>
+                            <div class="flex items-center space-x-reverse space-x-1">
+                                {% if user_obj.is_2fa_enabled %}
+                                    <span class="w-2 h-2 {% if is_dark_mode %}bg-cyber-neon-secondary{% else %}bg-green-400{% endif %} rounded-full"></span>
+                                    <span class="text-sm {% if is_dark_mode %}text-cyber-neon-secondary{% else %}text-green-600{% endif %}">عالی</span>
+                                {% else %}
+                                    <span class="w-2 h-2 {% if is_dark_mode %}bg-cyber-neon-warning{% else %}bg-yellow-400{% endif %} rounded-full"></span>
+                                    <span class="text-sm {% if is_dark_mode %}text-cyber-neon-warning{% else %}text-yellow-600{% endif %}">متوسط</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Alpine.js component for 2FA status management
+function twoFAStatus() {
+    return {
+        showDetails: false,
+        showDisableForm: false,
+        lastUsed: 'در حال بارگذاری...',
+        backupTokensCount: 0,
+        
+        init() {
+            // Load 2FA status via API
+            this.load2FAStatus();
+        },
+        
+        async load2FAStatus() {
+            try {
+                const response = await fetch('{% url "tenant:2fa_status_api" %}');
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.is_2fa_enabled) {
+                        this.backupTokensCount = data.backup_tokens_count || 0;
+                        
+                        if (data.last_used) {
+                            const lastUsedDate = new Date(data.last_used);
+                            this.lastUsed = this.formatPersianDate(lastUsedDate);
+                        } else {
+                            this.lastUsed = 'هرگز استفاده نشده';
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading 2FA status:', error);
+                this.lastUsed = 'خطا در بارگذاری';
+            }
+        },
+        
+        formatPersianDate(date) {
+            const persianMonths = [
+                'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
+                'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'
+            ];
+            
+            // Simple Gregorian to Persian date approximation
+            // In a real implementation, you'd use a proper Persian calendar library
+            const now = new Date();
+            const diffTime = Math.abs(now - date);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) {
+                return 'امروز';
+            } else if (diffDays === 1) {
+                return 'دیروز';
+            } else if (diffDays < 7) {
+                return `${diffDays} روز پیش`;
+            } else if (diffDays < 30) {
+                const weeks = Math.floor(diffDays / 7);
+                return `${weeks} هفته پیش`;
+            } else {
+                const months = Math.floor(diffDays / 30);
+                return `${months} ماه پیش`;
+            }
+        }
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-focus on password input when disable form is shown
+    document.addEventListener('click', function(e) {
+        if (e.target.matches('[\\@click*="showDisableForm"]')) {
+            setTimeout(() => {
+                const passwordInput = document.getElementById('disable_password');
+                if (passwordInput) {
+                    passwordInput.focus();
+                }
+            }, 100);
+        }
+    });
+    
+    // Form validation for disable 2FA
+    const disableForm = document.querySelector('form[action*="2fa_disable"]');
+    if (disableForm) {
+        disableForm.addEventListener('submit', function(e) {
+            const passwordInput = this.querySelector('input[name="password"]');
+            if (!passwordInput.value.trim()) {
+                e.preventDefault();
+                alert('لطفاً رمز عبور خود را وارد کنید.');
+                passwordInput.focus();
+                return false;
+            }
+            
+            if (!confirm('آیا از غیرفعال کردن احراز هویت دو مرحله‌ای اطمینان دارید؟ این عمل امنیت حساب شما را کاهش می‌دهد.')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

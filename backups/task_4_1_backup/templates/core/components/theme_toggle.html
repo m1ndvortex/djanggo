@@ -1,0 +1,84 @@
+<!-- Theme Toggle Component -->
+<button 
+    @click="toggleTheme()"
+    data-theme-toggle
+    class="p-3 rounded-lg transition-all duration-300 backdrop-blur-sm group
+           {% if is_dark_mode %}
+           bg-gradient-to-r from-cyber-bg-surface/80 to-cyber-bg-elevated/80 
+           border border-cyber-neon-primary/20 
+           hover:border-cyber-neon-primary/40 
+           hover:shadow-neon
+           {% else %}
+           bg-white/80 border border-gray-200 
+           hover:bg-white hover:border-gray-300 
+           shadow-sm hover:shadow-md
+           {% endif %}"
+    :class="{
+        'bg-gradient-to-r from-cyber-bg-surface/80 to-cyber-bg-elevated/80 border-cyber-neon-primary/20 hover:border-cyber-neon-primary/40 hover:shadow-neon': darkMode,
+        'bg-white/80 border-gray-200 hover:bg-white hover:border-gray-300 shadow-sm hover:shadow-md': !darkMode
+    }"
+    aria-label="تغییر تم"
+    title="تغییر بین تم روشن و تاریک">
+    
+    <!-- Light Mode Icon (Sun) -->
+    <svg class="w-5 h-5 transition-all duration-300 transform group-hover:scale-110" 
+         :class="{ 'hidden': darkMode, 'block text-gray-600': !darkMode }"
+         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+              d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+    </svg>
+    
+    <!-- Dark Mode Icon (Moon with cyber glow) -->
+    <svg class="w-5 h-5 transition-all duration-300 transform group-hover:scale-110 cyber-text-glow" 
+         :class="{ 'block text-cyber-neon-primary': darkMode, 'hidden': !darkMode }"
+         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+              d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+    </svg>
+    
+    <!-- Hover effect overlay for cybersecurity theme -->
+    <div class="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+         :class="{ 'bg-gradient-to-r from-cyber-neon-primary/5 to-cyber-neon-secondary/5': darkMode }"></div>
+</button>
+
+<!-- Theme toggle keyboard shortcut hint -->
+<div class="fixed bottom-4 left-4 z-40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+     x-data="{ showHint: false }"
+     @keydown.window.ctrl.shift.t="showHint = true; setTimeout(() => showHint = false, 2000)">
+    <div x-show="showHint" 
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 transform scale-95"
+         x-transition:enter-end="opacity-100 transform scale-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100 transform scale-100"
+         x-transition:leave-end="opacity-0 transform scale-95"
+         class="px-3 py-2 text-xs rounded-lg backdrop-blur-sm
+                {% if is_dark_mode %}
+                bg-cyber-bg-surface/90 border border-cyber-border-glass text-cyber-text-secondary
+                {% else %}
+                bg-white/90 border border-gray-200 text-gray-600
+                {% endif %}">
+        <kbd class="px-1 py-0.5 text-xs font-mono rounded border
+                   {% if is_dark_mode %}
+                   bg-cyber-bg-elevated border-cyber-border-glass text-cyber-text-primary
+                   {% else %}
+                   bg-gray-100 border-gray-300 text-gray-800
+                   {% endif %}">
+            Ctrl+Shift+T
+        </kbd>
+        <span class="mr-1">تغییر تم</span>
+    </div>
+</div>
+
+<script>
+// Add keyboard shortcut for theme toggle
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+        e.preventDefault();
+        const themeToggle = document.querySelector('[data-theme-toggle]');
+        if (themeToggle) {
+            themeToggle.click();
+        }
+    }
+});
+</script>
