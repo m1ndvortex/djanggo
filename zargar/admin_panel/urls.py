@@ -4,6 +4,7 @@ URL configuration for admin panel.
 from django.urls import path, include
 from . import views
 from . import disaster_recovery_views
+from . import unified_auth_views
 
 app_name = 'admin_panel'
 
@@ -12,9 +13,15 @@ urlpatterns = [
     path('', views.UnifiedAdminDashboardView.as_view(), name='dashboard'),
     path('legacy/', views.AdminPanelDashboardView.as_view(), name='legacy_dashboard'),
     
-    # Authentication
-    path('login/', views.AdminLoginView.as_view(), name='login'),
-    path('logout/', views.AdminLogoutView.as_view(), name='logout'),
+    # Unified Authentication
+    path('login/', unified_auth_views.UnifiedAdminLoginView.as_view(), name='unified_login'),
+    path('logout/', unified_auth_views.UnifiedAdminLogoutView.as_view(), name='unified_logout'),
+    path('2fa/setup/', unified_auth_views.UnifiedAdmin2FASetupView.as_view(), name='2fa_setup'),
+    path('session/status/', unified_auth_views.UnifiedAdminSessionStatusView.as_view(), name='session_status'),
+    
+    # Legacy Authentication (deprecated)
+    path('legacy/login/', views.AdminLoginView.as_view(), name='legacy_login'),
+    path('legacy/logout/', views.AdminLogoutView.as_view(), name='legacy_logout'),
     
     # User Impersonation
     path('impersonation/', views.UserImpersonationView.as_view(), name='user_impersonation'),

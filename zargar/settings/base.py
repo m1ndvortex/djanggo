@@ -73,6 +73,7 @@ MIDDLEWARE = [
     'zargar.core.middleware.HealthCheckMiddleware',  # Must be first for health checks
     'django_tenants.middleware.main.TenantMainMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'zargar.admin_panel.unified_auth_middleware.UnifiedAdminSecurityMiddleware',  # Admin security
     'zargar.core.security_middleware.SecurityAuditMiddleware',  # Security audit logging
     'zargar.core.security_middleware.RateLimitMiddleware',  # Rate limiting
     'zargar.core.security_middleware.SuspiciousActivityDetectionMiddleware',  # Threat detection
@@ -81,6 +82,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'zargar.admin_panel.unified_auth_middleware.UnifiedAdminAuthMiddleware',  # Unified admin auth
     'django_otp.middleware.OTPMiddleware',
     'hijack.middleware.HijackUserMiddleware',  # Django-hijack middleware
     'zargar.admin_panel.middleware.ImpersonationAuditMiddleware',  # Custom impersonation audit
@@ -311,8 +313,8 @@ AUTH_USER_MODEL = 'core.User'
 
 # Authentication Backends
 AUTHENTICATION_BACKENDS = [
+    'zargar.admin_panel.unified_auth_backend.UnifiedSuperAdminAuthBackend',  # Unified SuperAdmin auth
     'zargar.core.auth_backends.TenantAwareAuthBackend',
-    'zargar.core.auth_backends.SuperAdminBackend',
     'zargar.core.auth_backends.TenantUserBackend',
     'django.contrib.auth.backends.ModelBackend',  # Fallback
 ]
