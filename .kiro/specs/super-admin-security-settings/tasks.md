@@ -60,7 +60,12 @@
     - Write unit tests for security event management functionality
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
 
-  - [ ] 3.2 Build security event management frontend
+  - [x] 3.2 Build security event management frontend
+
+
+
+
+
     - Create security event management interface with dual theme support and Persian RTL layout
     - Build security event categorization interface with severity indicators and cybersecurity color coding
     - Implement investigation workflow UI with status tracking and glassmorphism effects for dark mode

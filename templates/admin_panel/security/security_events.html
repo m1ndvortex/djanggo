@@ -1,0 +1,727 @@
+{% extends "admin_panel/base_unified.html" %}
+{% load static %}
+
+{% block title %}رویدادهای امنیتی - پنل مدیریت زرگر{% endblock %}
+
+{% block extra_css %}
+<style>
+    .security-event-card {
+        @apply bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl border dark:border-cyber-neon-primary/20 transition-all duration-300;
+    }
+    
+    .security-event-card:hover {
+        @apply transform scale-[1.02] shadow-xl dark:shadow-cyber-neon-primary/20;
+    }
+    
+    .severity-critical {
+        @apply border-r-4 border-red-500 dark:border-cyber-neon-danger bg-red-50 dark:bg-cyber-neon-danger/10;
+    }
+    
+    .severity-high {
+        @apply border-r-4 border-orange-500 dark:border-cyber-neon-tertiary bg-orange-50 dark:bg-cyber-neon-tertiary/10;
+    }
+    
+    .severity-medium {
+        @apply border-r-4 border-yellow-500 dark:border-cyber-neon-warning bg-yellow-50 dark:bg-cyber-neon-warning/10;
+    }
+    
+    .severity-low {
+        @apply border-r-4 border-green-500 dark:border-cyber-neon-secondary bg-green-50 dark:bg-cyber-neon-secondary/10;
+    }
+    
+    .cyber-glass {
+        backdrop-filter: blur(16px) saturate(150%);
+        background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 50%, rgba(11, 14, 26, 0.95) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
+    
+    .neon-border {
+        border-image: linear-gradient(90deg, #00D4FF, #00FF88, #FF6B35) 1;
+        animation: neon-pulse 2s ease-in-out infinite alternate;
+    }
+    
+    @keyframes neon-pulse {
+        from { box-shadow: 0 0 20px rgba(0, 212, 255, 0.1); }
+        to { box-shadow: 0 0 30px rgba(0, 212, 255, 0.3), 0 0 60px rgba(0, 255, 136, 0.1); }
+    }
+    
+    .filter-card {
+        @apply bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl border dark:border-cyber-neon-primary/20 p-6;
+    }
+    
+    .stats-card {
+        @apply bg-gradient-to-br from-white to-gray-50 dark:from-cyber-bg-surface dark:to-cyber-bg-elevated rounded-lg shadow-lg dark:shadow-2xl border dark:border-cyber-neon-primary/20 p-6;
+    }
+    
+    .investigation-status-pending {
+        @apply bg-yellow-100 text-yellow-800 dark:bg-cyber-neon-warning/20 dark:text-cyber-neon-warning;
+    }
+    
+    .investigation-status-investigating {
+        @apply bg-blue-100 text-blue-800 dark:bg-cyber-neon-primary/20 dark:text-cyber-neon-primary;
+    }
+    
+    .investigation-status-resolved {
+        @apply bg-green-100 text-green-800 dark:bg-cyber-neon-secondary/20 dark:text-cyber-neon-secondary;
+    }
+    
+    .bulk-actions-bar {
+        @apply fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white dark:bg-cyber-bg-surface shadow-2xl dark:shadow-cyber-neon-primary/20 rounded-lg border dark:border-cyber-neon-primary/20 p-4 transition-all duration-300;
+    }
+</style>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-8">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-cyber-text-primary">
+                رویدادهای امنیتی
+            </h1>
+            <p class="mt-2 text-gray-600 dark:text-cyber-text-secondary">
+                مدیریت و بررسی رویدادهای امنیتی سیستم
+            </p>
+        </div>
+        
+        <div class="flex space-x-4 space-x-reverse">
+            <button onclick="refreshEvents()" 
+                    class="bg-primary-600 dark:bg-cyber-neon-primary hover:bg-primary-700 dark:hover:bg-cyber-neon-primary/80 text-white px-4 py-2 rounded-lg transition-colors">
+                <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                بروزرسانی
+            </button>
+            
+            <button onclick="toggleBulkMode()" id="bulk-mode-btn"
+                    class="bg-gray-600 dark:bg-cyber-bg-elevated hover:bg-gray-700 dark:hover:bg-cyber-bg-surface text-white px-4 py-2 rounded-lg transition-colors">
+                <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                </svg>
+                عملیات گروهی
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Statistics Overview -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="stats-card dark:cyber-glass">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-red-100 dark:bg-cyber-neon-danger/20">
+                <svg class="w-8 h-8 text-red-600 dark:text-cyber-neon-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">کل رویدادها</p>
+                <p class="text-3xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">
+                    {{ stats.total_events }}
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stats-card dark:cyber-glass">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-orange-100 dark:bg-cyber-neon-tertiary/20">
+                <svg class="w-8 h-8 text-orange-600 dark:text-cyber-neon-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">در انتظار بررسی</p>
+                <p class="text-3xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">
+                    {{ stats.unresolved_events }}
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stats-card dark:cyber-glass">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-red-100 dark:bg-cyber-neon-danger/20">
+                <svg class="w-8 h-8 text-red-600 dark:text-cyber-neon-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">بحرانی</p>
+                <p class="text-3xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">
+                    {{ stats.critical_events }}
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stats-card dark:cyber-glass">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-green-100 dark:bg-cyber-neon-secondary/20">
+                <svg class="w-8 h-8 text-green-600 dark:text-cyber-neon-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">حل شده</p>
+                <p class="text-3xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">
+                    {{ stats.resolved_events }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Critical Events Alert -->
+{% if critical_events %}
+<div class="mb-8">
+    <div class="security-event-card dark:cyber-glass severity-critical">
+        <div class="p-6">
+            <div class="flex items-center mb-4">
+                <svg class="w-6 h-6 text-red-600 dark:text-cyber-neon-danger ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+                <h3 class="text-lg font-bold text-red-800 dark:text-cyber-neon-danger">
+                    رویدادهای بحرانی نیازمند توجه فوری
+                </h3>
+            </div>
+            <div class="space-y-3">
+                {% for event in critical_events %}
+                <div class="flex items-center justify-between p-3 bg-white dark:bg-cyber-bg-elevated rounded-lg">
+                    <div class="flex-1">
+                        <h4 class="font-semibold text-gray-900 dark:text-cyber-text-primary">
+                            {{ event.get_event_type_display }}
+                        </h4>
+                        <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">
+                            IP: {{ event.ip_address }} | {{ event.created_at|timesince }} پیش
+                        </p>
+                    </div>
+                    <div class="flex space-x-2 space-x-reverse">
+                        <button onclick="quickInvestigate('{{ event.id }}')" 
+                                class="px-3 py-1 text-xs bg-blue-600 dark:bg-cyber-neon-primary text-white rounded hover:bg-blue-700 dark:hover:bg-cyber-neon-primary/80 transition-colors">
+                            بررسی سریع
+                        </button>
+                        <a href="{% url 'admin_panel:security_event_detail' event.id %}" 
+                           class="px-3 py-1 text-xs bg-gray-600 dark:bg-cyber-bg-surface text-white rounded hover:bg-gray-700 dark:hover:bg-cyber-bg-elevated transition-colors">
+                            جزئیات
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Filters -->
+<div class="mb-8">
+    <div class="filter-card dark:cyber-glass">
+        <form method="GET" class="grid grid-cols-1 md:grid-cols-6 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">نوع رویداد</label>
+                <select name="event_type" class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/20 rounded-lg bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary">
+                    <option value="">همه</option>
+                    {% for value, label in event_type_choices %}
+                    <option value="{{ value }}" {% if current_filters.event_type == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">شدت</label>
+                <select name="severity" class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/20 rounded-lg bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary">
+                    <option value="">همه</option>
+                    {% for value, label in severity_choices %}
+                    <option value="{{ value }}" {% if current_filters.severity == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">وضعیت</label>
+                <select name="is_resolved" class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/20 rounded-lg bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary">
+                    <option value="">همه</option>
+                    <option value="false" {% if current_filters.is_resolved == 'false' %}selected{% endif %}>در انتظار</option>
+                    <option value="true" {% if current_filters.is_resolved == 'true' %}selected{% endif %}>حل شده</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">از تاریخ</label>
+                <input type="date" name="date_from" value="{{ current_filters.date_from }}" 
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/20 rounded-lg bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">تا تاریخ</label>
+                <input type="date" name="date_to" value="{{ current_filters.date_to }}" 
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/20 rounded-lg bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary">
+            </div>
+            
+            <div class="flex items-end">
+                <button type="submit" 
+                        class="w-full bg-primary-600 dark:bg-cyber-neon-primary hover:bg-primary-700 dark:hover:bg-cyber-neon-primary/80 text-white px-4 py-2 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    فیلتر
+                </button>
+            </div>
+        </form>
+        
+        <div class="mt-4">
+            <input type="text" name="search" placeholder="جستجو در IP، کاربر، یا جزئیات..." value="{{ current_filters.search }}"
+                   class="w-full px-4 py-2 border border-gray-300 dark:border-cyber-neon-primary/20 rounded-lg bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary"
+                   onkeypress="if(event.key==='Enter') { window.location.href='?search=' + encodeURIComponent(this.value); }">
+        </div>
+    </div>
+</div>
+
+<!-- Events List -->
+<div class="security-event-card dark:cyber-glass">
+    <div class="p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">
+                رویدادهای امنیتی ({{ metadata.total_count }} رویداد)
+            </h3>
+            
+            <div class="flex space-x-2 space-x-reverse">
+                <button onclick="selectAllEvents()" id="select-all-btn" style="display: none;"
+                        class="px-3 py-1 text-sm bg-gray-600 dark:bg-cyber-bg-elevated text-white rounded hover:bg-gray-700 dark:hover:bg-cyber-bg-surface transition-colors">
+                    انتخاب همه
+                </button>
+                <button onclick="clearSelection()" id="clear-selection-btn" style="display: none;"
+                        class="px-3 py-1 text-sm bg-red-600 dark:bg-cyber-neon-danger text-white rounded hover:bg-red-700 dark:hover:bg-cyber-neon-danger/80 transition-colors">
+                    لغو انتخاب
+                </button>
+            </div>
+        </div>
+        
+        <div class="space-y-4" id="events-container">
+            {% for event in events %}
+            <div class="security-event-item p-4 border dark:border-cyber-neon-primary/20 rounded-lg severity-{{ event.severity }} hover:shadow-lg dark:hover:shadow-cyber-neon-primary/20 transition-all duration-300"
+                 data-event-id="{{ event.id }}">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-start space-x-4 space-x-reverse flex-1">
+                        <input type="checkbox" class="event-checkbox mt-1" value="{{ event.id }}" style="display: none;">
+                        
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 space-x-reverse mb-2">
+                                <h4 class="font-semibold text-gray-900 dark:text-cyber-text-primary">
+                                    {{ event.get_event_type_display }}
+                                </h4>
+                                
+                                <span class="px-2 py-1 text-xs font-medium rounded-full
+                                            {% if event.severity == 'critical' %}bg-red-100 text-red-800 dark:bg-cyber-neon-danger/20 dark:text-cyber-neon-danger
+                                            {% elif event.severity == 'high' %}bg-orange-100 text-orange-800 dark:bg-cyber-neon-tertiary/20 dark:text-cyber-neon-tertiary
+                                            {% elif event.severity == 'medium' %}bg-yellow-100 text-yellow-800 dark:bg-cyber-neon-warning/20 dark:text-cyber-neon-warning
+                                            {% else %}bg-green-100 text-green-800 dark:bg-cyber-neon-secondary/20 dark:text-cyber-neon-secondary{% endif %}">
+                                    {{ event.get_severity_display }}
+                                </span>
+                                
+                                {% if event.is_resolved %}
+                                    <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 dark:bg-cyber-neon-secondary/20 dark:text-cyber-neon-secondary rounded-full">
+                                        حل شده
+                                    </span>
+                                {% else %}
+                                    <span class="px-2 py-1 text-xs font-medium investigation-status-{{ event.details.investigation_status|default:'pending' }} rounded-full">
+                                        {% if event.details.investigation_status == 'under_investigation' %}
+                                            در حال بررسی
+                                        {% elif event.details.investigation_status == 'investigated' %}
+                                            بررسی شده
+                                        {% else %}
+                                            در انتظار
+                                        {% endif %}
+                                    </span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 dark:text-cyber-text-secondary">
+                                <div>
+                                    <span class="font-medium">IP آدرس:</span>
+                                    <span class="font-mono">{{ event.ip_address }}</span>
+                                </div>
+                                
+                                {% if event.username_attempted %}
+                                <div>
+                                    <span class="font-medium">کاربر:</span>
+                                    <span>{{ event.username_attempted }}</span>
+                                </div>
+                                {% endif %}
+                                
+                                <div>
+                                    <span class="font-medium">زمان:</span>
+                                    <span>{{ event.created_at|timesince }} پیش</span>
+                                </div>
+                            </div>
+                            
+                            {% if event.details %}
+                            <div class="mt-2 text-sm text-gray-500 dark:text-cyber-text-muted">
+                                {% for key, value in event.details.items %}
+                                    {% if key != 'investigation_status' and key != 'investigation_notes' %}
+                                        <span class="inline-block ml-4">{{ key }}: {{ value|truncatechars:50 }}</span>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-2 space-x-reverse">
+                        {% if not event.is_resolved %}
+                            <button onclick="quickInvestigate('{{ event.id }}')" 
+                                    class="px-3 py-1 text-xs bg-blue-600 dark:bg-cyber-neon-primary text-white rounded hover:bg-blue-700 dark:hover:bg-cyber-neon-primary/80 transition-colors">
+                                بررسی
+                            </button>
+                            <button onclick="quickResolve('{{ event.id }}')" 
+                                    class="px-3 py-1 text-xs bg-green-600 dark:bg-cyber-neon-secondary text-white rounded hover:bg-green-700 dark:hover:bg-cyber-neon-secondary/80 transition-colors">
+                                حل
+                            </button>
+                        {% endif %}
+                        
+                        <a href="{% url 'admin_panel:security_event_detail' event.id %}" 
+                           class="px-3 py-1 text-xs bg-gray-600 dark:bg-cyber-bg-surface text-white rounded hover:bg-gray-700 dark:hover:bg-cyber-bg-elevated transition-colors">
+                            جزئیات
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-12">
+                <svg class="w-16 h-16 text-gray-400 dark:text-cyber-text-muted mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <h3 class="text-lg font-medium text-gray-900 dark:text-cyber-text-primary mb-2">رویداد امنیتی یافت نشد</h3>
+                <p class="text-gray-500 dark:text-cyber-text-muted">با فیلترهای انتخاب شده رویداد امنیتی موجود نیست.</p>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if metadata.total_pages > 1 %}
+        <div class="mt-8 flex justify-center">
+            <nav class="flex space-x-2 space-x-reverse">
+                {% if metadata.has_previous %}
+                    <a href="?page={{ metadata.page|add:'-1' }}{% for key, value in current_filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                       class="px-3 py-2 text-sm bg-gray-200 dark:bg-cyber-bg-elevated text-gray-700 dark:text-cyber-text-secondary rounded hover:bg-gray-300 dark:hover:bg-cyber-bg-surface transition-colors">
+                        قبلی
+                    </a>
+                {% endif %}
+                
+                <span class="px-3 py-2 text-sm bg-primary-600 dark:bg-cyber-neon-primary text-white rounded">
+                    {{ metadata.page }} از {{ metadata.total_pages }}
+                </span>
+                
+                {% if metadata.has_next %}
+                    <a href="?page={{ metadata.page|add:'1' }}{% for key, value in current_filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                       class="px-3 py-2 text-sm bg-gray-200 dark:bg-cyber-bg-elevated text-gray-700 dark:text-cyber-text-secondary rounded hover:bg-gray-300 dark:hover:bg-cyber-bg-surface transition-colors">
+                        بعدی
+                    </a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Bulk Actions Bar (Hidden by default) -->
+<div id="bulk-actions-bar" class="bulk-actions-bar" style="display: none;">
+    <div class="flex items-center space-x-4 space-x-reverse">
+        <span class="text-sm font-medium text-gray-700 dark:text-cyber-text-secondary">
+            <span id="selected-count">0</span> رویداد انتخاب شده
+        </span>
+        
+        <button onclick="bulkResolve()" 
+                class="px-4 py-2 text-sm bg-green-600 dark:bg-cyber-neon-secondary text-white rounded hover:bg-green-700 dark:hover:bg-cyber-neon-secondary/80 transition-colors">
+            حل همه
+        </button>
+        
+        <button onclick="bulkInvestigate()" 
+                class="px-4 py-2 text-sm bg-blue-600 dark:bg-cyber-neon-primary text-white rounded hover:bg-blue-700 dark:hover:bg-cyber-neon-primary/80 transition-colors">
+            بررسی همه
+        </button>
+        
+        <button onclick="clearSelection()" 
+                class="px-4 py-2 text-sm bg-gray-600 dark:bg-cyber-bg-elevated text-white rounded hover:bg-gray-700 dark:hover:bg-cyber-bg-surface transition-colors">
+            لغو
+        </button>
+    </div>
+</div>
+
+<!-- Investigation Modal -->
+<div id="investigation-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50" onclick="closeInvestigationModal()">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="security-event-card dark:cyber-glass max-w-md w-full" onclick="event.stopPropagation()">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">بررسی رویداد امنیتی</h3>
+                
+                <form id="investigation-form">
+                    <input type="hidden" id="investigation-event-id" name="event_id">
+                    <input type="hidden" id="investigation-action" name="action" value="investigate">
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">یادداشت بررسی</label>
+                        <textarea name="notes" rows="4" 
+                                  class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/20 rounded-lg bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary"
+                                  placeholder="توضیحات بررسی..."></textarea>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">تخصیص به</label>
+                        <input type="text" name="assigned_to" 
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/20 rounded-lg bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary"
+                               placeholder="نام کاربر مسئول بررسی">
+                    </div>
+                    
+                    <div class="flex space-x-3 space-x-reverse">
+                        <button type="submit" 
+                                class="flex-1 bg-blue-600 dark:bg-cyber-neon-primary hover:bg-blue-700 dark:hover:bg-cyber-neon-primary/80 text-white px-4 py-2 rounded-lg transition-colors">
+                            شروع بررسی
+                        </button>
+                        <button type="button" onclick="closeInvestigationModal()" 
+                                class="flex-1 bg-gray-600 dark:bg-cyber-bg-elevated hover:bg-gray-700 dark:hover:bg-cyber-bg-surface text-white px-4 py-2 rounded-lg transition-colors">
+                            لغو
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let bulkMode = false;
+let selectedEvents = new Set();
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-refresh every 30 seconds
+    setInterval(refreshEvents, 30000);
+});
+
+function refreshEvents() {
+    window.location.reload();
+}
+
+function toggleBulkMode() {
+    bulkMode = !bulkMode;
+    const checkboxes = document.querySelectorAll('.event-checkbox');
+    const bulkBtn = document.getElementById('bulk-mode-btn');
+    const selectAllBtn = document.getElementById('select-all-btn');
+    const clearBtn = document.getElementById('clear-selection-btn');
+    
+    if (bulkMode) {
+        checkboxes.forEach(cb => cb.style.display = 'block');
+        bulkBtn.textContent = 'لغو عملیات گروهی';
+        bulkBtn.className = 'bg-red-600 dark:bg-cyber-neon-danger hover:bg-red-700 dark:hover:bg-cyber-neon-danger/80 text-white px-4 py-2 rounded-lg transition-colors';
+        selectAllBtn.style.display = 'inline-block';
+        clearBtn.style.display = 'inline-block';
+    } else {
+        checkboxes.forEach(cb => {
+            cb.style.display = 'none';
+            cb.checked = false;
+        });
+        bulkBtn.innerHTML = '<svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>عملیات گروهی';
+        bulkBtn.className = 'bg-gray-600 dark:bg-cyber-bg-elevated hover:bg-gray-700 dark:hover:bg-cyber-bg-surface text-white px-4 py-2 rounded-lg transition-colors';
+        selectAllBtn.style.display = 'none';
+        clearBtn.style.display = 'none';
+        selectedEvents.clear();
+        updateBulkActionsBar();
+    }
+}
+
+function selectAllEvents() {
+    const checkboxes = document.querySelectorAll('.event-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = true;
+        selectedEvents.add(cb.value);
+    });
+    updateBulkActionsBar();
+}
+
+function clearSelection() {
+    const checkboxes = document.querySelectorAll('.event-checkbox');
+    checkboxes.forEach(cb => cb.checked = false);
+    selectedEvents.clear();
+    updateBulkActionsBar();
+}
+
+function updateBulkActionsBar() {
+    const bulkBar = document.getElementById('bulk-actions-bar');
+    const selectedCount = document.getElementById('selected-count');
+    
+    if (selectedEvents.size > 0) {
+        bulkBar.style.display = 'block';
+        selectedCount.textContent = selectedEvents.size;
+    } else {
+        bulkBar.style.display = 'none';
+    }
+}
+
+// Event checkbox change handler
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('event-checkbox')) {
+        if (e.target.checked) {
+            selectedEvents.add(e.target.value);
+        } else {
+            selectedEvents.delete(e.target.value);
+        }
+        updateBulkActionsBar();
+    }
+});
+
+function quickInvestigate(eventId) {
+    document.getElementById('investigation-event-id').value = eventId;
+    document.getElementById('investigation-action').value = 'investigate';
+    document.getElementById('investigation-modal').classList.remove('hidden');
+}
+
+function quickResolve(eventId) {
+    const notes = prompt('یادداشت حل مسئله (اختیاری):');
+    
+    fetch('{% url "admin_panel:security_event_investigate" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: `event_id=${eventId}&action=resolve&notes=${encodeURIComponent(notes || '')}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            ZargarAdmin.showMessage(data.message, 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            ZargarAdmin.showMessage(data.error, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        ZargarAdmin.showMessage('خطا در ارتباط با سرور', 'error');
+    });
+}
+
+function closeInvestigationModal() {
+    document.getElementById('investigation-modal').classList.add('hidden');
+}
+
+// Investigation form submission
+document.getElementById('investigation-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('{% url "admin_panel:security_event_investigate" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            ZargarAdmin.showMessage(data.message, 'success');
+            closeInvestigationModal();
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            ZargarAdmin.showMessage(data.error, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        ZargarAdmin.showMessage('خطا در ارتباط با سرور', 'error');
+    });
+});
+
+function bulkResolve() {
+    if (selectedEvents.size === 0) {
+        ZargarAdmin.showMessage('هیچ رویدادی انتخاب نشده', 'warning');
+        return;
+    }
+    
+    const notes = prompt('یادداشت حل مسئله برای همه رویدادهای انتخاب شده:');
+    
+    const formData = new FormData();
+    selectedEvents.forEach(id => formData.append('event_ids', id));
+    formData.append('action', 'resolve_all');
+    formData.append('notes', notes || '');
+    
+    fetch('{% url "admin_panel:security_event_bulk_action" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            ZargarAdmin.showMessage(data.message, 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            ZargarAdmin.showMessage(data.error, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        ZargarAdmin.showMessage('خطا در ارتباط با سرور', 'error');
+    });
+}
+
+function bulkInvestigate() {
+    if (selectedEvents.size === 0) {
+        ZargarAdmin.showMessage('هیچ رویدادی انتخاب نشده', 'warning');
+        return;
+    }
+    
+    const notes = prompt('یادداشت بررسی برای همه رویدادهای انتخاب شده:');
+    
+    const formData = new FormData();
+    selectedEvents.forEach(id => formData.append('event_ids', id));
+    formData.append('action', 'mark_investigated');
+    formData.append('notes', notes || '');
+    
+    fetch('{% url "admin_panel:security_event_bulk_action" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            ZargarAdmin.showMessage(data.message, 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            ZargarAdmin.showMessage(data.error, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        ZargarAdmin.showMessage('خطا در ارتباط با سرور', 'error');
+    });
+}
+
+// Add CSRF token to all forms
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = '{{ csrf_token }}';
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        if (!form.querySelector('[name=csrfmiddlewaretoken]')) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfToken;
+            form.appendChild(csrfInput);
+        }
+    });
+});
+</script>
+{% endblock %}

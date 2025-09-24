@@ -394,3 +394,346 @@ class SuspiciousActivityInvestigateView(SuperAdminRequiredMixin, View):
                 'success': False,
                 'error': 'خطا در بررسی فعالیت مشکوک'
             }, status=500)
+
+
+class SecurityEventManagementView(SuperAdminRequiredMixin, TemplateView):
+    """
+    Main security event management interface with filtering, categorization, and investigation workflow.
+    """
+    template_name = 'admin_panel/security/security_events.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Import the backend service
+        from .security_event_services_public import PublicSecurityEventFilterService
+        
+        # Get filter parameters from request
+        is_resolved_param = self.request.GET.get('is_resolved')
+        is_resolved = None
+        if is_resolved_param:
+            is_resolved = is_resolved_param.lower() == 'true'
+        
+        filters = {
+            'event_type': self.request.GET.get('event_type'),
+            'severity': self.request.GET.get('severity'),
+            'is_resolved': is_resolved,
+            'search_query': self.request.GET.get('search'),
+            'page': int(self.request.GET.get('page', 1)),
+            'per_page': 25,
+        }
+        
+        # Handle date filters
+        date_from = self.request.GET.get('date_from')
+        date_to = self.request.GET.get('date_to')
+        
+        if date_from:
+            try:
+                filters['date_from'] = timezone.datetime.strptime(date_from, '%Y-%m-%d').replace(tzinfo=timezone.get_current_timezone())
+            except ValueError:
+                pass
+        
+        if date_to:
+            try:
+                filters['date_to'] = timezone.datetime.strptime(date_to, '%Y-%m-%d').replace(tzinfo=timezone.get_current_timezone())
+            except ValueError:
+                pass
+        
+        # Get filtered events
+        events, metadata = PublicSecurityEventFilterService.get_filtered_events(**filters)
+        
+        # Get event statistics
+        stats = PublicSecurityEventFilterService.get_event_statistics()
+        
+        # Get severity distribution
+        severity_stats = PublicSecurityEvent.objects.values('severity').annotate(
+            count=Count('id')
+        ).order_by('severity')
+        
+        # Get event type choices for filter dropdown
+        event_type_choices = PublicSecurityEvent.EVENT_TYPES
+        severity_choices = PublicSecurityEvent.SEVERITY_LEVELS
+        
+        # Get recent unresolved critical/high events for quick action
+        critical_events = PublicSecurityEvent.objects.filter(
+            severity__in=['critical', 'high'],
+            is_resolved=False
+        ).order_by('-created_at')[:5]
+        
+        context.update({
+            'events': events,
+            'metadata': metadata,
+            'stats': stats,
+            'severity_stats': list(severity_stats),
+            'critical_events': critical_events,
+            'event_type_choices': event_type_choices,
+            'severity_choices': severity_choices,
+            'current_filters': {
+                'event_type': filters.get('event_type', ''),
+                'severity': filters.get('severity', ''),
+                'is_resolved': self.request.GET.get('is_resolved', ''),
+                'search': filters.get('search_query', ''),
+                'date_from': self.request.GET.get('date_from', ''),
+                'date_to': self.request.GET.get('date_to', ''),
+            }
+        })
+        
+        return context
+
+
+class SecurityEventDetailView(SuperAdminRequiredMixin, TemplateView):
+    """
+    Detailed view for individual security events with investigation workflow.
+    """
+    template_name = 'admin_panel/security/security_event_detail.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        event_id = kwargs.get('event_id')
+        event = get_object_or_404(PublicSecurityEvent, id=event_id)
+        
+        # Get related events from same IP or user
+        related_events = PublicSecurityEvent.objects.filter(
+            Q(ip_address=event.ip_address) | Q(username_attempted=event.username_attempted)
+        ).exclude(id=event.id).order_by('-created_at')[:10]
+        
+        # Get investigation history from audit logs
+        investigation_history = PublicAuditLog.objects.filter(
+            model_name='publicsecurityevent',
+            object_id=str(event.id)
+        ).order_by('-created_at')
+        
+        context.update({
+            'event': event,
+            'related_events': related_events,
+            'investigation_history': investigation_history,
+        })
+        
+        return context
+
+
+class SecurityEventInvestigateView(SuperAdminRequiredMixin, View):
+    """
+    View to handle security event investigation workflow.
+    """
+    
+    def post(self, request):
+        """Handle investigation actions for security events."""
+        try:
+            event_id = request.POST.get('event_id')
+            action = request.POST.get('action')  # 'investigate', 'resolve', 'escalate'
+            notes = request.POST.get('notes', '')
+            assigned_to = request.POST.get('assigned_to', '')
+            
+            if not event_id or not action:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'پارامترهای مورد نیاز مشخص نشده'
+                }, status=400)
+            
+            event = get_object_or_404(PublicSecurityEvent, id=event_id)
+            
+            # Handle different investigation actions
+            if action == 'investigate':
+                # Mark as under investigation
+                event.details = event.details or {}
+                event.details['investigation_status'] = 'under_investigation'
+                event.details['investigation_started_at'] = timezone.now().isoformat()
+                event.details['investigation_notes'] = notes
+                event.details['assigned_to'] = assigned_to
+                event.save()
+                
+                # Log the investigation action
+                PublicAuditLog.log_action(
+                    action='security_event_investigate_start',
+                    content_object=event,
+                    request=request,
+                    details={
+                        'event_type': event.event_type,
+                        'severity': event.severity,
+                        'investigation_notes': notes,
+                        'assigned_to': assigned_to,
+                    }
+                )
+                
+                message = 'بررسی رویداد امنیتی آغاز شد'
+                
+            elif action == 'resolve':
+                # Mark as resolved
+                event.is_resolved = True
+                event.resolved_at = timezone.now()
+                event.resolution_notes = notes
+                event.details = event.details or {}
+                event.details['investigation_status'] = 'resolved'
+                event.save()
+                
+                # Log the resolution action
+                PublicAuditLog.log_action(
+                    action='security_event_resolve',
+                    content_object=event,
+                    request=request,
+                    details={
+                        'event_type': event.event_type,
+                        'severity': event.severity,
+                        'resolution_notes': notes,
+                    }
+                )
+                
+                message = 'رویداد امنیتی حل شد'
+                
+            elif action == 'escalate':
+                # Escalate severity
+                old_severity = event.severity
+                if event.severity == 'low':
+                    event.severity = 'medium'
+                elif event.severity == 'medium':
+                    event.severity = 'high'
+                elif event.severity == 'high':
+                    event.severity = 'critical'
+                
+                event.details = event.details or {}
+                event.details['escalated_from'] = old_severity
+                event.details['escalation_reason'] = notes
+                event.details['escalated_at'] = timezone.now().isoformat()
+                event.save()
+                
+                # Log the escalation action
+                PublicAuditLog.log_action(
+                    action='security_event_escalate',
+                    content_object=event,
+                    request=request,
+                    details={
+                        'event_type': event.event_type,
+                        'old_severity': old_severity,
+                        'new_severity': event.severity,
+                        'escalation_reason': notes,
+                    }
+                )
+                
+                message = f'رویداد امنیتی از {old_severity} به {event.severity} ارتقا یافت'
+            
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'عملیات نامعتبر'
+                }, status=400)
+            
+            messages.success(request, message)
+            
+            return JsonResponse({
+                'success': True,
+                'message': message,
+                'event_status': {
+                    'is_resolved': event.is_resolved,
+                    'severity': event.severity,
+                    'investigation_status': event.details.get('investigation_status', 'pending')
+                }
+            })
+            
+        except Exception as e:
+            logger.error(f"Error handling security event investigation: {str(e)}")
+            return JsonResponse({
+                'success': False,
+                'error': 'خطا در بررسی رویداد امنیتی'
+            }, status=500)
+
+
+class SecurityEventBulkActionView(SuperAdminRequiredMixin, View):
+    """
+    View to handle bulk actions on security events.
+    """
+    
+    def post(self, request):
+        """Handle bulk actions on selected security events."""
+        try:
+            event_ids = request.POST.getlist('event_ids')
+            action = request.POST.get('action')
+            notes = request.POST.get('notes', '')
+            
+            if not event_ids or not action:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'رویدادها یا عملیات انتخاب نشده'
+                }, status=400)
+            
+            events = PublicSecurityEvent.objects.filter(id__in=event_ids)
+            
+            if not events.exists():
+                return JsonResponse({
+                    'success': False,
+                    'error': 'رویداد امنیتی یافت نشد'
+                }, status=404)
+            
+            updated_count = 0
+            
+            if action == 'resolve_all':
+                # Resolve all selected events
+                for event in events:
+                    if not event.is_resolved:
+                        event.is_resolved = True
+                        event.resolved_at = timezone.now()
+                        event.resolution_notes = notes
+                        event.save()
+                        updated_count += 1
+                        
+                        # Log each resolution
+                        PublicAuditLog.log_action(
+                            action='security_event_bulk_resolve',
+                            content_object=event,
+                            request=request,
+                            details={
+                                'event_type': event.event_type,
+                                'severity': event.severity,
+                                'bulk_action': True,
+                                'resolution_notes': notes,
+                            }
+                        )
+                
+                message = f'{updated_count} رویداد امنیتی حل شد'
+                
+            elif action == 'mark_investigated':
+                # Mark all as investigated
+                for event in events:
+                    event.details = event.details or {}
+                    event.details['investigation_status'] = 'investigated'
+                    event.details['bulk_investigation_notes'] = notes
+                    event.details['investigated_at'] = timezone.now().isoformat()
+                    event.save()
+                    updated_count += 1
+                    
+                    # Log each investigation
+                    PublicAuditLog.log_action(
+                        action='security_event_bulk_investigate',
+                        content_object=event,
+                        request=request,
+                        details={
+                            'event_type': event.event_type,
+                            'severity': event.severity,
+                            'bulk_action': True,
+                            'investigation_notes': notes,
+                        }
+                    )
+                
+                message = f'{updated_count} رویداد امنیتی بررسی شد'
+                
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'عملیات نامعتبر'
+                }, status=400)
+            
+            messages.success(request, message)
+            
+            return JsonResponse({
+                'success': True,
+                'message': message,
+                'updated_count': updated_count
+            })
+            
+        except Exception as e:
+            logger.error(f"Error handling bulk security event action: {str(e)}")
+            return JsonResponse({
+                'success': False,
+                'error': 'خطا در عملیات گروهی'
+            }, status=500)

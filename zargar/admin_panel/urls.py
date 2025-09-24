@@ -63,6 +63,12 @@ urlpatterns = [
     path('security/event/resolve/', security_views.SecurityEventResolveView.as_view(), name='security_event_resolve'),
     path('security/activity/investigate/', security_views.SuspiciousActivityInvestigateView.as_view(), name='suspicious_activity_investigate'),
     
+    # Security Event Management
+    path('security/events/', security_views.SecurityEventManagementView.as_view(), name='security_events'),
+    path('security/events/<int:event_id>/', security_views.SecurityEventDetailView.as_view(), name='security_event_detail'),
+    path('security/events/investigate/', security_views.SecurityEventInvestigateView.as_view(), name='security_event_investigate'),
+    path('security/events/bulk-action/', security_views.SecurityEventBulkActionView.as_view(), name='security_event_bulk_action'),
+    
     # Audit Log Management
     path('security/audit-logs/', audit_views.AuditLogListView.as_view(), name='audit_logs'),
     path('security/audit-logs/<int:log_id>/', audit_views.AuditLogDetailView.as_view(), name='audit_log_detail'),

@@ -1,0 +1,559 @@
+{% extends "admin_panel/base_unified.html" %}
+{% load static %}
+
+{% block title %}جزئیات رویداد امنیتی - پنل مدیریت زرگر{% endblock %}
+
+{% block extra_css %}
+<style>
+    .security-event-card {
+        @apply bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl border dark:border-cyber-neon-primary/20 transition-all duration-300;
+    }
+    
+    .severity-critical {
+        @apply border-r-4 border-red-500 dark:border-cyber-neon-danger bg-red-50 dark:bg-cyber-neon-danger/10;
+    }
+    
+    .severity-high {
+        @apply border-r-4 border-orange-500 dark:border-cyber-neon-tertiary bg-orange-50 dark:bg-cyber-neon-tertiary/10;
+    }
+    
+    .severity-medium {
+        @apply border-r-4 border-yellow-500 dark:border-cyber-neon-warning bg-yellow-50 dark:bg-cyber-neon-warning/10;
+    }
+    
+    .severity-low {
+        @apply border-r-4 border-green-500 dark:border-cyber-neon-secondary bg-green-50 dark:bg-cyber-neon-secondary/10;
+    }
+    
+    .cyber-glass {
+        backdrop-filter: blur(16px) saturate(150%);
+        background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 50%, rgba(11, 14, 26, 0.95) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
+    
+    .timeline-item {
+        @apply relative pl-8 pb-6;
+    }
+    
+    .timeline-item::before {
+        @apply absolute right-0 top-2 w-3 h-3 bg-gray-300 dark:bg-cyber-neon-primary rounded-full;
+        content: '';
+    }
+    
+    .timeline-item::after {
+        @apply absolute right-1.5 top-5 w-0.5 h-full bg-gray-200 dark:bg-cyber-neon-primary/30;
+        content: '';
+    }
+    
+    .timeline-item:last-child::after {
+        display: none;
+    }
+    
+    .investigation-actions {
+        @apply bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-cyber-neon-primary/10 dark:to-cyber-neon-purple/10 rounded-lg p-6 border dark:border-cyber-neon-primary/20;
+    }
+    
+    .related-events {
+        @apply bg-gradient-to-r from-orange-50 to-red-50 dark:from-cyber-neon-tertiary/10 dark:to-cyber-neon-danger/10 rounded-lg p-6 border dark:border-cyber-neon-tertiary/20;
+    }
+    
+    .event-details {
+        @apply bg-gradient-to-r from-gray-50 to-gray-100 dark:from-cyber-bg-elevated dark:to-cyber-bg-surface rounded-lg p-6 border dark:border-cyber-neon-primary/20;
+    }
+</style>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-8">
+    <div class="flex justify-between items-center">
+        <div>
+            <nav class="flex mb-4" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-3 space-x-reverse">
+                    <li class="inline-flex items-center">
+                        <a href="{% url 'admin_panel:dashboard' %}" class="text-gray-700 dark:text-cyber-text-secondary hover:text-primary-600 dark:hover:text-cyber-neon-primary">
+                            داشبورد
+                        </a>
+                    </li>
+                    <li>
+                        <div class="flex items-center">
+                            <svg class="w-6 h-6 text-gray-400 dark:text-cyber-text-muted" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            <a href="{% url 'admin_panel:security_events' %}" class="mr-1 text-gray-700 dark:text-cyber-text-secondary hover:text-primary-600 dark:hover:text-cyber-neon-primary md:mr-2">
+                                رویدادهای امنیتی
+                            </a>
+                        </div>
+                    </li>
+                    <li aria-current="page">
+                        <div class="flex items-center">
+                            <svg class="w-6 h-6 text-gray-400 dark:text-cyber-text-muted" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="mr-1 text-gray-500 dark:text-cyber-text-muted md:mr-2">جزئیات رویداد</span>
+                        </div>
+                    </li>
+                </ol>
+            </nav>
+            
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-cyber-text-primary">
+                جزئیات رویداد امنیتی
+            </h1>
+            <p class="mt-2 text-gray-600 dark:text-cyber-text-secondary">
+                بررسی کامل و مدیریت رویداد امنیتی
+            </p>
+        </div>
+        
+        <div class="flex space-x-4 space-x-reverse">
+            <a href="{% url 'admin_panel:security_events' %}" 
+               class="bg-gray-600 dark:bg-cyber-bg-elevated hover:bg-gray-700 dark:hover:bg-cyber-bg-surface text-white px-4 py-2 rounded-lg transition-colors">
+                <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                بازگشت
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Event Overview -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+    <!-- Main Event Details -->
+    <div class="lg:col-span-2">
+        <div class="security-event-card dark:cyber-glass severity-{{ event.severity }}">
+            <div class="p-6">
+                <div class="flex items-start justify-between mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary mb-2">
+                            {{ event.get_event_type_display }}
+                        </h2>
+                        
+                        <div class="flex items-center space-x-3 space-x-reverse">
+                            <span class="px-3 py-1 text-sm font-medium rounded-full
+                                        {% if event.severity == 'critical' %}bg-red-100 text-red-800 dark:bg-cyber-neon-danger/20 dark:text-cyber-neon-danger
+                                        {% elif event.severity == 'high' %}bg-orange-100 text-orange-800 dark:bg-cyber-neon-tertiary/20 dark:text-cyber-neon-tertiary
+                                        {% elif event.severity == 'medium' %}bg-yellow-100 text-yellow-800 dark:bg-cyber-neon-warning/20 dark:text-cyber-neon-warning
+                                        {% else %}bg-green-100 text-green-800 dark:bg-cyber-neon-secondary/20 dark:text-cyber-neon-secondary{% endif %}">
+                                {{ event.get_severity_display }}
+                            </span>
+                            
+                            {% if event.is_resolved %}
+                                <span class="px-3 py-1 text-sm font-medium bg-green-100 text-green-800 dark:bg-cyber-neon-secondary/20 dark:text-cyber-neon-secondary rounded-full">
+                                    حل شده
+                                </span>
+                            {% else %}
+                                <span class="px-3 py-1 text-sm font-medium bg-red-100 text-red-800 dark:bg-cyber-neon-danger/20 dark:text-cyber-neon-danger rounded-full">
+                                    فعال
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="text-sm text-gray-500 dark:text-cyber-text-muted text-left">
+                        <p>{{ event.created_at|date:"Y/m/d H:i" }}</p>
+                        <p>{{ event.created_at|timesince }} پیش</p>
+                    </div>
+                </div>
+                
+                <!-- Event Information Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="event-details dark:cyber-glass">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">اطلاعات اصلی</h3>
+                        
+                        <div class="space-y-3">
+                            <div>
+                                <span class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">IP آدرس:</span>
+                                <span class="text-sm text-gray-900 dark:text-cyber-text-primary font-mono">{{ event.ip_address }}</span>
+                            </div>
+                            
+                            {% if event.username_attempted %}
+                            <div>
+                                <span class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">کاربر تلاش شده:</span>
+                                <span class="text-sm text-gray-900 dark:text-cyber-text-primary">{{ event.username_attempted }}</span>
+                            </div>
+                            {% endif %}
+                            
+                            {% if event.session_key %}
+                            <div>
+                                <span class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">کلید جلسه:</span>
+                                <span class="text-sm text-gray-900 dark:text-cyber-text-primary font-mono">{{ event.session_key|truncatechars:20 }}</span>
+                            </div>
+                            {% endif %}
+                            
+                            {% if event.request_path %}
+                            <div>
+                                <span class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">مسیر درخواست:</span>
+                                <span class="text-sm text-gray-900 dark:text-cyber-text-primary font-mono">{{ event.request_path }}</span>
+                            </div>
+                            {% endif %}
+                            
+                            {% if event.request_method %}
+                            <div>
+                                <span class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">روش درخواست:</span>
+                                <span class="text-sm text-gray-900 dark:text-cyber-text-primary font-mono">{{ event.request_method }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="event-details dark:cyber-glass">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">اطلاعات تکمیلی</h3>
+                        
+                        <div class="space-y-3">
+                            {% if event.user_agent %}
+                            <div>
+                                <span class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">User Agent:</span>
+                                <p class="text-sm text-gray-900 dark:text-cyber-text-primary break-all">{{ event.user_agent|truncatechars:100 }}</p>
+                            </div>
+                            {% endif %}
+                            
+                            <div>
+                                <span class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">آخرین بروزرسانی:</span>
+                                <span class="text-sm text-gray-900 dark:text-cyber-text-primary">{{ event.updated_at|date:"Y/m/d H:i" }}</span>
+                            </div>
+                            
+                            {% if event.resolved_at %}
+                            <div>
+                                <span class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">زمان حل:</span>
+                                <span class="text-sm text-gray-900 dark:text-cyber-text-primary">{{ event.resolved_at|date:"Y/m/d H:i" }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Event Details JSON -->
+                {% if event.details %}
+                <div class="event-details dark:cyber-glass">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">جزئیات رویداد</h3>
+                    
+                    <div class="space-y-2">
+                        {% for key, value in event.details.items %}
+                        <div class="flex justify-between items-start">
+                            <span class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">{{ key }}:</span>
+                            <span class="text-sm text-gray-900 dark:text-cyber-text-primary text-left">{{ value }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Resolution Notes -->
+                {% if event.resolution_notes %}
+                <div class="event-details dark:cyber-glass">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">یادداشت حل مسئله</h3>
+                    <p class="text-sm text-gray-700 dark:text-cyber-text-secondary">{{ event.resolution_notes }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Investigation Actions -->
+    <div class="space-y-6">
+        {% if not event.is_resolved %}
+        <div class="investigation-actions dark:cyber-glass">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">عملیات بررسی</h3>
+            
+            <div class="space-y-3">
+                <button onclick="investigateEvent('{{ event.id }}')" 
+                        class="w-full bg-blue-600 dark:bg-cyber-neon-primary hover:bg-blue-700 dark:hover:bg-cyber-neon-primary/80 text-white px-4 py-2 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    شروع بررسی
+                </button>
+                
+                <button onclick="resolveEvent('{{ event.id }}')" 
+                        class="w-full bg-green-600 dark:bg-cyber-neon-secondary hover:bg-green-700 dark:hover:bg-cyber-neon-secondary/80 text-white px-4 py-2 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    حل رویداد
+                </button>
+                
+                {% if event.severity != 'critical' %}
+                <button onclick="escalateEvent('{{ event.id }}')" 
+                        class="w-full bg-orange-600 dark:bg-cyber-neon-tertiary hover:bg-orange-700 dark:hover:bg-cyber-neon-tertiary/80 text-white px-4 py-2 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                    </svg>
+                    ارتقا شدت
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Investigation Status -->
+        <div class="security-event-card dark:cyber-glass">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">وضعیت بررسی</h3>
+                
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">وضعیت:</span>
+                        <span class="px-2 py-1 text-xs font-medium rounded-full
+                                    {% if event.is_resolved %}bg-green-100 text-green-800 dark:bg-cyber-neon-secondary/20 dark:text-cyber-neon-secondary
+                                    {% elif event.details.investigation_status == 'under_investigation' %}bg-blue-100 text-blue-800 dark:bg-cyber-neon-primary/20 dark:text-cyber-neon-primary
+                                    {% else %}bg-yellow-100 text-yellow-800 dark:bg-cyber-neon-warning/20 dark:text-cyber-neon-warning{% endif %}">
+                            {% if event.is_resolved %}
+                                حل شده
+                            {% elif event.details.investigation_status == 'under_investigation' %}
+                                در حال بررسی
+                            {% else %}
+                                در انتظار
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    {% if event.details.assigned_to %}
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">مسئول بررسی:</span>
+                        <span class="text-sm text-gray-900 dark:text-cyber-text-primary">{{ event.details.assigned_to }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if event.details.investigation_started_at %}
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">شروع بررسی:</span>
+                        <span class="text-sm text-gray-900 dark:text-cyber-text-primary">{{ event.details.investigation_started_at|date:"Y/m/d H:i" }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Investigation History -->
+{% if investigation_history %}
+<div class="mb-8">
+    <div class="security-event-card dark:cyber-glass">
+        <div class="p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-6">تاریخچه بررسی</h3>
+            
+            <div class="space-y-4">
+                {% for log in investigation_history %}
+                <div class="timeline-item">
+                    <div class="bg-gray-50 dark:bg-cyber-bg-elevated rounded-lg p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h4 class="font-semibold text-gray-900 dark:text-cyber-text-primary">
+                                {{ log.get_action_display|default:log.action }}
+                            </h4>
+                            <span class="text-sm text-gray-500 dark:text-cyber-text-muted">
+                                {{ log.created_at|date:"Y/m/d H:i" }}
+                            </span>
+                        </div>
+                        
+                        {% if log.details %}
+                        <div class="text-sm text-gray-600 dark:text-cyber-text-secondary">
+                            {% for key, value in log.details.items %}
+                                <p><strong>{{ key }}:</strong> {{ value }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Related Events -->
+{% if related_events %}
+<div class="mb-8">
+    <div class="related-events dark:cyber-glass">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-6">رویدادهای مرتبط</h3>
+        
+        <div class="space-y-4">
+            {% for related in related_events %}
+            <div class="bg-white dark:bg-cyber-bg-surface rounded-lg p-4 border dark:border-cyber-neon-primary/20">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <h4 class="font-semibold text-gray-900 dark:text-cyber-text-primary">
+                            {{ related.get_event_type_display }}
+                        </h4>
+                        <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">
+                            IP: {{ related.ip_address }} | {{ related.created_at|timesince }} پیش
+                        </p>
+                    </div>
+                    
+                    <div class="flex space-x-2 space-x-reverse">
+                        <span class="px-2 py-1 text-xs font-medium rounded-full
+                                    {% if related.severity == 'critical' %}bg-red-100 text-red-800 dark:bg-cyber-neon-danger/20 dark:text-cyber-neon-danger
+                                    {% elif related.severity == 'high' %}bg-orange-100 text-orange-800 dark:bg-cyber-neon-tertiary/20 dark:text-cyber-neon-tertiary
+                                    {% elif related.severity == 'medium' %}bg-yellow-100 text-yellow-800 dark:bg-cyber-neon-warning/20 dark:text-cyber-neon-warning
+                                    {% else %}bg-green-100 text-green-800 dark:bg-cyber-neon-secondary/20 dark:text-cyber-neon-secondary{% endif %}">
+                            {{ related.get_severity_display }}
+                        </span>
+                        
+                        <a href="{% url 'admin_panel:security_event_detail' related.id %}" 
+                           class="px-2 py-1 text-xs bg-gray-600 dark:bg-cyber-bg-elevated text-white rounded hover:bg-gray-700 dark:hover:bg-cyber-bg-surface transition-colors">
+                            مشاهده
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Investigation Modal -->
+<div id="investigation-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50" onclick="closeInvestigationModal()">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="security-event-card dark:cyber-glass max-w-md w-full" onclick="event.stopPropagation()">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">بررسی رویداد امنیتی</h3>
+                
+                <form id="investigation-form">
+                    <input type="hidden" id="investigation-event-id" name="event_id" value="{{ event.id }}">
+                    <input type="hidden" id="investigation-action" name="action" value="investigate">
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">یادداشت بررسی</label>
+                        <textarea name="notes" rows="4" 
+                                  class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/20 rounded-lg bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary"
+                                  placeholder="توضیحات بررسی..."></textarea>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">تخصیص به</label>
+                        <input type="text" name="assigned_to" 
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/20 rounded-lg bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary"
+                               placeholder="نام کاربر مسئول بررسی">
+                    </div>
+                    
+                    <div class="flex space-x-3 space-x-reverse">
+                        <button type="submit" 
+                                class="flex-1 bg-blue-600 dark:bg-cyber-neon-primary hover:bg-blue-700 dark:hover:bg-cyber-neon-primary/80 text-white px-4 py-2 rounded-lg transition-colors">
+                            شروع بررسی
+                        </button>
+                        <button type="button" onclick="closeInvestigationModal()" 
+                                class="flex-1 bg-gray-600 dark:bg-cyber-bg-elevated hover:bg-gray-700 dark:hover:bg-cyber-bg-surface text-white px-4 py-2 rounded-lg transition-colors">
+                            لغو
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function investigateEvent(eventId) {
+    document.getElementById('investigation-event-id').value = eventId;
+    document.getElementById('investigation-action').value = 'investigate';
+    document.getElementById('investigation-modal').classList.remove('hidden');
+}
+
+function resolveEvent(eventId) {
+    const notes = prompt('یادداشت حل مسئله (اختیاری):');
+    
+    fetch('{% url "admin_panel:security_event_investigate" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: `event_id=${eventId}&action=resolve&notes=${encodeURIComponent(notes || '')}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            ZargarAdmin.showMessage(data.message, 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            ZargarAdmin.showMessage(data.error, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        ZargarAdmin.showMessage('خطا در ارتباط با سرور', 'error');
+    });
+}
+
+function escalateEvent(eventId) {
+    const reason = prompt('دلیل ارتقا شدت:');
+    if (!reason) return;
+    
+    fetch('{% url "admin_panel:security_event_investigate" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: `event_id=${eventId}&action=escalate&notes=${encodeURIComponent(reason)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            ZargarAdmin.showMessage(data.message, 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            ZargarAdmin.showMessage(data.error, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        ZargarAdmin.showMessage('خطا در ارتباط با سرور', 'error');
+    });
+}
+
+function closeInvestigationModal() {
+    document.getElementById('investigation-modal').classList.add('hidden');
+}
+
+// Investigation form submission
+document.getElementById('investigation-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('{% url "admin_panel:security_event_investigate" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            ZargarAdmin.showMessage(data.message, 'success');
+            closeInvestigationModal();
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            ZargarAdmin.showMessage(data.error, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        ZargarAdmin.showMessage('خطا در ارتباط با سرور', 'error');
+    });
+});
+
+// Add CSRF token to all forms
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = '{{ csrf_token }}';
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        if (!form.querySelector('[name=csrfmiddlewaretoken]')) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfToken;
+            form.appendChild(csrfInput);
+        }
+    });
+});
+</script>
+{% endblock %}

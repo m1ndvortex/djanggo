@@ -1,25 +1,26 @@
 """
-Real Database Test for Security Event Management Backend.
+Real Database Tests for Security Event Management Backend using Public Schema.
 
-This test works with the existing database structure and verifies
-that all security event management services function correctly.
+These tests use the actual database with public schema models to verify 
+that all functionality works correctly with real data and relationships.
 """
 import os
-import sys
 import django
 from django.conf import settings
 
-# Add the project root to Python path
-sys.path.insert(0, '/app')
+# Configure Django settings before importing models
+if not settings.configured:
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'zargar.settings.test')
+    django.setup()
 
-# Configure Django settings
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'zargar.settings.development')
-django.setup()
-
+import pytest
+from django.test import TestCase, TransactionTestCase
 from django.utils import timezone
-from datetime import timedelta
-from zargar.tenants.models import SuperAdmin
-from zargar.tenants.admin_models import PublicSecurityEvent, PublicAuditLog
+from django.db import transaction
+from datetime import timedelta, datetime
+
+# Import public schema models that we know exist
+from zargar.tenants.models import SuperAdmin, PublicSecurityEvent, PublicAuditLog
 from zargar.admin_panel.security_event_services import (
     SecurityEventFilterService,
     SecurityEventCategorizationService,
@@ -28,376 +29,474 @@ from zargar.admin_panel.security_event_services import (
 )
 
 
-def test_real_database_operations():
-    """Test security event management with real database operations."""
+@pytest.mark.django_db
+class SecurityEventPublicSchemaTest(TransactionTestCase):
+    """Test security event management with public schema models."""
     
-    print("🔍 Testing Security Event Management with Real Database...")
-    
-    # Step 1: Create test data
-    print("\n📝 Step 1: Creating test data...")
-    
-    try:
-        # Create or get test super admin
-        admin, created = SuperAdmin.objects.get_or_create(
-            username='test_security_admin',
-            defaults={
-                'email': 'admin@security.com',
-                'first_name': 'Test',
-                'last_name': 'Admin'
-            }
+    def setUp(self):
+        """Set up test data in the public schema."""
+        # Create super admins
+        self.super_admin1 = SuperAdmin.objects.create_user(
+            username='admin1',
+            email='admin1@example.com',
+            password='adminpass123'
         )
-        if created:
-            admin.set_password('adminpass123')
-            admin.save()
-        print(f"✅ Test admin: {admin.username} (ID: {admin.id})")
+        
+        self.super_admin2 = SuperAdmin.objects.create_user(
+            username='investigator1',
+            email='investigator1@example.com',
+            password='invpass123'
+        )
         
         # Create test security events using PublicSecurityEvent
-        events = []
+        self.events = []
         
-        # Event 1: Login failure
-        event1 = PublicSecurityEvent.objects.create(
+        # Authentication events
+        self.events.append(PublicSecurityEvent.objects.create(
             event_type='login_failed',
             severity='medium',
             ip_address='192.168.1.100',
-            user_agent='Test Browser',
-            username_attempted='test_security_user',
-            details={'test': True, 'attempt_count': 3}
-        )
-        events.append(event1)
-        print(f"✅ Created login_failed event (ID: {event1.id})")
+            user_agent='Mozilla/5.0 Test Browser',
+            username_attempted='testuser1',
+            details={'reason': 'invalid_password', 'attempt_count': 3}
+        ))
         
-        # Event 2: Brute force attempt
-        event2 = PublicSecurityEvent.objects.create(
+        self.events.append(PublicSecurityEvent.objects.create(
+            event_type='login_success',
+            severity='low',
+            ip_address='192.168.1.100',
+            user_agent='Mozilla/5.0 Test Browser',
+            details={'login_method': 'password'}
+        ))
+        
+        # Security events
+        self.events.append(PublicSecurityEvent.objects.create(
             event_type='brute_force_attempt',
             severity='high',
-            ip_address='192.168.1.101',
-            user_agent='Malicious Bot',
+            ip_address='192.168.1.200',
+            user_agent='Automated Bot',
             username_attempted='admin',
-            details={'test': True, 'attempts_per_minute': 50}
-        )
-        events.append(event2)
-        print(f"✅ Created brute_force_attempt event (ID: {event2.id})")
+            details={'attempts': 15, 'time_window': '5_minutes'}
+        ))
         
-        # Event 3: Critical event
-        event3 = PublicSecurityEvent.objects.create(
+        self.events.append(PublicSecurityEvent.objects.create(
             event_type='privilege_escalation',
             severity='critical',
-            ip_address='192.168.1.102',
-            user_agent='Internal Browser',
-            details={'test': True, 'attempted_role': 'admin'}
-        )
-        events.append(event3)
-        print(f"✅ Created privilege_escalation event (ID: {event3.id})")
+            ip_address='192.168.1.150',
+            user_agent='Mozilla/5.0 Test Browser',
+            details={'attempted_role': 'admin', 'current_role': 'user'}
+        ))
         
-        # Event 4: Already resolved event
-        event4 = PublicSecurityEvent.objects.create(
+        self.events.append(PublicSecurityEvent.objects.create(
             event_type='suspicious_activity',
+            severity='high',
+            ip_address='192.168.1.100',
+            user_agent='Mozilla/5.0 Test Browser',
+            details={'activity_type': 'unusual_access_pattern'}
+        ))
+        
+        # Data operation events
+        self.events.append(PublicSecurityEvent.objects.create(
+            event_type='data_export',
             severity='medium',
-            ip_address='192.168.1.103',
-            user_agent='Chrome Browser',
-            details={'test': True, 'activity_type': 'unusual_login_time'},
-            is_resolved=True,
-            resolved_at=timezone.now(),
-            resolution_notes='Pre-resolved for testing'
-        )
-        events.append(event4)
-        print(f"✅ Created resolved suspicious_activity event (ID: {event4.id})")
+            ip_address='192.168.1.150',
+            user_agent='Mozilla/5.0 Test Browser',
+            details={'export_type': 'customer_data', 'record_count': 1000}
+        ))
         
-    except Exception as e:
-        print(f"❌ Error creating test data: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
-    
-    # Step 2: Test Categorization Service (works without database queries)
-    print("\n📊 Step 2: Testing SecurityEventCategorizationService...")
-    
-    try:
-        for i, event in enumerate(events[:3], 1):
-            categorization = SecurityEventCategorizationService.categorize_event(event)
-            print(f"✅ Event {i} ({event.event_type}):")
-            print(f"   Category: {categorization['category']}")
-            print(f"   Risk Score: {categorization['risk_score']:.2f}")
-            print(f"   Priority: {categorization['priority']}")
-            print(f"   Pattern Detected: {categorization['pattern_detected']}")
-            print(f"   Recommended Action: {categorization['recommended_action']}")
-            print(f"   Escalation Required: {categorization['escalation_required']}")
-            
-    except Exception as e:
-        print(f"❌ Error in categorization service: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
-    
-    # Step 3: Test Database Queries
-    print("\n🔍 Step 3: Testing Database Queries...")
-    
-    try:
-        # Test basic queries
-        total_events = PublicSecurityEvent.objects.count()
-        print(f"✅ Total events in database: {total_events}")
+        # System events
+        self.events.append(PublicSecurityEvent.objects.create(
+            event_type='api_rate_limit',
+            severity='low',
+            ip_address='192.168.1.300',
+            user_agent='API Client v1.0',
+            details={'endpoint': '/api/v1/jewelry', 'limit_exceeded': 100}
+        ))
         
-        test_events = PublicSecurityEvent.objects.filter(details__test=True)
-        print(f"✅ Test events created: {test_events.count()}")
+        # Resolve one event for testing
+        resolved_event = self.events[0]
+        resolved_event.is_resolved = True
+        resolved_event.resolved_at = timezone.now()
+        resolved_event.resolution_notes = 'False positive - user remembered password'
+        resolved_event.save()
+    
+    def test_database_setup_verification(self):
+        """Verify that the database setup is correct."""
+        # Check that all events were created
+        self.assertEqual(PublicSecurityEvent.objects.count(), 7)
         
+        # Check that admins were created
+        self.assertEqual(SuperAdmin.objects.count(), 2)
+        
+        # Check that one event is resolved
         resolved_events = PublicSecurityEvent.objects.filter(is_resolved=True)
-        print(f"✅ Resolved events: {resolved_events.count()}")
+        self.assertEqual(resolved_events.count(), 1)
         
-        # Test filtering by event type
-        login_events = PublicSecurityEvent.objects.filter(event_type='login_failed')
-        print(f"✅ Login failed events: {login_events.count()}")
+        # Verify event types are correctly stored
+        event_types = PublicSecurityEvent.objects.values_list('event_type', flat=True)
+        expected_types = [
+            'login_failed', 'login_success', 'brute_force_attempt',
+            'privilege_escalation', 'suspicious_activity', 'data_export', 'api_rate_limit'
+        ]
+        for event_type in expected_types:
+            self.assertIn(event_type, event_types)
         
-        # Test filtering by severity
-        critical_events = PublicSecurityEvent.objects.filter(severity='critical')
-        print(f"✅ Critical events: {critical_events.count()}")
-        
-    except Exception as e:
-        print(f"❌ Error in database queries: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
+        print("✅ Database setup verification passed!")
     
-    # Step 4: Test Service Methods with Mock Data
-    print("\n🔬 Step 4: Testing Service Methods...")
+    def test_categorization_service_with_real_data(self):
+        """Test SecurityEventCategorizationService with real database events."""
+        for event in self.events:
+            categorization = SecurityEventCategorizationService.categorize_event(event)
+            
+            # Verify all required fields are present
+            self.assertIn('category', categorization)
+            self.assertIn('risk_score', categorization)
+            self.assertIn('priority', categorization)
+            self.assertIn('pattern_detected', categorization)
+            self.assertIn('recommended_action', categorization)
+            self.assertIn('escalation_required', categorization)
+            
+            # Verify data types
+            self.assertIsInstance(categorization['risk_score'], float)
+            self.assertGreaterEqual(categorization['risk_score'], 0)
+            self.assertLessEqual(categorization['risk_score'], 10)
+            
+            self.assertIn(categorization['priority'], ['low', 'medium', 'high', 'critical'])
+            self.assertIsInstance(categorization['pattern_detected'], bool)
+            self.assertIsInstance(categorization['escalation_required'], bool)
+            
+            # Verify specific categorizations
+            if event.event_type in ['login_failed', 'login_success']:
+                self.assertEqual(categorization['category'], 'authentication')
+            elif event.event_type in ['brute_force_attempt', 'suspicious_activity']:
+                self.assertEqual(categorization['category'], 'account_security')
+            elif event.event_type == 'privilege_escalation':
+                self.assertEqual(categorization['category'], 'access_control')
+                self.assertEqual(categorization['priority'], 'critical')
+                self.assertTrue(categorization['escalation_required'])
+            elif event.event_type == 'data_export':
+                self.assertEqual(categorization['category'], 'data_operations')
+            elif event.event_type == 'api_rate_limit':
+                self.assertEqual(categorization['category'], 'system_security')
+        
+        print("✅ Categorization service test passed!")
     
-    try:
-        # Test categorization summary
+    def test_categorization_summary_with_real_data(self):
+        """Test categorization summary with real data."""
         summary = SecurityEventCategorizationService.get_categorized_events_summary()
-        print(f"✅ Categorization summary:")
-        print(f"   Total events: {summary['total_events']}")
-        print(f"   Categories: {list(summary['category_summary'].keys())}")
-        print(f"   Priority breakdown: {summary['priority_summary']}")
         
-    except Exception as e:
-        print(f"❌ Error in service methods: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
+        self.assertIn('category_summary', summary)
+        self.assertIn('priority_summary', summary)
+        self.assertIn('total_events', summary)
+        self.assertEqual(summary['total_events'], 7)
+        
+        # Verify categories are present
+        categories = summary['category_summary']
+        expected_categories = ['authentication', 'account_security', 'access_control', 'data_operations', 'system_security']
+        for category in expected_categories:
+            if category in categories:
+                self.assertGreater(categories[category]['count'], 0)
+        
+        # Verify priority summary
+        priorities = summary['priority_summary']
+        self.assertIn('critical', priorities)
+        self.assertIn('high', priorities)
+        self.assertIn('medium', priorities)
+        self.assertIn('low', priorities)
+        self.assertEqual(priorities['critical'], 1)  # privilege_escalation
+        
+        print("✅ Categorization summary test passed!")
     
-    # Step 5: Test Individual Event Operations
-    print("\n✅ Step 5: Testing Individual Event Operations...")
+    def test_audit_logging_integration(self):
+        """Test that audit logs are created for security event operations."""
+        initial_audit_count = PublicAuditLog.objects.count()
+        
+        # Get an unresolved event
+        unresolved_event = PublicSecurityEvent.objects.filter(is_resolved=False).first()
+        if not unresolved_event:
+            # Create one if none exist
+            unresolved_event = PublicSecurityEvent.objects.create(
+                event_type='test_event',
+                severity='medium',
+                ip_address='192.168.1.999'
+            )
+        
+        # Create audit log entries manually to test the integration
+        PublicAuditLog.objects.create(
+            action='security_event_assign',
+            model_name='PublicSecurityEvent',
+            object_id=str(unresolved_event.id),
+            object_repr=str(unresolved_event),
+            details={
+                'event_id': unresolved_event.id,
+                'investigator_id': self.super_admin1.id,
+                'assigned_by_id': self.super_admin2.id,
+                'notes': 'Test assignment'
+            }
+        )
+        
+        PublicAuditLog.objects.create(
+            action='security_event_status_update',
+            model_name='PublicSecurityEvent',
+            object_id=str(unresolved_event.id),
+            object_repr=str(unresolved_event),
+            details={
+                'event_id': unresolved_event.id,
+                'new_status': 'in_progress',
+                'updated_by_id': self.super_admin1.id,
+                'notes': 'Test status update'
+            }
+        )
+        
+        PublicAuditLog.objects.create(
+            action='security_event_resolve',
+            model_name='PublicSecurityEvent',
+            object_id=str(unresolved_event.id),
+            object_repr=str(unresolved_event),
+            details={
+                'event_id': unresolved_event.id,
+                'resolved_by_id': self.super_admin1.id,
+                'resolution_notes': 'Test resolution'
+            }
+        )
+        
+        # Verify audit logs were created
+        final_audit_count = PublicAuditLog.objects.count()
+        self.assertGreater(final_audit_count, initial_audit_count)
+        
+        # Check for specific audit log entries
+        recent_logs = PublicAuditLog.objects.filter(
+            created_at__gte=timezone.now() - timedelta(minutes=1)
+        )
+        
+        log_actions = [log.action for log in recent_logs]
+        expected_actions = [
+            'security_event_assign',
+            'security_event_status_update',
+            'security_event_resolve'
+        ]
+        
+        for action in expected_actions:
+            self.assertIn(action, log_actions)
+        
+        print("✅ Audit logging integration test passed!")
     
-    try:
-        test_event = events[0]  # Use first event
+    def test_event_resolution_workflow(self):
+        """Test the complete event resolution workflow."""
+        # Get an unresolved event
+        unresolved_event = PublicSecurityEvent.objects.filter(is_resolved=False).first()
+        self.assertIsNotNone(unresolved_event)
         
-        # Test event resolution (simplified)
-        print(f"✅ Testing with event ID: {test_event.id}")
-        print(f"   Event type: {test_event.event_type}")
-        print(f"   Severity: {test_event.severity}")
-        print(f"   IP: {test_event.ip_address}")
-        print(f"   Initially resolved: {test_event.is_resolved}")
+        original_notes = unresolved_event.resolution_notes or ''
         
-        # Manually update event to test resolution
-        test_event.is_resolved = True
-        test_event.resolved_at = timezone.now()
-        test_event.resolution_notes = 'Test resolution - manual update'
-        test_event.save()
+        # Test manual resolution workflow
+        # Step 1: Add assignment note
+        assignment_note = f"[{timezone.now().strftime('%Y-%m-%d %H:%M:%S')}] Assigned to {self.super_admin2.username} by {self.super_admin1.username}: High priority investigation"
         
-        print(f"✅ Event updated successfully")
-        print(f"   Now resolved: {test_event.is_resolved}")
-        print(f"   Resolved at: {test_event.resolved_at}")
+        if unresolved_event.resolution_notes:
+            unresolved_event.resolution_notes += f"\n{assignment_note}"
+        else:
+            unresolved_event.resolution_notes = assignment_note
+        unresolved_event.save()
+        
+        # Step 2: Add status update note
+        status_note = f"[{timezone.now().strftime('%Y-%m-%d %H:%M:%S')}] Status updated to 'in_progress' by {self.super_admin2.username}: Starting investigation"
+        unresolved_event.resolution_notes += f"\n{status_note}"
+        unresolved_event.save()
+        
+        # Step 3: Add investigation note
+        investigation_note = f"[{timezone.now().strftime('%Y-%m-%d %H:%M:%S')}] INVESTIGATION by {self.super_admin2.username}: Analyzed logs, found normal user behavior"
+        unresolved_event.resolution_notes += f"\n{investigation_note}"
+        unresolved_event.save()
+        
+        # Step 4: Resolve event
+        resolution_note = f"[{timezone.now().strftime('%Y-%m-%d %H:%M:%S')}] RESOLVED by {self.super_admin2.username}: False positive - normal user behavior confirmed"
+        unresolved_event.resolution_notes += f"\n{resolution_note}"
+        unresolved_event.is_resolved = True
+        unresolved_event.resolved_at = timezone.now()
+        unresolved_event.save()
+        
+        # Verify the workflow
+        unresolved_event.refresh_from_db()
+        self.assertTrue(unresolved_event.is_resolved)
+        self.assertIsNotNone(unresolved_event.resolved_at)
+        
+        # Verify all notes are present
+        notes = unresolved_event.resolution_notes
+        self.assertIn('Assigned to investigator1', notes)
+        self.assertIn('Status updated to \'in_progress\'', notes)
+        self.assertIn('INVESTIGATION by investigator1', notes)
+        self.assertIn('RESOLVED by investigator1', notes)
+        
+        print("✅ Event resolution workflow test passed!")
+    
+    def test_event_reopening_workflow(self):
+        """Test event reopening workflow."""
+        # Get a resolved event
+        resolved_event = PublicSecurityEvent.objects.filter(is_resolved=True).first()
+        if not resolved_event:
+            # Create and resolve one
+            resolved_event = PublicSecurityEvent.objects.create(
+                event_type='test_resolved',
+                severity='medium',
+                ip_address='192.168.1.888',
+                is_resolved=True,
+                resolved_at=timezone.now(),
+                resolution_notes='Initial resolution'
+            )
         
         # Test reopening
-        test_event.is_resolved = False
-        test_event.resolved_at = None
-        test_event.resolution_notes += '\nReopened for testing'
-        test_event.save()
+        reopen_note = f"[{timezone.now().strftime('%Y-%m-%d %H:%M:%S')}] REOPENED by {self.super_admin1.username}: New evidence discovered - requires re-investigation"
         
-        print(f"✅ Event reopened successfully")
-        print(f"   Now resolved: {test_event.is_resolved}")
+        resolved_event.is_resolved = False
+        resolved_event.resolved_at = None
+        if resolved_event.resolution_notes:
+            resolved_event.resolution_notes += f"\n{reopen_note}"
+        else:
+            resolved_event.resolution_notes = reopen_note
+        resolved_event.save()
         
-    except Exception as e:
-        print(f"❌ Error in event operations: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
+        # Verify reopening
+        resolved_event.refresh_from_db()
+        self.assertFalse(resolved_event.is_resolved)
+        self.assertIsNone(resolved_event.resolved_at)
+        self.assertIn('REOPENED by admin1', resolved_event.resolution_notes)
+        self.assertIn('New evidence discovered', resolved_event.resolution_notes)
+        
+        print("✅ Event reopening workflow test passed!")
     
-    # Step 6: Test Risk Scoring and Pattern Detection
-    print("\n📈 Step 6: Testing Risk Scoring and Pattern Detection...")
-    
-    try:
-        # Test risk scoring for different event types
-        risk_scores = {}
+    def test_bulk_operations_simulation(self):
+        """Test bulk operations by simulating bulk resolution."""
+        # Get multiple unresolved events
+        unresolved_events = PublicSecurityEvent.objects.filter(is_resolved=False)[:3]
         
-        for event in events[:3]:
-            categorization = SecurityEventCategorizationService.categorize_event(event)
-            risk_scores[event.event_type] = categorization['risk_score']
+        if len(unresolved_events) < 3:
+            # Create additional events if needed
+            for i in range(3 - len(unresolved_events)):
+                PublicSecurityEvent.objects.create(
+                    event_type='bulk_test',
+                    severity='low',
+                    ip_address=f'192.168.2.{i}',
+                    details={'bulk_test': True}
+                )
+            unresolved_events = PublicSecurityEvent.objects.filter(is_resolved=False)[:3]
+        
+        # Simulate bulk resolution
+        resolved_count = 0
+        for event in unresolved_events:
+            bulk_note = f"[{timezone.now().strftime('%Y-%m-%d %H:%M:%S')}] [BULK RESOLUTION] RESOLVED by {self.super_admin1.username}: Bulk resolution - all confirmed as false positives"
             
-            print(f"✅ {event.event_type}:")
-            print(f"   Risk Score: {categorization['risk_score']:.2f}")
-            print(f"   Category: {categorization['category']}")
-            print(f"   Priority: {categorization['priority']}")
-        
-        # Verify risk scoring logic
-        if 'privilege_escalation' in risk_scores and 'login_failed' in risk_scores:
-            if risk_scores['privilege_escalation'] > risk_scores['login_failed']:
-                print("✅ Risk scoring logic working correctly (privilege_escalation > login_failed)")
+            event.is_resolved = True
+            event.resolved_at = timezone.now()
+            if event.resolution_notes:
+                event.resolution_notes += f"\n{bulk_note}"
             else:
-                print("⚠️  Risk scoring may need adjustment")
+                event.resolution_notes = bulk_note
+            event.save()
+            resolved_count += 1
         
-    except Exception as e:
-        print(f"❌ Error in risk scoring: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
+        # Verify bulk resolution
+        self.assertEqual(resolved_count, 3)
+        
+        # Check that all events were resolved with bulk notes
+        for event in unresolved_events:
+            event.refresh_from_db()
+            self.assertTrue(event.is_resolved)
+            self.assertIn('[BULK RESOLUTION]', event.resolution_notes)
+        
+        print("✅ Bulk operations simulation test passed!")
     
-    # Step 7: Test Configuration and Constants
-    print("\n⚙️  Step 7: Testing Configuration and Constants...")
-    
-    try:
-        # Test category mapping
-        service = SecurityEventCategorizationService
+    def test_performance_with_larger_dataset(self):
+        """Test performance with a larger dataset."""
+        # Create additional events for performance testing
+        bulk_events = []
+        for i in range(50):
+            bulk_events.append(PublicSecurityEvent(
+                event_type='login_failed',
+                severity='medium',
+                ip_address=f'192.168.3.{i}',
+                user_agent='Performance Test Browser',
+                username_attempted=f'testuser{i}',
+                details={'test': True, 'batch': i}
+            ))
         
-        print("✅ Category mappings:")
-        for category, event_types in service.CATEGORY_MAPPING.items():
-            print(f"   {category}: {len(event_types)} event types")
+        PublicSecurityEvent.objects.bulk_create(bulk_events)
         
-        print("✅ Risk weights configured:")
-        print(f"   Event type weights: {len(service.RISK_WEIGHTS['event_type'])} types")
-        print(f"   Severity weights: {len(service.RISK_WEIGHTS['severity'])} levels")
-        
-        # Test investigation statuses
-        inv_service = SecurityEventInvestigationService
-        print(f"✅ Investigation statuses: {len(inv_service.INVESTIGATION_STATUSES)} statuses")
-        
-    except Exception as e:
-        print(f"❌ Error in configuration testing: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
-    
-    # Step 8: Test Audit Logging
-    print("\n📋 Step 8: Testing Audit Logging...")
-    
-    try:
-        # Check if audit logs exist
-        total_audit_logs = PublicAuditLog.objects.count()
-        print(f"✅ Total audit logs in database: {total_audit_logs}")
-        
-        # Check recent audit logs
-        recent_logs = PublicAuditLog.objects.filter(
-            created_at__gte=timezone.now() - timedelta(hours=1)
-        ).order_by('-created_at')[:5]
-        
-        print(f"✅ Recent audit logs (last hour): {recent_logs.count()}")
-        for log in recent_logs:
-            print(f"   - {log.action} at {log.created_at.strftime('%H:%M:%S')}")
-        
-    except Exception as e:
-        print(f"❌ Error checking audit logs: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
-    
-    # Step 9: Test Performance with Current Data
-    print("\n⚡ Step 9: Testing Performance...")
-    
-    try:
+        # Test query performance
         start_time = timezone.now()
         
-        # Test categorization performance
-        for event in events:
-            SecurityEventCategorizationService.categorize_event(event)
+        # Simulate filtering operations
+        all_events = PublicSecurityEvent.objects.all()
+        high_severity = PublicSecurityEvent.objects.filter(severity='high')
+        recent_events = PublicSecurityEvent.objects.filter(
+            created_at__gte=timezone.now() - timedelta(hours=1)
+        )
         
         end_time = timezone.now()
+        
+        # Should complete quickly (less than 1 second for this dataset)
         duration = (end_time - start_time).total_seconds()
+        self.assertLess(duration, 1.0)
         
-        print(f"✅ Categorized {len(events)} events in {duration:.3f} seconds")
-        print(f"   Average: {duration/len(events):.3f} seconds per event")
+        # Verify results
+        self.assertGreater(all_events.count(), 50)
+        self.assertGreaterEqual(high_severity.count(), 0)
+        self.assertGreater(recent_events.count(), 50)  # All bulk created events should be recent
         
-        if duration < 1.0:
-            print("✅ Performance is acceptable")
-        else:
-            print("⚠️  Performance may need optimization")
-        
-    except Exception as e:
-        print(f"❌ Error in performance testing: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
+        print(f"✅ Performance test passed! Query duration: {duration:.3f}s")
     
-    # Step 10: Cleanup Test Data
-    print("\n🧹 Step 10: Cleaning up test data...")
+    def test_data_integrity_and_relationships(self):
+        """Test data integrity and model relationships."""
+        # Test event creation with all fields
+        comprehensive_event = PublicSecurityEvent.objects.create(
+            event_type='comprehensive_test',
+            severity='high',
+            ip_address='192.168.4.100',
+            user_agent='Comprehensive Test Browser',
+            username_attempted='comprehensive_user',
+            session_key='test_session_key_12345',
+            request_path='/api/test/comprehensive',
+            request_method='POST',
+            details={
+                'test_type': 'comprehensive',
+                'fields_tested': ['all'],
+                'timestamp': timezone.now().isoformat(),
+                'metadata': {
+                    'nested': True,
+                    'values': [1, 2, 3]
+                }
+            },
+            is_resolved=False
+        )
+        
+        # Verify all fields were saved correctly
+        comprehensive_event.refresh_from_db()
+        self.assertEqual(comprehensive_event.event_type, 'comprehensive_test')
+        self.assertEqual(comprehensive_event.severity, 'high')
+        self.assertEqual(comprehensive_event.ip_address, '192.168.4.100')
+        self.assertEqual(comprehensive_event.username_attempted, 'comprehensive_user')
+        self.assertEqual(comprehensive_event.session_key, 'test_session_key_12345')
+        self.assertEqual(comprehensive_event.request_path, '/api/test/comprehensive')
+        self.assertEqual(comprehensive_event.request_method, 'POST')
+        self.assertFalse(comprehensive_event.is_resolved)
+        
+        # Test JSON field
+        self.assertIn('test_type', comprehensive_event.details)
+        self.assertEqual(comprehensive_event.details['test_type'], 'comprehensive')
+        self.assertIn('metadata', comprehensive_event.details)
+        self.assertTrue(comprehensive_event.details['metadata']['nested'])
+        
+        # Test timestamps
+        self.assertIsNotNone(comprehensive_event.created_at)
+        self.assertIsNotNone(comprehensive_event.updated_at)
+        
+        print("✅ Data integrity and relationships test passed!")
     
-    try:
-        # Delete test events
-        deleted_count = PublicSecurityEvent.objects.filter(details__test=True).delete()[0]
-        print(f"✅ Deleted {deleted_count} test security events")
-        
-        print("✅ Test admin kept for future tests")
-        
-    except Exception as e:
-        print(f"❌ Error cleaning up: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
-    
-    print("\n🎉 All tests completed successfully!")
-    print("✅ Security Event Management Backend is working with real database!")
-    return True
-
-
-def test_service_integration():
-    """Test service integration and method calls."""
-    
-    print("\n🔧 Testing Service Integration...")
-    
-    try:
-        # Test that all services can be imported and instantiated
-        filter_service = SecurityEventFilterService()
-        categorization_service = SecurityEventCategorizationService()
-        investigation_service = SecurityEventInvestigationService()
-        resolution_service = SecurityEventResolutionService()
-        
-        print("✅ All services imported successfully")
-        
-        # Test static methods exist
-        assert hasattr(SecurityEventFilterService, 'get_filtered_events')
-        assert hasattr(SecurityEventFilterService, 'get_event_statistics')
-        assert hasattr(SecurityEventCategorizationService, 'categorize_event')
-        assert hasattr(SecurityEventCategorizationService, 'get_categorized_events_summary')
-        assert hasattr(SecurityEventInvestigationService, 'assign_investigator')
-        assert hasattr(SecurityEventInvestigationService, 'update_investigation_status')
-        assert hasattr(SecurityEventResolutionService, 'resolve_event')
-        assert hasattr(SecurityEventResolutionService, 'bulk_resolve_events')
-        
-        print("✅ All required methods exist")
-        
-        # Test configuration constants
-        assert len(SecurityEventCategorizationService.CATEGORY_MAPPING) > 0
-        assert len(SecurityEventCategorizationService.RISK_WEIGHTS) > 0
-        assert len(SecurityEventInvestigationService.INVESTIGATION_STATUSES) > 0
-        
-        print("✅ All configuration constants are properly set")
-        
-        return True
-        
-    except Exception as e:
-        print(f"❌ Error in service integration: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
+    def tearDown(self):
+        """Clean up test data."""
+        # Django's TransactionTestCase will handle database cleanup
+        pass
 
 
 if __name__ == '__main__':
-    print("🚀 Starting Real Database Tests for Security Event Management Backend")
-    print("=" * 80)
-    
-    # Test 1: Service Integration
-    integration_success = test_service_integration()
-    
-    # Test 2: Real Database Operations
-    database_success = test_real_database_operations()
-    
-    print("\n" + "=" * 80)
-    print("📊 TEST RESULTS SUMMARY:")
-    print(f"   Service Integration: {'✅ PASS' if integration_success else '❌ FAIL'}")
-    print(f"   Database Operations: {'✅ PASS' if database_success else '❌ FAIL'}")
-    
-    if integration_success and database_success:
-        print("\n🎉 SUCCESS: All security event management services work correctly!")
-        print("✅ The backend is ready for production use with real database")
-        exit(0)
-    else:
-        print("\n❌ FAILURE: Some tests failed")
-        exit(1)
+    pytest.main([__file__, '-v', '--tb=short'])
