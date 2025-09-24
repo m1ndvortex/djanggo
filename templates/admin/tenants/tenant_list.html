@@ -52,7 +52,7 @@
             <p class="text-gray-600 dark:text-cyber-text-secondary mt-1">مدیریت فروشگاه‌های طلا و جواهر</p>
         </div>
         <div class="flex space-x-3 space-x-reverse">
-            <a href="{% url 'core:tenants:tenant_create' %}" 
+            <a href="{% url 'admin_panel:tenants:tenant_create' %}" 
                class="bg-primary-500 dark:bg-cyber-neon-primary hover:bg-primary-600 dark:hover:bg-cyber-neon-primary/80 text-white px-4 py-2 rounded-lg font-medium transition-colors cyber-button">
                 <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
@@ -126,7 +126,7 @@
 
 <!-- Search and Filter Section -->
 <div class="bg-white dark:bg-cyber-bg-secondary rounded-lg shadow-lg dark:shadow-2xl p-6 mb-6 cyber-glass">
-    <form method="get" class="space-y-4" hx-get="{% url 'core:tenants:tenant_list' %}" hx-target="#tenant-list-container" hx-trigger="submit, input delay:500ms from:input[name='search']">
+    <form method="get" class="space-y-4" hx-get="{% url 'admin_panel:tenants:tenant_list' %}" hx-target="#tenant-list-container" hx-trigger="submit, input delay:500ms from:input[name='search']">
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div class="md:col-span-2">
                 <label for="search" class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">جستجو</label>
@@ -314,7 +314,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (confirm(`آیا مطمئن هستید که می‌خواهید ${actionText} ${ZargarAdmin.formatPersianNumber(tenantIds.length)} تنانت انتخاب شده را انجام دهید؟`)) {
             ZargarAdmin.showLoading();
             
-            fetch('{% url "core:tenants:tenant_bulk_action" %}', {
+            fetch('{% url 'admin_panel:tenants:tenant_bulk_action' %}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',

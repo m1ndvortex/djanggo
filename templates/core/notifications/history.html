@@ -75,7 +75,7 @@
                     <p class="text-muted">{% trans "View and manage all sent notifications and their delivery status" %}</p>
                 </div>
                 <div>
-                    <a href="{% url 'core:notifications:dashboard' %}" class="btn btn-secondary">
+                    <a href="{% url 'admin_panel:notifications:dashboard' %}" class="btn btn-secondary">
                         <i class="fas fa-arrow-right me-2"></i>
                         {% trans "Back to Dashboard" %}
                     </a>
@@ -153,7 +153,7 @@
                                         <i class="fas fa-search me-2"></i>
                                         {% trans "Apply Filters" %}
                                     </button>
-                                    <a href="{% url 'core:notifications:history' %}" class="btn btn-outline-light">
+                                    <a href="{% url 'admin_panel:notifications:history' %}" class="btn btn-outline-light">
                                         <i class="fas fa-times me-2"></i>
                                         {% trans "Clear" %}
                                     </a>
@@ -268,7 +268,7 @@
                                             </div>
                                             <div class="col-md-2">
                                                 <div class="btn-group btn-group-sm" role="group">
-                                                    <a href="{% url 'core:notifications:detail' notification.id %}" 
+                                                    <a href="{% url 'admin_panel:notifications:detail' notification.id %}" 
                                                        class="btn btn-outline-info" 
                                                        title="{% trans 'View Details' %}">
                                                         <i class="fas fa-eye"></i>
@@ -386,7 +386,7 @@
                                 {% endif %}
                             </p>
                             {% if not request.GET %}
-                            <a href="{% url 'core:notifications:dashboard' %}" class="btn btn-primary">
+                            <a href="{% url 'admin_panel:notifications:dashboard' %}" class="btn btn-primary">
                                 {% trans "Send First Notification" %}
                             </a>
                             {% endif %}
@@ -481,7 +481,7 @@ function bulkCancel() {
     // Cancel notifications one by one
     let completed = 0;
     pendingIds.forEach(id => {
-        fetch(`{% url 'core:notifications:cancel_ajax' 0 %}`.replace('0', id), {
+        fetch(`{% url 'admin_panel:notifications:cancel_ajax' 0 %}`.replace('0', id), {
             method: 'POST',
             headers: {
                 'X-CSRFToken': getCookie('csrftoken'),
@@ -520,7 +520,7 @@ function bulkRetry() {
     // Retry notifications one by one
     let completed = 0;
     failedIds.forEach(id => {
-        fetch(`{% url 'core:notifications:retry_ajax' 0 %}`.replace('0', id), {
+        fetch(`{% url 'admin_panel:notifications:retry_ajax' 0 %}`.replace('0', id), {
             method: 'POST',
             headers: {
                 'X-CSRFToken': getCookie('csrftoken'),
@@ -543,7 +543,7 @@ function bulkRetry() {
 
 function cancelNotification(notificationId) {
     if (confirm('{% trans "Are you sure you want to cancel this notification?" %}')) {
-        fetch(`{% url 'core:notifications:cancel_ajax' 0 %}`.replace('0', notificationId), {
+        fetch(`{% url 'admin_panel:notifications:cancel_ajax' 0 %}`.replace('0', notificationId), {
             method: 'POST',
             headers: {
                 'X-CSRFToken': getCookie('csrftoken'),
@@ -568,7 +568,7 @@ function cancelNotification(notificationId) {
 
 function retryNotification(notificationId) {
     if (confirm('{% trans "Do you want to retry sending this notification?" %}')) {
-        fetch(`{% url 'core:notifications:retry_ajax' 0 %}`.replace('0', notificationId), {
+        fetch(`{% url 'admin_panel:notifications:retry_ajax' 0 %}`.replace('0', notificationId), {
             method: 'POST',
             headers: {
                 'X-CSRFToken': getCookie('csrftoken'),

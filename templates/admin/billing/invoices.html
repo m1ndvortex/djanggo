@@ -11,15 +11,15 @@
             <p class="text-gray-600 dark:text-cyber-text-secondary mt-1">مشاهده و مدیریت فاکتورهای تنانت‌ها</p>
         </div>
         <div class="flex space-x-3 space-x-reverse">
-            <a href="{% url 'core:tenants:billing:invoice_create' %}" 
+            <a href="{% url 'admin_panel:tenants:billing:invoice_create' %}" 
                class="bg-primary-600 dark:bg-cyber-neon-primary hover:bg-primary-700 dark:hover:bg-cyber-neon-primary/80 text-white px-4 py-2 rounded-lg transition-colors cyber-button">
                 ایجاد فاکتور جدید
             </a>
-            <a href="{% url 'core:tenants:billing:bulk_invoice_generation' %}" 
+            <a href="{% url 'admin_panel:tenants:billing:bulk_invoice_generation' %}" 
                class="bg-green-600 dark:bg-cyber-neon-secondary hover:bg-green-700 dark:hover:bg-cyber-neon-secondary/80 text-white px-4 py-2 rounded-lg transition-colors cyber-button">
                 تولید انبوه فاکتور
             </a>
-            <a href="{% url 'core:tenants:billing:dashboard' %}" 
+            <a href="{% url 'admin_panel:tenants:billing:dashboard' %}" 
                class="bg-gray-600 dark:bg-cyber-bg-elevated hover:bg-gray-700 dark:hover:bg-cyber-bg-elevated/80 text-white px-4 py-2 rounded-lg transition-colors">
                 بازگشت به داشبورد
             </a>
@@ -107,7 +107,7 @@
                     class="bg-primary-600 dark:bg-cyber-neon-primary hover:bg-primary-700 dark:hover:bg-cyber-neon-primary/80 text-white px-4 py-2 rounded-lg transition-colors cyber-button">
                 جستجو
             </button>
-            <a href="{% url 'core:tenants:billing:invoices' %}" 
+            <a href="{% url 'admin_panel:tenants:billing:invoices' %}" 
                class="bg-gray-500 dark:bg-cyber-bg-elevated hover:bg-gray-600 dark:hover:bg-cyber-bg-elevated/80 text-white px-4 py-2 rounded-lg transition-colors">
                 پاک کردن
             </a>
@@ -198,7 +198,7 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div class="flex space-x-2 space-x-reverse">
-                            <a href="{% url 'core:tenants:billing:invoice_detail' invoice.pk %}" 
+                            <a href="{% url 'admin_panel:tenants:billing:invoice_detail' invoice.pk %}" 
                                class="text-primary-600 dark:text-cyber-neon-primary hover:text-primary-900 dark:hover:text-cyber-neon-primary/80">
                                 مشاهده
                             </a>
@@ -219,7 +219,7 @@
                         </svg>
                         <h3 class="text-lg font-medium text-gray-900 dark:text-cyber-text-primary mb-2">هیچ فاکتوری یافت نشد</h3>
                         <p class="text-gray-600 dark:text-cyber-text-secondary mb-6">با فیلترهای انتخابی هیچ فاکتوری پیدا نشد.</p>
-                        <a href="{% url 'core:tenants:billing:invoice_create' %}" 
+                        <a href="{% url 'admin_panel:tenants:billing:invoice_create' %}" 
                            class="bg-primary-600 dark:bg-cyber-neon-primary hover:bg-primary-700 dark:hover:bg-cyber-neon-primary/80 text-white px-6 py-3 rounded-lg transition-colors cyber-button">
                             ایجاد فاکتور جدید
                         </a>

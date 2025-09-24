@@ -1,64 +1,219 @@
 version: '3.8'
 
 services:
-  db:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_DB=zargar_test
-      - POSTGRES_USER=zargar
-      - POSTGRES_PASSWORD=zargar_test_password
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U zargar -d zargar_test"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-
-  redis:
-    image: redis:7-alpine
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-
   web:
     build: .
     environment:
       - DJANGO_SETTINGS_MODULE=zargar.settings.test
-      - DATABASE_URL=postgresql://zargar:zargar_test_password@db:5432/zargar_test
+      - DATABASE_URL=postgres://zargar:zargar_password_2024@db:5432/zargar_test
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      # Storage credentials for testing
-      - CLOUDFLARE_R2_ACCESS_KEY=test_key
-      - CLOUDFLARE_R2_SECRET_KEY=test_secret
-      - CLOUDFLARE_R2_BUCKET=test_bucket
-      - CLOUDFLARE_R2_ENDPOINT=https://test.endpoint.com
-      - CLOUDFLARE_R2_ACCOUNT_ID=test_account
-      - BACKBLAZE_B2_ACCESS_KEY=test_key
-      - BACKBLAZE_B2_SECRET_KEY=test_secret
-      - BACKBLAZE_B2_BUCKET=test_bucket
+      - SECRET_KEY=test-secret-key-for-testing-only
+      - DEBUG=False
+      - ALLOWED_HOSTS=testserver,localhost,127.0.0.1
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - db
+      - redis
     volumes:
       - .:/app
+    working_dir: /app
+    command: >
+      sh -c "
+        python manage.py migrate --run-syncdb &&
+        python manage.py migrate_schemas --shared &&
+        python -m pytest tests/test_unified_admin_comprehensive.py -v --tb=short --maxfail=5 &&
+        python -m pytest tests/test_unified_admin_unit.py -v --tb=short --maxfail=5 &&
+        python -m pytest tests/test_unified_admin_playwright.py -v --tb=short --maxfail=5 --disable-warnings
+      "
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=zargar_test
+      - POSTGRES_USER=zargar
+      - POSTGRES_PASSWORD=zargar_password_2024
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
 
   celery:
     build: .
-    command: celery -A zargar worker -l info
     environment:
       - DJANGO_SETTINGS_MODULE=zargar.settings.test
-      - DATABASE_URL=postgresql://zargar:zargar_test_password@db:5432/zargar_test
+      - DATABASE_URL=postgres://zargar:zargar_password_2024@db:5432/zargar_test
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - SECRET_KEY=test-secret-key-for-testing-only
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - db
+      - redis
     volumes:
       - .:/app
+    working_dir: /app
+    command: celery -A zargar worker -l info --concurrency=2
+
+  # Test runner for specific test categories
+  test-auth:
+    build: .
+    environment:
+      - DJANGO_SETTINGS_MODULE=zargar.settings.test
+      - DATABASE_URL=postgres://zargar:zargar_password_2024@db:5432/zargar_test
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=test-secret-key-for-testing-only
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: >
+      sh -c "
+        python manage.py migrate --run-syncdb &&
+        python manage.py migrate_schemas --shared &&
+        python -m pytest tests/test_unified_admin_comprehensive.py::UnifiedAdminAuthenticationTests -v --tb=short
+      "
+
+  test-dashboard:
+    build: .
+    environment:
+      - DJANGO_SETTINGS_MODULE=zargar.settings.test
+      - DATABASE_URL=postgres://zargar:zargar_password_2024@db:5432/zargar_test
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=test-secret-key-for-testing-only
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: >
+      sh -c "
+        python manage.py migrate --run-syncdb &&
+        python manage.py migrate_schemas --shared &&
+        python -m pytest tests/test_unified_admin_comprehensive.py::UnifiedAdminDashboardTests -v --tb=short
+      "
+
+  test-security:
+    build: .
+    environment:
+      - DJANGO_SETTINGS_MODULE=zargar.settings.test
+      - DATABASE_URL=postgres://zargar:zargar_password_2024@db:5432/zargar_test
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=test-secret-key-for-testing-only
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: >
+      sh -c "
+        python manage.py migrate --run-syncdb &&
+        python manage.py migrate_schemas --shared &&
+        python -m pytest tests/test_unified_admin_comprehensive.py::UnifiedAdminSecurityTests -v --tb=short
+      "
+
+  test-performance:
+    build: .
+    environment:
+      - DJANGO_SETTINGS_MODULE=zargar.settings.test
+      - DATABASE_URL=postgres://zargar:zargar_password_2024@db:5432/zargar_test
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=test-secret-key-for-testing-only
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: >
+      sh -c "
+        python manage.py migrate --run-syncdb &&
+        python manage.py migrate_schemas --shared &&
+        python -m pytest tests/test_unified_admin_comprehensive.py::UnifiedAdminPerformanceTests -v --tb=short
+      "
+
+  test-integration:
+    build: .
+    environment:
+      - DJANGO_SETTINGS_MODULE=zargar.settings.test
+      - DATABASE_URL=postgres://zargar:zargar_password_2024@db:5432/zargar_test
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=test-secret-key-for-testing-only
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: >
+      sh -c "
+        python manage.py migrate --run-syncdb &&
+        python manage.py migrate_schemas --shared &&
+        python -m pytest tests/test_unified_admin_comprehensive.py::UnifiedAdminIntegrationTests -v --tb=short
+      "
+
+  test-playwright:
+    build: .
+    environment:
+      - DJANGO_SETTINGS_MODULE=zargar.settings.test
+      - DATABASE_URL=postgres://zargar:zargar_password_2024@db:5432/zargar_test
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=test-secret-key-for-testing-only
+      - PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+      - playwright_browsers:/ms-playwright
+    working_dir: /app
+    command: >
+      sh -c "
+        python manage.py migrate --run-syncdb &&
+        python manage.py migrate_schemas --shared &&
+        playwright install chromium &&
+        python -m pytest tests/test_unified_admin_playwright.py -v --tb=short --disable-warnings
+      "
+
+  # Coverage testing
+  test-coverage:
+    build: .
+    environment:
+      - DJANGO_SETTINGS_MODULE=zargar.settings.test
+      - DATABASE_URL=postgres://zargar:zargar_password_2024@db:5432/zargar_test
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=test-secret-key-for-testing-only
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: >
+      sh -c "
+        python manage.py migrate --run-syncdb &&
+        python manage.py migrate_schemas --shared &&
+        python -m pytest tests/test_unified_admin_comprehensive.py tests/test_unified_admin_unit.py \
+          --cov=zargar.admin_panel \
+          --cov=zargar.tenants.admin_models \
+          --cov=zargar.tenants.views \
+          --cov-report=html \
+          --cov-report=term-missing \
+          --cov-fail-under=95 \
+          -v
+      "
+
+volumes:
+  postgres_test_data:
+  playwright_browsers:
+
+networks:
+  default:
+    driver: bridge

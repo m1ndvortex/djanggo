@@ -118,14 +118,26 @@ class UnifiedSuperAdminAuthBackend(ModelBackend):
         Log successful authentication event.
         """
         try:
+            # Handle case where request might be None (e.g., in tests)
+            if request is None:
+                ip_address = '127.0.0.1'  # Use localhost IP for tests
+                user_agent = 'test-client'
+                request_path = '/test'
+                request_method = 'POST'
+            else:
+                ip_address = self._get_client_ip(request)
+                user_agent = request.META.get('HTTP_USER_AGENT', '')
+                request_path = getattr(request, 'path', '/unknown')
+                request_method = getattr(request, 'method', 'GET')
+            
             TenantAccessLog.log_action(
                 user=user,
                 tenant_schema='public',
                 action='login',
-                ip_address=self._get_client_ip(request),
-                user_agent=request.META.get('HTTP_USER_AGENT', ''),
-                request_path=request.path,
-                request_method=request.method,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                request_path=request_path,
+                request_method=request_method,
                 success=True,
                 details={
                     'authentication_method': 'unified_superadmin_backend',
@@ -134,7 +146,7 @@ class UnifiedSuperAdminAuthBackend(ModelBackend):
                 }
             )
             
-            logger.info(f"Successful SuperAdmin authentication: {user.username} from {self._get_client_ip(request)}")
+            logger.info(f"Successful SuperAdmin authentication: {user.username} from {ip_address}")
         except Exception as e:
             logger.error(f"Error logging successful authentication: {str(e)}")
     
@@ -143,6 +155,18 @@ class UnifiedSuperAdminAuthBackend(ModelBackend):
         Log failed authentication attempt.
         """
         try:
+            # Handle case where request might be None (e.g., in tests)
+            if request is None:
+                ip_address = '127.0.0.1'  # Use localhost IP for tests
+                user_agent = 'test-client'
+                request_path = '/test'
+                request_method = 'POST'
+            else:
+                ip_address = self._get_client_ip(request)
+                user_agent = request.META.get('HTTP_USER_AGENT', '')
+                request_path = getattr(request, 'path', '/unknown')
+                request_method = getattr(request, 'method', 'GET')
+            
             # Log directly to TenantAccessLog without using log_action method
             TenantAccessLog.objects.create(
                 user_type='superadmin',
@@ -150,10 +174,10 @@ class UnifiedSuperAdminAuthBackend(ModelBackend):
                 username=username,
                 tenant_schema='public',
                 action='login',
-                ip_address=self._get_client_ip(request),
-                user_agent=request.META.get('HTTP_USER_AGENT', ''),
-                request_path=request.path,
-                request_method=request.method,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                request_path=request_path,
+                request_method=request_method,
                 success=False,
                 error_message=f'Authentication failed: {reason}',
                 details={
@@ -163,7 +187,7 @@ class UnifiedSuperAdminAuthBackend(ModelBackend):
                 }
             )
             
-            logger.warning(f"Failed SuperAdmin authentication: {username} from {self._get_client_ip(request)} - {reason}")
+            logger.warning(f"Failed SuperAdmin authentication: {username} from {ip_address} - {reason}")
         except Exception as e:
             logger.error(f"Error logging failed authentication: {str(e)}")
     
@@ -208,6 +232,9 @@ class UnifiedSuperAdminAuthBackend(ModelBackend):
         """
         Get client IP address from request.
         """
+        if request is None:
+            return '127.0.0.1'
+        
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         if x_forwarded_for:
             ip = x_forwarded_for.split(',')[0].strip()

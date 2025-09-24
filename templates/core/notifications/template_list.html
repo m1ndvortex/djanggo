@@ -91,11 +91,11 @@
                     <p class="text-muted">{% trans "Create and manage notification templates for different types of messages" %}</p>
                 </div>
                 <div>
-                    <a href="{% url 'core:notifications:dashboard' %}" class="btn btn-secondary">
+                    <a href="{% url 'admin_panel:notifications:dashboard' %}" class="btn btn-secondary">
                         <i class="fas fa-arrow-right me-2"></i>
                         {% trans "Back to Dashboard" %}
                     </a>
-                    <a href="{% url 'core:notifications:template_create' %}" class="btn btn-primary">
+                    <a href="{% url 'admin_panel:notifications:template_create' %}" class="btn btn-primary">
                         <i class="fas fa-plus me-2"></i>
                         {% trans "Create Template" %}
                     </a>
@@ -212,7 +212,7 @@
                                 <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-search"></i>
                                 </button>
-                                <a href="{% url 'core:notifications:template_list' %}" class="btn btn-outline-secondary">
+                                <a href="{% url 'admin_panel:notifications:template_list' %}" class="btn btn-outline-secondary">
                                     <i class="fas fa-times"></i>
                                 </a>
                             </div>
@@ -248,7 +248,7 @@
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item" href="{% url 'core:notifications:template_edit' template.id %}">
+                                    <a class="dropdown-item" href="{% url 'admin_panel:notifications:template_edit' template.id %}">
                                         <i class="fas fa-edit me-2"></i>{% trans "Edit" %}
                                     </a>
                                 </li>
@@ -280,7 +280,7 @@
                                 {% endif %}
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
-                                    <a class="dropdown-item text-danger" href="{% url 'core:notifications:template_delete' template.id %}">
+                                    <a class="dropdown-item text-danger" href="{% url 'admin_panel:notifications:template_delete' template.id %}">
                                         <i class="fas fa-trash me-2"></i>{% trans "Delete" %}
                                     </a>
                                 </li>
@@ -388,7 +388,7 @@
                             {% trans "You haven't created any notification templates yet. Create your first template to get started." %}
                         {% endif %}
                     </p>
-                    <a href="{% url 'core:notifications:template_create' %}" class="btn btn-primary">
+                    <a href="{% url 'admin_panel:notifications:template_create' %}" class="btn btn-primary">
                         <i class="fas fa-plus me-2"></i>
                         {% trans "Create First Template" %}
                     </a>
@@ -447,7 +447,7 @@
 <script src="{% static 'js/notifications.js' %}"></script>
 <script>
 function previewTemplate(templateId) {
-    fetch(`{% url 'core:notifications:template_preview_ajax' 0 %}`.replace('0', templateId))
+    fetch(`{% url 'admin_panel:notifications:template_preview_ajax' 0 %}`.replace('0', templateId))
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -464,7 +464,7 @@ function previewTemplate(templateId) {
 
 function useTemplate(templateType) {
     // Redirect to dashboard and open single notification modal with this template
-    window.location.href = `{% url 'core:notifications:dashboard' %}?template=${templateType}`;
+    window.location.href = `{% url 'admin_panel:notifications:dashboard' %}?template=${templateType}`;
 }
 
 function duplicateTemplate(templateId) {

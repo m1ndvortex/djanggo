@@ -397,7 +397,7 @@ function scheduleNotification() {
     button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>{% trans "Scheduling..." %}';
     button.disabled = true;
     
-    fetch('{% url "core:notifications:schedule_ajax" %}', {
+    fetch('{% url 'admin_panel:notifications:schedule_ajax' %}', {
         method: 'POST',
         headers: {
             'X-CSRFToken': getCookie('csrftoken'),

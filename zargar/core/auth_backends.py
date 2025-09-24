@@ -9,15 +9,15 @@ from django_tenants.utils import get_public_schema_name, schema_context
 
 class TenantAwareAuthBackend(ModelBackend):
     """
-    Authentication backend that handles both SuperAdmin (shared schema) 
-    and regular User (tenant schema) authentication.
+    Authentication backend that handles regular User (tenant schema) authentication.
+    Does NOT handle SuperAdmin authentication - that's handled by UnifiedSuperAdminAuthBackend.
     """
     
     def authenticate(self, request, username=None, password=None, **kwargs):
         """
-        Authenticate user in the appropriate schema.
+        Authenticate user in tenant schema only.
         
-        For public schema: Try SuperAdmin authentication
+        For public schema: Return None (let UnifiedSuperAdminAuthBackend handle it)
         For tenant schema: Try regular User authentication
         """
         if not username or not password:
@@ -27,32 +27,14 @@ class TenantAwareAuthBackend(ModelBackend):
         current_schema = connection.schema_name
         
         if current_schema == get_public_schema_name():
-            # In public schema - authenticate SuperAdmin
-            return self._authenticate_superadmin(username, password)
+            # In public schema - do NOT authenticate here
+            # Let UnifiedSuperAdminAuthBackend handle all public schema authentication
+            return None
         else:
             # In tenant schema - authenticate regular User
             return self._authenticate_user(username, password)
     
-    def _authenticate_superadmin(self, username, password):
-        """Authenticate SuperAdmin in public schema."""
-        try:
-            from zargar.tenants.admin_models import SuperAdmin
-            
-            try:
-                user = SuperAdmin.objects.get(username=username)
-            except SuperAdmin.DoesNotExist:
-                # Run the default password hasher once to reduce the timing
-                # difference between an existing and a nonexistent user
-                SuperAdmin().set_password(password)
-                return None
-            
-            if user.check_password(password) and self.user_can_authenticate(user):
-                return user
-                
-        except ImportError:
-            pass
-        
-        return None
+
     
     def _authenticate_user(self, username, password):
         """Authenticate regular User in tenant schema."""
@@ -73,17 +55,14 @@ class TenantAwareAuthBackend(ModelBackend):
     
     def get_user(self, user_id):
         """
-        Get user by ID from the appropriate schema.
+        Get user by ID from tenant schema only.
         """
         current_schema = connection.schema_name
         
         if current_schema == get_public_schema_name():
-            # Try to get SuperAdmin
-            try:
-                from zargar.tenants.admin_models import SuperAdmin
-                return SuperAdmin.objects.get(pk=user_id)
-            except (SuperAdmin.DoesNotExist, ImportError):
-                return None
+            # In public schema - do NOT get users here
+            # Let UnifiedSuperAdminAuthBackend handle all public schema users
+            return None
         else:
             # Try to get regular User
             UserModel = get_user_model()

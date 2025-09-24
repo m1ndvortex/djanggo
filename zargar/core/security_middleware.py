@@ -350,6 +350,12 @@ class SuspiciousActivityDetectionMiddleware:
         }
 
     def __call__(self, request):
+        # Skip for admin URLs in public schema to avoid database issues
+        from django_tenants.utils import get_public_schema_name
+        if (connection.schema_name == get_public_schema_name() and 
+            (request.path.startswith('/admin/') or request.path.startswith('/super-panel/'))):
+            return self.get_response(request)
+        
         # Detect suspicious patterns before processing request
         self._detect_suspicious_activity(request)
         

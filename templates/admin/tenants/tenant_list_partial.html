@@ -58,7 +58,7 @@
                             </div>
                             <div class="mr-4">
                                 <div class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary">
-                                    <a href="{% url 'core:tenants:tenant_detail' tenant.pk %}" 
+                                    <a href="{% url 'admin_panel:tenants:tenant_detail' tenant.pk %}" 
                                        class="hover:text-primary-600 dark:hover:text-cyber-neon-primary transition-colors">
                                         {{ tenant.name }}
                                     </a>
@@ -97,7 +97,7 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div class="flex items-center space-x-2 space-x-reverse">
                             <!-- View Details -->
-                            <a href="{% url 'core:tenants:tenant_detail' tenant.pk %}" 
+                            <a href="{% url 'admin_panel:tenants:tenant_detail' tenant.pk %}" 
                                class="text-primary-600 dark:text-cyber-neon-primary hover:text-primary-900 dark:hover:text-cyber-neon-primary/80 transition-colors"
                                title="مشاهده جزئیات">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -107,7 +107,7 @@
                             </a>
                             
                             <!-- Edit -->
-                            <a href="{% url 'core:tenants:tenant_update' tenant.pk %}" 
+                            <a href="{% url 'admin_panel:tenants:tenant_update' tenant.pk %}" 
                                class="text-yellow-600 dark:text-cyber-neon-warning hover:text-yellow-900 dark:hover:text-cyber-neon-warning/80 transition-colors"
                                title="ویرایش">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -141,7 +141,7 @@
                             </button>
                             
                             <!-- Delete -->
-                            <a href="{% url 'core:tenants:tenant_delete' tenant.pk %}" 
+                            <a href="{% url 'admin_panel:tenants:tenant_delete' tenant.pk %}" 
                                class="text-red-600 dark:text-cyber-neon-danger hover:text-red-900 dark:hover:text-cyber-neon-danger/80 transition-colors"
                                title="حذف"
                                onclick="return confirm('آیا مطمئن هستید که می‌خواهید این تنانت را حذف کنید؟ این عمل غیرقابل بازگشت است.')">
@@ -161,7 +161,7 @@
                             </svg>
                             <p class="text-lg font-medium">هیچ تنانتی یافت نشد</p>
                             <p class="mt-1">برای شروع، یک تنانت جدید ایجاد کنید.</p>
-                            <a href="{% url 'core:tenants:tenant_create' %}" 
+                            <a href="{% url 'admin_panel:tenants:tenant_create' %}" 
                                class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 dark:bg-cyber-neon-primary hover:bg-primary-700 dark:hover:bg-cyber-neon-primary/80 transition-colors cyber-button">
                                 <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>

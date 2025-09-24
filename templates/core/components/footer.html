@@ -92,7 +92,7 @@
                 <ul class="space-y-2 text-sm">
                     {% if user.is_authenticated %}
                         <li>
-                            <a href="{% url 'core:dashboard' %}" 
+                            <a href="{% url 'admin_panel:dashboard' %}" 
                                class="transition-colors duration-200
                                       {% if is_dark_mode %}
                                       text-cyber-text-secondary hover:text-cyber-neon-primary
@@ -103,7 +103,7 @@
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'core:inventory' %}" 
+                            <a href="{% url 'admin_panel:inventory' %}" 
                                class="transition-colors duration-200
                                       {% if is_dark_mode %}
                                       text-cyber-text-secondary hover:text-cyber-neon-primary
@@ -114,7 +114,7 @@
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'core:sales' %}" 
+                            <a href="{% url 'admin_panel:sales' %}" 
                                class="transition-colors duration-200
                                       {% if is_dark_mode %}
                                       text-cyber-text-secondary hover:text-cyber-neon-primary
@@ -125,7 +125,7 @@
                             </a>
                         </li>
                         <li>
-                            <a href="{% url 'core:customers' %}" 
+                            <a href="{% url 'admin_panel:customers' %}" 
                                class="transition-colors duration-200
                                       {% if is_dark_mode %}
                                       text-cyber-text-secondary hover:text-cyber-neon-primary
@@ -160,7 +160,7 @@
                         </li>
                     {% endif %}
                     <li>
-                        <a href="{% url 'core:help' %}" 
+                        <a href="{% url 'admin_panel:help' %}" 
                            class="transition-colors duration-200
                                   {% if is_dark_mode %}
                                   text-cyber-text-secondary hover:text-cyber-neon-primary
@@ -171,7 +171,7 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{% url 'core:contact' %}" 
+                        <a href="{% url 'admin_panel:contact' %}" 
                            class="transition-colors duration-200
                                   {% if is_dark_mode %}
                                   text-cyber-text-secondary hover:text-cyber-neon-primary
@@ -192,7 +192,7 @@
                 </h4>
                 <ul class="space-y-2 text-sm">
                     <li>
-                        <a href="{% url 'core:privacy' %}" 
+                        <a href="{% url 'admin_panel:privacy' %}" 
                            class="transition-colors duration-200
                                   {% if is_dark_mode %}
                                   text-cyber-text-secondary hover:text-cyber-neon-primary
@@ -203,7 +203,7 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{% url 'core:terms' %}" 
+                        <a href="{% url 'admin_panel:terms' %}" 
                            class="transition-colors duration-200
                                   {% if is_dark_mode %}
                                   text-cyber-text-secondary hover:text-cyber-neon-primary
@@ -214,7 +214,7 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{% url 'core:security' %}" 
+                        <a href="{% url 'admin_panel:security' %}" 
                            class="transition-colors duration-200
                                   {% if is_dark_mode %}
                                   text-cyber-text-secondary hover:text-cyber-neon-primary
@@ -225,7 +225,7 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{% url 'core:api_docs' %}" 
+                        <a href="{% url 'admin_panel:api_docs' %}" 
                            class="transition-colors duration-200
                                   {% if is_dark_mode %}
                                   text-cyber-text-secondary hover:text-cyber-neon-primary

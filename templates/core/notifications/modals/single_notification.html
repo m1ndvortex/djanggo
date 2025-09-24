@@ -374,7 +374,7 @@ function sendSingleNotification() {
     button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>{% trans "Sending..." %}';
     button.disabled = true;
     
-    fetch('{% url "core:notifications:send_ajax" %}', {
+    fetch('{% url 'admin_panel:notifications:send_ajax' %}', {
         method: 'POST',
         headers: {
             'X-CSRFToken': getCookie('csrftoken'),

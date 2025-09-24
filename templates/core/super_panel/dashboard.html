@@ -60,7 +60,7 @@
 
         <!-- Navigation Menu -->
         <div class="sidebar-menu p-4 space-y-2">
-            <a href="{% url 'core:super_panel_dashboard' %}"
+            <a href="{% url 'admin_panel:super_panel_dashboard' %}"
                 class="nav-item active flex items-center space-x-3 space-x-reverse p-3 rounded-lg transition-all duration-200"
                 :class="$store.theme.current === 'dark' ? 'cyber-nav-item-active' : 'modern-nav-item-active'">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,7 +73,7 @@
                 <span>داشبورد</span>
             </a>
 
-            <a href="{% url 'core:tenant_list' %}"
+            <a href="{% url 'admin_panel:tenant_list' %}"
                 class="nav-item flex items-center space-x-3 space-x-reverse p-3 rounded-lg transition-all duration-200"
                 :class="$store.theme.current === 'dark' ? 'cyber-nav-item' : 'modern-nav-item'">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,7 +84,7 @@
                 <span>مدیریت فروشگاه‌ها</span>
             </a>
 
-            <a href="{% url 'core:user_list' %}"
+            <a href="{% url 'admin_panel:user_list' %}"
                 class="nav-item flex items-center space-x-3 space-x-reverse p-3 rounded-lg transition-all duration-200"
                 :class="$store.theme.current === 'dark' ? 'cyber-nav-item' : 'modern-nav-item'">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -95,7 +95,7 @@
                 <span>مدیریت کاربران</span>
             </a>
 
-            <a href="{% url 'core:system_health' %}"
+            <a href="{% url 'admin_panel:system_health' %}"
                 class="nav-item flex items-center space-x-3 space-x-reverse p-3 rounded-lg transition-all duration-200"
                 :class="$store.theme.current === 'dark' ? 'cyber-nav-item' : 'modern-nav-item'">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -106,7 +106,7 @@
                 <span>وضعیت سیستم</span>
             </a>
 
-            <a href="{% url 'core:audit_logs' %}"
+            <a href="{% url 'admin_panel:audit_logs' %}"
                 class="nav-item flex items-center space-x-3 space-x-reverse p-3 rounded-lg transition-all duration-200"
                 :class="$store.theme.current === 'dark' ? 'cyber-nav-item' : 'modern-nav-item'">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -117,7 +117,7 @@
                 <span>گزارش‌های امنیتی</span>
             </a>
 
-            <a href="{% url 'core:system_settings' %}"
+            <a href="{% url 'admin_panel:system_settings' %}"
                 class="nav-item flex items-center space-x-3 space-x-reverse p-3 rounded-lg transition-all duration-200"
                 :class="$store.theme.current === 'dark' ? 'cyber-nav-item' : 'modern-nav-item'">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -434,7 +434,7 @@
                             :class="$store.theme.current === 'dark' ? 'text-cyber-text-primary' : 'text-gray-900'">
                             فعالیت‌های اخیر
                         </h3>
-                        <a href="{% url 'core:audit_logs' %}" class="text-sm transition-colors"
+                        <a href="{% url 'admin_panel:audit_logs' %}" class="text-sm transition-colors"
                             :class="$store.theme.current === 'dark' ? 'text-cyber-neon-primary hover:text-cyber-neon-secondary' : 'text-blue-600 hover:text-blue-500'">
                             مشاهده همه
                         </a>
@@ -492,7 +492,7 @@
                     </h3>
 
                     <div class="actions-list space-y-3">
-                        <a href="{% url 'core:tenant_create' %}"
+                        <a href="{% url 'admin_panel:tenant_create' %}"
                             class="action-button flex items-center space-x-3 space-x-reverse p-3 rounded-lg transition-all duration-200"
                             :class="$store.theme.current === 'dark' ? 'cyber-neon-button' : 'bg-blue-50 hover:bg-blue-100 text-blue-700'">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -502,7 +502,7 @@
                             <span class="text-sm font-medium">ایجاد فروشگاه جدید</span>
                         </a>
 
-                        <a href="{% url 'core:system_health' %}"
+                        <a href="{% url 'admin_panel:system_health' %}"
                             class="action-button flex items-center space-x-3 space-x-reverse p-3 rounded-lg transition-all duration-200"
                             :class="$store.theme.current === 'dark' ? 'cyber-secondary-button' : 'bg-green-50 hover:bg-green-100 text-green-700'">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -513,7 +513,7 @@
                             <span class="text-sm font-medium">بررسی وضعیت سیستم</span>
                         </a>
 
-                        <a href="{% url 'core:audit_logs' %}"
+                        <a href="{% url 'admin_panel:audit_logs' %}"
                             class="action-button flex items-center space-x-3 space-x-reverse p-3 rounded-lg transition-all duration-200"
                             :class="$store.theme.current === 'dark' ? 'text-cyber-text-secondary hover:bg-cyber-bg-surface/30' : 'bg-gray-50 hover:bg-gray-100 text-gray-700'">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -524,7 +524,7 @@
                             <span class="text-sm font-medium">گزارش‌های امنیتی</span>
                         </a>
 
-                        <a href="{% url 'core:system_settings' %}"
+                        <a href="{% url 'admin_panel:system_settings' %}"
                             class="action-button flex items-center space-x-3 space-x-reverse p-3 rounded-lg transition-all duration-200"
                             :class="$store.theme.current === 'dark' ? 'text-cyber-text-secondary hover:bg-cyber-bg-surface/30' : 'bg-gray-50 hover:bg-gray-100 text-gray-700'">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

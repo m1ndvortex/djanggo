@@ -24,6 +24,7 @@ SHARED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.admin',  # Admin only in shared schema for unified admin panel
     
     # Third party apps
     'rest_framework',
@@ -53,7 +54,7 @@ TENANT_APPS = [
     'django.contrib.auth',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.admin',  # Admin is tenant-specific
+    # NOTE: Django admin removed - we use unified admin panel only
     
     # Core functionality with PERFECT tenant isolation
     'zargar.core',     # User model and core functionality - IN TENANT_APPS for perfect isolation

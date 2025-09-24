@@ -5,7 +5,7 @@ Handles session management, security controls, and audit logging.
 import logging
 from django.utils.deprecation import MiddlewareMixin
 from django.shortcuts import redirect
-from django.urls import reverse
+from django.urls import reverse, NoReverseMatch
 from django.contrib import messages
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
@@ -27,6 +27,8 @@ class UnifiedAdminAuthMiddleware(MiddlewareMixin):
     EXEMPT_URLS = [
         '/admin/login/',
         '/admin/logout/',
+        '/super-panel/login/',
+        '/super-panel/logout/',
         '/health/',
         '/api/health/',
     ]
@@ -100,16 +102,24 @@ class UnifiedAdminAuthMiddleware(MiddlewareMixin):
         self._log_unauthorized_attempt(request)
         
         # Redirect to login
-        login_url = reverse('admin_panel:unified_login')
+        try:
+            login_url = reverse('admin_panel:unified_login')
+        except NoReverseMatch:
+            # Fallback to hardcoded URL if reverse fails
+            login_url = '/super-panel/login/'
         
         # Store next URL for redirect after login
         if request.path != login_url:
             request.session['next_url'] = request.path
         
-        messages.warning(
-            request,
-            _('برای دسترسی به این بخش باید وارد شوید.')
-        )
+        try:
+            messages.warning(
+                request,
+                _('برای دسترسی به این بخش باید وارد شوید.')
+            )
+        except Exception:
+            # Messages framework not available, skip message
+            pass
         
         return redirect(login_url)
     
@@ -413,10 +423,10 @@ class UnifiedAdminSecurityMiddleware(MiddlewareMixin):
         response['Referrer-Policy'] = 'strict-origin-when-cross-origin'
         response['Content-Security-Policy'] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
-            "style-src 'self' 'unsafe-inline'; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; "
             "img-src 'self' data: https:; "
-            "font-src 'self' data:; "
+            "font-src 'self' data: https://fonts.gstatic.com; "
             "connect-src 'self'; "
             "frame-ancestors 'none';"
         )

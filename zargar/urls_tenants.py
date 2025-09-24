@@ -2,11 +2,11 @@
 Tenant schema URL configuration for zargar project.
 This handles individual jewelry shop subdomains.
 """
-from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.http import JsonResponse
+from django.shortcuts import redirect
 from django.views.decorators.cache import never_cache
 
 
@@ -23,9 +23,21 @@ def health_check(request):
     })
 
 
+def redirect_to_unified_admin(request):
+    """Redirect tenant admin access to unified admin system."""
+    from django.conf import settings
+    
+    # In development, redirect to localhost
+    if settings.DEBUG:
+        return redirect('http://localhost:8000/super-panel/', permanent=False)
+    else:
+        # In production, redirect to the main admin domain
+        return redirect('https://admin.zargar.com/super-panel/', permanent=True)
+
+
 urlpatterns = [
-    # Tenant admin (limited access - preserved for tenant users)
-    path('admin/', admin.site.urls),
+    # Redirect tenant admin access to unified admin system
+    path('admin/', redirect_to_unified_admin, name='admin_redirect'),
     
     # Health check
     path('health/', health_check, name='health_check'),

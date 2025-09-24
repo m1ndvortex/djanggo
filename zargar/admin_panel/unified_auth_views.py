@@ -43,7 +43,7 @@ class UnifiedAdminLoginView(TemplateView):
         
         # Redirect if already authenticated
         if request.user.is_authenticated and UnifiedAuthPermissions.check_superadmin_permission(request.user):
-            next_url = request.GET.get('next') or request.session.get('next_url') or reverse('admin_panel:unified_dashboard')
+            next_url = request.GET.get('next') or request.session.get('next_url') or reverse('admin_panel:dashboard')
             return redirect(next_url)
         
         return super().dispatch(request, *args, **kwargs)
@@ -211,7 +211,7 @@ class UnifiedAdminLoginView(TemplateView):
             self._clear_login_attempts(request, user.username)
             
             # Redirect to next URL or dashboard
-            next_url = request.GET.get('next') or request.session.get('next_url') or reverse('admin_panel:unified_dashboard')
+            next_url = request.GET.get('next') or request.session.get('next_url') or reverse('admin_panel:dashboard')
             if 'next_url' in request.session:
                 del request.session['next_url']
             
@@ -531,7 +531,7 @@ class UnifiedAdmin2FASetupView(LoginRequiredMixin, TemplateView):
                 
                 logger.info(f"2FA enabled for admin user: {request.user.username}")
                 
-                return redirect(reverse('admin_panel:unified_dashboard'))
+                return redirect(reverse('admin_panel:dashboard'))
             else:
                 messages.error(request, _('کد تأیید اشتباه است.'))
                 return self.get(request)

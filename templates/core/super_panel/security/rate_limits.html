@@ -21,7 +21,7 @@
                 </div>
                 
                 <div class="flex items-center space-x-4 space-x-reverse">
-                    <a href="{% url 'core:security_dashboard' %}" 
+                    <a href="{% url 'admin_panel:security_dashboard' %}" 
                        class="{% if is_dark_mode %}text-cyber-neon-primary hover:text-cyber-neon-secondary{% else %}text-blue-600 hover:text-blue-500{% endif %} 
                               transition-colors duration-200">
                         بازگشت به داشبورد امنیت
@@ -89,7 +89,7 @@
                         </div>
                         
                         <div class="flex justify-end space-x-2 space-x-reverse">
-                            <a href="{% url 'core:rate_limits' %}" 
+                            <a href="{% url 'admin_panel:rate_limits' %}" 
                                class="px-4 py-2 text-sm font-medium rounded-lg border 
                                       {% if is_dark_mode %}border-cyber-neon-primary/20 text-cyber-text-secondary hover:bg-cyber-bg-elevated{% else %}border-gray-300 text-gray-700 hover:bg-gray-50{% endif %} 
                                       transition-colors duration-200">

@@ -81,7 +81,7 @@
                     <span class="text-sm {% if is_dark_mode %}text-cyber-text-secondary{% else %}text-gray-600{% endif %}">
                         آخرین بروزرسانی: <span class="persian-numbers" x-text="lastUpdate"></span>
                     </span>
-                    <a href="{% url 'core:dashboard' %}" 
+                    <a href="{% url 'admin_panel:dashboard' %}" 
                        class="{% if is_dark_mode %}text-cyber-neon-primary hover:text-cyber-neon-secondary{% else %}text-blue-600 hover:text-blue-500{% endif %} 
                               transition-colors duration-200">
                         بازگشت به داشبورد اصلی
@@ -198,7 +198,7 @@
                         دسترسی سریع
                     </h3>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <a href="{% url 'core:security_events' %}" 
+                        <a href="{% url 'admin_panel:security_events' %}" 
                            class="flex items-center p-3 rounded-lg transition-all duration-200
                                   {% if is_dark_mode %}
                                   bg-cyber-bg-elevated/50 border border-cyber-neon-primary/20 
@@ -213,7 +213,7 @@
                             <span class="text-sm font-medium">رویدادهای امنیتی</span>
                         </a>
                         
-                        <a href="{% url 'core:suspicious_activities' %}" 
+                        <a href="{% url 'admin_panel:suspicious_activities' %}" 
                            class="flex items-center p-3 rounded-lg transition-all duration-200
                                   {% if is_dark_mode %}
                                   bg-cyber-bg-elevated/50 border border-cyber-neon-primary/20 
@@ -228,7 +228,7 @@
                             <span class="text-sm font-medium">فعالیت‌های مشکوک</span>
                         </a>
                         
-                        <a href="{% url 'core:audit_logs' %}" 
+                        <a href="{% url 'admin_panel:audit_logs' %}" 
                            class="flex items-center p-3 rounded-lg transition-all duration-200
                                   {% if is_dark_mode %}
                                   bg-cyber-bg-elevated/50 border border-cyber-neon-primary/20 
@@ -243,7 +243,7 @@
                             <span class="text-sm font-medium">گزارش‌های حسابرسی</span>
                         </a>
                         
-                        <a href="{% url 'core:rate_limits' %}" 
+                        <a href="{% url 'admin_panel:rate_limits' %}" 
                            class="flex items-center p-3 rounded-lg transition-all duration-200
                                   {% if is_dark_mode %}
                                   bg-cyber-bg-elevated/50 border border-cyber-neon-primary/20 
@@ -294,7 +294,7 @@
                                     </p>
                                 </div>
                                 <div class="flex-shrink-0">
-                                    <a href="{% url 'core:security_event_detail' event.pk %}" 
+                                    <a href="{% url 'admin_panel:security_event_detail' event.pk %}" 
                                        class="text-sm {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %} hover:underline">
                                         جزئیات
                                     </a>
@@ -309,7 +309,7 @@
                         {% endif %}
                         
                         <div class="mt-4 pt-4 border-t {% if is_dark_mode %}border-cyber-neon-primary/20{% else %}border-gray-200{% endif %}">
-                            <a href="{% url 'core:security_events' %}?severity=critical" 
+                            <a href="{% url 'admin_panel:security_events' %}?severity=critical" 
                                class="text-sm {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %} hover:underline">
                                 مشاهده همه رویدادهای بحرانی ←
                             </a>
@@ -371,7 +371,7 @@
                         {% endif %}
                         
                         <div class="mt-4 pt-4 border-t {% if is_dark_mode %}border-cyber-neon-primary/20{% else %}border-gray-200{% endif %}">
-                            <a href="{% url 'core:suspicious_activities' %}?is_investigated=false" 
+                            <a href="{% url 'admin_panel:suspicious_activities' %}?is_investigated=false" 
                                class="text-sm {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %} hover:underline">
                                 مشاهده همه فعالیت‌های مشکوک ←
                             </a>
@@ -420,7 +420,7 @@
                                         {{ ip.risk_score }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <a href="{% url 'core:security_events' %}?search={{ ip.ip_address }}" 
+                                        <a href="{% url 'admin_panel:security_events' %}?search={{ ip.ip_address }}" 
                                            class="{% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %} hover:underline">
                                             مشاهده رویدادها
                                         </a>
@@ -457,7 +457,7 @@ function securityAlerts() {
         
         async fetchAlerts() {
             try {
-                const response = await fetch('{% url "core:security_alerts_api" %}');
+                const response = await fetch('{% url 'admin_panel:security_alerts_api' %}');
                 const data = await response.json();
                 this.alerts = data.alerts;
                 this.lastUpdate = new Date().toLocaleTimeString('fa-IR');

@@ -21,7 +21,7 @@
                 </div>
                 
                 <div class="flex items-center space-x-4 space-x-reverse">
-                    <a href="{% url 'core:security_events' %}" 
+                    <a href="{% url 'admin_panel:security_events' %}" 
                        class="{% if is_dark_mode %}text-cyber-neon-primary hover:text-cyber-neon-secondary{% else %}text-blue-600 hover:text-blue-500{% endif %} 
                               transition-colors duration-200">
                         بازگشت به لیست رویدادها
@@ -218,7 +218,7 @@
                                     </p>
                                 </div>
                             </div>
-                            <a href="{% url 'core:security_event_detail' related.pk %}" 
+                            <a href="{% url 'admin_panel:security_event_detail' related.pk %}" 
                                class="text-sm {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %} hover:underline">
                                 مشاهده
                             </a>
@@ -261,7 +261,7 @@
                                     </p>
                                 </div>
                             </div>
-                            <a href="{% url 'core:security_event_detail' user_event.pk %}" 
+                            <a href="{% url 'admin_panel:security_event_detail' user_event.pk %}" 
                                class="text-sm {% if is_dark_mode %}text-cyber-neon-primary{% else %}text-blue-600{% endif %} hover:underline">
                                 مشاهده
                             </a>
@@ -282,7 +282,7 @@
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
         
         <div class="inline-block align-bottom {% if is_dark_mode %}cyber-glass-card{% else %}bg-white{% endif %} rounded-lg text-right overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-            <form id="resolveForm" method="post" action="{% url 'core:security_event_resolve' event.pk %}">
+            <form id="resolveForm" method="post" action="{% url 'admin_panel:security_event_resolve' event.pk %}">
                 {% csrf_token %}
                 <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                     <div class="sm:flex sm:items-start">

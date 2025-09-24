@@ -20,9 +20,14 @@ def health_check(request):
     })
 
 
+def redirect_to_unified_admin(request):
+    """Redirect legacy admin access to unified admin system."""
+    return redirect('/super-panel/', permanent=True)
+
+
 urlpatterns = [
     # Redirect /admin/ to unified admin system
-    path('admin/', lambda request: redirect('/super-panel/', permanent=True)),
+    path('admin/', redirect_to_unified_admin, name='admin_redirect'),
     path('health/', health_check, name='health_check'),
     path('api/', include('zargar.api.urls')),
     path('pos/', include('zargar.pos.urls')),

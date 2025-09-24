@@ -144,12 +144,12 @@
                     </p>
                 </div>
                 <div>
-                    <a href="{% url 'core:notifications:template_list' %}" class="btn btn-secondary">
+                    <a href="{% url 'admin_panel:notifications:template_list' %}" class="btn btn-secondary">
                         <i class="fas fa-arrow-right me-2"></i>
                         {% trans "Back to Templates" %}
                     </a>
                     {% if form.instance.pk %}
-                    <a href="{% url 'core:notifications:template_delete' form.instance.pk %}" class="btn btn-danger">
+                    <a href="{% url 'admin_panel:notifications:template_delete' form.instance.pk %}" class="btn btn-danger">
                         <i class="fas fa-trash me-2"></i>
                         {% trans "Delete" %}
                     </a>
@@ -367,7 +367,7 @@
                                 </button>
                             </div>
                             <div>
-                                <a href="{% url 'core:notifications:template_list' %}" class="btn btn-secondary">
+                                <a href="{% url 'admin_panel:notifications:template_list' %}" class="btn btn-secondary">
                                     {% trans "Cancel" %}
                                 </a>
                                 <button type="submit" class="btn btn-primary">

@@ -21,7 +21,7 @@
                     class="bg-blue-600 dark:bg-cyber-neon-primary hover:bg-blue-700 dark:hover:bg-cyber-neon-primary/80 text-white px-4 py-2 rounded-lg transition-colors cyber-button">
                 چاپ فاکتور
             </button>
-            <a href="{% url 'core:tenants:billing:invoices' %}" 
+            <a href="{% url 'admin_panel:tenants:billing:invoices' %}" 
                class="bg-gray-600 dark:bg-cyber-bg-elevated hover:bg-gray-700 dark:hover:bg-cyber-bg-elevated/80 text-white px-4 py-2 rounded-lg transition-colors">
                 بازگشت به لیست
             </a>
@@ -276,7 +276,7 @@
                     چاپ فاکتور
                 </button>
                 
-                <a href="{% url 'core:tenants:tenant_detail' invoice.tenant.pk %}" 
+                <a href="{% url 'admin_panel:tenants:tenant_detail' invoice.tenant.pk %}" 
                    class="w-full bg-purple-600 dark:bg-cyber-neon-purple hover:bg-purple-700 dark:hover:bg-cyber-neon-purple/80 text-white py-2 px-4 rounded-lg transition-colors cyber-button text-center block">
                     مشاهده تنانت
                 </a>
@@ -313,7 +313,7 @@
                             {% endif %}">
                             {{ related_invoice.get_status_display }}
                         </span>
-                        <a href="{% url 'core:tenants:billing:invoice_detail' related_invoice.pk %}" 
+                        <a href="{% url 'admin_panel:tenants:billing:invoice_detail' related_invoice.pk %}" 
                            class="block text-xs text-primary-600 dark:text-cyber-neon-primary hover:text-primary-800 dark:hover:text-cyber-neon-primary/80 mt-1">
                             مشاهده
                         </a>
@@ -459,7 +459,7 @@ document.getElementById('paymentForm').addEventListener('submit', function(e) {
     
     ZargarAdmin.showLoading();
     
-    fetch(`{% url 'core:tenants:billing:invoice_payment' invoice.pk %}`, {
+    fetch(`{% url 'admin_panel:tenants:billing:invoice_payment' invoice.pk %}`, {
         method: 'POST',
         body: formData,
         headers: {

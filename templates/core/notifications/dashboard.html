@@ -113,7 +113,7 @@
                             <i class="fas fa-paper-plane me-2"></i>
                             {% trans "Send Bulk Notifications" %}
                         </button>
-                        <a href="{% url 'core:notifications:template_list' %}" class="btn btn-primary">
+                        <a href="{% url 'admin_panel:notifications:template_list' %}" class="btn btn-primary">
                             <i class="fas fa-edit me-2"></i>
                             {% trans "Manage Templates" %}
                         </a>
@@ -229,7 +229,7 @@
                             {% trans "Send Special Offers" %}
                         </button>
                         <hr>
-                        <a href="{% url 'core:notifications:history' %}"
+                        <a href="{% url 'admin_panel:notifications:history' %}"
                             class="btn btn-outline-secondary quick-action-btn">
                             <i class="fas fa-history me-2"></i>
                             {% trans "View History" %}
@@ -246,7 +246,7 @@
             <div class="card shadow mb-4">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h6 class="m-0 font-weight-bold text-primary">{% trans "Available Templates" %}</h6>
-                    <a href="{% url 'core:notifications:template_create' %}" class="btn btn-sm btn-outline-primary">
+                    <a href="{% url 'admin_panel:notifications:template_create' %}" class="btn btn-sm btn-outline-primary">
                         <i class="fas fa-plus me-1"></i>{% trans "New" %}
                     </a>
                 </div>
@@ -273,7 +273,7 @@
                                         </li>
                                         <li>
                                             <a class="dropdown-item"
-                                                href="{% url 'core:notifications:template_edit' template.id %}">
+                                                href="{% url 'admin_panel:notifications:template_edit' template.id %}">
                                                 <i class="fas fa-edit me-2"></i>{% trans "Edit" %}
                                             </a>
                                         </li>
@@ -292,7 +292,7 @@
                     <div class="text-center py-3">
                         <i class="fas fa-file-alt fa-2x text-gray-300 mb-2"></i>
                         <p class="text-muted">{% trans "No templates available" %}</p>
-                        <a href="{% url 'core:notifications:template_create' %}" class="btn btn-sm btn-primary">
+                        <a href="{% url 'admin_panel:notifications:template_create' %}" class="btn btn-sm btn-primary">
                             {% trans "Create First Template" %}
                         </a>
                     </div>
@@ -360,7 +360,7 @@
                                     </div>
                                     <div class="col-md-2">
                                         <div class="btn-group btn-group-sm" role="group">
-                                            <a href="{% url 'core:notifications:detail' notification.id %}"
+                                            <a href="{% url 'admin_panel:notifications:detail' notification.id %}"
                                                 class="btn btn-outline-info" title="{% trans 'View Details' %}">
                                                 <i class="fas fa-eye"></i>
                                             </a>
@@ -535,7 +535,7 @@
     }
 
     function refreshStatistics() {
-        fetch('{% url "core:notifications:statistics_ajax" %}')
+        fetch('{% url 'admin_panel:notifications:statistics_ajax' %}')
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -579,7 +579,7 @@
     }
 
     function previewTemplate(templateId) {
-        fetch(`{% url 'core:notifications:template_preview_ajax' 0 %}`.replace('0', templateId))
+        fetch(`{% url 'admin_panel:notifications:template_preview_ajax' 0 %}`.replace('0', templateId))
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -606,7 +606,7 @@
 
     function cancelNotification(notificationId) {
         if (confirm('{% trans "Are you sure you want to cancel this notification?" %}')) {
-            fetch(`{% url 'core:notifications:cancel_ajax' 0 %}`.replace('0', notificationId), {
+            fetch(`{% url 'admin_panel:notifications:cancel_ajax' 0 %}`.replace('0', notificationId), {
                 method: 'POST',
                 headers: {
                     'X-CSRFToken': getCookie('csrftoken'),
@@ -631,7 +631,7 @@
 
     function retryNotification(notificationId) {
         if (confirm('{% trans "Do you want to retry sending this notification?" %}')) {
-            fetch(`{% url 'core:notifications:retry_ajax' 0 %}`.replace('0', notificationId), {
+            fetch(`{% url 'admin_panel:notifications:retry_ajax' 0 %}`.replace('0', notificationId), {
                 method: 'POST',
                 headers: {
                     'X-CSRFToken': getCookie('csrftoken'),

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    
+    <title>{% block title %}پنل مدیریت زرگر{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{% load static %}{% static 'images/favicon.ico' %}">
+    
+    <!-- Persian Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'vazir': ['Vazirmatn', 'sans-serif'],
+                    },
+                    colors: {
+                        'cyber': {
+                            'bg': {
+                                'primary': '#0A0A0F',
+                                'secondary': '#1A1A2E',
+                                'surface': '#16213E',
+                            },
+                            'text': {
+                                'primary': '#E2E8F0',
+                                'secondary': '#CBD5E1',
+                                'muted': '#64748B',
+                            },
+                            'neon': {
+                                'primary': '#00D4FF',
+                                'secondary': '#00FF88',
+                                'accent': '#FF0080',
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom Styles -->
+    <style>
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+        
+        /* RTL Support */
+        .rtl {
+            direction: rtl;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+        
+        /* Dark theme scrollbar */
+        .dark ::-webkit-scrollbar-track {
+            background: #1a1a2e;
+        }
+        
+        .dark ::-webkit-scrollbar-thumb {
+            background: #4a5568;
+        }
+        
+        .dark ::-webkit-scrollbar-thumb:hover {
+            background: #718096;
+        }
+        
+        /* Animation utilities */
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-slide-in-right {
+            animation: slideInRight 0.3s ease-out;
+        }
+        
+        @keyframes slideInRight {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+        
+        /* Focus styles */
+        .focus-ring:focus {
+            outline: 2px solid #00D4FF;
+            outline-offset: 2px;
+        }
+        
+        /* Persian number support */
+        .persian-numbers {
+            font-feature-settings: "ss01" on;
+        }
+    </style>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body class="h-full bg-gray-50 dark:bg-cyber-bg-primary font-vazir rtl" 
+      x-data="{ 
+          darkMode: localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches),
+          currentTheme: localStorage.getItem('theme') || 'light'
+      }"
+      x-init="
+          $watch('darkMode', value => {
+              localStorage.setItem('theme', value ? 'dark' : 'light');
+              currentTheme = value ? 'dark' : 'light';
+              document.documentElement.classList.toggle('dark', value);
+          });
+          document.documentElement.classList.toggle('dark', darkMode);
+          window.currentTheme = currentTheme;
+      "
+      :class="{ 'dark': darkMode }">
+
+    <!-- Main Content -->
+    <main class="min-h-screen">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Scripts -->
+    {% block extra_scripts %}
+    <script>
+        // Theme management
+        window.ThemeManager = {
+            toggle: function() {
+                const isDark = document.documentElement.classList.contains('dark');
+                document.documentElement.classList.toggle('dark', !isDark);
+                localStorage.setItem('theme', !isDark ? 'dark' : 'light');
+                window.currentTheme = !isDark ? 'dark' : 'light';
+                
+                // Dispatch theme change event
+                window.dispatchEvent(new CustomEvent('themeChanged', {
+                    detail: { theme: !isDark ? 'dark' : 'light' }
+                }));
+            },
+            
+            setTheme: function(theme) {
+                document.documentElement.classList.toggle('dark', theme === 'dark');
+                localStorage.setItem('theme', theme);
+                window.currentTheme = theme;
+                
+                // Dispatch theme change event
+                window.dispatchEvent(new CustomEvent('themeChanged', {
+                    detail: { theme: theme }
+                }));
+            },
+            
+            getTheme: function() {
+                return localStorage.getItem('theme') || 'light';
+            }
+        };
+        
+        // Persian number utilities
+        window.PersianNumbers = {
+            toPersian: function(str) {
+                const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+                const englishDigits = '0123456789';
+                
+                return str.toString().replace(/[0-9]/g, function(w) {
+                    return persianDigits[englishDigits.indexOf(w)];
+                });
+            },
+            
+            toEnglish: function(str) {
+                const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+                const englishDigits = '0123456789';
+                
+                return str.toString().replace(/[۰-۹]/g, function(w) {
+                    return englishDigits[persianDigits.indexOf(w)];
+                });
+            }
+        };
+        
+        // Initialize theme on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                window.ThemeManager.setTheme(savedTheme);
+            }
+        });
+        
+        // CSRF token for AJAX requests
+        window.csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+        
+        // Global error handler
+        window.addEventListener('error', function(e) {
+            console.error('Global error:', e.error);
+        });
+        
+        // Global unhandled promise rejection handler
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('Unhandled promise rejection:', e.reason);
+        });
+    </script>
+    {% endblock %}
+</body>
+</html>
