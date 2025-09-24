@@ -1310,6 +1310,19 @@ class PublicAuditLog(models.Model):
         ('configuration_change', _('Configuration Change')),
     ]
     
+    # User information
+    user_id = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_('User ID')
+    )
+    
+    user_username = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name=_('Username')
+    )
+    
     action = models.CharField(
         max_length=50,
         choices=ACTION_TYPES,
@@ -1334,11 +1347,26 @@ class PublicAuditLog(models.Model):
         verbose_name=_('Object Representation')
     )
     
+    # Change tracking
     changes = models.JSONField(
         default=dict,
         blank=True,
         verbose_name=_('Changes'),
         help_text=_('JSON representation of field changes')
+    )
+    
+    old_values = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name=_('Old Values'),
+        help_text=_('Previous values before change')
+    )
+    
+    new_values = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name=_('New Values'),
+        help_text=_('New values after change')
     )
     
     ip_address = models.GenericIPAddressField(
@@ -1376,6 +1404,21 @@ class PublicAuditLog(models.Model):
         verbose_name=_('Additional Details')
     )
     
+    # Tenant context
+    tenant_schema = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name=_('Tenant Schema')
+    )
+    
+    # Integrity protection
+    checksum = models.CharField(
+        max_length=64,
+        blank=True,
+        verbose_name=_('Integrity Checksum'),
+        help_text=_('SHA-256 checksum for tamper detection')
+    )
+    
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
@@ -1385,7 +1428,41 @@ class PublicAuditLog(models.Model):
         ordering = ['-created_at']
     
     def __str__(self):
-        return f"{self.get_action_display()} - {self.created_at}"
+        return f"{self.user_username or 'System'} - {self.get_action_display()} - {self.created_at}"
+    
+    def save(self, *args, **kwargs):
+        """Override save to generate integrity checksum."""
+        if not self.checksum:
+            self.checksum = self._generate_checksum()
+        super().save(*args, **kwargs)
+    
+    def _generate_checksum(self):
+        """Generate SHA-256 checksum for integrity verification."""
+        import json
+        import hashlib
+        from django.utils import timezone
+        
+        data = {
+            'user_id': self.user_id,
+            'user_username': self.user_username,
+            'action': self.action,
+            'model_name': self.model_name,
+            'object_id': self.object_id,
+            'changes': self.changes,
+            'ip_address': str(self.ip_address) if self.ip_address else '',
+            'timestamp': self.created_at.isoformat() if self.created_at else timezone.now().isoformat(),
+        }
+        
+        data_string = json.dumps(data, sort_keys=True, default=str)
+        return hashlib.sha256(data_string.encode()).hexdigest()
+    
+    def verify_integrity(self):
+        """Verify the integrity of this audit log entry."""
+        if not self.checksum:
+            return False
+        
+        expected_checksum = self._generate_checksum()
+        return self.checksum == expected_checksum
     
     @classmethod
     def log_action(cls, action, content_object=None, request=None, 

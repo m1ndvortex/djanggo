@@ -1,0 +1,579 @@
+{% extends 'admin_panel/base_unified.html' %}
+{% load static %}
+
+{% block title %}جزئیات لاگ حسابرسی - پنل مدیریت زرگر{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Custom styles for audit log detail */
+    .detail-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    
+    .dark .detail-card {
+        background: rgba(37, 42, 58, 0.95);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(0, 212, 255, 0.2);
+    }
+    
+    .json-viewer {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 0.5rem;
+        font-family: 'Courier New', monospace;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .dark .json-viewer {
+        background: #1a1d29;
+        border: 1px solid rgba(0, 212, 255, 0.3);
+        color: #b8bcc8;
+    }
+    
+    .field-change-row {
+        transition: all 0.3s ease;
+    }
+    
+    .field-change-row:hover {
+        background-color: rgba(59, 130, 246, 0.05);
+    }
+    
+    .dark .field-change-row:hover {
+        background-color: rgba(0, 212, 255, 0.05);
+    }
+    
+    .changed-field {
+        background-color: rgba(245, 158, 11, 0.1);
+        border-left: 3px solid #f59e0b;
+    }
+    
+    .dark .changed-field {
+        background-color: rgba(255, 184, 0, 0.1);
+        border-left: 3px solid #ffb800;
+    }
+    
+    .integrity-status {
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+    }
+    
+    .integrity-verified {
+        background-color: rgba(34, 197, 94, 0.1);
+        color: rgb(34, 197, 94);
+        border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+    
+    .dark .integrity-verified {
+        background-color: rgba(0, 255, 136, 0.1);
+        color: rgb(0, 255, 136);
+        border: 1px solid rgba(0, 255, 136, 0.2);
+    }
+    
+    .integrity-compromised {
+        background-color: rgba(239, 68, 68, 0.1);
+        color: rgb(239, 68, 68);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+    
+    .dark .integrity-compromised {
+        background-color: rgba(255, 71, 87, 0.1);
+        color: rgb(255, 71, 87);
+        border: 1px solid rgba(255, 71, 87, 0.2);
+    }
+    
+    .integrity-warning {
+        background-color: rgba(245, 158, 11, 0.1);
+        color: rgb(245, 158, 11);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+    
+    .dark .integrity-warning {
+        background-color: rgba(255, 184, 0, 0.1);
+        color: rgb(255, 184, 0);
+        border: 1px solid rgba(255, 184, 0, 0.2);
+    }
+    
+    .breadcrumb {
+        display: flex;
+        align-items: center;
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+    
+    .dark .breadcrumb {
+        color: #b8bcc8;
+    }
+    
+    .breadcrumb a {
+        color: #3b82f6;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+    
+    .dark .breadcrumb a {
+        color: #00d4ff;
+    }
+    
+    .breadcrumb a:hover {
+        color: #1d4ed8;
+    }
+    
+    .dark .breadcrumb a:hover {
+        color: #00d4ff;
+        opacity: 0.8;
+    }
+    
+    .related-log-item {
+        transition: all 0.3s ease;
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        border: 1px solid transparent;
+    }
+    
+    .related-log-item:hover {
+        background-color: rgba(59, 130, 246, 0.05);
+        border-color: rgba(59, 130, 246, 0.2);
+    }
+    
+    .dark .related-log-item:hover {
+        background-color: rgba(0, 212, 255, 0.05);
+        border-color: rgba(0, 212, 255, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block page_header %}
+<!-- Breadcrumb Navigation -->
+<div class="breadcrumb mb-4">
+    <a href="{% url 'admin_panel:dashboard' %}">داشبورد</a>
+    <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+    </svg>
+    <a href="{% url 'admin_panel:audit_logs' %}">لاگ‌های حسابرسی</a>
+    <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+    </svg>
+    <span>جزئیات لاگ</span>
+</div>
+
+<div class="bg-white dark:bg-cyber-bg-secondary rounded-lg shadow-lg dark:shadow-2xl p-6 mb-6 border dark:border-cyber-neon-primary/20">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary flex items-center">
+                <svg class="w-8 h-8 text-red-600 dark:text-cyber-neon-danger ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                جزئیات لاگ حسابرسی
+            </h1>
+            <p class="text-gray-600 dark:text-cyber-text-secondary mt-1">
+                لاگ شماره {{ audit_log.id }} - {{ audit_log.created_at|date:"Y/m/d H:i:s" }}
+            </p>
+        </div>
+        <div class="flex space-x-3 space-x-reverse">
+            <a href="{% url 'admin_panel:audit_logs' %}" 
+               class="bg-gray-600 dark:bg-cyber-bg-surface hover:bg-gray-700 dark:hover:bg-cyber-bg-elevated text-white px-4 py-2 rounded-lg transition-colors flex items-center">
+                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                بازگشت به لیست
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main Details -->
+    <div class="lg:col-span-2 space-y-6">
+        
+        <!-- Basic Information -->
+        <div class="detail-card rounded-lg shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4 flex items-center">
+                <svg class="w-5 h-5 text-blue-600 dark:text-cyber-neon-primary ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                اطلاعات کلی
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-1">تاریخ و زمان</label>
+                    <p class="text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ audit_log.created_at|date:"Y/m/d H:i:s" }}</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-1">کاربر</label>
+                    <p class="text-gray-900 dark:text-cyber-text-primary">{{ audit_log.user.username|default:"نامشخص" }}</p>
+                    {% if audit_log.user %}
+                        <p class="text-xs text-gray-500 dark:text-cyber-text-muted">شناسه کاربر: {{ audit_log.user.id }}</p>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-1">عملیات</label>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-cyber-neon-primary/20 text-blue-800 dark:text-cyber-neon-primary">
+                        {{ audit_log.get_action_display }}
+                    </span>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-1">آدرس IP</label>
+                    <p class="text-gray-900 dark:text-cyber-text-primary font-mono">{{ audit_log.ip_address|default:"—" }}</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-1">مدل</label>
+                    <p class="text-gray-900 dark:text-cyber-text-primary">{{ audit_log.model_name|default:"—" }}</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-1">تنانت</label>
+                    <p class="text-gray-900 dark:text-cyber-text-primary">{{ audit_log.tenant_schema|default:"فعلی" }}</p>
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-1">شیء</label>
+                    <p class="text-gray-900 dark:text-cyber-text-primary">{{ audit_log.object_repr|default:"—" }}</p>
+                    {% if audit_log.object_id %}
+                        <p class="text-xs text-gray-500 dark:text-cyber-text-muted">شناسه شیء: {{ audit_log.object_id }}</p>
+                    {% endif %}
+                </div>
+                
+                {% if audit_log.request_path %}
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-1">مسیر درخواست</label>
+                    <p class="text-gray-900 dark:text-cyber-text-primary font-mono text-sm">
+                        <span class="bg-gray-100 dark:bg-cyber-bg-elevated px-2 py-1 rounded">{{ audit_log.request_method|default:"GET" }}</span>
+                        {{ audit_log.request_path }}
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Integrity Status -->
+        <div class="detail-card rounded-lg shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4 flex items-center">
+                <svg class="w-5 h-5 text-green-600 dark:text-cyber-neon-secondary ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                </svg>
+                وضعیت یکپارچگی
+            </h3>
+            
+            <div class="integrity-status integrity-{{ integrity_status.color }}">
+                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {% if integrity_status.is_valid %}
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    {% else %}
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    {% endif %}
+                </svg>
+                <div>
+                    <p class="font-medium">{{ integrity_status.message }}</p>
+                    {% if audit_log.checksum %}
+                        <p class="text-sm opacity-75 mt-1">چک‌سام: {{ audit_log.checksum|truncatechars:20 }}...</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Changes Details -->
+        {% if has_before_after %}
+        <div class="detail-card rounded-lg shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4 flex items-center">
+                <svg class="w-5 h-5 text-yellow-600 dark:text-cyber-neon-warning ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                </svg>
+                تغییرات
+            </h3>
+            
+            {% if formatted_changes.has_changes %}
+                <div class="space-y-2">
+                    {% for change in formatted_changes.field_changes %}
+                    <div class="field-change-row p-3 rounded-lg {% if change.is_changed %}changed-field{% endif %}">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <h4 class="font-medium text-gray-900 dark:text-cyber-text-primary">{{ change.field }}</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-500 dark:text-cyber-text-muted mb-1">مقدار قبلی</label>
+                                        <p class="text-sm text-gray-700 dark:text-cyber-text-secondary bg-red-50 dark:bg-cyber-neon-danger/10 p-2 rounded border-r-2 border-red-300 dark:border-cyber-neon-danger">
+                                            {{ change.old_value|default:"—" }}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-500 dark:text-cyber-text-muted mb-1">مقدار جدید</label>
+                                        <p class="text-sm text-gray-700 dark:text-cyber-text-secondary bg-green-50 dark:bg-cyber-neon-secondary/10 p-2 rounded border-r-2 border-green-300 dark:border-cyber-neon-secondary">
+                                            {{ change.new_value|default:"—" }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            {% if change.is_changed %}
+                                <svg class="w-5 h-5 text-yellow-600 dark:text-cyber-neon-warning mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                                </svg>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-gray-500 dark:text-cyber-text-muted">هیچ تغییری ثبت نشده است</p>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Raw JSON Data -->
+        <div class="detail-card rounded-lg shadow-lg p-6" x-data="{ activeTab: 'changes' }">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4 flex items-center">
+                <svg class="w-5 h-5 text-purple-600 dark:text-cyber-neon-purple ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                </svg>
+                داده‌های خام
+            </h3>
+            
+            <!-- Tab Navigation -->
+            <div class="flex space-x-1 space-x-reverse mb-4">
+                <button @click="activeTab = 'changes'" 
+                        :class="{ 'bg-primary-100 dark:bg-cyber-neon-primary/20 text-primary-700 dark:text-cyber-neon-primary': activeTab === 'changes' }"
+                        class="px-3 py-2 text-sm font-medium rounded-lg transition-colors">
+                    تغییرات
+                </button>
+                <button @click="activeTab = 'old'" 
+                        :class="{ 'bg-primary-100 dark:bg-cyber-neon-primary/20 text-primary-700 dark:text-cyber-neon-primary': activeTab === 'old' }"
+                        class="px-3 py-2 text-sm font-medium rounded-lg transition-colors">
+                    مقادیر قبلی
+                </button>
+                <button @click="activeTab = 'new'" 
+                        :class="{ 'bg-primary-100 dark:bg-cyber-neon-primary/20 text-primary-700 dark:text-cyber-neon-primary': activeTab === 'new' }"
+                        class="px-3 py-2 text-sm font-medium rounded-lg transition-colors">
+                    مقادیر جدید
+                </button>
+            </div>
+            
+            <!-- Tab Content -->
+            <div x-show="activeTab === 'changes'" class="json-viewer p-4">
+                <pre>{{ formatted_changes.changes_json|default:"هیچ تغییری ثبت نشده" }}</pre>
+            </div>
+            
+            <div x-show="activeTab === 'old'" class="json-viewer p-4">
+                <pre>{{ formatted_changes.old_values_json|default:"هیچ مقدار قبلی ثبت نشده" }}</pre>
+            </div>
+            
+            <div x-show="activeTab === 'new'" class="json-viewer p-4">
+                <pre>{{ formatted_changes.new_values_json|default:"هیچ مقدار جدید ثبت نشده" }}</pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-6">
+        
+        <!-- Quick Actions -->
+        <div class="detail-card rounded-lg shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">عملیات سریع</h3>
+            <div class="space-y-3">
+                <button onclick="copyLogDetails()" 
+                        class="w-full flex items-center justify-center px-4 py-2 bg-blue-600 dark:bg-cyber-neon-primary hover:bg-blue-700 dark:hover:bg-cyber-neon-primary/80 text-white rounded-lg transition-colors">
+                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                    </svg>
+                    کپی جزئیات
+                </button>
+                
+                <button onclick="exportLogDetail()" 
+                        class="w-full flex items-center justify-center px-4 py-2 bg-green-600 dark:bg-cyber-neon-secondary hover:bg-green-700 dark:hover:bg-cyber-neon-secondary/80 text-white rounded-lg transition-colors">
+                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-4-4m4 4l4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    صادرات JSON
+                </button>
+                
+                {% if integrity_status.status == 'compromised' %}
+                <button onclick="reportIntegrityIssue()" 
+                        class="w-full flex items-center justify-center px-4 py-2 bg-red-600 dark:bg-cyber-neon-danger hover:bg-red-700 dark:hover:bg-cyber-neon-danger/80 text-white rounded-lg transition-colors">
+                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                    گزارش مشکل یکپارچگی
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Related Logs -->
+        {% if related_logs %}
+        <div class="detail-card rounded-lg shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">لاگ‌های مرتبط</h3>
+            <div class="space-y-3">
+                {% for related_log in related_logs %}
+                <div class="related-log-item">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary">
+                                {{ related_log.get_action_display }}
+                            </p>
+                            <p class="text-xs text-gray-500 dark:text-cyber-text-muted">
+                                {{ related_log.created_at|date:"H:i:s" }} - {{ related_log.user.username|default:"نامشخص" }}
+                            </p>
+                        </div>
+                        <a href="{% url 'admin_panel:audit_log_detail' related_log.id %}" 
+                           class="text-primary-600 dark:text-cyber-neon-primary hover:text-primary-800 dark:hover:text-cyber-neon-primary/80 text-xs">
+                            مشاهده
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Technical Details -->
+        <div class="detail-card rounded-lg shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">جزئیات فنی</h3>
+            <div class="space-y-3 text-sm">
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 dark:text-cyber-text-muted">شناسه لاگ</label>
+                    <p class="text-gray-900 dark:text-cyber-text-primary font-mono">{{ audit_log.id }}</p>
+                </div>
+                
+                {% if audit_log.session_key %}
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 dark:text-cyber-text-muted">کلید جلسه</label>
+                    <p class="text-gray-900 dark:text-cyber-text-primary font-mono text-xs">{{ audit_log.session_key|truncatechars:20 }}...</p>
+                </div>
+                {% endif %}
+                
+                {% if audit_log.user_agent %}
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 dark:text-cyber-text-muted">User Agent</label>
+                    <p class="text-gray-900 dark:text-cyber-text-primary text-xs break-all">{{ audit_log.user_agent|truncatechars:50 }}...</p>
+                </div>
+                {% endif %}
+                
+                {% if audit_log.content_type %}
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 dark:text-cyber-text-muted">نوع محتوا</label>
+                    <p class="text-gray-900 dark:text-cyber-text-primary">{{ audit_log.content_type.app_label }}.{{ audit_log.content_type.model }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Copy log details to clipboard
+    function copyLogDetails() {
+        const logDetails = {
+            id: {{ audit_log.id }},
+            timestamp: '{{ audit_log.created_at|date:"Y-m-d H:i:s" }}',
+            user: '{{ audit_log.user.username|default:"نامشخص" }}',
+            action: '{{ audit_log.get_action_display }}',
+            object: '{{ audit_log.object_repr|default:"—" }}',
+            ip_address: '{{ audit_log.ip_address|default:"—" }}',
+            tenant: '{{ audit_log.tenant_schema|default:"فعلی" }}',
+            integrity_status: '{{ integrity_status.message }}'
+        };
+        
+        navigator.clipboard.writeText(JSON.stringify(logDetails, null, 2)).then(() => {
+            ZargarAdmin.showMessage('جزئیات لاگ کپی شد', 'success');
+        }).catch(() => {
+            ZargarAdmin.showMessage('خطا در کپی کردن', 'error');
+        });
+    }
+
+    // Export log detail as JSON
+    function exportLogDetail() {
+        const logData = {
+            basic_info: {
+                id: {{ audit_log.id }},
+                timestamp: '{{ audit_log.created_at|date:"Y-m-d H:i:s" }}',
+                user: '{{ audit_log.user.username|default:"نامشخص" }}',
+                user_id: {{ audit_log.user.id|default:"null" }},
+                action: '{{ audit_log.action }}',
+                action_display: '{{ audit_log.get_action_display }}',
+                object_repr: '{{ audit_log.object_repr|default:"" }}',
+                object_id: '{{ audit_log.object_id|default:"" }}',
+                model_name: '{{ audit_log.model_name|default:"" }}',
+                ip_address: '{{ audit_log.ip_address|default:"" }}',
+                tenant_schema: '{{ audit_log.tenant_schema|default:"" }}',
+                request_path: '{{ audit_log.request_path|default:"" }}',
+                request_method: '{{ audit_log.request_method|default:"" }}'
+            },
+            integrity: {
+                status: '{{ integrity_status.status }}',
+                message: '{{ integrity_status.message }}',
+                is_valid: {{ integrity_status.is_valid|yesno:"true,false" }},
+                checksum: '{{ audit_log.checksum|default:"" }}'
+            },
+            changes: {{ formatted_changes.changes_json|default:"null" }},
+            old_values: {{ formatted_changes.old_values_json|default:"null" }},
+            new_values: {{ formatted_changes.new_values_json|default:"null" }}
+        };
+        
+        const blob = new Blob([JSON.stringify(logData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `audit_log_{{ audit_log.id }}_{{ audit_log.created_at|date:"Y-m-d_H-i-s" }}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        ZargarAdmin.showMessage('فایل JSON صادر شد', 'success');
+    }
+
+    // Report integrity issue
+    function reportIntegrityIssue() {
+        if (confirm('آیا مطمئن هستید که می‌خواهید مشکل یکپارچگی این لاگ را گزارش دهید؟')) {
+            // Here you would typically send a request to report the integrity issue
+            ZargarAdmin.showMessage('مشکل یکپارچگی گزارش شد', 'success');
+        }
+    }
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+C for copy
+            if (e.ctrlKey && e.key === 'c' && !window.getSelection().toString()) {
+                e.preventDefault();
+                copyLogDetails();
+            }
+            
+            // Ctrl+E for export
+            if (e.ctrlKey && e.key === 'e') {
+                e.preventDefault();
+                exportLogDetail();
+            }
+            
+            // Escape to go back
+            if (e.key === 'Escape') {
+                window.location.href = '{% url "admin_panel:audit_logs" %}';
+            }
+        });
+        
+        // Auto-scroll to changes section if there are changes
+        {% if has_before_after %}
+        const changesSection = document.querySelector('[x-data*="activeTab"]');
+        if (changesSection) {
+            changesSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        {% endif %}
+    });
+</script>
+{% endblock %}

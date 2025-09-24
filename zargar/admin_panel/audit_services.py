@@ -34,7 +34,7 @@ class AuditLogFilterService:
             filters: Dictionary containing filter criteria
             
         Returns:
-            Filtered QuerySet of PublicAuditLog objects
+            Filtered QuerySet of AuditLog objects
         """
         try:
             queryset = PublicAuditLog.objects.all().order_by('-created_at')
@@ -60,7 +60,7 @@ class AuditLogFilterService:
         
         # Username filter
         if filters.get('username'):
-            queryset = queryset.filter(user_username__icontains=filters['username'])
+            queryset = queryset.filter(user__username__icontains=filters['username'])
         
         # Tenant schema filter
         if filters.get('tenant_schema'):
@@ -116,7 +116,7 @@ class AuditLogFilterService:
         if filters.get('search'):
             search_term = filters['search']
             queryset = queryset.filter(
-                Q(user_username__icontains=search_term) |
+                Q(user__username__icontains=search_term) |
                 Q(object_repr__icontains=search_term) |
                 Q(ip_address__icontains=search_term) |
                 Q(model_name__icontains=search_term) |
@@ -156,9 +156,9 @@ class AuditLogFilterService:
             ).distinct().order_by('model_name'))
             
             # Get distinct tenant schemas
-            tenant_schemas = list(PublicAuditLog.objects.values_list(
-                'tenant_schema', flat=True
-            ).distinct().order_by('tenant_schema'))
+            tenant_schemas = list(PublicAuditLog.objects.exclude(
+                tenant_schema=''
+            ).values_list('tenant_schema', flat=True).distinct().order_by('tenant_schema'))
             
             # Get content types that have audit logs
             try:
@@ -170,16 +170,11 @@ class AuditLogFilterService:
             
             # Get users who have audit logs
             try:
-                user_ids = PublicAuditLog.objects.values_list('user_id', flat=True).distinct()
                 users = []
-                for user_id in user_ids:
-                    if user_id:
-                        # Get username from audit log since we can't directly query User model
-                        username = PublicAuditLog.objects.filter(
-                            user_id=user_id
-                        ).values_list('user_username', flat=True).first()
-                        if username:
-                            users.append({'id': user_id, 'username': username})
+                user_logs = PublicAuditLog.objects.exclude(user_username='').values_list('user_username', flat=True).distinct()
+                for username in user_logs:
+                    if username:
+                        users.append({'username': username})
             except Exception:
                 users = []
             
@@ -249,7 +244,7 @@ class AuditLogDetailService:
         Verify the integrity of an audit log entry.
         
         Args:
-            log_entry: PublicAuditLog instance
+            log_entry: AuditLog instance
             
         Returns:
             Dictionary containing integrity verification results
@@ -296,7 +291,7 @@ class AuditLogDetailService:
         Format changes for display in the UI.
         
         Args:
-            log_entry: PublicAuditLog instance
+            log_entry: AuditLog instance
             
         Returns:
             Dictionary containing formatted changes
@@ -362,11 +357,11 @@ class AuditLogDetailService:
         Get related audit logs for the same object or user.
         
         Args:
-            log_entry: PublicAuditLog instance
+            log_entry: AuditLog instance
             limit: Maximum number of related logs to return
             
         Returns:
-            List of related PublicAuditLog instances
+            List of related AuditLog instances
         """
         try:
             # Get logs for the same object within 1 hour
@@ -407,7 +402,7 @@ class AuditLogExportService:
         Export audit logs to CSV format.
         
         Args:
-            queryset: QuerySet of PublicAuditLog objects
+            queryset: QuerySet of AuditLog objects
             filename: Optional filename for the export
             
         Returns:
@@ -450,7 +445,7 @@ class AuditLogExportService:
             row = [
                 log.id,
                 log.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-                log.user_username or 'نامشخص',
+                log.user.username if log.user else 'نامشخص',
                 log.get_action_display(),
                 log.model_name or '',
                 log.object_id or '',
@@ -472,7 +467,7 @@ class AuditLogExportService:
         Export audit logs to JSON format.
         
         Args:
-            queryset: QuerySet of PublicAuditLog objects
+            queryset: QuerySet of AuditLog objects
             filename: Optional filename for the export
             
         Returns:
@@ -501,8 +496,8 @@ class AuditLogExportService:
             log_data = {
                 'id': log.id,
                 'created_at': log.created_at.isoformat(),
-                'user_id': log.user_id,
-                'user_username': log.user_username,
+                'user_id': log.user.id if log.user else None,
+                'user_username': log.user.username if log.user else None,
                 'action': log.action,
                 'action_display': log.get_action_display(),
                 'model_name': log.model_name,
@@ -540,7 +535,7 @@ class AuditLogExportService:
         Get statistics about the audit logs being exported.
         
         Args:
-            queryset: QuerySet of PublicAuditLog objects
+            queryset: QuerySet of AuditLog objects
             
         Returns:
             Dictionary containing export statistics
@@ -626,7 +621,7 @@ class AuditLogSearchService:
             search_metadata['search_terms_used'].append(search_term)
             
             queryset = queryset.filter(
-                Q(user_username__icontains=search_term) |
+                Q(user__username__icontains=search_term) |
                 Q(object_repr__icontains=search_term) |
                 Q(ip_address__icontains=search_term) |
                 Q(model_name__icontains=search_term) |

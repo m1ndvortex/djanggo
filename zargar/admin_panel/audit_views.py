@@ -454,14 +454,14 @@ class AuditLogStatsAPIView(SuperAdminRequiredMixin, View):
             # User activity
             user_stats = PublicAuditLog.objects.filter(
                 created_at__gte=start_date
-            ).values('user_username').annotate(
+            ).exclude(user_username='').values('user_username').annotate(
                 count=Count('id')
             ).order_by('-count')[:10]
             
             # Tenant activity
             tenant_stats = PublicAuditLog.objects.filter(
                 created_at__gte=start_date
-            ).values('tenant_schema').annotate(
+            ).exclude(tenant_schema='').values('tenant_schema').annotate(
                 count=Count('id')
             ).order_by('-count')[:10]
             

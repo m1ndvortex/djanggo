@@ -1,0 +1,516 @@
+{% extends 'admin_panel/base_unified.html' %}
+{% load static %}
+
+{% block title %}لاگ‌های حسابرسی - پنل مدیریت زرگر{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Custom styles for audit log interface */
+    .audit-log-table {
+        font-size: 0.875rem;
+    }
+    
+    .integrity-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        font-weight: 500;
+    }
+    
+    .integrity-verified {
+        background-color: rgba(34, 197, 94, 0.1);
+        color: rgb(34, 197, 94);
+        border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+    
+    .dark .integrity-verified {
+        background-color: rgba(0, 255, 136, 0.1);
+        color: rgb(0, 255, 136);
+        border: 1px solid rgba(0, 255, 136, 0.2);
+    }
+    
+    .integrity-compromised {
+        background-color: rgba(239, 68, 68, 0.1);
+        color: rgb(239, 68, 68);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+    
+    .dark .integrity-compromised {
+        background-color: rgba(255, 71, 87, 0.1);
+        color: rgb(255, 71, 87);
+        border: 1px solid rgba(255, 71, 87, 0.2);
+    }
+    
+    .integrity-warning {
+        background-color: rgba(245, 158, 11, 0.1);
+        color: rgb(245, 158, 11);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+    
+    .dark .integrity-warning {
+        background-color: rgba(255, 184, 0, 0.1);
+        color: rgb(255, 184, 0);
+        border: 1px solid rgba(255, 184, 0, 0.2);
+    }
+    
+    .filter-section {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    
+    .dark .filter-section {
+        background: rgba(37, 42, 58, 0.95);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(0, 212, 255, 0.2);
+    }
+    
+    .export-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .dark .export-button {
+        background: linear-gradient(135deg, #00D4FF 0%, #A55EEA 100%);
+    }
+    
+    .search-input {
+        transition: all 0.3s ease;
+    }
+    
+    .search-input:focus {
+        transform: scale(1.02);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .dark .search-input:focus {
+        box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block page_header %}
+<div class="bg-white dark:bg-cyber-bg-secondary rounded-lg shadow-lg dark:shadow-2xl p-6 mb-6 border dark:border-cyber-neon-primary/20">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary flex items-center">
+                <svg class="w-8 h-8 text-red-600 dark:text-cyber-neon-danger ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                لاگ‌های حسابرسی
+            </h1>
+            <p class="text-gray-600 dark:text-cyber-text-secondary mt-1">مشاهده و مدیریت لاگ‌های حسابرسی سیستم</p>
+        </div>
+        <div class="flex space-x-3 space-x-reverse">
+            <button onclick="exportAuditLogs('csv')" 
+                    class="export-button text-white px-4 py-2 rounded-lg hover:opacity-90 transition-all duration-300 flex items-center">
+                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-4-4m4 4l4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                صادرات CSV
+            </button>
+            <button onclick="exportAuditLogs('json')" 
+                    class="bg-gray-600 dark:bg-cyber-bg-surface hover:bg-gray-700 dark:hover:bg-cyber-bg-elevated text-white px-4 py-2 rounded-lg transition-colors flex items-center">
+                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 1H7a2 2 0 00-2 2v16a2 2 0 002 2z"></path>
+                </svg>
+                صادرات JSON
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Statistics Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 border dark:border-cyber-neon-primary/10">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-blue-100 dark:bg-cyber-neon-primary/20">
+                <svg class="w-6 h-6 text-blue-600 dark:text-cyber-neon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">کل لاگ‌ها</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ total_all_logs }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 border dark:border-cyber-neon-primary/10">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-green-100 dark:bg-cyber-neon-secondary/20">
+                <svg class="w-6 h-6 text-green-600 dark:text-cyber-neon-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">فیلتر شده</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ total_filtered_logs }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 border dark:border-cyber-neon-primary/10">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 dark:bg-cyber-neon-warning/20">
+                <svg class="w-6 h-6 text-yellow-600 dark:text-cyber-neon-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">۲۴ ساعت اخیر</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">
+                    {{ recent_activity|length }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 border dark:border-cyber-neon-primary/10">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-red-100 dark:bg-cyber-neon-danger/20">
+                <svg class="w-6 h-6 text-red-600 dark:text-cyber-neon-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">نیاز به بررسی</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">0</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Advanced Filters -->
+<div class="filter-section rounded-lg shadow-lg p-6 mb-6">
+    <form method="get" class="space-y-4" x-data="auditLogFilters()">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">فیلترهای پیشرفته</h3>
+            <button type="button" @click="clearFilters()" 
+                    class="text-sm text-gray-600 dark:text-cyber-text-secondary hover:text-red-600 dark:hover:text-cyber-neon-danger transition-colors">
+                پاک کردن فیلترها
+            </button>
+        </div>
+
+        <!-- Search and Quick Filters Row -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">جستجو</label>
+                <input type="text" name="search" value="{{ current_filters.search }}" 
+                       placeholder="جستجو در کاربر، IP، مسیر، جزئیات..."
+                       class="search-input w-full px-4 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-transparent bg-white dark:bg-cyber-bg-surface text-gray-900 dark:text-cyber-text-primary">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">عملیات</label>
+                <select name="action" class="w-full px-4 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary bg-white dark:bg-cyber-bg-surface text-gray-900 dark:text-cyber-text-primary">
+                    <option value="">همه عملیات</option>
+                    {% for action in filter_options.action_types %}
+                        <option value="{{ action }}" {% if current_filters.action == action %}selected{% endif %}>{{ action }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">وضعیت یکپارچگی</label>
+                <select name="integrity_status" class="w-full px-4 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary bg-white dark:bg-cyber-bg-surface text-gray-900 dark:text-cyber-text-primary">
+                    {% for value, label in integrity_status_choices %}
+                        <option value="{{ value }}" {% if current_filters.integrity_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <!-- Advanced Filters Row -->
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">نام کاربری</label>
+                <input type="text" name="username" value="{{ current_filters.username }}" 
+                       placeholder="نام کاربری"
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary bg-white dark:bg-cyber-bg-surface text-gray-900 dark:text-cyber-text-primary">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">آدرس IP</label>
+                <input type="text" name="ip_address" value="{{ current_filters.ip_address }}" 
+                       placeholder="192.168.1.1"
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary bg-white dark:bg-cyber-bg-surface text-gray-900 dark:text-cyber-text-primary">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">تنانت</label>
+                <select name="tenant_schema" class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary bg-white dark:bg-cyber-bg-surface text-gray-900 dark:text-cyber-text-primary">
+                    <option value="">همه تنانت‌ها</option>
+                    {% for schema in filter_options.tenant_schemas %}
+                        <option value="{{ schema }}" {% if current_filters.tenant_schema == schema %}selected{% endif %}>{{ schema }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">از تاریخ</label>
+                <input type="date" name="date_from" value="{{ current_filters.date_from }}" 
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary bg-white dark:bg-cyber-bg-surface text-gray-900 dark:text-cyber-text-primary">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">تا تاریخ</label>
+                <input type="date" name="date_to" value="{{ current_filters.date_to }}" 
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary bg-white dark:bg-cyber-bg-surface text-gray-900 dark:text-cyber-text-primary">
+            </div>
+            <div class="flex items-end">
+                <button type="submit" 
+                        class="w-full bg-primary-600 dark:bg-cyber-neon-primary hover:bg-primary-700 dark:hover:bg-cyber-neon-primary/80 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center justify-center">
+                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    اعمال فیلتر
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Audit Logs Table -->
+<div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl overflow-hidden border dark:border-cyber-neon-primary/10">
+    <div class="px-6 py-4 border-b dark:border-cyber-neon-primary/20">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">لاگ‌های حسابرسی</h3>
+        {% if has_filters %}
+            <p class="text-sm text-gray-600 dark:text-cyber-text-secondary mt-1">
+                نمایش {{ total_filtered_logs }} مورد از {{ total_all_logs }} لاگ
+            </p>
+        {% endif %}
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="min-w-full audit-log-table">
+            <thead class="bg-gray-50 dark:bg-cyber-bg-elevated">
+                <tr>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">تاریخ و زمان</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">کاربر</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">عملیات</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">شیء</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">IP</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">تنانت</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">یکپارچگی</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">عملیات</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-cyber-bg-surface divide-y divide-gray-200 dark:divide-cyber-neon-primary/10">
+                {% for log in audit_logs %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated/50 transition-colors">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-cyber-text-primary">
+                        <div class="persian-numbers">{{ log.created_at|date:"Y/m/d H:i" }}</div>
+                        <div class="text-xs text-gray-500 dark:text-cyber-text-muted persian-numbers">{{ log.created_at|date:"s" }} ثانیه</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <div class="text-gray-900 dark:text-cyber-text-primary">{{ log.user.username|default:"نامشخص" }}</div>
+                        {% if log.user %}
+                            <div class="text-xs text-gray-500 dark:text-cyber-text-muted">ID: {{ log.user.id }}</div>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-cyber-neon-primary/20 text-blue-800 dark:text-cyber-neon-primary">
+                            {{ log.get_action_display }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-900 dark:text-cyber-text-primary">
+                        <div class="max-w-xs truncate">{{ log.object_repr|default:"—" }}</div>
+                        {% if log.model_name %}
+                            <div class="text-xs text-gray-500 dark:text-cyber-text-muted">{{ log.model_name }}</div>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-cyber-text-primary">
+                        {{ log.ip_address|default:"—" }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-cyber-text-primary">
+                        {{ log.tenant_schema|default:"فعلی" }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        {% if log.checksum %}
+                            <span class="integrity-badge integrity-verified">تایید شده</span>
+                        {% else %}
+                            <span class="integrity-badge integrity-warning">بدون چک‌سام</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <a href="{% url 'admin_panel:audit_log_detail' log.id %}" 
+                           class="text-primary-600 dark:text-cyber-neon-primary hover:text-primary-900 dark:hover:text-cyber-neon-primary/80 transition-colors">
+                            جزئیات
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="px-6 py-12 text-center">
+                        <div class="text-gray-500 dark:text-cyber-text-muted">
+                            <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-cyber-text-muted mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <p class="text-lg font-medium">هیچ لاگ حسابرسی یافت نشد</p>
+                            <p class="text-sm">فیلترهای خود را تغییر دهید یا بعداً دوباره تلاش کنید</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="bg-white dark:bg-cyber-bg-surface px-4 py-3 border-t dark:border-cyber-neon-primary/20 sm:px-6">
+        <div class="flex items-center justify-between">
+            <div class="flex-1 flex justify-between sm:hidden">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                       class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 text-sm font-medium rounded-md text-gray-700 dark:text-cyber-text-secondary bg-white dark:bg-cyber-bg-surface hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated">
+                        قبلی
+                    </a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                       class="mr-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 text-sm font-medium rounded-md text-gray-700 dark:text-cyber-text-secondary bg-white dark:bg-cyber-bg-surface hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated">
+                        بعدی
+                    </a>
+                {% endif %}
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700 dark:text-cyber-text-secondary persian-numbers">
+                        نمایش 
+                        <span class="font-medium">{{ page_obj.start_index }}</span>
+                        تا 
+                        <span class="font-medium">{{ page_obj.end_index }}</span>
+                        از 
+                        <span class="font-medium">{{ paginator.count }}</span>
+                        نتیجه
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px space-x-reverse" aria-label="Pagination">
+                        {% if page_obj.has_previous %}
+                            <a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                               class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-cyber-neon-primary/30 bg-white dark:bg-cyber-bg-surface text-sm font-medium text-gray-500 dark:text-cyber-text-muted hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated">
+                                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </a>
+                        {% endif %}
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <span class="relative inline-flex items-center px-4 py-2 border border-primary-500 dark:border-cyber-neon-primary bg-primary-50 dark:bg-cyber-neon-primary/20 text-sm font-medium text-primary-600 dark:text-cyber-neon-primary persian-numbers">
+                                    {{ num }}
+                                </span>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <a href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                                   class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 bg-white dark:bg-cyber-bg-surface text-sm font-medium text-gray-700 dark:text-cyber-text-secondary hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated persian-numbers">
+                                    {{ num }}
+                                </a>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                               class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-cyber-neon-primary/30 bg-white dark:bg-cyber-bg-surface text-sm font-medium text-gray-500 dark:text-cyber-text-muted hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated">
+                                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Alpine.js component for audit log filters
+    function auditLogFilters() {
+        return {
+            clearFilters() {
+                // Clear all form inputs
+                const form = document.querySelector('form');
+                const inputs = form.querySelectorAll('input, select');
+                inputs.forEach(input => {
+                    if (input.type === 'checkbox' || input.type === 'radio') {
+                        input.checked = false;
+                    } else {
+                        input.value = '';
+                    }
+                });
+                
+                // Submit the form to clear filters
+                form.submit();
+            }
+        }
+    }
+
+    // Export functionality
+    function exportAuditLogs(format) {
+        // Get current URL parameters for filters
+        const urlParams = new URLSearchParams(window.location.search);
+        urlParams.set('format', format);
+        
+        // Create export URL
+        const exportUrl = '{% url "admin_panel:audit_log_export" %}?' + urlParams.toString();
+        
+        // Show loading message
+        ZargarAdmin.showMessage('در حال آماده‌سازی فایل صادرات...', 'info');
+        
+        // Create temporary link and trigger download
+        const link = document.createElement('a');
+        link.href = exportUrl;
+        link.download = '';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Show success message after a delay
+        setTimeout(() => {
+            ZargarAdmin.showMessage('فایل با موفقیت صادر شد', 'success');
+        }, 2000);
+    }
+
+    // Auto-refresh functionality (optional)
+    let autoRefreshInterval;
+    
+    function toggleAutoRefresh() {
+        if (autoRefreshInterval) {
+            clearInterval(autoRefreshInterval);
+            autoRefreshInterval = null;
+            ZargarAdmin.showMessage('به‌روزرسانی خودکار متوقف شد', 'info');
+        } else {
+            autoRefreshInterval = setInterval(() => {
+                window.location.reload();
+            }, 30000); // Refresh every 30 seconds
+            ZargarAdmin.showMessage('به‌روزرسانی خودکار فعال شد (هر ۳۰ ثانیه)', 'success');
+        }
+    }
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+F for search focus
+            if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                document.querySelector('input[name="search"]').focus();
+            }
+            
+            // Ctrl+E for export
+            if (e.ctrlKey && e.key === 'e') {
+                e.preventDefault();
+                exportAuditLogs('csv');
+            }
+        });
+        
+        // Add tooltips for integrity badges
+        document.querySelectorAll('.integrity-badge').forEach(badge => {
+            badge.title = badge.textContent.trim() === 'تایید شده' 
+                ? 'یکپارچگی این لاگ تایید شده است' 
+                : 'این لاگ فاقد چک‌سام یکپارچگی است';
+        });
+    });
+</script>
+{% endblock %}
