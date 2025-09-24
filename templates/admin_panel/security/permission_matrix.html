@@ -1,0 +1,516 @@
+{% extends 'admin_panel/base_unified.html' %}
+{% load static %}
+
+{% block title %}ماتریس مجوزها - پنل مدیریت زرگر{% endblock %}
+
+{% block extra_css %}
+<style>
+    .matrix-table {
+        min-width: 800px;
+    }
+    
+    .matrix-cell {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 0.375rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        position: relative;
+    }
+    
+    .matrix-cell.has-permission {
+        background-color: #10b981;
+        color: white;
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+    }
+    
+    .dark .matrix-cell.has-permission {
+        background-color: #00ff88;
+        color: #0b0e1a;
+        box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+    }
+    
+    .matrix-cell.no-permission {
+        background-color: #f3f4f6;
+        color: #6b7280;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .dark .matrix-cell.no-permission {
+        background-color: #252a3a;
+        color: #6b7280;
+        border: 1px solid rgba(0, 212, 255, 0.2);
+    }
+    
+    .matrix-cell:hover {
+        transform: scale(1.1);
+        z-index: 10;
+    }
+    
+    .role-header {
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        transform: rotate(180deg);
+        white-space: nowrap;
+        padding: 1rem 0.5rem;
+        min-height: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .permission-row {
+        transition: all 0.2s ease;
+    }
+    
+    .permission-row:hover {
+        background-color: rgba(59, 130, 246, 0.05);
+    }
+    
+    .dark .permission-row:hover {
+        background-color: rgba(0, 212, 255, 0.05);
+    }
+    
+    .section-divider {
+        border-top: 2px solid #e5e7eb;
+    }
+    
+    .dark .section-divider {
+        border-top: 2px solid rgba(0, 212, 255, 0.3);
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        background-color: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(10px);
+    }
+    
+    .dark .legend-item {
+        background-color: rgba(0, 212, 255, 0.1);
+    }
+    
+    .sticky-header {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        background-color: white;
+        border-bottom: 2px solid #e5e7eb;
+    }
+    
+    .dark .sticky-header {
+        background-color: #1a1d29;
+        border-bottom: 2px solid rgba(0, 212, 255, 0.3);
+    }
+    
+    .sticky-column {
+        position: sticky;
+        right: 0;
+        z-index: 10;
+        background-color: white;
+        border-left: 2px solid #e5e7eb;
+    }
+    
+    .dark .sticky-column {
+        background-color: #1a1d29;
+        border-left: 2px solid rgba(0, 212, 255, 0.3);
+    }
+    
+    .tooltip {
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #1f2937;
+        color: white;
+        padding: 0.5rem;
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+        z-index: 50;
+    }
+    
+    .matrix-cell:hover .tooltip {
+        opacity: 1;
+    }
+    
+    .dark .tooltip {
+        background-color: #0b0e1a;
+        border: 1px solid rgba(0, 212, 255, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-cyber-bg-primary" x-data="permissionMatrix()">
+    
+    <!-- Page Header -->
+    <div class="bg-white dark:bg-cyber-bg-secondary shadow-lg dark:shadow-cyber-neon-primary/10 border-b dark:border-cyber-neon-primary/20">
+        <div class="px-6 py-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <nav class="flex items-center space-x-2 space-x-reverse text-sm text-gray-500 dark:text-cyber-text-muted mb-2">
+                        <a href="{% url 'admin_panel:dashboard' %}" class="hover:text-primary-600 dark:hover:text-cyber-neon-primary">داشبورد</a>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                        <a href="{% url 'admin_panel:rbac_management' %}" class="hover:text-primary-600 dark:hover:text-cyber-neon-primary">کنترل دسترسی</a>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                        <span class="text-gray-900 dark:text-cyber-text-primary">ماتریس مجوزها</span>
+                    </nav>
+                    <h1 class="text-3xl font-bold text-gray-900 dark:text-cyber-text-primary">ماتریس مجوزها</h1>
+                    <p class="mt-2 text-gray-600 dark:text-cyber-text-secondary">نمای کلی از مجوزهای هر نقش در سیستم</p>
+                </div>
+                
+                <div class="flex space-x-4 space-x-reverse">
+                    <button @click="exportMatrix()" 
+                            class="inline-flex items-center px-4 py-2 bg-green-600 dark:bg-cyber-neon-secondary text-white dark:text-cyber-bg-primary rounded-lg hover:bg-green-700 dark:hover:bg-cyber-neon-secondary/80 transition-colors">
+                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        صادرات ماتریس
+                    </button>
+                    
+                    <a href="{% url 'admin_panel:rbac_management' %}" 
+                       class="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-cyber-bg-elevated text-gray-700 dark:text-cyber-text-secondary rounded-lg hover:bg-gray-200 dark:hover:bg-cyber-bg-surface transition-colors">
+                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        بازگشت
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Controls and Legend -->
+    <div class="px-6 py-6">
+        <div class="bg-white dark:bg-cyber-bg-secondary rounded-xl shadow-lg dark:shadow-cyber-neon-primary/10 p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">کنترل‌ها و راهنما</h2>
+                
+                <!-- View Controls -->
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <div class="flex items-center space-x-2 space-x-reverse">
+                        <label class="text-sm text-gray-700 dark:text-cyber-text-secondary">نمایش:</label>
+                        <select x-model="viewMode" 
+                                @change="updateView()"
+                                class="px-3 py-1 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-primary-500 dark:focus:border-cyber-neon-primary bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary text-sm">
+                            <option value="all">همه مجوزها</option>
+                            <option value="granted">فقط مجوزهای داده شده</option>
+                            <option value="dangerous">فقط مجوزهای خطرناک</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex items-center space-x-2 space-x-reverse">
+                        <label class="text-sm text-gray-700 dark:text-cyber-text-secondary">بخش:</label>
+                        <select x-model="selectedSection" 
+                                @change="updateView()"
+                                class="px-3 py-1 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-primary-500 dark:focus:border-cyber-neon-primary bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary text-sm">
+                            <option value="">همه بخش‌ها</option>
+                            {% for section, permissions in permissions_by_section.items %}
+                            <option value="{{ section }}">{{ section }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Legend -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="legend-item">
+                    <div class="matrix-cell has-permission w-6 h-6 ml-3">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                    <span class="text-sm text-gray-700 dark:text-cyber-text-secondary">مجوز داده شده</span>
+                </div>
+                
+                <div class="legend-item">
+                    <div class="matrix-cell no-permission w-6 h-6 ml-3">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </div>
+                    <span class="text-sm text-gray-700 dark:text-cyber-text-secondary">مجوز داده نشده</span>
+                </div>
+                
+                <div class="legend-item">
+                    <div class="w-6 h-6 ml-3 bg-red-100 dark:bg-cyber-neon-danger/20 rounded border border-red-300 dark:border-cyber-neon-danger/50 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-red-600 dark:text-cyber-neon-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                    </div>
+                    <span class="text-sm text-gray-700 dark:text-cyber-text-secondary">مجوز خطرناک</span>
+                </div>
+                
+                <div class="legend-item">
+                    <div class="w-6 h-6 ml-3 bg-yellow-100 dark:bg-cyber-neon-warning/20 rounded border border-yellow-300 dark:border-cyber-neon-warning/50 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-yellow-600 dark:text-cyber-neon-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                        </svg>
+                    </div>
+                    <span class="text-sm text-gray-700 dark:text-cyber-text-secondary">نیاز به 2FA</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Matrix Table -->
+        <div class="bg-white dark:bg-cyber-bg-secondary rounded-xl shadow-lg dark:shadow-cyber-neon-primary/10 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="matrix-table w-full">
+                    
+                    <!-- Header Row -->
+                    <thead class="sticky-header">
+                        <tr>
+                            <th class="sticky-column px-6 py-4 text-right text-sm font-medium text-gray-900 dark:text-cyber-text-primary">
+                                مجوز / نقش
+                            </th>
+                            {% for role in roles %}
+                            <th class="px-2 py-4 text-center">
+                                <div class="role-header text-sm font-medium text-gray-900 dark:text-cyber-text-primary">
+                                    {{ role.name_persian|default:role.name }}
+                                </div>
+                            </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    
+                    <!-- Matrix Body -->
+                    <tbody>
+                        {% for section, permissions in permissions_by_section.items %}
+                        
+                        <!-- Section Divider -->
+                        <tr class="section-divider">
+                            <td colspan="{{ roles.count|add:1 }}" class="px-6 py-3 bg-gray-100 dark:bg-cyber-bg-elevated">
+                                <h3 class="text-sm font-semibold text-gray-900 dark:text-cyber-text-primary uppercase">{{ section }}</h3>
+                            </td>
+                        </tr>
+                        
+                        <!-- Permission Rows -->
+                        {% for permission in permissions %}
+                        <tr class="permission-row" data-section="{{ section }}" data-permission="{{ permission.id }}">
+                            <td class="sticky-column px-6 py-3 text-sm">
+                                <div class="flex items-center">
+                                    <div class="flex-1">
+                                        <div class="font-medium text-gray-900 dark:text-cyber-text-primary">
+                                            {{ permission.name_persian|default:permission.name }}
+                                        </div>
+                                        <div class="text-xs text-gray-500 dark:text-cyber-text-muted">
+                                            {{ permission.codename }}
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Permission Indicators -->
+                                    <div class="flex items-center space-x-1 space-x-reverse mr-2">
+                                        {% if permission.is_dangerous %}
+                                        <div class="w-4 h-4 bg-red-100 dark:bg-cyber-neon-danger/20 rounded border border-red-300 dark:border-cyber-neon-danger/50 flex items-center justify-center">
+                                            <svg class="w-3 h-3 text-red-600 dark:text-cyber-neon-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                                            </svg>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if permission.requires_2fa %}
+                                        <div class="w-4 h-4 bg-yellow-100 dark:bg-cyber-neon-warning/20 rounded border border-yellow-300 dark:border-cyber-neon-warning/50 flex items-center justify-center">
+                                            <svg class="w-3 h-3 text-yellow-600 dark:text-cyber-neon-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                            </svg>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            
+                            <!-- Permission Cells -->
+                            {% for role in roles %}
+                            <td class="px-2 py-3 text-center">
+                                <div class="matrix-cell {% if permission.id in matrix|default_if_none:role.id %}has-permission{% else %}no-permission{% endif %}" 
+                                     data-role="{{ role.id }}" 
+                                     data-permission="{{ permission.id }}"
+                                     @click="togglePermission({{ role.id }}, {{ permission.id }})">
+                                    
+                                    {% if permission.id in matrix|default_if_none:role.id %}
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    {% else %}
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                    {% endif %}
+                                    
+                                    <!-- Tooltip -->
+                                    <div class="tooltip">
+                                        {{ role.name_persian|default:role.name }}: {{ permission.name_persian|default:permission.name }}
+                                    </div>
+                                </div>
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Summary Statistics -->
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white dark:bg-cyber-bg-secondary rounded-xl shadow-lg dark:shadow-cyber-neon-primary/10 p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-blue-100 dark:bg-cyber-neon-primary/20">
+                        <svg class="w-8 h-8 text-blue-600 dark:text-cyber-neon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                    <div class="mr-4">
+                        <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">کل مجوزها</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">
+                            {% for section, permissions in permissions_by_section.items %}{{ permissions|length }}{% if not forloop.last %} + {% endif %}{% endfor %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white dark:bg-cyber-bg-secondary rounded-xl shadow-lg dark:shadow-cyber-neon-primary/10 p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-green-100 dark:bg-cyber-neon-secondary/20">
+                        <svg class="w-8 h-8 text-green-600 dark:text-cyber-neon-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="mr-4">
+                        <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">کل نقش‌ها</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ roles.count }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white dark:bg-cyber-bg-secondary rounded-xl shadow-lg dark:shadow-cyber-neon-primary/10 p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-red-100 dark:bg-cyber-neon-danger/20">
+                        <svg class="w-8 h-8 text-red-600 dark:text-cyber-neon-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                    </div>
+                    <div class="mr-4">
+                        <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">مجوزهای خطرناک</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers" x-text="dangerousPermissionsCount"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function permissionMatrix() {
+    return {
+        viewMode: 'all',
+        selectedSection: '',
+        dangerousPermissionsCount: 0,
+        
+        init() {
+            this.calculateDangerousPermissions();
+        },
+        
+        calculateDangerousPermissions() {
+            const dangerousRows = document.querySelectorAll('[data-permission] .w-4.h-4.bg-red-100');
+            this.dangerousPermissionsCount = dangerousRows.length;
+        },
+        
+        updateView() {
+            const rows = document.querySelectorAll('.permission-row');
+            
+            rows.forEach(row => {
+                let show = true;
+                
+                // Filter by section
+                if (this.selectedSection && row.dataset.section !== this.selectedSection) {
+                    show = false;
+                }
+                
+                // Filter by view mode
+                if (this.viewMode === 'granted') {
+                    const hasGrantedPermission = row.querySelector('.has-permission');
+                    if (!hasGrantedPermission) {
+                        show = false;
+                    }
+                } else if (this.viewMode === 'dangerous') {
+                    const isDangerous = row.querySelector('.bg-red-100');
+                    if (!isDangerous) {
+                        show = false;
+                    }
+                }
+                
+                row.style.display = show ? '' : 'none';
+            });
+            
+            // Update section dividers
+            const sections = document.querySelectorAll('.section-divider');
+            sections.forEach(section => {
+                const sectionName = section.querySelector('h3').textContent.toLowerCase().trim();
+                const hasVisibleRows = Array.from(rows).some(row => 
+                    row.dataset.section === sectionName && row.style.display !== 'none'
+                );
+                
+                section.style.display = (!this.selectedSection || this.selectedSection === sectionName) && hasVisibleRows ? '' : 'none';
+            });
+        },
+        
+        togglePermission(roleId, permissionId) {
+            // This would typically make an API call to toggle the permission
+            // For now, just show an alert
+            alert(`Toggle permission ${permissionId} for role ${roleId}`);
+        },
+        
+        exportMatrix() {
+            // Generate CSV export
+            let csv = 'Permission,';
+            
+            // Add role headers
+            const roleHeaders = Array.from(document.querySelectorAll('.role-header')).map(header => 
+                header.textContent.trim()
+            );
+            csv += roleHeaders.join(',') + '\n';
+            
+            // Add permission rows
+            const rows = document.querySelectorAll('.permission-row:not([style*="display: none"])');
+            rows.forEach(row => {
+                const permissionName = row.querySelector('.font-medium').textContent.trim();
+                csv += `"${permissionName}",`;
+                
+                const cells = row.querySelectorAll('.matrix-cell');
+                const cellValues = Array.from(cells).map(cell => 
+                    cell.classList.contains('has-permission') ? '✓' : '✗'
+                );
+                csv += cellValues.join(',') + '\n';
+            });
+            
+            // Download CSV
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'permission_matrix.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    }
+}
+</script>
+{% endblock %}
