@@ -1,10 +1,11 @@
 """
-Models for admin panel impersonation system.
+Models for admin panel impersonation system and RBAC.
 """
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from django.contrib.contenttypes.models import ContentType
 import uuid
 
 
@@ -1231,3 +1232,662 @@ class SystemHealthAlert(models.Model):
         self.notifications_sent.append(notification)
         if self.pk:
             self.save(update_fields=['notifications_sent'])
+
+
+# RBAC Models for Super Admin Access Control
+
+class SuperAdminPermission(models.Model):
+    """
+    Permission model for super admin role-based access control.
+    Defines granular permissions for different sections of the super admin panel.
+    """
+    SECTION_CHOICES = [
+        ('dashboard', _('Dashboard')),
+        ('tenants', _('Tenant Management')),
+        ('users', _('User Management')),
+        ('billing', _('Billing & Subscriptions')),
+        ('security', _('Security & Audit')),
+        ('settings', _('System Settings')),
+        ('backup', _('Backup Management')),
+        ('monitoring', _('System Monitoring')),
+        ('reports', _('Reports & Analytics')),
+        ('integrations', _('Integrations & API')),
+    ]
+    
+    ACTION_CHOICES = [
+        ('view', _('View')),
+        ('create', _('Create')),
+        ('edit', _('Edit')),
+        ('delete', _('Delete')),
+        ('export', _('Export')),
+        ('import', _('Import')),
+        ('manage', _('Full Management')),
+    ]
+    
+    # Permission identification
+    codename = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name=_('Permission Codename'),
+        help_text=_('Unique identifier for this permission (e.g., "tenants.view", "security.manage")')
+    )
+    
+    name = models.CharField(
+        max_length=255,
+        verbose_name=_('Permission Name'),
+        help_text=_('Human-readable permission name')
+    )
+    
+    name_persian = models.CharField(
+        max_length=255,
+        verbose_name=_('Persian Permission Name'),
+        help_text=_('Persian translation of permission name')
+    )
+    
+    # Permission categorization
+    section = models.CharField(
+        max_length=50,
+        choices=SECTION_CHOICES,
+        verbose_name=_('Section'),
+        help_text=_('Super admin panel section this permission applies to')
+    )
+    
+    action = models.CharField(
+        max_length=20,
+        choices=ACTION_CHOICES,
+        verbose_name=_('Action'),
+        help_text=_('Type of action this permission allows')
+    )
+    
+    # Permission details
+    description = models.TextField(
+        blank=True,
+        verbose_name=_('Description'),
+        help_text=_('Detailed description of what this permission allows')
+    )
+    
+    description_persian = models.TextField(
+        blank=True,
+        verbose_name=_('Persian Description'),
+        help_text=_('Persian description of what this permission allows')
+    )
+    
+    # Permission metadata
+    is_dangerous = models.BooleanField(
+        default=False,
+        verbose_name=_('Is Dangerous'),
+        help_text=_('Mark as dangerous permission requiring extra confirmation')
+    )
+    
+    requires_2fa = models.BooleanField(
+        default=False,
+        verbose_name=_('Requires 2FA'),
+        help_text=_('Requires two-factor authentication to use this permission')
+    )
+    
+    # Status
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name=_('Is Active')
+    )
+    
+    # Audit fields
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by_id = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_('Created By ID'),
+        help_text=_('ID of the super admin who created this permission')
+    )
+    
+    created_by_username = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name=_('Created By Username'),
+        help_text=_('Username of the super admin who created this permission')
+    )
+    
+    class Meta:
+        verbose_name = _('Super Admin Permission')
+        verbose_name_plural = _('Super Admin Permissions')
+        db_table = 'admin_panel_super_admin_permission'
+        ordering = ['section', 'action', 'name']
+        indexes = [
+            models.Index(fields=['codename']),
+            models.Index(fields=['section', 'action']),
+            models.Index(fields=['is_active']),
+        ]
+        unique_together = [['section', 'action', 'codename']]
+    
+    def __str__(self):
+        return f"{self.name} ({self.codename})"
+    
+    @property
+    def display_name(self):
+        """Return Persian name if available, otherwise English name."""
+        return self.name_persian or self.name
+    
+    @property
+    def display_description(self):
+        """Return Persian description if available, otherwise English description."""
+        return self.description_persian or self.description
+    
+    def clean(self):
+        """Validate permission data."""
+        super().clean()
+        
+        # Ensure codename follows convention: section.action
+        if '.' not in self.codename:
+            raise ValidationError(_('Permission codename must follow format: section.action'))
+        
+        # Validate codename matches section and action
+        parts = self.codename.split('.')
+        if len(parts) != 2:
+            raise ValidationError(_('Permission codename must have exactly one dot separator'))
+        
+        section_code, action_code = parts
+        if section_code != self.section:
+            raise ValidationError(_('Permission codename section must match selected section'))
+
+
+class SuperAdminRole(models.Model):
+    """
+    Role model for super admin role-based access control.
+    Groups permissions together for easier management.
+    """
+    ROLE_TYPES = [
+        ('system', _('System Role')),
+        ('custom', _('Custom Role')),
+    ]
+    
+    # Role identification
+    name = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name=_('Role Name'),
+        help_text=_('Unique role name (e.g., "Security Manager", "Billing Admin")')
+    )
+    
+    name_persian = models.CharField(
+        max_length=100,
+        verbose_name=_('Persian Role Name'),
+        help_text=_('Persian translation of role name')
+    )
+    
+    # Role details
+    description = models.TextField(
+        blank=True,
+        verbose_name=_('Description'),
+        help_text=_('Detailed description of this role and its responsibilities')
+    )
+    
+    description_persian = models.TextField(
+        blank=True,
+        verbose_name=_('Persian Description'),
+        help_text=_('Persian description of this role and its responsibilities')
+    )
+    
+    # Role type and permissions
+    role_type = models.CharField(
+        max_length=20,
+        choices=ROLE_TYPES,
+        default='custom',
+        verbose_name=_('Role Type'),
+        help_text=_('System roles cannot be deleted, custom roles can be modified')
+    )
+    
+    permissions = models.ManyToManyField(
+        SuperAdminPermission,
+        blank=True,
+        related_name='roles',
+        verbose_name=_('Permissions'),
+        help_text=_('Permissions granted to users with this role')
+    )
+    
+    # Role hierarchy
+    parent_role = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='child_roles',
+        verbose_name=_('Parent Role'),
+        help_text=_('Parent role for permission inheritance')
+    )
+    
+    # Role settings
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name=_('Is Active')
+    )
+    
+    is_default = models.BooleanField(
+        default=False,
+        verbose_name=_('Is Default Role'),
+        help_text=_('Automatically assign this role to new super admins')
+    )
+    
+    max_users = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_('Maximum Users'),
+        help_text=_('Maximum number of users that can have this role (optional)')
+    )
+    
+    # Security settings
+    requires_2fa = models.BooleanField(
+        default=False,
+        verbose_name=_('Requires 2FA'),
+        help_text=_('Users with this role must have 2FA enabled')
+    )
+    
+    session_timeout_minutes = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_('Session Timeout (Minutes)'),
+        help_text=_('Custom session timeout for users with this role')
+    )
+    
+    # Audit fields
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by_id = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_('Created By ID'),
+        help_text=_('ID of the super admin who created this role')
+    )
+    
+    created_by_username = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name=_('Created By Username'),
+        help_text=_('Username of the super admin who created this role')
+    )
+    
+    class Meta:
+        verbose_name = _('Super Admin Role')
+        verbose_name_plural = _('Super Admin Roles')
+        db_table = 'admin_panel_super_admin_role'
+        ordering = ['name']
+        indexes = [
+            models.Index(fields=['name']),
+            models.Index(fields=['role_type']),
+            models.Index(fields=['is_active']),
+            models.Index(fields=['is_default']),
+        ]
+    
+    def __str__(self):
+        return f"{self.name_persian or self.name}"
+    
+    @property
+    def display_name(self):
+        """Return Persian name if available, otherwise English name."""
+        return self.name_persian or self.name
+    
+    @property
+    def display_description(self):
+        """Return Persian description if available, otherwise English description."""
+        return self.description_persian or self.description
+    
+    @property
+    def user_count(self):
+        """Get number of users assigned to this role."""
+        return self.user_roles.filter(is_active=True).count()
+    
+    @property
+    def is_at_max_capacity(self):
+        """Check if role has reached maximum user limit."""
+        if not self.max_users:
+            return False
+        return self.user_count >= self.max_users
+    
+    def get_all_permissions(self):
+        """Get all permissions including inherited from parent roles."""
+        permissions = set(self.permissions.filter(is_active=True))
+        
+        # Add permissions from parent role
+        if self.parent_role:
+            permissions.update(self.parent_role.get_all_permissions())
+        
+        return permissions
+    
+    def has_permission(self, permission_codename):
+        """Check if role has specific permission."""
+        all_permissions = self.get_all_permissions()
+        return any(perm.codename == permission_codename for perm in all_permissions)
+    
+    def get_sections_access(self):
+        """Get list of sections this role can access."""
+        all_permissions = self.get_all_permissions()
+        return list(set(perm.section for perm in all_permissions))
+    
+    def clean(self):
+        """Validate role data."""
+        super().clean()
+        
+        # Prevent circular parent relationships
+        if self.parent_role:
+            current = self.parent_role
+            while current:
+                if current == self:
+                    raise ValidationError(_('Role cannot be its own parent (circular reference)'))
+                current = current.parent_role
+        
+        # Validate max users
+        if self.max_users and self.max_users < 1:
+            raise ValidationError(_('Maximum users must be at least 1'))
+    
+    def save(self, *args, **kwargs):
+        """Override save to handle default role logic."""
+        # If this is being set as default, unset other default roles
+        if self.is_default:
+            SuperAdminRole.objects.filter(is_default=True).exclude(pk=self.pk).update(is_default=False)
+        
+        super().save(*args, **kwargs)
+
+
+class SuperAdminUserRole(models.Model):
+    """
+    Through model for many-to-many relationship between SuperAdmin users and roles.
+    Provides additional metadata about role assignments.
+    """
+    # User and role relationship
+    user_id = models.IntegerField(
+        verbose_name=_('Super Admin User ID'),
+        help_text=_('ID of the SuperAdmin user')
+    )
+    
+    user_username = models.CharField(
+        max_length=150,
+        verbose_name=_('Username'),
+        help_text=_('Username of the SuperAdmin user for easier querying')
+    )
+    
+    role = models.ForeignKey(
+        SuperAdminRole,
+        on_delete=models.CASCADE,
+        related_name='user_roles',
+        verbose_name=_('Role')
+    )
+    
+    # Assignment details
+    assigned_at = models.DateTimeField(
+        default=timezone.now,
+        verbose_name=_('Assigned At')
+    )
+    
+    assigned_by_id = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_('Assigned By ID'),
+        help_text=_('ID of the super admin who assigned this role')
+    )
+    
+    assigned_by_username = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name=_('Assigned By Username'),
+        help_text=_('Username of the super admin who assigned this role')
+    )
+    
+    # Assignment status
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name=_('Is Active')
+    )
+    
+    expires_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Expires At'),
+        help_text=_('Optional expiration date for temporary role assignments')
+    )
+    
+    # Assignment notes
+    assignment_reason = models.TextField(
+        blank=True,
+        verbose_name=_('Assignment Reason'),
+        help_text=_('Reason for assigning this role to the user')
+    )
+    
+    notes = models.TextField(
+        blank=True,
+        verbose_name=_('Notes'),
+        help_text=_('Additional notes about this role assignment')
+    )
+    
+    # Audit fields
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = _('Super Admin User Role')
+        verbose_name_plural = _('Super Admin User Roles')
+        db_table = 'admin_panel_super_admin_user_role'
+        ordering = ['-assigned_at']
+        indexes = [
+            models.Index(fields=['user_id', 'is_active']),
+            models.Index(fields=['role', 'is_active']),
+            models.Index(fields=['assigned_at']),
+            models.Index(fields=['expires_at']),
+        ]
+        unique_together = [['user_id', 'role']]
+    
+    def __str__(self):
+        return f"{self.user_username} -> {self.role.name}"
+    
+    @property
+    def is_expired(self):
+        """Check if role assignment has expired."""
+        if not self.expires_at:
+            return False
+        return timezone.now() > self.expires_at
+    
+    @property
+    def days_until_expiry(self):
+        """Get number of days until role expires."""
+        if not self.expires_at:
+            return None
+        
+        delta = self.expires_at - timezone.now()
+        return delta.days if delta.days > 0 else 0
+    
+    def extend_expiry(self, days):
+        """Extend role expiry by specified number of days."""
+        if self.expires_at:
+            self.expires_at += timezone.timedelta(days=days)
+        else:
+            self.expires_at = timezone.now() + timezone.timedelta(days=days)
+        self.save(update_fields=['expires_at'])
+    
+    def revoke(self, revoked_by_id=None, revoked_by_username='', reason=''):
+        """Revoke the role assignment."""
+        self.is_active = False
+        if reason:
+            if self.notes:
+                self.notes += f"\nRevoked: {reason}"
+            else:
+                self.notes = f"Revoked: {reason}"
+        
+        self.save(update_fields=['is_active', 'notes'])
+        
+        # Log the revocation
+        from zargar.admin_panel.models import RolePermissionAuditLog
+        RolePermissionAuditLog.log_action(
+            action='role_revoked',
+            object_type='user_role',
+            object_id=self.id,
+            object_name=f"{self.user_username} -> {self.role.name}",
+            performed_by_id=revoked_by_id or 0,
+            performed_by_username=revoked_by_username,
+            old_values={
+                'user_id': self.user_id,
+                'username': self.user_username,
+                'role_name': self.role.name,
+                'is_active': True
+            },
+            new_values={
+                'is_active': False,
+                'revocation_reason': reason
+            }
+        )
+    
+    def clean(self):
+        """Validate role assignment."""
+        super().clean()
+        
+        # Check if role is at maximum capacity
+        if self.role.is_at_max_capacity and not self.pk:
+            raise ValidationError(
+                _('Role "{}" has reached maximum user capacity of {}').format(
+                    self.role.name, self.role.max_users
+                )
+            )
+        
+        # Validate expiry date
+        if self.expires_at and self.expires_at <= timezone.now():
+            raise ValidationError(_('Expiry date must be in the future'))
+    
+    def save(self, *args, **kwargs):
+        """Override save to handle automatic expiry."""
+        # Auto-deactivate if expired
+        if self.is_expired and self.is_active:
+            self.is_active = False
+        
+        super().save(*args, **kwargs)
+
+
+class RolePermissionAuditLog(models.Model):
+    """
+    Audit log for role and permission changes.
+    Tracks all modifications to roles and permissions for security compliance.
+    """
+    ACTION_CHOICES = [
+        ('role_created', _('Role Created')),
+        ('role_updated', _('Role Updated')),
+        ('role_deleted', _('Role Deleted')),
+        ('permission_created', _('Permission Created')),
+        ('permission_updated', _('Permission Updated')),
+        ('permission_deleted', _('Permission Deleted')),
+        ('role_assigned', _('Role Assigned to User')),
+        ('role_revoked', _('Role Revoked from User')),
+        ('permission_granted', _('Permission Granted to Role')),
+        ('permission_removed', _('Permission Removed from Role')),
+    ]
+    
+    # Action details
+    action = models.CharField(
+        max_length=50,
+        choices=ACTION_CHOICES,
+        verbose_name=_('Action')
+    )
+    
+    # Target object information
+    object_type = models.CharField(
+        max_length=50,
+        verbose_name=_('Object Type'),
+        help_text=_('Type of object that was modified (role, permission, assignment)')
+    )
+    
+    object_id = models.PositiveIntegerField(
+        verbose_name=_('Object ID'),
+        help_text=_('ID of the object that was modified')
+    )
+    
+    object_name = models.CharField(
+        max_length=200,
+        verbose_name=_('Object Name'),
+        help_text=_('Name of the object that was modified')
+    )
+    
+    # User who performed the action
+    performed_by_id = models.IntegerField(
+        verbose_name=_('Performed By ID'),
+        help_text=_('ID of the super admin who performed this action')
+    )
+    
+    performed_by_username = models.CharField(
+        max_length=150,
+        verbose_name=_('Performed By Username'),
+        help_text=_('Username of the super admin who performed this action')
+    )
+    
+    # Change details
+    old_values = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name=_('Old Values'),
+        help_text=_('Previous values before the change')
+    )
+    
+    new_values = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name=_('New Values'),
+        help_text=_('New values after the change')
+    )
+    
+    # Additional context
+    details = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name=_('Additional Details'),
+        help_text=_('Additional context about the change')
+    )
+    
+    # Request information
+    ip_address = models.GenericIPAddressField(
+        null=True,
+        blank=True,
+        verbose_name=_('IP Address')
+    )
+    
+    user_agent = models.TextField(
+        blank=True,
+        verbose_name=_('User Agent')
+    )
+    
+    # Timing
+    timestamp = models.DateTimeField(
+        default=timezone.now,
+        verbose_name=_('Timestamp')
+    )
+    
+    class Meta:
+        verbose_name = _('Role Permission Audit Log')
+        verbose_name_plural = _('Role Permission Audit Logs')
+        db_table = 'admin_panel_role_permission_audit_log'
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['action', 'timestamp']),
+            models.Index(fields=['object_type', 'object_id']),
+            models.Index(fields=['performed_by_id', 'timestamp']),
+            models.Index(fields=['timestamp']),
+        ]
+    
+    def __str__(self):
+        return f"{self.performed_by_username} - {self.get_action_display()} - {self.object_name}"
+    
+    @classmethod
+    def log_action(cls, action, object_type, object_id, object_name, 
+                   performed_by_id, performed_by_username, 
+                   old_values=None, new_values=None, details=None,
+                   ip_address=None, user_agent=''):
+        """
+        Convenience method to create audit log entries.
+        """
+        return cls.objects.create(
+            action=action,
+            object_type=object_type,
+            object_id=object_id,
+            object_name=object_name,
+            performed_by_id=performed_by_id,
+            performed_by_username=performed_by_username,
+            old_values=old_values or {},
+            new_values=new_values or {},
+            details=details or {},
+            ip_address=ip_address,
+            user_agent=user_agent
+        )

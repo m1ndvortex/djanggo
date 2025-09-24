@@ -1,1 +1,1 @@
-# Management commands for admin panel
+# Management commands package
