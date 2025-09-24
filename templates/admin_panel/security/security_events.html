@@ -451,37 +451,50 @@
 </div>
 
 <!-- Investigation Modal -->
-<div id="investigation-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50" onclick="closeInvestigationModal()">
+<div id="investigation-modal" class="fixed inset-0 bg-black bg-opacity-75 hidden z-[9999] backdrop-blur-sm" onclick="closeInvestigationModal()">
     <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="security-event-card dark:cyber-glass max-w-md w-full" onclick="event.stopPropagation()">
-            <div class="p-6">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">بررسی رویداد امنیتی</h3>
+        <div class="bg-white dark:bg-cyber-bg-surface rounded-xl shadow-2xl dark:shadow-cyber-neon-primary/20 border dark:border-cyber-neon-primary/30 max-w-lg w-full transform transition-all duration-300 scale-95 opacity-0" id="modal-content" onclick="event.stopPropagation()">
+            <div class="p-8">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-cyber-text-primary">بررسی رویداد امنیتی</h3>
+                    <button onclick="closeInvestigationModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-cyber-text-primary transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
                 
                 <form id="investigation-form">
                     <input type="hidden" id="investigation-event-id" name="event_id">
                     <input type="hidden" id="investigation-action" name="action" value="investigate">
                     
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">یادداشت بررسی</label>
-                        <textarea name="notes" rows="4" 
-                                  class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/20 rounded-lg bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary"
-                                  placeholder="توضیحات بررسی..."></textarea>
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-3">یادداشت بررسی</label>
+                        <textarea name="notes" rows="4" required
+                                  class="w-full px-4 py-3 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-blue-500 dark:focus:ring-cyber-neon-primary focus:border-transparent transition-all duration-200"
+                                  placeholder="توضیحات دقیق بررسی و اقدامات انجام شده را وارد کنید..."></textarea>
                     </div>
                     
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">تخصیص به</label>
-                        <input type="text" name="assigned_to" 
-                               class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/20 rounded-lg bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary"
-                               placeholder="نام کاربر مسئول بررسی">
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-3">تخصیص به</label>
+                        <input type="text" name="assigned_to" required
+                               class="w-full px-4 py-3 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-blue-500 dark:focus:ring-cyber-neon-primary focus:border-transparent transition-all duration-200"
+                               placeholder="نام کاربر یا تیم مسئول بررسی">
                     </div>
                     
-                    <div class="flex space-x-3 space-x-reverse">
-                        <button type="submit" 
-                                class="flex-1 bg-blue-600 dark:bg-cyber-neon-primary hover:bg-blue-700 dark:hover:bg-cyber-neon-primary/80 text-white px-4 py-2 rounded-lg transition-colors">
-                            شروع بررسی
+                    <div class="flex space-x-4 space-x-reverse">
+                        <button type="submit" id="submit-investigation-btn"
+                                class="flex-1 bg-blue-600 dark:bg-cyber-neon-primary hover:bg-blue-700 dark:hover:bg-cyber-neon-primary/80 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                            <span class="flex items-center justify-center">
+                                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                شروع بررسی
+                            </span>
                         </button>
                         <button type="button" onclick="closeInvestigationModal()" 
-                                class="flex-1 bg-gray-600 dark:bg-cyber-bg-elevated hover:bg-gray-700 dark:hover:bg-cyber-bg-surface text-white px-4 py-2 rounded-lg transition-colors">
+                                class="flex-1 bg-gray-500 dark:bg-cyber-bg-elevated hover:bg-gray-600 dark:hover:bg-cyber-bg-surface text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
                             لغو
                         </button>
                     </div>
@@ -496,6 +509,75 @@
 <script>
 let bulkMode = false;
 let selectedEvents = new Set();
+
+// Notification system
+function showNotification(message, type = 'info') {
+    // Remove existing notifications
+    const existingNotifications = document.querySelectorAll('.notification-toast');
+    existingNotifications.forEach(n => n.remove());
+    
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification-toast fixed top-4 right-4 z-[10000] max-w-sm w-full bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-cyber-neon-primary/20 border-l-4 transform translate-x-full transition-all duration-300 ease-in-out`;
+    
+    // Set border color based on type
+    if (type === 'success') {
+        notification.classList.add('border-green-500', 'dark:border-cyber-neon-secondary');
+    } else if (type === 'error') {
+        notification.classList.add('border-red-500', 'dark:border-cyber-neon-danger');
+    } else if (type === 'warning') {
+        notification.classList.add('border-yellow-500', 'dark:border-cyber-neon-warning');
+    } else {
+        notification.classList.add('border-blue-500', 'dark:border-cyber-neon-primary');
+    }
+    
+    notification.innerHTML = `
+        <div class="p-4">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    ${type === 'success' ? 
+                        '<svg class="w-6 h-6 text-green-500 dark:text-cyber-neon-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>' :
+                      type === 'error' ?
+                        '<svg class="w-6 h-6 text-red-500 dark:text-cyber-neon-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>' :
+                      type === 'warning' ?
+                        '<svg class="w-6 h-6 text-yellow-500 dark:text-cyber-neon-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg>' :
+                        '<svg class="w-6 h-6 text-blue-500 dark:text-cyber-neon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'
+                    }
+                </div>
+                <div class="mr-3 flex-1">
+                    <p class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary">${message}</p>
+                </div>
+                <div class="mr-4 flex-shrink-0 flex">
+                    <button onclick="this.parentElement.parentElement.parentElement.parentElement.remove()" class="text-gray-400 hover:text-gray-600 dark:hover:text-cyber-text-primary transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+        notification.classList.add('translate-x-0');
+    }, 100);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.classList.add('translate-x-full');
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 300);
+        }
+    }, 5000);
+}
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
@@ -577,7 +659,17 @@ document.addEventListener('change', function(e) {
 function quickInvestigate(eventId) {
     document.getElementById('investigation-event-id').value = eventId;
     document.getElementById('investigation-action').value = 'investigate';
-    document.getElementById('investigation-modal').classList.remove('hidden');
+    
+    const modal = document.getElementById('investigation-modal');
+    const modalContent = document.getElementById('modal-content');
+    
+    modal.classList.remove('hidden');
+    
+    // Animate modal appearance
+    setTimeout(() => {
+        modalContent.classList.remove('scale-95', 'opacity-0');
+        modalContent.classList.add('scale-100', 'opacity-100');
+    }, 10);
 }
 
 function quickResolve(eventId) {
@@ -607,7 +699,18 @@ function quickResolve(eventId) {
 }
 
 function closeInvestigationModal() {
-    document.getElementById('investigation-modal').classList.add('hidden');
+    const modal = document.getElementById('investigation-modal');
+    const modalContent = document.getElementById('modal-content');
+    
+    // Animate modal disappearance
+    modalContent.classList.remove('scale-100', 'opacity-100');
+    modalContent.classList.add('scale-95', 'opacity-0');
+    
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        // Reset form
+        document.getElementById('investigation-form').reset();
+    }, 300);
 }
 
 // Investigation form submission

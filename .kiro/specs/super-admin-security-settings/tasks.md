@@ -66,6 +66,9 @@
 
 
 
+
+
+
     - Create security event management interface with dual theme support and Persian RTL layout
     - Build security event categorization interface with severity indicators and cybersecurity color coding
     - Implement investigation workflow UI with status tracking and glassmorphism effects for dark mode
@@ -76,7 +79,14 @@
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
 
 - [ ] 4. Role-Based Access Control System
-  - [ ] 4.1 Create RBAC models and backend
+  - [-] 4.1 Create RBAC models and backend
+
+
+
+
+
+
+
     - Create SuperAdminRole, SuperAdminPermission, and SuperAdminUserRole models
     - Implement role-based permission checking middleware and decorators
     - Build role management backend with CRUD operations and permission assignment
