@@ -17,6 +17,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from decimal import Decimal
+from datetime import timedelta
 import logging
 
 from zargar.tenants.admin_models import SuperAdmin, SubscriptionPlan, TenantInvoice
@@ -203,15 +204,27 @@ class UserImpersonationView(SuperAdminRequiredMixin, TemplateView):
             # Switch to tenant schema to get users
             from django_tenants.utils import schema_context
             with schema_context(tenant.schema_name):
-                users = get_hijackable_users(self.request.user)
-                if users.exists():
+                # Get User model in the tenant schema context
+                from django.contrib.auth import get_user_model
+                TenantUser = get_user_model()
+                
+                # Get hijackable users in this tenant and convert to list
+                users_queryset = TenantUser.objects.filter(
+                    is_active=True,
+                    is_superuser=False
+                )[:10]  # Limit to 10 users per tenant for display
+                
+                # Convert to list to avoid schema context issues in template
+                users_list = list(users_queryset)
+                
+                if users_list:
                     tenants_with_users.append({
                         'tenant': tenant,
-                        'users': users[:10]  # Limit to 10 users per tenant for display
+                        'users': users_list
                     })
         
         context['tenants_with_users'] = tenants_with_users
-        context['active_sessions'] = ImpersonationSession.objects.active_sessions()[:10]
+        context['active_sessions'] = list(ImpersonationSession.objects.active_sessions()[:10])
         
         return context
 
@@ -471,12 +484,24 @@ class ImpersonationStatsView(SuperAdminRequiredMixin, TemplateView):
         recent_sessions = ImpersonationSession.objects.order_by('-start_time')[:20]
         
         # Average session duration
-        from django.db.models import Avg
-        avg_duration = ImpersonationSession.objects.filter(
+        from django.db.models import Avg, F
+        from django.db.models.functions import Extract
+        
+        # Calculate average duration in seconds
+        avg_duration_result = ImpersonationSession.objects.filter(
             end_time__isnull=False
         ).aggregate(
-            avg_duration=Avg('end_time') - Avg('start_time')
+            avg_duration_seconds=Avg(
+                Extract(F('end_time') - F('start_time'), 'epoch')
+            )
         )
+        
+        # Convert to timedelta if we have a result
+        avg_duration = None
+        if avg_duration_result['avg_duration_seconds']:
+            avg_duration = timedelta(seconds=avg_duration_result['avg_duration_seconds'])
+        else:
+            avg_duration = timedelta(0)
         
         context.update({
             'total_sessions': total_sessions,
@@ -485,7 +510,7 @@ class ImpersonationStatsView(SuperAdminRequiredMixin, TemplateView):
             'sessions_by_admin': sessions_by_admin,
             'sessions_by_tenant': sessions_by_tenant,
             'recent_sessions': recent_sessions,
-            'avg_duration': avg_duration.get('avg_duration'),
+            'avg_duration': avg_duration,
         })
         
         return context
@@ -1007,6 +1032,7 @@ class SystemHealthReportsView(SuperAdminRequiredMixin, TemplateView):
         
         # Get date range from request
         days = int(self.request.GET.get('days', 7))
+        hours = days * 24  # Calculate hours for template
         since = timezone.now() - timedelta(days=days)
         
         # Metric summaries
@@ -1043,6 +1069,7 @@ class SystemHealthReportsView(SuperAdminRequiredMixin, TemplateView):
         
         context.update({
             'days': days,
+            'hours': hours,
             'metric_summaries': metric_summaries,
             'alert_trends': alert_trends,
             'service_availability': service_availability,

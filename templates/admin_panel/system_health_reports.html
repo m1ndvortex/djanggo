@@ -1,4 +1,4 @@
-{% extends "admin_panel/base.html" %}
+{% extends "admin_panel/base_unified.html" %}
 
 {% block title %}گزارشات سلامت سیستم - پنل مدیریت زرگر{% endblock %}
 
@@ -275,11 +275,29 @@
 
 {% block extra_js %}
 <script>
+let alertTrendsChart = null;
+let performanceTrendsChart = null;
+let responseTimeChart = null;
+
 document.addEventListener('DOMContentLoaded', function() {
     initializeCharts();
 });
 
 function initializeCharts() {
+    // Destroy existing charts if they exist
+    if (alertTrendsChart) {
+        alertTrendsChart.destroy();
+        alertTrendsChart = null;
+    }
+    if (performanceTrendsChart) {
+        performanceTrendsChart.destroy();
+        performanceTrendsChart = null;
+    }
+    if (responseTimeChart) {
+        responseTimeChart.destroy();
+        responseTimeChart = null;
+    }
+    
     // Alert Trends Chart
     const alertTrendsCtx = document.getElementById('alertTrendsChart').getContext('2d');
     createAlertTrendsChart(alertTrendsCtx);
@@ -294,7 +312,41 @@ function initializeCharts() {
 }
 
 function createAlertTrendsChart(ctx) {
-    const alertData = {{ alert_trends|safe }};
+    const alertData = {{ alert_trends|safe|default:"[]" }};
+    
+    // If no alert data, show a placeholder
+    if (!alertData || alertData.length === 0) {
+        const labels = ['هیچ هشداری'];
+        const data = [1];
+        const colors = [document.documentElement.classList.contains('dark') ? '#6B7280' : '#9CA3AF'];
+        
+        alertTrendsChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: colors,
+                    borderColor: colors,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: document.documentElement.classList.contains('dark') ? '#FFFFFF' : '#374151',
+                            padding: 20
+                        }
+                    }
+                }
+            }
+        });
+        return;
+    }
     
     const labels = alertData.map(item => {
         if (item.severity === 'critical') return 'بحرانی';
@@ -311,7 +363,7 @@ function createAlertTrendsChart(ctx) {
         return document.documentElement.classList.contains('dark') ? '#00D4FF' : '#3b82f6';
     });
     
-    new Chart(ctx, {
+    alertTrendsChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: labels,
@@ -341,15 +393,15 @@ function createAlertTrendsChart(ctx) {
 function createPerformanceTrendsChart(ctx) {
     // Fetch historical data for CPU and Memory
     Promise.all([
-        fetch(`{% url "admin_panel:system_health_historical_api" %}?metric_type=cpu_usage&hours={{ days|mul:24 }}`),
-        fetch(`{% url "admin_panel:system_health_historical_api" %}?metric_type=memory_usage&hours={{ days|mul:24 }}`)
+        fetch(`{% url "admin_panel:system_health_historical_api" %}?metric_type=cpu_usage&hours={{ hours }}`),
+        fetch(`{% url "admin_panel:system_health_historical_api" %}?metric_type=memory_usage&hours={{ hours }}`)
     ])
     .then(responses => Promise.all(responses.map(r => r.json())))
     .then(([cpuResponse, memoryResponse]) => {
         const cpuData = cpuResponse.success ? cpuResponse.data : [];
         const memoryData = memoryResponse.success ? memoryResponse.data : [];
         
-        new Chart(ctx, {
+        performanceTrendsChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: cpuData.map(d => new Date(d.timestamp).toLocaleDateString('fa-IR')),
@@ -404,13 +456,13 @@ function createPerformanceTrendsChart(ctx) {
 
 function createResponseTimeChart(ctx) {
     // Fetch response time data
-    fetch(`{% url "admin_panel:system_health_historical_api" %}?metric_type=response_time&hours={{ days|mul:24 }}`)
+    fetch(`{% url "admin_panel:system_health_historical_api" %}?metric_type=response_time&hours={{ hours }}`)
     .then(response => response.json())
     .then(data => {
         if (data.success) {
             const responseTimeData = data.data;
             
-            new Chart(ctx, {
+            responseTimeChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: responseTimeData.map(d => new Date(d.timestamp).toLocaleDateString('fa-IR')),

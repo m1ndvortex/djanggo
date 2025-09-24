@@ -1,4 +1,4 @@
-{% extends "admin_panel/base.html" %}
+{% extends "admin_panel/base_unified.html" %}
 
 {% block title %}مانیتورینگ سلامت سیستم - پنل مدیریت زرگر{% endblock %}
 
@@ -110,7 +110,7 @@
                         {% endif %}
                     </p>
                 </div>
-                <div class="p-3 rounded-full bg-{{ system_status.overall == 'healthy' and 'green' or system_status.overall == 'warning' and 'yellow' or 'red' }}-100 dark:bg-cyber-bg-elevated">
+                <div class="p-3 rounded-full {% if system_status.overall == 'healthy' %}bg-green-100{% elif system_status.overall == 'warning' %}bg-yellow-100{% else %}bg-red-100{% endif %} dark:bg-cyber-bg-elevated">
                     {% if system_status.overall == 'healthy' %}
                         <svg class="w-8 h-8 text-green-600 dark:text-cyber-neon-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -150,7 +150,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">استفاده از پردازنده</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary">
+                    <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary" data-metric="cpu">
                         {{ current_metrics.cpu.usage_percent|floatformat:1 }}%
                     </p>
                 </div>
@@ -167,7 +167,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">استفاده از حافظه</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary">
+                    <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary" data-metric="memory">
                         {{ current_metrics.memory.usage_percent|floatformat:1 }}%
                     </p>
                 </div>
@@ -194,7 +194,7 @@
                                bg-green-100 text-green-800 dark:bg-cyber-neon-secondary/20 dark:text-cyber-neon-secondary
                            {% else %}
                                bg-red-100 text-red-800 dark:bg-cyber-neon-danger/20 dark:text-cyber-neon-danger
-                           {% endif %}">
+                           {% endif %}" data-service="database">
                     {% if current_metrics.database.default.status == 'healthy' %}سالم{% else %}خطا{% endif %}
                 </span>
             </div>
@@ -225,7 +225,7 @@
                                bg-green-100 text-green-800 dark:bg-cyber-neon-secondary/20 dark:text-cyber-neon-secondary
                            {% else %}
                                bg-red-100 text-red-800 dark:bg-cyber-neon-danger/20 dark:text-cyber-neon-danger
-                           {% endif %}">
+                           {% endif %}" data-service="redis">
                     {% if current_metrics.redis.status == 'healthy' %}سالم{% else %}خطا{% endif %}
                 </span>
             </div>
@@ -256,7 +256,7 @@
                                bg-green-100 text-green-800 dark:bg-cyber-neon-secondary/20 dark:text-cyber-neon-secondary
                            {% else %}
                                bg-yellow-100 text-yellow-800 dark:bg-cyber-neon-warning/20 dark:text-cyber-neon-warning
-                           {% endif %}">
+                           {% endif %}" data-service="celery">
                     {% if current_metrics.celery.status == 'healthy' %}سالم{% else %}هشدار{% endif %}
                 </span>
             </div>
@@ -307,7 +307,7 @@
     <div class="metric-card dark:cyber-glass">
         <div class="space-y-4">
             {% for alert in active_alerts %}
-            <div class="flex items-center justify-between p-4 border-r-4 border-{{ alert.severity == 'critical' and 'red' or alert.severity == 'warning' and 'yellow' or 'blue' }}-500 dark:border-cyber-neon-{{ alert.severity == 'critical' and 'danger' or alert.severity == 'warning' and 'warning' or 'primary' }} bg-{{ alert.severity == 'critical' and 'red' or alert.severity == 'warning' and 'yellow' or 'blue' }}-50 dark:bg-cyber-bg-elevated rounded-lg">
+            <div class="flex items-center justify-between p-4 border-r-4 {% if alert.severity == 'critical' %}border-red-500 dark:border-cyber-neon-danger bg-red-50{% elif alert.severity == 'warning' %}border-yellow-500 dark:border-cyber-neon-warning bg-yellow-50{% else %}border-blue-500 dark:border-cyber-neon-primary bg-blue-50{% endif %} dark:bg-cyber-bg-elevated rounded-lg">
                 <div class="flex-1">
                     <h4 class="font-semibold text-gray-900 dark:text-cyber-text-primary">{{ alert.title }}</h4>
                     <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">{{ alert.description }}</p>
@@ -354,6 +354,8 @@
 let refreshInterval;
 let timerInterval;
 let timeLeft = 30;
+let cpuMemoryChart = null;
+let diskChart = null;
 
 // Initialize charts
 document.addEventListener('DOMContentLoaded', function() {
@@ -362,6 +364,16 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeCharts() {
+    // Destroy existing charts if they exist
+    if (cpuMemoryChart) {
+        cpuMemoryChart.destroy();
+        cpuMemoryChart = null;
+    }
+    if (diskChart) {
+        diskChart.destroy();
+        diskChart = null;
+    }
+    
     // CPU and Memory Chart
     const cpuMemoryCtx = document.getElementById('cpuMemoryChart').getContext('2d');
     
@@ -372,6 +384,9 @@ function initializeCharts() {
             if (data.success) {
                 createCpuMemoryChart(cpuMemoryCtx, data.data);
             }
+        })
+        .catch(error => {
+            console.error('Error fetching CPU data:', error);
         });
     
     // Disk Usage Chart (Pie Chart)
@@ -386,7 +401,7 @@ function createCpuMemoryChart(ctx, cpuData) {
         .then(memoryResponse => {
             const memoryData = memoryResponse.success ? memoryResponse.data : [];
             
-            new Chart(ctx, {
+            cpuMemoryChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: cpuData.map(d => new Date(d.timestamp).toLocaleTimeString('fa-IR')),
@@ -443,7 +458,7 @@ function createDiskChart(ctx) {
     const diskUsed = {{ current_metrics.disk.usage_percent|default:0 }};
     const diskFree = 100 - diskUsed;
     
-    new Chart(ctx, {
+    diskChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: ['استفاده شده', 'آزاد'],
@@ -481,15 +496,46 @@ function refreshMetrics() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Reload the page to update all metrics
-                window.location.reload();
+                // Update metrics without full page reload
+                updateMetricsDisplay(data.metrics);
+                // Reinitialize charts with new data
+                initializeCharts();
             } else {
-                ZargarAdmin.showMessage('خطا در بروزرسانی متریک‌ها', 'error');
+                console.error('Error refreshing metrics:', data.error);
             }
         })
         .catch(error => {
-            ZargarAdmin.showMessage('خطا در ارتباط با سرور', 'error');
+            console.error('Error connecting to server:', error);
         });
+}
+
+function updateMetricsDisplay(metrics) {
+    // Update CPU usage
+    const cpuElement = document.querySelector('[data-metric="cpu"]');
+    if (cpuElement && metrics.cpu) {
+        cpuElement.textContent = metrics.cpu.usage_percent.toFixed(1) + '%';
+    }
+    
+    // Update Memory usage
+    const memoryElement = document.querySelector('[data-metric="memory"]');
+    if (memoryElement && metrics.memory) {
+        memoryElement.textContent = metrics.memory.usage_percent.toFixed(1) + '%';
+    }
+    
+    // Update service statuses
+    updateServiceStatus('database', metrics.database?.default?.status || 'unknown');
+    updateServiceStatus('redis', metrics.redis?.status || 'unknown');
+    updateServiceStatus('celery', metrics.celery?.status || 'unknown');
+}
+
+function updateServiceStatus(service, status) {
+    const serviceElement = document.querySelector(`[data-service="${service}"]`);
+    if (serviceElement) {
+        serviceElement.textContent = status === 'healthy' ? 'سالم' : 'خطا';
+        serviceElement.className = status === 'healthy' ? 
+            'px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-cyber-neon-secondary/20 dark:text-cyber-neon-secondary' :
+            'px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800 dark:bg-cyber-neon-danger/20 dark:text-cyber-neon-danger';
+    }
 }
 
 function acknowledgeAlert(alertId) {

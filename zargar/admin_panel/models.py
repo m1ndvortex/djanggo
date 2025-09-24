@@ -8,6 +8,48 @@ from django.core.exceptions import ValidationError
 import uuid
 
 
+class ImpersonationSessionManager(models.Manager):
+    """Custom manager for ImpersonationSession with utility methods."""
+    
+    def active_sessions(self):
+        """Get all active impersonation sessions."""
+        return self.filter(status='active', end_time__isnull=True)
+    
+    def expired_sessions(self):
+        """Get all expired sessions that should be terminated."""
+        cutoff_time = timezone.now() - timezone.timedelta(hours=4)
+        return self.filter(
+            status='active',
+            start_time__lt=cutoff_time,
+            end_time__isnull=True
+        )
+    
+    def sessions_by_admin(self, admin_user_id):
+        """Get all sessions for a specific admin user."""
+        return self.filter(admin_user_id=admin_user_id).order_by('-start_time')
+    
+    def sessions_by_tenant(self, tenant_schema):
+        """Get all sessions for a specific tenant."""
+        return self.filter(tenant_schema=tenant_schema).order_by('-start_time')
+    
+    def suspicious_sessions(self):
+        """Get all sessions flagged as suspicious."""
+        return self.filter(is_suspicious=True).order_by('-start_time')
+    
+    def cleanup_expired_sessions(self):
+        """Cleanup expired sessions by marking them as expired."""
+        expired_sessions = self.expired_sessions()
+        count = expired_sessions.count()
+        
+        expired_sessions.update(
+            status='expired',
+            end_time=timezone.now(),
+            security_notes=models.F('security_notes') + '\nAuto-expired due to timeout'
+        )
+        
+        return count
+
+
 class ImpersonationSession(models.Model):
     """
     Model to track all admin impersonation sessions for comprehensive audit logging.
@@ -20,6 +62,9 @@ class ImpersonationSession(models.Model):
         ('expired', _('Expired')),
         ('terminated', _('Terminated')),
     ]
+    
+    # Custom manager
+    objects = ImpersonationSessionManager()
     
     # Unique session identifier
     session_id = models.UUIDField(
@@ -283,50 +328,7 @@ class ImpersonationSession(models.Model):
         logger.info(f"Impersonation session update: {log_data}")
 
 
-class ImpersonationSessionManager(models.Manager):
-    """Custom manager for ImpersonationSession with utility methods."""
-    
-    def active_sessions(self):
-        """Get all active impersonation sessions."""
-        return self.filter(status='active', end_time__isnull=True)
-    
-    def expired_sessions(self):
-        """Get all expired sessions that should be terminated."""
-        cutoff_time = timezone.now() - timezone.timedelta(hours=4)
-        return self.filter(
-            status='active',
-            start_time__lt=cutoff_time,
-            end_time__isnull=True
-        )
-    
-    def sessions_by_admin(self, admin_user_id):
-        """Get all sessions for a specific admin user."""
-        return self.filter(admin_user_id=admin_user_id).order_by('-start_time')
-    
-    def sessions_by_tenant(self, tenant_schema):
-        """Get all sessions for a specific tenant."""
-        return self.filter(tenant_schema=tenant_schema).order_by('-start_time')
-    
-    def suspicious_sessions(self):
-        """Get all sessions flagged as suspicious."""
-        return self.filter(is_suspicious=True).order_by('-start_time')
-    
-    def cleanup_expired_sessions(self):
-        """Cleanup expired sessions by marking them as expired."""
-        expired_sessions = self.expired_sessions()
-        count = expired_sessions.count()
-        
-        expired_sessions.update(
-            status='expired',
-            end_time=timezone.now(),
-            security_notes=models.F('security_notes') + '\nAuto-expired due to timeout'
-        )
-        
-        return count
 
-
-# Add the custom manager to the model
-ImpersonationSession.add_to_class('objects', ImpersonationSessionManager())
 
 
 class BackupJob(models.Model):

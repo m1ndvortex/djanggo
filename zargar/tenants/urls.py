@@ -20,7 +20,8 @@ urlpatterns = [
     path('tenants/<int:pk>/statistics/', views.TenantStatisticsView.as_view(), name='tenant_statistics'),
     
     # Search and bulk operations
-    path('tenants/search/', views.TenantSearchView.as_view(), name='tenant_search'),
+    path('tenants/search/', views.TenantSearchPageView.as_view(), name='tenant_search'),
+    path('tenants/search/api/', views.TenantSearchAPIView.as_view(), name='tenant_search_api'),
     path('tenants/bulk-action/', views.TenantBulkActionView.as_view(), name='tenant_bulk_action'),
     
     # Billing and Subscription Management

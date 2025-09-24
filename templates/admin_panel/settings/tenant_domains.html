@@ -1,0 +1,419 @@
+{% extends 'admin_panel/base_improved.html' %}
+{% load static %}
+
+{% block title %}مدیریت دامنه‌های تنانت - پنل مدیریت زرگر{% endblock %}
+
+{% block page_title %}مدیریت دامنه‌های تنانت{% endblock %}
+
+{% block breadcrumb %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3 space-x-reverse">
+        <li class="inline-flex items-center">
+            <a href="{% url 'admin_panel:dashboard' %}"
+                class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-cyber-text-secondary dark:hover:text-cyber-neon-primary">
+                <svg class="w-3 h-3 ml-2.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                        d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z">
+                    </path>
+                </svg>
+                داشبورد
+            </a>
+        </li>
+        <li>
+            <div class="flex items-center">
+                <svg class="w-3 h-3 text-gray-400 mx-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd"
+                        d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                        clip-rule="evenodd"></path>
+                </svg>
+                <a href="{% url 'admin_panel:settings:dashboard' %}"
+                    class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2 dark:text-cyber-text-muted dark:hover:text-cyber-neon-primary">تنظیمات
+                    سیستم</a>
+            </div>
+        </li>
+        <li>
+            <div class="flex items-center">
+                <svg class="w-3 h-3 text-gray-400 mx-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd"
+                        d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                        clip-rule="evenodd"></path>
+                </svg>
+                <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2 dark:text-cyber-text-muted">مدیریت دامنه‌های
+                    تنانت</span>
+            </div>
+        </li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .domain-status-active {
+        background-color: rgba(34, 197, 94, 0.1);
+        color: rgb(34, 197, 94);
+        border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+
+    .domain-status-inactive {
+        background-color: rgba(239, 68, 68, 0.1);
+        color: rgb(239, 68, 68);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .dark .domain-status-active {
+        background-color: rgba(0, 255, 136, 0.1);
+        color: #00FF88;
+        border: 1px solid rgba(0, 255, 136, 0.2);
+    }
+
+    .dark .domain-status-inactive {
+        background-color: rgba(255, 71, 87, 0.1);
+        color: #FF4757;
+        border: 1px solid rgba(255, 71, 87, 0.2);
+    }
+
+    .primary-domain-badge {
+        background: linear-gradient(145deg, #fbbf24 0%, #f59e0b 100%);
+        color: #92400e;
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 9999px;
+        font-weight: 600;
+    }
+
+    .dark .primary-domain-badge {
+        background: linear-gradient(145deg, rgba(255, 184, 0, 0.2) 0%, rgba(255, 184, 0, 0.3) 100%);
+        color: #FFB800;
+        border: 1px solid rgba(255, 184, 0, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Statistics Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <!-- Total Domains -->
+    <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-blue-100 dark:bg-cyber-neon-primary/20 ml-3">
+                <svg class="w-6 h-6 text-blue-600 dark:text-cyber-neon-primary" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9"></path>
+                </svg>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">کل دامنه‌ها</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary">{{ total_domains }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Primary Domains -->
+    <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 dark:bg-cyber-neon-warning/20 ml-3">
+                <svg class="w-6 h-6 text-yellow-600 dark:text-cyber-neon-warning" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z">
+                    </path>
+                </svg>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">دامنه‌های اصلی</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary">{{ primary_domains }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tenants Without Domains -->
+    <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-red-100 dark:bg-cyber-neon-danger/20 ml-3">
+                <svg class="w-6 h-6 text-red-600 dark:text-cyber-neon-danger" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                    </path>
+                </svg>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">تنانت بدون دامنه</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary">{{ tenants_without_domains }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Domains -->
+    <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-green-100 dark:bg-cyber-neon-secondary/20 ml-3">
+                <svg class="w-6 h-6 text-green-600 dark:text-cyber-neon-secondary" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">دامنه‌های فعال</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary">{{ total_domains }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Actions Bar -->
+<div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 mb-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">مدیریت دامنه‌های تنانت</h2>
+            <p class="text-gray-600 dark:text-cyber-text-secondary">مشاهده و مدیریت تمام دامنه‌های تنانت‌ها</p>
+        </div>
+        <div class="flex space-x-3 space-x-reverse">
+            <a href="{% url 'admin_panel:settings:tenant_domain_create' %}"
+                class="bg-primary-600 dark:bg-cyber-neon-primary hover:bg-primary-700 dark:hover:bg-cyber-neon-primary/80 text-white px-6 py-3 rounded-lg transition-all duration-300 font-medium shadow-lg dark:shadow-cyber-neon-primary/20">
+                <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                ایجاد دامنه جدید
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Domains Table -->
+<div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl overflow-hidden">
+    <div class="px-6 py-4 border-b dark:border-cyber-neon-primary/20">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">لیست دامنه‌ها</h3>
+    </div>
+
+    {% if domains %}
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-cyber-neon-primary/20">
+            <thead class="bg-gray-50 dark:bg-cyber-bg-elevated">
+                <tr>
+                    <th scope="col"
+                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                        دامنه
+                    </th>
+                    <th scope="col"
+                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                        تنانت
+                    </th>
+                    <th scope="col"
+                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                        نوع
+                    </th>
+                    <th scope="col"
+                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                        وضعیت
+                    </th>
+                    <th scope="col"
+                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                        تاریخ ایجاد
+                    </th>
+                    <th scope="col"
+                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                        عملیات
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-cyber-bg-surface divide-y divide-gray-200 dark:divide-cyber-neon-primary/10">
+                {% for domain in domains %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated/50 transition-colors">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 w-10 h-10">
+                                <div
+                                    class="w-10 h-10 bg-blue-100 dark:bg-cyber-neon-primary/20 rounded-full flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-blue-600 dark:text-cyber-neon-primary" fill="none"
+                                        stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="mr-4">
+                                <div class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary">
+                                    {{ domain.domain }}
+                                </div>
+                                {% if domain.is_primary %}
+                                <div class="mt-1">
+                                    <span class="primary-domain-badge">دامنه اصلی</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900 dark:text-cyber-text-primary">{{ domain.tenant.name }}</div>
+                        <div class="text-sm text-gray-500 dark:text-cyber-text-muted">{{ domain.tenant.schema_name }}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if domain.is_primary %}
+                        <span
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-cyber-neon-warning/20 text-yellow-800 dark:text-cyber-neon-warning">
+                            اصلی
+                        </span>
+                        {% else %}
+                        <span
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-cyber-bg-elevated text-gray-800 dark:text-cyber-text-secondary">
+                            فرعی
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium domain-status-active">
+                            <svg class="w-2 h-2 ml-1.5" fill="currentColor" viewBox="0 0 8 8">
+                                <circle cx="4" cy="4" r="3" />
+                            </svg>
+                            فعال
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-cyber-text-muted">
+                        {{ domain.tenant.created_on|date:"Y/m/d" }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div class="flex items-center space-x-2 space-x-reverse">
+                            <a href="{% url 'admin_panel:settings:tenant_domain_update' domain.pk %}"
+                                class="text-blue-600 dark:text-cyber-neon-primary hover:text-blue-900 dark:hover:text-cyber-neon-primary/80 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                                    </path>
+                                </svg>
+                            </a>
+                            <form method="post" action="{% url 'admin_panel:settings:tenant_domain_delete' domain.pk %}"
+                                class="inline-block"
+                                onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید این دامنه را حذف کنید؟')">
+                                {% csrf_token %}
+                                <button type="submit"
+                                    class="text-red-600 dark:text-cyber-neon-danger hover:text-red-900 dark:hover:text-cyber-neon-danger/80 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                        </path>
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="bg-white dark:bg-cyber-bg-surface px-4 py-3 border-t dark:border-cyber-neon-primary/20 sm:px-6">
+        <div class="flex items-center justify-between">
+            <div class="flex-1 flex justify-between sm:hidden">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}"
+                    class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-cyber-neon-primary/20 text-sm font-medium rounded-md text-gray-700 dark:text-cyber-text-secondary bg-white dark:bg-cyber-bg-surface hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated">
+                    قبلی
+                </a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}"
+                    class="mr-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-cyber-neon-primary/20 text-sm font-medium rounded-md text-gray-700 dark:text-cyber-text-secondary bg-white dark:bg-cyber-bg-surface hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated">
+                    بعدی
+                </a>
+                {% endif %}
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700 dark:text-cyber-text-secondary">
+                        نمایش
+                        <span class="font-medium">{{ page_obj.start_index }}</span>
+                        تا
+                        <span class="font-medium">{{ page_obj.end_index }}</span>
+                        از
+                        <span class="font-medium">{{ page_obj.paginator.count }}</span>
+                        نتیجه
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px space-x-reverse"
+                        aria-label="Pagination">
+                        {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}"
+                            class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-cyber-neon-primary/20 bg-white dark:bg-cyber-bg-surface text-sm font-medium text-gray-500 dark:text-cyber-text-muted hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated">
+                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                    d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <span
+                            class="relative inline-flex items-center px-4 py-2 border border-primary-500 dark:border-cyber-neon-primary bg-primary-50 dark:bg-cyber-neon-primary/20 text-sm font-medium text-primary-600 dark:text-cyber-neon-primary">
+                            {{ num }}
+                        </span>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %} <a
+                            href="?page={{ num }}"
+                            class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-cyber-neon-primary/20 bg-white dark:bg-cyber-bg-surface text-sm font-medium text-gray-700 dark:text-cyber-text-secondary hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated">
+                            {{ num }}
+                            </a>
+                            {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}"
+                                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-cyber-neon-primary/20 bg-white dark:bg-cyber-bg-surface text-sm font-medium text-gray-500 dark:text-cyber-text-muted hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated">
+                                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </a>
+                            {% endif %}
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Empty State -->
+    <div class="text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-cyber-text-muted" fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9"></path>
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-cyber-text-primary">هیچ دامنه‌ای یافت نشد</h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-cyber-text-muted">برای شروع، اولین دامنه را ایجاد کنید.</p>
+        <div class="mt-6">
+            <a href="{% url 'admin_panel:settings:tenant_domain_create' %}"
+                class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 dark:bg-cyber-neon-primary hover:bg-primary-700 dark:hover:bg-cyber-neon-primary/80">
+                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                ایجاد دامنه جدید
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Add any JavaScript functionality here
+        console.log('Tenant Domains Management loaded');
+    });
+</script>
+{% endblock %}

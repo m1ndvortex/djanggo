@@ -7,7 +7,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, TemplateView
 from django.views import View
 from django.http import JsonResponse
 from django.db import transaction, connection
@@ -439,9 +439,73 @@ class TenantStatisticsView(SuperAdminRequiredMixin, View):
             }, status=500)
 
 
-class TenantSearchView(SuperAdminRequiredMixin, View):
+class TenantSearchPageView(SuperAdminRequiredMixin, TemplateView):
     """
-    Search tenants via AJAX.
+    Tenant search page with advanced search and bulk operations.
+    """
+    template_name = 'admin/tenants/tenant_search.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Get search parameters
+        query = self.request.GET.get('q', '').strip()
+        status_filter = self.request.GET.get('status', '')
+        plan_filter = self.request.GET.get('plan', '')
+        
+        # Base queryset
+        tenants = Tenant.objects.exclude(schema_name='public').select_related()
+        
+        # Apply search filters
+        if query:
+            tenants = tenants.filter(
+                Q(name__icontains=query) |
+                Q(owner_name__icontains=query) |
+                Q(owner_email__icontains=query) |
+                Q(schema_name__icontains=query)
+            )
+        
+        if status_filter == 'active':
+            tenants = tenants.filter(is_active=True)
+        elif status_filter == 'inactive':
+            tenants = tenants.filter(is_active=False)
+        
+        if plan_filter:
+            tenants = tenants.filter(subscription_plan=plan_filter)
+        
+        # Pagination
+        from django.core.paginator import Paginator
+        paginator = Paginator(tenants, 20)  # 20 tenants per page
+        page_number = self.request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        # Statistics
+        total_tenants = Tenant.objects.exclude(schema_name='public').count()
+        active_tenants = Tenant.objects.exclude(schema_name='public').filter(is_active=True).count()
+        inactive_tenants = total_tenants - active_tenants
+        
+        context.update({
+            'page_obj': page_obj,
+            'tenants': page_obj.object_list,
+            'query': query,
+            'status_filter': status_filter,
+            'plan_filter': plan_filter,
+            'total_tenants': total_tenants,
+            'active_tenants': active_tenants,
+            'inactive_tenants': inactive_tenants,
+            'subscription_plans': [
+                ('basic', 'Basic'),
+                ('pro', 'Pro'),
+                ('enterprise', 'Enterprise'),
+            ]
+        })
+        
+        return context
+
+
+class TenantSearchAPIView(SuperAdminRequiredMixin, View):
+    """
+    Search tenants via AJAX API.
     """
     
     def get(self, request):
@@ -474,7 +538,7 @@ class TenantSearchView(SuperAdminRequiredMixin, View):
                     'is_active': tenant.is_active,
                     'subscription_plan': tenant.get_subscription_plan_display(),
                     'created_on': tenant.created_on.strftime('%Y/%m/%d'),
-                    'url': reverse_lazy('core:tenants:tenant_detail', kwargs={'pk': tenant.pk})
+                    'url': reverse_lazy('admin_panel:tenants:tenant_detail', kwargs={'pk': tenant.pk})
                 })
             
             return JsonResponse({

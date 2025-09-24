@@ -1,0 +1,435 @@
+{% extends 'admin_panel/base_unified.html' %}
+{% load static %}
+
+{% block title %}جستجو و عملیات گروهی تنانت‌ها - پنل مدیریت زرگر{% endblock %}
+
+{% block page_header %}
+<div class="bg-white dark:bg-cyber-bg-secondary rounded-lg shadow-lg dark:shadow-2xl p-6 mb-6">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-cyber-text-primary">جستجو و عملیات گروهی</h1>
+            <p class="text-gray-600 dark:text-cyber-text-secondary mt-2">جستجوی پیشرفته و مدیریت گروهی تنانت‌ها</p>
+        </div>
+        <div class="flex space-x-3 space-x-reverse">
+            <a href="{% url 'admin_panel:tenants:tenant_list' %}" 
+               class="bg-gray-100 dark:bg-cyber-bg-surface hover:bg-gray-200 dark:hover:bg-cyber-bg-elevated text-gray-700 dark:text-cyber-text-secondary px-6 py-3 rounded-lg transition-all duration-300 font-medium">
+                بازگشت به لیست
+            </a>
+            <a href="{% url 'admin_panel:tenants:tenant_create' %}" 
+               class="bg-primary-600 dark:bg-cyber-neon-primary hover:bg-primary-700 dark:hover:bg-cyber-neon-primary/80 text-white px-6 py-3 rounded-lg transition-all duration-300 font-medium shadow-lg dark:shadow-cyber-neon-primary/20">
+                ایجاد تنانت جدید
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Search Statistics -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-blue-100 dark:bg-cyber-neon-primary/20">
+                <svg class="w-8 h-8 text-blue-600 dark:text-cyber-neon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">کل تنانت‌ها</p>
+                <p class="text-3xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ total_tenants }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-green-100 dark:bg-cyber-neon-secondary/20">
+                <svg class="w-8 h-8 text-green-600 dark:text-cyber-neon-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">فعال</p>
+                <p class="text-3xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ active_tenants }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-red-100 dark:bg-cyber-neon-danger/20">
+                <svg class="w-8 h-8 text-red-600 dark:text-cyber-neon-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">غیرفعال</p>
+                <p class="text-3xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ inactive_tenants }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Advanced Search Form -->
+<div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6 mb-8">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">جستجوی پیشرفته</h3>
+    
+    <form method="get" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- Search Query -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">جستجو</label>
+                <input type="text" 
+                       name="q" 
+                       value="{{ query }}"
+                       placeholder="جستجو در نام، مالک، ایمیل یا اسکیما..."
+                       class="w-full px-4 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-transparent bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary">
+            </div>
+            
+            <!-- Status Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">وضعیت</label>
+                <select name="status" class="w-full px-4 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-transparent bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary">
+                    <option value="">همه وضعیت‌ها</option>
+                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>فعال</option>
+                    <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>غیرفعال</option>
+                </select>
+            </div>
+            
+            <!-- Plan Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">پلن اشتراک</label>
+                <select name="plan" class="w-full px-4 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-transparent bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary">
+                    <option value="">همه پلن‌ها</option>
+                    {% for plan_value, plan_label in subscription_plans %}
+                    <option value="{{ plan_value }}" {% if plan_filter == plan_value %}selected{% endif %}>{{ plan_label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Search Button -->
+            <div class="flex items-end">
+                <button type="submit" class="w-full bg-primary-600 dark:bg-cyber-neon-primary hover:bg-primary-700 dark:hover:bg-cyber-neon-primary/80 text-white px-6 py-2 rounded-lg transition-all duration-300 font-medium">
+                    <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    جستجو
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Search Results -->
+<div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl p-6">
+    <div class="flex justify-between items-center mb-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">
+            نتایج جستجو
+            {% if query %}
+                برای "{{ query }}"
+            {% endif %}
+            <span class="text-sm text-gray-500 dark:text-cyber-text-muted">
+                ({{ page_obj.paginator.count }} نتیجه)
+            </span>
+        </h3>
+        
+        <!-- Bulk Actions -->
+        <div class="flex space-x-2 space-x-reverse">
+            <select id="bulk-action" class="px-4 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary">
+                <option value="">عملیات گروهی</option>
+                <option value="activate">فعال کردن</option>
+                <option value="deactivate">غیرفعال کردن</option>
+                <option value="delete">حذف</option>
+            </select>
+            <button id="apply-bulk-action" class="bg-orange-600 dark:bg-cyber-neon-tertiary hover:bg-orange-700 dark:hover:bg-cyber-neon-tertiary/80 text-white px-4 py-2 rounded-lg transition-all duration-300 font-medium">
+                اعمال
+            </button>
+        </div>
+    </div>
+
+    {% if tenants %}
+    <!-- Results Table -->
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-cyber-neon-primary/20">
+            <thead class="bg-gray-50 dark:bg-cyber-bg-elevated">
+                <tr>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                        <input type="checkbox" id="select-all" class="rounded border-gray-300 dark:border-cyber-neon-primary/30">
+                    </th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">نام فروشگاه</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">مالک</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">وضعیت</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">پلن اشتراک</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">تاریخ ایجاد</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">عملیات</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-cyber-bg-surface divide-y divide-gray-200 dark:divide-cyber-neon-primary/20">
+                {% for tenant in tenants %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated/50 transition-colors">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <input type="checkbox" name="selected_tenants" value="{{ tenant.id }}" class="tenant-checkbox rounded border-gray-300 dark:border-cyber-neon-primary/30">
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10">
+                                <div class="h-10 w-10 rounded-full bg-primary-100 dark:bg-cyber-neon-primary/20 flex items-center justify-center">
+                                    <span class="text-sm font-medium text-primary-600 dark:text-cyber-neon-primary">{{ tenant.name|first|upper }}</span>
+                                </div>
+                            </div>
+                            <div class="mr-4">
+                                <div class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary">
+                                    <a href="{% url 'admin_panel:tenants:tenant_detail' tenant.pk %}" class="hover:text-primary-600 dark:hover:text-cyber-neon-primary">
+                                        {{ tenant.name }}
+                                    </a>
+                                </div>
+                                <div class="text-sm text-gray-500 dark:text-cyber-text-muted">{{ tenant.schema_name }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900 dark:text-cyber-text-primary">{{ tenant.owner_name }}</div>
+                        <div class="text-sm text-gray-500 dark:text-cyber-text-muted">{{ tenant.owner_email }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if tenant.is_active %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-cyber-neon-secondary/20 text-green-800 dark:text-cyber-neon-secondary">
+                            <svg class="w-2 h-2 ml-1" fill="currentColor" viewBox="0 0 8 8">
+                                <circle cx="4" cy="4" r="3"/>
+                            </svg>
+                            فعال
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-cyber-neon-danger/20 text-red-800 dark:text-cyber-neon-danger">
+                            <svg class="w-2 h-2 ml-1" fill="currentColor" viewBox="0 0 8 8">
+                                <circle cx="4" cy="4" r="3"/>
+                            </svg>
+                            غیرفعال
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-cyber-text-primary">
+                        {{ tenant.get_subscription_plan_display }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-cyber-text-muted">
+                        {{ tenant.created_on|date:"Y/m/d" }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div class="flex space-x-2 space-x-reverse">
+                            <a href="{% url 'admin_panel:tenants:tenant_detail' tenant.pk %}" class="text-primary-600 dark:text-cyber-neon-primary hover:text-primary-900 dark:hover:text-cyber-neon-primary/80">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                            </a>
+                            <a href="{% url 'admin_panel:tenants:tenant_update' tenant.pk %}" class="text-yellow-600 dark:text-cyber-neon-warning hover:text-yellow-900 dark:hover:text-cyber-neon-warning/80">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                            </a>
+                            <button onclick="toggleTenantStatus({{ tenant.id }}, {{ tenant.is_active|yesno:'false,true' }})" 
+                                    class="{% if tenant.is_active %}text-red-600 dark:text-cyber-neon-danger hover:text-red-900 dark:hover:text-cyber-neon-danger/80{% else %}text-green-600 dark:text-cyber-neon-secondary hover:text-green-900 dark:hover:text-cyber-neon-secondary/80{% endif %}">
+                                {% if tenant.is_active %}
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                {% else %}
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                {% endif %}
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="bg-white dark:bg-cyber-bg-surface px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-cyber-neon-primary/20 sm:px-6 mt-6">
+        <div class="flex-1 flex justify-between sm:hidden">
+            {% if page_obj.has_previous %}
+            <a href="?{% if query %}q={{ query }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}{% if plan_filter %}plan={{ plan_filter }}&{% endif %}page={{ page_obj.previous_page_number }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 text-sm font-medium rounded-md text-gray-700 dark:text-cyber-text-secondary bg-white dark:bg-cyber-bg-elevated hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated/80">
+                قبلی
+            </a>
+            {% endif %}
+            {% if page_obj.has_next %}
+            <a href="?{% if query %}q={{ query }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}{% if plan_filter %}plan={{ plan_filter }}&{% endif %}page={{ page_obj.next_page_number }}" class="mr-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 text-sm font-medium rounded-md text-gray-700 dark:text-cyber-text-secondary bg-white dark:bg-cyber-bg-elevated hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated/80">
+                بعدی
+            </a>
+            {% endif %}
+        </div>
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+                <p class="text-sm text-gray-700 dark:text-cyber-text-secondary">
+                    نمایش
+                    <span class="font-medium persian-numbers">{{ page_obj.start_index }}</span>
+                    تا
+                    <span class="font-medium persian-numbers">{{ page_obj.end_index }}</span>
+                    از
+                    <span class="font-medium persian-numbers">{{ page_obj.paginator.count }}</span>
+                    نتیجه
+                </p>
+            </div>
+            <div>
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                    {% if page_obj.has_previous %}
+                    <a href="?{% if query %}q={{ query }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}{% if plan_filter %}plan={{ plan_filter }}&{% endif %}page={{ page_obj.previous_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-cyber-neon-primary/30 bg-white dark:bg-cyber-bg-elevated text-sm font-medium text-gray-500 dark:text-cyber-text-muted hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated/80">
+                        <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                    </a>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <span class="relative inline-flex items-center px-4 py-2 border border-primary-500 dark:border-cyber-neon-primary bg-primary-50 dark:bg-cyber-neon-primary/20 text-sm font-medium text-primary-600 dark:text-cyber-neon-primary">
+                            {{ num }}
+                        </span>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <a href="?{% if query %}q={{ query }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}{% if plan_filter %}plan={{ plan_filter }}&{% endif %}page={{ num }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 bg-white dark:bg-cyber-bg-elevated text-sm font-medium text-gray-700 dark:text-cyber-text-secondary hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated/80">
+                            {{ num }}
+                        </a>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <a href="?{% if query %}q={{ query }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}{% if plan_filter %}plan={{ plan_filter }}&{% endif %}page={{ page_obj.next_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-cyber-neon-primary/30 bg-white dark:bg-cyber-bg-elevated text-sm font-medium text-gray-500 dark:text-cyber-text-muted hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated/80">
+                        <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                        </svg>
+                    </a>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- No Results -->
+    <div class="text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-cyber-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-cyber-text-primary">نتیجه‌ای یافت نشد</h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-cyber-text-muted">
+            {% if query %}
+                هیچ تنانتی با عبارت "{{ query }}" یافت نشد.
+            {% else %}
+                هیچ تنانتی با فیلترهای انتخابی یافت نشد.
+            {% endif %}
+        </p>
+        <div class="mt-6">
+            <a href="{% url 'admin_panel:tenants:tenant_search' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 dark:bg-cyber-neon-primary hover:bg-primary-700 dark:hover:bg-cyber-neon-primary/80">
+                پاک کردن فیلترها
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Select All functionality
+    const selectAllCheckbox = document.getElementById('select-all');
+    const tenantCheckboxes = document.querySelectorAll('.tenant-checkbox');
+    
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            tenantCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+        });
+    }
+    
+    // Bulk Actions
+    const applyBulkActionBtn = document.getElementById('apply-bulk-action');
+    const bulkActionSelect = document.getElementById('bulk-action');
+    
+    if (applyBulkActionBtn) {
+        applyBulkActionBtn.addEventListener('click', function() {
+            const selectedAction = bulkActionSelect.value;
+            const selectedTenants = Array.from(document.querySelectorAll('.tenant-checkbox:checked')).map(cb => cb.value);
+            
+            if (!selectedAction) {
+                alert('لطفاً یک عملیات انتخاب کنید.');
+                return;
+            }
+            
+            if (selectedTenants.length === 0) {
+                alert('لطفاً حداقل یک تنانت انتخاب کنید.');
+                return;
+            }
+            
+            const actionText = {
+                'activate': 'فعال کردن',
+                'deactivate': 'غیرفعال کردن',
+                'delete': 'حذف'
+            };
+            
+            if (confirm(`آیا مطمئن هستید که می‌خواهید ${actionText[selectedAction]} ${selectedTenants.length} تنانت انتخابی را انجام دهید؟`)) {
+                // Send AJAX request for bulk action
+                fetch('{% url "admin_panel:tenants:tenant_bulk_action" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        action: selectedAction,
+                        tenant_ids: selectedTenants
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('عملیات با موفقیت انجام شد.');
+                        location.reload();
+                    } else {
+                        alert('خطا در انجام عملیات: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('خطا در ارتباط با سرور.');
+                });
+            }
+        });
+    }
+});
+
+// Toggle tenant status function
+function toggleTenantStatus(tenantId, newStatus) {
+    const statusText = newStatus ? 'فعال' : 'غیرفعال';
+    
+    if (confirm(`آیا مطمئن هستید که می‌خواهید این تنانت را ${statusText} کنید؟`)) {
+        fetch(`{% url "admin_panel:tenants:tenant_toggle_status" 0 %}`.replace('0', tenantId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                is_active: newStatus
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('خطا در تغییر وضعیت: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('خطا در ارتباط با سرور.');
+        });
+    }
+}
+</script>
+{% endblock %}
