@@ -1,0 +1,482 @@
+{% extends 'admin_panel/base_unified.html' %}
+{% load static %}
+
+{% block title %}{{ role.name_persian|default:role.name }} - پنل مدیریت زرگر{% endblock %}
+
+{% block extra_css %}
+<style>
+    .permission-section {
+        transition: all 0.3s ease;
+    }
+    
+    .permission-item {
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+    }
+    
+    .permission-item:hover {
+        border-color: rgba(59, 130, 246, 0.3);
+        transform: translateY(-1px);
+    }
+    
+    .dark .permission-item:hover {
+        border-color: rgba(0, 212, 255, 0.3);
+    }
+    
+    .permission-checkbox {
+        transform: scale(1.2);
+    }
+    
+    .user-avatar {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.875rem;
+    }
+    
+    .glassmorphism {
+        backdrop-filter: blur(10px);
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .dark .glassmorphism {
+        background: rgba(0, 212, 255, 0.1);
+        border: 1px solid rgba(0, 212, 255, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-cyber-bg-primary" x-data="roleDetail()">
+    
+    <!-- Page Header -->
+    <div class="bg-white dark:bg-cyber-bg-secondary shadow-lg dark:shadow-cyber-neon-primary/10 border-b dark:border-cyber-neon-primary/20">
+        <div class="px-6 py-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <nav class="flex items-center space-x-2 space-x-reverse text-sm text-gray-500 dark:text-cyber-text-muted mb-2">
+                        <a href="{% url 'admin_panel:dashboard' %}" class="hover:text-primary-600 dark:hover:text-cyber-neon-primary">داشبورد</a>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                        <a href="{% url 'admin_panel:rbac_management' %}" class="hover:text-primary-600 dark:hover:text-cyber-neon-primary">کنترل دسترسی</a>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                        <a href="{% url 'admin_panel:rbac_role_list' %}" class="hover:text-primary-600 dark:hover:text-cyber-neon-primary">لیست نقش‌ها</a>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                        <span class="text-gray-900 dark:text-cyber-text-primary">{{ role.name_persian|default:role.name }}</span>
+                    </nav>
+                    
+                    <div class="flex items-center">
+                        <h1 class="text-3xl font-bold text-gray-900 dark:text-cyber-text-primary ml-4">{{ role.name_persian|default:role.name }}</h1>
+                        
+                        <!-- Role Badges -->
+                        <div class="flex items-center space-x-2 space-x-reverse">
+                            <span class="px-3 py-1 text-sm rounded-full {% if role.role_type == 'system' %}bg-green-100 dark:bg-cyber-neon-secondary/20 text-green-800 dark:text-cyber-neon-secondary{% else %}bg-blue-100 dark:bg-cyber-neon-primary/20 text-blue-800 dark:text-cyber-neon-primary{% endif %}">
+                                {% if role.role_type == 'system' %}سیستمی{% else %}سفارشی{% endif %}
+                            </span>
+                            
+                            {% if role.is_default %}
+                            <span class="px-3 py-1 text-sm rounded-full bg-yellow-100 dark:bg-cyber-neon-warning/20 text-yellow-800 dark:text-cyber-neon-warning">
+                                پیش‌فرض
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <p class="mt-2 text-gray-600 dark:text-cyber-text-secondary">{{ role.description_persian|default:role.description|default:"توضیحی ارائه نشده است." }}</p>
+                </div>
+                
+                <div class="flex space-x-4 space-x-reverse">
+                    {% if role.role_type != 'system' %}
+                    <button @click="editMode = !editMode" 
+                            class="inline-flex items-center px-4 py-2 bg-primary-600 dark:bg-cyber-neon-primary text-white dark:text-cyber-bg-primary rounded-lg hover:bg-primary-700 dark:hover:bg-cyber-neon-primary/80 transition-colors">
+                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                        <span x-text="editMode ? 'انصراف' : 'ویرایش'"></span>
+                    </button>
+                    {% endif %}
+                    
+                    <a href="{% url 'admin_panel:rbac_role_list' %}" 
+                       class="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-cyber-bg-elevated text-gray-700 dark:text-cyber-text-secondary rounded-lg hover:bg-gray-200 dark:hover:bg-cyber-bg-surface transition-colors">
+                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        بازگشت
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="px-6 py-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Role Information -->
+            <div class="lg:col-span-2">
+                
+                <!-- Role Details Form -->
+                <div class="bg-white dark:bg-cyber-bg-secondary rounded-xl shadow-lg dark:shadow-cyber-neon-primary/10 p-6 mb-6">
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-cyber-text-primary mb-6">اطلاعات نقش</h2>
+                    
+                    <form method="post" x-show="editMode" x-transition>
+                        {% csrf_token %}
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            
+                            <!-- Name -->
+                            <div>
+                                <label for="name" class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">نام انگلیسی</label>
+                                <input type="text" 
+                                       id="name" 
+                                       name="name" 
+                                       value="{{ role.name }}"
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-primary-500 dark:focus:border-cyber-neon-primary bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary">
+                            </div>
+                            
+                            <!-- Persian Name -->
+                            <div>
+                                <label for="name_persian" class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">نام فارسی</label>
+                                <input type="text" 
+                                       id="name_persian" 
+                                       name="name_persian" 
+                                       value="{{ role.name_persian }}"
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-primary-500 dark:focus:border-cyber-neon-primary bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary">
+                            </div>
+                            
+                            <!-- Max Users -->
+                            <div>
+                                <label for="max_users" class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">حداکثر کاربران</label>
+                                <input type="number" 
+                                       id="max_users" 
+                                       name="max_users" 
+                                       value="{{ role.max_users|default:'' }}"
+                                       placeholder="نامحدود"
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-primary-500 dark:focus:border-cyber-neon-primary bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary">
+                            </div>
+                            
+                        </div>
+                        
+                        <!-- Description -->
+                        <div class="mt-6">
+                            <label for="description" class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">توضیحات انگلیسی</label>
+                            <textarea id="description" 
+                                      name="description" 
+                                      rows="3"
+                                      class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-primary-500 dark:focus:border-cyber-neon-primary bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary">{{ role.description }}</textarea>
+                        </div>
+                        
+                        <!-- Persian Description -->
+                        <div class="mt-6">
+                            <label for="description_persian" class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">توضیحات فارسی</label>
+                            <textarea id="description_persian" 
+                                      name="description_persian" 
+                                      rows="3"
+                                      class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-primary-500 dark:focus:border-cyber-neon-primary bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary">{{ role.description_persian }}</textarea>
+                        </div>
+                        
+                        <!-- Save Button -->
+                        <div class="mt-6 flex justify-end">
+                            <button type="submit" 
+                                    class="px-6 py-2 bg-primary-600 dark:bg-cyber-neon-primary text-white dark:text-cyber-bg-primary rounded-lg hover:bg-primary-700 dark:hover:bg-cyber-neon-primary/80 transition-colors">
+                                ذخیره تغییرات
+                            </button>
+                        </div>
+                        
+                    </form>
+                    
+                    <!-- Read-only View -->
+                    <div x-show="!editMode" x-transition>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">نام انگلیسی</label>
+                                <p class="text-gray-900 dark:text-cyber-text-primary">{{ role.name }}</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">نام فارسی</label>
+                                <p class="text-gray-900 dark:text-cyber-text-primary">{{ role.name_persian|default:"تعریف نشده" }}</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">حداکثر کاربران</label>
+                                <p class="text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ role.max_users|default:"نامحدود" }}</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">تاریخ ایجاد</label>
+                                <p class="text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ role.created_at|date:"Y/m/d H:i" }}</p>
+                            </div>
+                        </div>
+                        
+                        {% if role.description or role.description_persian %}
+                        <div class="mt-6">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">توضیحات</label>
+                            <p class="text-gray-900 dark:text-cyber-text-primary">{{ role.description_persian|default:role.description }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Permissions Management -->
+                <div class="bg-white dark:bg-cyber-bg-secondary rounded-xl shadow-lg dark:shadow-cyber-neon-primary/10 p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-semibold text-gray-900 dark:text-cyber-text-primary">مجوزهای نقش</h2>
+                        <div class="text-sm text-gray-500 dark:text-cyber-text-muted">
+                            <span class="persian-numbers">{{ role_permissions.count }}</span> مجوز انتخاب شده
+                        </div>
+                    </div>
+                    
+                    <form method="post" x-show="editMode" x-transition>
+                        {% csrf_token %}
+                        
+                        <!-- Hidden fields for role info -->
+                        <input type="hidden" name="name" value="{{ role.name }}">
+                        <input type="hidden" name="name_persian" value="{{ role.name_persian }}">
+                        <input type="hidden" name="description" value="{{ role.description }}">
+                        <input type="hidden" name="description_persian" value="{{ role.description_persian }}">
+                        <input type="hidden" name="max_users" value="{{ role.max_users|default:'' }}">
+                        
+                        <div class="space-y-6">
+                            {% for section, permissions in permissions_by_section.items %}
+                            <div class="permission-section">
+                                <h3 class="text-lg font-medium text-gray-900 dark:text-cyber-text-primary mb-4 capitalize">{{ section }}</h3>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {% for permission in permissions %}
+                                    <div class="permission-item bg-gray-50 dark:bg-cyber-bg-elevated rounded-lg p-4">
+                                        <label class="flex items-start cursor-pointer">
+                                            <input type="checkbox" 
+                                                   name="permissions" 
+                                                   value="{{ permission.id }}"
+                                                   {% if permission in role_permissions %}checked{% endif %}
+                                                   class="permission-checkbox mt-1 ml-3 text-primary-600 dark:text-cyber-neon-primary border-gray-300 dark:border-cyber-neon-primary/30 rounded focus:ring-primary-500 dark:focus:ring-cyber-neon-primary">
+                                            
+                                            <div class="flex-1">
+                                                <div class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary">
+                                                    {{ permission.name_persian|default:permission.name }}
+                                                </div>
+                                                <div class="text-xs text-gray-500 dark:text-cyber-text-muted mt-1">
+                                                    {{ permission.codename }}
+                                                </div>
+                                                {% if permission.description_persian or permission.description %}
+                                                <div class="text-xs text-gray-600 dark:text-cyber-text-secondary mt-1">
+                                                    {{ permission.description_persian|default:permission.description }}
+                                                </div>
+                                                {% endif %}
+                                                
+                                                {% if permission.is_dangerous %}
+                                                <span class="inline-block mt-2 px-2 py-1 text-xs rounded-full bg-red-100 dark:bg-cyber-neon-danger/20 text-red-800 dark:text-cyber-neon-danger">
+                                                    خطرناک
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Save Button -->
+                        <div class="mt-8 flex justify-end">
+                            <button type="submit" 
+                                    class="px-6 py-2 bg-primary-600 dark:bg-cyber-neon-primary text-white dark:text-cyber-bg-primary rounded-lg hover:bg-primary-700 dark:hover:bg-cyber-neon-primary/80 transition-colors">
+                                ذخیره مجوزها
+                            </button>
+                        </div>
+                        
+                    </form>
+                    
+                    <!-- Read-only Permissions View -->
+                    <div x-show="!editMode" x-transition>
+                        <div class="space-y-6">
+                            {% for section, permissions in permissions_by_section.items %}
+                            {% with section_permissions=permissions|dictsort:"name_persian" %}
+                            {% if section_permissions %}
+                            <div class="permission-section">
+                                <h3 class="text-lg font-medium text-gray-900 dark:text-cyber-text-primary mb-4 capitalize">{{ section }}</h3>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {% for permission in section_permissions %}
+                                    {% if permission in role_permissions %}
+                                    <div class="permission-item bg-green-50 dark:bg-cyber-neon-secondary/10 border border-green-200 dark:border-cyber-neon-secondary/30 rounded-lg p-4">
+                                        <div class="flex items-start">
+                                            <svg class="w-5 h-5 text-green-600 dark:text-cyber-neon-secondary mt-0.5 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                            </svg>
+                                            
+                                            <div class="flex-1">
+                                                <div class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary">
+                                                    {{ permission.name_persian|default:permission.name }}
+                                                </div>
+                                                <div class="text-xs text-gray-500 dark:text-cyber-text-muted mt-1">
+                                                    {{ permission.codename }}
+                                                </div>
+                                                
+                                                {% if permission.is_dangerous %}
+                                                <span class="inline-block mt-2 px-2 py-1 text-xs rounded-full bg-red-100 dark:bg-cyber-neon-danger/20 text-red-800 dark:text-cyber-neon-danger">
+                                                    خطرناک
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% endwith %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                
+                <!-- Role Statistics -->
+                <div class="bg-white dark:bg-cyber-bg-secondary rounded-xl shadow-lg dark:shadow-cyber-neon-primary/10 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">آمار نقش</h3>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-600 dark:text-cyber-text-secondary">تعداد مجوزها</span>
+                            <span class="text-lg font-bold text-primary-600 dark:text-cyber-neon-primary persian-numbers">{{ role_permissions.count }}</span>
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-600 dark:text-cyber-text-secondary">کاربران فعال</span>
+                            <span class="text-lg font-bold text-green-600 dark:text-cyber-neon-secondary persian-numbers">{{ role_users.count }}</span>
+                        </div>
+                        
+                        {% if role.max_users %}
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-600 dark:text-cyber-text-secondary">ظرفیت باقی‌مانده</span>
+                            <span class="text-lg font-bold text-orange-600 dark:text-cyber-neon-tertiary persian-numbers">{{ role.max_users|add:role_users.count|add:"-"|add:role_users.count }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Users with this Role -->
+                <div class="bg-white dark:bg-cyber-bg-secondary rounded-xl shadow-lg dark:shadow-cyber-neon-primary/10 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">کاربران دارای این نقش</h3>
+                        <a href="{% url 'admin_panel:rbac_user_assignments' %}" 
+                           class="text-primary-600 dark:text-cyber-neon-primary hover:text-primary-700 dark:hover:text-cyber-neon-primary/80 text-sm font-medium">
+                            مدیریت →
+                        </a>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        {% for user_role in role_users %}
+                        <div class="flex items-center p-3 bg-gray-50 dark:bg-cyber-bg-elevated rounded-lg">
+                            <div class="user-avatar bg-primary-100 dark:bg-cyber-neon-primary/20 text-primary-600 dark:text-cyber-neon-primary ml-3">
+                                {{ user_role.user.get_full_name|default:user_role.user.username|first|upper }}
+                            </div>
+                            
+                            <div class="flex-1">
+                                <div class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary">
+                                    {{ user_role.user.get_full_name|default:user_role.user.username }}
+                                </div>
+                                <div class="text-xs text-gray-500 dark:text-cyber-text-muted">
+                                    {{ user_role.user.email }}
+                                </div>
+                            </div>
+                            
+                            {% if user_role.expires_at %}
+                            <div class="text-xs text-orange-600 dark:text-cyber-neon-tertiary">
+                                انقضا: {{ user_role.expires_at|date:"Y/m/d" }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-4">
+                            <svg class="w-8 h-8 text-gray-400 dark:text-cyber-text-muted mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                            </svg>
+                            <p class="text-sm text-gray-500 dark:text-cyber-text-muted">هیچ کاربری این نقش را ندارد</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                {% if role.role_type != 'system' %}
+                <div class="bg-white dark:bg-cyber-bg-secondary rounded-xl shadow-lg dark:shadow-cyber-neon-primary/10 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">عملیات سریع</h3>
+                    
+                    <div class="space-y-3">
+                        <button @click="duplicateRole()" 
+                                class="w-full flex items-center justify-center px-4 py-2 bg-blue-100 dark:bg-cyber-neon-primary/20 text-blue-700 dark:text-cyber-neon-primary rounded-lg hover:bg-blue-200 dark:hover:bg-cyber-neon-primary/30 transition-colors">
+                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                            </svg>
+                            کپی نقش
+                        </button>
+                        
+                        <button @click="exportRole()" 
+                                class="w-full flex items-center justify-center px-4 py-2 bg-green-100 dark:bg-cyber-neon-secondary/20 text-green-700 dark:text-cyber-neon-secondary rounded-lg hover:bg-green-200 dark:hover:bg-cyber-neon-secondary/30 transition-colors">
+                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            صادرات نقش
+                        </button>
+                        
+                        <button @click="deleteRole()" 
+                                class="w-full flex items-center justify-center px-4 py-2 bg-red-100 dark:bg-cyber-neon-danger/20 text-red-700 dark:text-cyber-neon-danger rounded-lg hover:bg-red-200 dark:hover:bg-cyber-neon-danger/30 transition-colors">
+                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                            حذف نقش
+                        </button>
+                    </div>
+                </div>
+                {% endif %}
+                
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<script>
+function roleDetail() {
+    return {
+        editMode: false,
+        
+        duplicateRole() {
+            // Implement role duplication logic
+            alert('قابلیت کپی نقش به زودی اضافه خواهد شد.');
+        },
+        
+        exportRole() {
+            // Implement role export logic
+            alert('قابلیت صادرات نقش به زودی اضافه خواهد شد.');
+        },
+        
+        deleteRole() {
+            if (confirm('آیا مطمئن هستید که می‌خواهید این نقش را حذف کنید؟')) {
+                // Implement role deletion logic
+                alert('قابلیت حذف نقش به زودی اضافه خواهد شد.');
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

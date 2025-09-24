@@ -1,0 +1,410 @@
+{% extends 'admin_panel/base_unified.html' %}
+{% load static %}
+
+{% block title %}کنترل دسترسی - پنل مدیریت زرگر{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* RBAC specific styles */
+    .rbac-card {
+        transition: all 0.3s ease;
+    }
+    
+    .rbac-card:hover {
+        transform: translateY(-2px);
+    }
+    
+    .permission-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+    }
+    
+    .role-hierarchy {
+        position: relative;
+    }
+    
+    .role-hierarchy::before {
+        content: '';
+        position: absolute;
+        left: 1rem;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: linear-gradient(to bottom, transparent, #e5e7eb, transparent);
+    }
+    
+    .dark .role-hierarchy::before {
+        background: linear-gradient(to bottom, transparent, rgba(0, 212, 255, 0.3), transparent);
+    }
+    
+    .matrix-cell {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 0.375rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+    
+    .matrix-cell.has-permission {
+        background-color: #10b981;
+        color: white;
+    }
+    
+    .dark .matrix-cell.has-permission {
+        background-color: #00ff88;
+        color: #0b0e1a;
+    }
+    
+    .matrix-cell.no-permission {
+        background-color: #f3f4f6;
+        color: #6b7280;
+    }
+    
+    .dark .matrix-cell.no-permission {
+        background-color: #252a3a;
+        color: #6b7280;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-cyber-bg-primary" x-data="rbacManagement()">
+    
+    <!-- Page Header -->
+    <div class="bg-white dark:bg-cyber-bg-secondary shadow-lg dark:shadow-cyber-neon-primary/10 border-b dark:border-cyber-neon-primary/20">
+        <div class="px-6 py-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 dark:text-cyber-text-primary">کنترل دسترسی</h1>
+                    <p class="mt-2 text-gray-600 dark:text-cyber-text-secondary">مدیریت نقش‌ها، مجوزها و دسترسی‌های کاربران</p>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="flex space-x-4 space-x-reverse">
+                    <a href="{% url 'admin_panel:rbac_create_role' %}" 
+                       class="inline-flex items-center px-4 py-2 bg-primary-600 dark:bg-cyber-neon-primary text-white dark:text-cyber-bg-primary rounded-lg hover:bg-primary-700 dark:hover:bg-cyber-neon-primary/80 transition-colors">
+                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        ایجاد نقش جدید
+                    </a>
+                    
+                    <button @click="refreshStats()" 
+                            class="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-cyber-bg-elevated text-gray-700 dark:text-cyber-text-secondary rounded-lg hover:bg-gray-200 dark:hover:bg-cyber-bg-surface transition-colors">
+                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        به‌روزرسانی
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statistics Cards -->
+    <div class="px-6 py-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            
+            <!-- Total Roles -->
+            <div class="bg-white dark:bg-cyber-bg-secondary rounded-xl shadow-lg dark:shadow-cyber-neon-primary/10 p-6 rbac-card">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-blue-100 dark:bg-cyber-neon-primary/20">
+                        <svg class="w-8 h-8 text-blue-600 dark:text-cyber-neon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="mr-4">
+                        <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">کل نقش‌ها</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ stats.total_roles }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- System Roles -->
+            <div class="bg-white dark:bg-cyber-bg-secondary rounded-xl shadow-lg dark:shadow-cyber-neon-primary/10 p-6 rbac-card">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-green-100 dark:bg-cyber-neon-secondary/20">
+                        <svg class="w-8 h-8 text-green-600 dark:text-cyber-neon-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                        </svg>
+                    </div>
+                    <div class="mr-4">
+                        <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">نقش‌های سیستمی</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ stats.system_roles }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Custom Roles -->
+            <div class="bg-white dark:bg-cyber-bg-secondary rounded-xl shadow-lg dark:shadow-cyber-neon-primary/10 p-6 rbac-card">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-purple-100 dark:bg-cyber-neon-purple/20">
+                        <svg class="w-8 h-8 text-purple-600 dark:text-cyber-neon-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a1 1 0 01-1-1V9a1 1 0 011-1h1a2 2 0 100-4H4a1 1 0 01-1-1V4a1 1 0 011-1h3a1 1 0 001-1v-1a2 2 0 114 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="mr-4">
+                        <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">نقش‌های سفارشی</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ stats.custom_roles }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Active Assignments -->
+            <div class="bg-white dark:bg-cyber-bg-secondary rounded-xl shadow-lg dark:shadow-cyber-neon-primary/10 p-6 rbac-card">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-orange-100 dark:bg-cyber-neon-tertiary/20">
+                        <svg class="w-8 h-8 text-orange-600 dark:text-cyber-neon-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="mr-4">
+                        <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">اختصاص‌های فعال</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ stats.active_assignments }}</p>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        
+        <!-- Main Content Tabs -->
+        <div class="bg-white dark:bg-cyber-bg-secondary rounded-xl shadow-lg dark:shadow-cyber-neon-primary/10" x-data="{ activeTab: 'roles' }">
+            
+            <!-- Tab Navigation -->
+            <div class="border-b dark:border-cyber-neon-primary/20">
+                <nav class="flex space-x-8 space-x-reverse px-6">
+                    <button @click="activeTab = 'roles'" 
+                            :class="{ 'border-primary-500 dark:border-cyber-neon-primary text-primary-600 dark:text-cyber-neon-primary': activeTab === 'roles' }"
+                            class="py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 dark:text-cyber-text-muted hover:text-gray-700 dark:hover:text-cyber-text-secondary hover:border-gray-300 dark:hover:border-cyber-neon-primary/50 transition-colors">
+                        مدیریت نقش‌ها
+                    </button>
+                    
+                    <button @click="activeTab = 'assignments'" 
+                            :class="{ 'border-primary-500 dark:border-cyber-neon-primary text-primary-600 dark:text-cyber-neon-primary': activeTab === 'assignments' }"
+                            class="py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 dark:text-cyber-text-muted hover:text-gray-700 dark:hover:text-cyber-text-secondary hover:border-gray-300 dark:hover:border-cyber-neon-primary/50 transition-colors">
+                        اختصاص نقش‌ها
+                    </button>
+                    
+                    <button @click="activeTab = 'matrix'" 
+                            :class="{ 'border-primary-500 dark:border-cyber-neon-primary text-primary-600 dark:text-cyber-neon-primary': activeTab === 'matrix' }"
+                            class="py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 dark:text-cyber-text-muted hover:text-gray-700 dark:hover:text-cyber-text-secondary hover:border-gray-300 dark:hover:border-cyber-neon-primary/50 transition-colors">
+                        ماتریس مجوزها
+                    </button>
+                    
+                    <button @click="activeTab = 'permissions'" 
+                            :class="{ 'border-primary-500 dark:border-cyber-neon-primary text-primary-600 dark:text-cyber-neon-primary': activeTab === 'permissions' }"
+                            class="py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 dark:text-cyber-text-muted hover:text-gray-700 dark:hover:text-cyber-text-secondary hover:border-gray-300 dark:hover:border-cyber-neon-primary/50 transition-colors">
+                        مجوزهای سیستم
+                    </button>
+                </nav>
+            </div>
+            
+            <!-- Tab Content -->
+            <div class="p-6">
+                
+                <!-- Roles Tab -->
+                <div x-show="activeTab === 'roles'" x-transition>
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">نقش‌های موجود</h3>
+                        <a href="{% url 'admin_panel:rbac_role_list' %}" 
+                           class="text-primary-600 dark:text-cyber-neon-primary hover:text-primary-700 dark:hover:text-cyber-neon-primary/80 text-sm font-medium">
+                            مشاهده همه →
+                        </a>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {% for role in recent_roles %}
+                        <div class="bg-gray-50 dark:bg-cyber-bg-elevated rounded-lg p-4 hover:bg-gray-100 dark:hover:bg-cyber-bg-surface transition-colors">
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="font-medium text-gray-900 dark:text-cyber-text-primary">{{ role.name_persian|default:role.name }}</h4>
+                                <span class="px-2 py-1 text-xs rounded-full {% if role.role_type == 'system' %}bg-green-100 dark:bg-cyber-neon-secondary/20 text-green-800 dark:text-cyber-neon-secondary{% else %}bg-blue-100 dark:bg-cyber-neon-primary/20 text-blue-800 dark:text-cyber-neon-primary{% endif %}">
+                                    {% if role.role_type == 'system' %}سیستمی{% else %}سفارشی{% endif %}
+                                </span>
+                            </div>
+                            
+                            <p class="text-sm text-gray-600 dark:text-cyber-text-secondary mb-3">
+                                {{ role.description_persian|default:role.description|truncatechars:100 }}
+                            </p>
+                            
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center text-sm text-gray-500 dark:text-cyber-text-muted">
+                                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                                    </svg>
+                                    <span class="persian-numbers">{{ role.user_roles.count }}</span> کاربر
+                                </div>
+                                
+                                <a href="{% url 'admin_panel:rbac_role_detail' role.id %}" 
+                                   class="text-primary-600 dark:text-cyber-neon-primary hover:text-primary-700 dark:hover:text-cyber-neon-primary/80 text-sm font-medium">
+                                    مشاهده
+                                </a>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-span-full text-center py-8">
+                            <svg class="w-12 h-12 text-gray-400 dark:text-cyber-text-muted mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                            <p class="text-gray-500 dark:text-cyber-text-muted">هیچ نقشی تعریف نشده است</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Assignments Tab -->
+                <div x-show="activeTab === 'assignments'" x-transition>
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">اختصاص‌های اخیر</h3>
+                        <a href="{% url 'admin_panel:rbac_user_assignments' %}" 
+                           class="text-primary-600 dark:text-cyber-neon-primary hover:text-primary-700 dark:hover:text-cyber-neon-primary/80 text-sm font-medium">
+                            مدیریت اختصاص‌ها →
+                        </a>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-cyber-neon-primary/20">
+                            <thead class="bg-gray-50 dark:bg-cyber-bg-elevated">
+                                <tr>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">کاربر</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">نقش</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">تاریخ اختصاص</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">وضعیت</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white dark:bg-cyber-bg-secondary divide-y divide-gray-200 dark:divide-cyber-neon-primary/20">
+                                {% for assignment in recent_assignments %}
+                                <tr class="hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated transition-colors">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="p-2 rounded-full bg-gray-100 dark:bg-cyber-bg-surface ml-3">
+                                                <svg class="w-4 h-4 text-gray-600 dark:text-cyber-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <div class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary">{{ assignment.user.get_full_name|default:assignment.user.username }}</div>
+                                                <div class="text-sm text-gray-500 dark:text-cyber-text-muted">{{ assignment.user.email }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs rounded-full bg-blue-100 dark:bg-cyber-neon-primary/20 text-blue-800 dark:text-cyber-neon-primary">
+                                            {{ assignment.role.name_persian|default:assignment.role.name }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-cyber-text-muted persian-numbers">
+                                        {{ assignment.created_at|date:"Y/m/d H:i" }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        {% if assignment.is_active %}
+                                            <span class="px-2 py-1 text-xs rounded-full bg-green-100 dark:bg-cyber-neon-secondary/20 text-green-800 dark:text-cyber-neon-secondary">
+                                                فعال
+                                            </span>
+                                        {% else %}
+                                            <span class="px-2 py-1 text-xs rounded-full bg-red-100 dark:bg-cyber-neon-danger/20 text-red-800 dark:text-cyber-neon-danger">
+                                                غیرفعال
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="px-6 py-8 text-center text-gray-500 dark:text-cyber-text-muted">
+                                        هیچ اختصاصی یافت نشد
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Permission Matrix Tab -->
+                <div x-show="activeTab === 'matrix'" x-transition>
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-2">ماتریس مجوزها</h3>
+                        <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">نمای کلی از مجوزهای هر نقش</p>
+                    </div>
+                    
+                    <div class="text-center py-8">
+                        <svg class="w-12 h-12 text-gray-400 dark:text-cyber-text-muted mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        <p class="text-gray-500 dark:text-cyber-text-muted mb-4">ماتریس مجوزها در صفحه جداگانه نمایش داده می‌شود</p>
+                        <a href="{% url 'admin_panel:rbac_permission_matrix' %}" 
+                           class="inline-flex items-center px-4 py-2 bg-primary-600 dark:bg-cyber-neon-primary text-white dark:text-cyber-bg-primary rounded-lg hover:bg-primary-700 dark:hover:bg-cyber-neon-primary/80 transition-colors">
+                            مشاهده ماتریس کامل
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Permissions Tab -->
+                <div x-show="activeTab === 'permissions'" x-transition>
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-2">مجوزهای سیستم</h3>
+                        <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">مجوزهای موجود در سیستم بر اساس بخش‌ها</p>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        {% for section, permissions in permissions_by_section.items %}
+                        <div class="bg-gray-50 dark:bg-cyber-bg-elevated rounded-lg p-4">
+                            <h4 class="font-medium text-gray-900 dark:text-cyber-text-primary mb-3 capitalize">{{ section }}</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {% for permission in permissions %}
+                                <div class="flex items-center justify-between p-3 bg-white dark:bg-cyber-bg-secondary rounded-lg">
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary">
+                                            {{ permission.name_persian|default:permission.name }}
+                                        </div>
+                                        <div class="text-xs text-gray-500 dark:text-cyber-text-muted">
+                                            {{ permission.codename }}
+                                        </div>
+                                    </div>
+                                    {% if permission.is_dangerous %}
+                                    <span class="px-2 py-1 text-xs rounded-full bg-red-100 dark:bg-cyber-neon-danger/20 text-red-800 dark:text-cyber-neon-danger">
+                                        خطرناک
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-8">
+                            <p class="text-gray-500 dark:text-cyber-text-muted">هیچ مجوزی تعریف نشده است</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function rbacManagement() {
+    return {
+        stats: {{ stats|safe }},
+        
+        async refreshStats() {
+            try {
+                const response = await fetch('{% url "admin_panel:rbac_stats_api" %}');
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.stats = data.stats;
+                } else {
+                    console.error('Error refreshing stats:', data.error);
+                }
+            } catch (error) {
+                console.error('Error refreshing stats:', error);
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

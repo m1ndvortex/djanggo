@@ -8,6 +8,7 @@ from . import unified_auth_views
 from . import domain_views
 from . import security_views
 from . import audit_views
+from . import rbac_views
 
 app_name = 'admin_panel'
 
@@ -68,6 +69,19 @@ urlpatterns = [
     path('security/events/<int:event_id>/', security_views.SecurityEventDetailView.as_view(), name='security_event_detail'),
     path('security/events/investigate/', security_views.SecurityEventInvestigateView.as_view(), name='security_event_investigate'),
     path('security/events/bulk-action/', security_views.SecurityEventBulkActionView.as_view(), name='security_event_bulk_action'),
+    
+    # RBAC Management
+    path('security/rbac/', rbac_views.RBACManagementView.as_view(), name='rbac_management'),
+    path('security/rbac/roles/', rbac_views.RoleListView.as_view(), name='rbac_role_list'),
+    path('security/rbac/roles/create/', rbac_views.CreateRoleView.as_view(), name='rbac_create_role'),
+    path('security/rbac/roles/<int:role_id>/', rbac_views.RoleDetailView.as_view(), name='rbac_role_detail'),
+    path('security/rbac/assignments/', rbac_views.UserRoleAssignmentView.as_view(), name='rbac_user_assignments'),
+    path('security/rbac/assignments/remove/', rbac_views.RemoveUserRoleView.as_view(), name='rbac_remove_user_role'),
+    path('security/rbac/matrix/', rbac_views.PermissionMatrixView.as_view(), name='rbac_permission_matrix'),
+    # RBAC API endpoints
+    path('security/rbac/api/stats/', rbac_views.RBACStatsAPIView.as_view(), name='rbac_stats_api'),
+    path('security/rbac/api/role/delete/', rbac_views.DeleteRoleAPIView.as_view(), name='rbac_delete_role_api'),
+    path('security/rbac/api/user/permissions/', rbac_views.UserPermissionsAPIView.as_view(), name='rbac_user_permissions_api'),
     
     # Audit Log Management
     path('security/audit-logs/', audit_views.AuditLogListView.as_view(), name='audit_logs'),
