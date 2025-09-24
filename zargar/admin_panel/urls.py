@@ -7,6 +7,7 @@ from . import disaster_recovery_views
 from . import unified_auth_views
 from . import domain_views
 from . import security_views
+from . import audit_views
 
 app_name = 'admin_panel'
 
@@ -61,6 +62,14 @@ urlpatterns = [
     path('security/trends/api/', security_views.SecurityTrendsAPIView.as_view(), name='security_trends_api'),
     path('security/event/resolve/', security_views.SecurityEventResolveView.as_view(), name='security_event_resolve'),
     path('security/activity/investigate/', security_views.SuspiciousActivityInvestigateView.as_view(), name='suspicious_activity_investigate'),
+    
+    # Audit Log Management
+    path('security/audit-logs/', audit_views.AuditLogListView.as_view(), name='audit_logs'),
+    path('security/audit-logs/<int:log_id>/', audit_views.AuditLogDetailView.as_view(), name='audit_log_detail'),
+    path('security/audit-logs/export/', audit_views.AuditLogExportView.as_view(), name='audit_log_export'),
+    path('security/audit-logs/search/api/', audit_views.AuditLogSearchAPIView.as_view(), name='audit_log_search_api'),
+    path('security/audit-logs/integrity/check/', audit_views.AuditLogIntegrityCheckView.as_view(), name='audit_log_integrity_check'),
+    path('security/audit-logs/stats/api/', audit_views.AuditLogStatsAPIView.as_view(), name='audit_log_stats_api'),
     
     # Disaster Recovery
     path('disaster-recovery/', disaster_recovery_views.DisasterRecoveryDashboardView.as_view(), name='disaster_recovery_dashboard'),
