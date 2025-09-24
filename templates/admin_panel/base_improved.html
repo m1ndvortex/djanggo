@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="fa" x-data="adminApp()" :class="{ 'dark': darkMode }">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}پنل مدیریت یکپارچه زرگر{% endblock %}</title>
+    
+    <!-- Persian Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'vazir': ['Vazirmatn', 'sans-serif'],
+                    },
+                    colors: {
+                        // Light mode colors
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        // Cybersecurity dark mode colors
+                        cyber: {
+                            bg: {
+                                primary: '#0B0E1A',
+                                secondary: '#1A1D29',
+                                surface: '#252A3A',
+                                elevated: '#2D3348',
+                            },
+                            neon: {
+                                primary: '#00D4FF',
+                                secondary: '#00FF88',
+                                tertiary: '#FF6B35',
+                                warning: '#FFB800',
+                                danger: '#FF4757',
+                                purple: '#A55EEA',
+                            },
+                            text: {
+                                primary: '#FFFFFF',
+                                secondary: '#B8BCC8',
+                                muted: '#6B7280',
+                            }
+                        }
+                    },
+                    animation: {
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'slide-in': 'slideIn 0.3s ease-out',
+                        'slide-out': 'slideOut 0.3s ease-in',
+                    },
+                    keyframes: {
+                        glow: {
+                            '0%': { boxShadow: '0 0 5px currentColor' },
+                            '100%': { boxShadow: '0 0 20px currentColor, 0 0 30px currentColor' }
+                        },
+                        slideIn: {
+                            '0%': { transform: 'translateX(100%)' },
+                            '100%': { transform: 'translateX(0)' }
+                        },
+                        slideOut: {
+                            '0%': { transform: 'translateX(0)' },
+                            '100%': { transform: 'translateX(100%)' }
+                        }
+                    },
+                    backdropBlur: {
+                        xs: '2px',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    
+    <!-- Chart.js for statistics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom CSS -->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/admin-improved.css' %}">
+    
+    {% block extra_css %}{% endblock %}
+    
+    <style>
+        /* Custom glassmorphism effects for dark mode */
+        .glass-effect {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .dark .glass-effect {
+            backdrop-filter: blur(10px);
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+        }
+        
+        /* Neon glow effects */
+        .neon-glow {
+            box-shadow: 0 0 5px currentColor, 0 0 10px currentColor, 0 0 15px currentColor;
+        }
+        
+        /* Persian number formatting */
+        .persian-numbers {
+            font-feature-settings: "tnum";
+        }
+        
+        /* Sidebar transition */
+        .sidebar-transition {
+            transition: transform 0.3s ease-in-out, width 0.3s ease-in-out;
+        }
+        
+        /* Custom scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 3px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 3px;
+        }
+        
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(0, 212, 255, 0.3);
+        }
+        
+        /* Sidebar styles */
+        .sidebar-collapsed {
+            width: 4rem;
+        }
+        
+        .sidebar-expanded {
+            width: 20rem;
+        }
+        
+        /* Content margin adjustments */
+        .content-with-sidebar-collapsed {
+            margin-right: 4rem;
+        }
+        
+        .content-with-sidebar-expanded {
+            margin-right: 20rem;
+        }
+        
+        /* Hide text when sidebar is collapsed */
+        .sidebar-collapsed .sidebar-text {
+            opacity: 0;
+            width: 0;
+            overflow: hidden;
+        }
+        
+        .sidebar-expanded .sidebar-text {
+            opacity: 1;
+            width: auto;
+        }
+        
+        /* Notification styles */
+        .notification-badge {
+            animation: pulse 2s infinite;
+        }
+        
+        /* Quick action buttons */
+        .quick-action-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .quick-action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .dark .quick-action-btn:hover {
+            box-shadow: 0 4px 12px rgba(0, 212, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="font-vazir bg-gray-50 dark:bg-cyber-bg-primary text-gray-900 dark:text-cyber-text-primary transition-all duration-300">
+    
+    <!-- Persistent Sidebar Navigation -->
+    <div class="fixed inset-y-0 right-0 z-50 bg-white dark:bg-cyber-bg-secondary shadow-2xl dark:shadow-cyber-neon-primary/10 sidebar-transition" 
+         :class="sidebarExpanded ? 'sidebar-expanded' : 'sidebar-collapsed'">
+        
+        <!-- Sidebar Header -->
+        <div class="flex items-center justify-between p-4 border-b dark:border-cyber-neon-primary/20">
+            <div class="flex items-center" x-show="sidebarExpanded" x-transition>
+                <div class="p-2 rounded-lg bg-primary-100 dark:bg-cyber-neon-primary/20 ml-3">
+                    <svg class="w-6 h-6 text-primary-600 dark:text-cyber-neon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    </svg>
+                </div>
+                <div class="sidebar-text">
+                    <h2 class="text-lg font-bold text-gray-900 dark:text-cyber-text-primary">پنل مدیریت زرگر</h2>
+                    <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">سیستم یکپارچه</p>
+                </div>
+            </div>
+            
+            <!-- Toggle Button -->
+            <button @click="toggleSidebar()" 
+                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-cyber-bg-elevated transition-colors">
+                <svg class="w-5 h-5 text-gray-500 dark:text-cyber-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          :d="sidebarExpanded ? 'M13 5l7 7-7 7M5 5l7 7-7 7' : 'M11 19l-7-7 7-7m8 14l-7-7 7-7'"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Navigation Menu -->
+        <nav class="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
+            
+            <!-- Dashboard -->
+            <a href="{% url 'admin_panel:dashboard' %}" 
+               class="flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-cyber-bg-elevated transition-all duration-200 group"
+               :class="{ 'bg-primary-100 dark:bg-cyber-neon-primary/20 text-primary-700 dark:text-cyber-neon-primary': currentPage === 'dashboard' }">
+                <svg class="w-5 h-5 text-gray-500 dark:text-cyber-text-muted group-hover:text-primary-600 dark:group-hover:text-cyber-neon-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z"></path>
+                </svg>
+                <span class="font-medium text-gray-700 dark:text-cyber-text-secondary group-hover:text-gray-900 dark:group-hover:text-cyber-neon-primary sidebar-text mr-3">داشبورد اصلی</span>
+            </a>
+            
+            <!-- Tenant Management Section -->
+            <div class="space-y-1" x-data="{ open: true }">
+                <button @click="open = !open" 
+                        class="flex items-center justify-between w-full p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-cyber-bg-elevated transition-colors group">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-gray-500 dark:text-cyber-text-muted group-hover:text-primary-600 dark:group-hover:text-cyber-neon-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                        <span class="font-medium text-gray-700 dark:text-cyber-text-secondary group-hover:text-gray-900 dark:group-hover:text-cyber-neon-primary sidebar-text mr-3">مدیریت تنانت‌ها</span>
+                    </div>
+                    <svg class="w-4 h-4 text-gray-400 dark:text-cyber-text-muted transition-transform sidebar-text" 
+                         :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+                <div x-show="open && sidebarExpanded" x-transition class="mr-8 space-y-1">
+                    <a href="{% url 'admin_panel:tenants:tenant_list' %}" class="block p-2 text-sm text-gray-600 dark:text-cyber-text-secondary hover:text-primary-600 dark:hover:text-cyber-neon-primary rounded-lg hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated/50 transition-colors">
+                        مشاهده همه تنانت‌ها
+                    </a>
+                    <a href="{% url 'admin_panel:tenants:tenant_create' %}" class="block p-2 text-sm text-gray-600 dark:text-cyber-text-secondary hover:text-primary-600 dark:hover:text-cyber-neon-primary rounded-lg hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated/50 transition-colors">
+                        ایجاد تنانت جدید
+                    </a>
+                    <a href="{% url 'admin_panel:tenants:tenant_search' %}" class="block p-2 text-sm text-gray-600 dark:text-cyber-text-secondary hover:text-primary-600 dark:hover:text-cyber-neon-primary rounded-lg hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated/50 transition-colors">
+                        جستجو و عملیات گروهی
+                    </a>
+                </div>
+            </div>
+            
+            <!-- User Impersonation Section -->
+            <div class="space-y-1" x-data="{ open: false }">
+                <button @click="open = !open" 
+                        class="flex items-center justify-between w-full p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-cyber-bg-elevated transition-colors group">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-gray-500 dark:text-cyber-text-muted group-hover:text-purple-600 dark:group-hover:text-cyber-neon-purple flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                        <span class="font-medium text-gray-700 dark:text-cyber-text-secondary group-hover:text-gray-900 dark:group-hover:text-cyber-neon-purple sidebar-text mr-3">مدیریت کاربران</span>
+                    </div>
+                    <svg class="w-4 h-4 text-gray-400 dark:text-cyber-text-muted transition-transform sidebar-text" 
+                         :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+                <div x-show="open && sidebarExpanded" x-transition class="mr-8 space-y-1">
+                    <a href="{% url 'admin_panel:user_impersonation' %}" class="block p-2 text-sm text-gray-600 dark:text-cyber-text-secondary hover:text-purple-600 dark:hover:text-cyber-neon-purple rounded-lg hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated/50 transition-colors">
+                        جایگزینی کاربر
+                    </a>
+                    <a href="{% url 'admin_panel:impersonation_audit' %}" class="block p-2 text-sm text-gray-600 dark:text-cyber-text-secondary hover:text-purple-600 dark:hover:text-cyber-neon-purple rounded-lg hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated/50 transition-colors">
+                        گزارش‌های حسابرسی
+                    </a>
+                </div>
+            </div>
+            
+            <!-- System Health Section -->
+            <div class="space-y-1" x-data="{ open: false }">
+                <button @click="open = !open" 
+                        class="flex items-center justify-between w-full p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-cyber-bg-elevated transition-colors group">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-gray-500 dark:text-cyber-text-muted group-hover:text-green-600 dark:group-hover:text-cyber-neon-secondary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        <span class="font-medium text-gray-700 dark:text-cyber-text-secondary group-hover:text-gray-900 dark:group-hover:text-cyber-neon-secondary sidebar-text mr-3">نظارت سیستم</span>
+                    </div>
+                    <svg class="w-4 h-4 text-gray-400 dark:text-cyber-text-muted transition-transform sidebar-text" 
+                         :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+                <div x-show="open && sidebarExpanded" x-transition class="mr-8 space-y-1">
+                    <a href="{% url 'admin_panel:system_health_dashboard' %}" class="block p-2 text-sm text-gray-600 dark:text-cyber-text-secondary hover:text-green-600 dark:hover:text-cyber-neon-secondary rounded-lg hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated/50 transition-colors">
+                        داشبورد سلامت سیستم
+                    </a>
+                    <a href="{% url 'admin_panel:system_health_alerts' %}" class="block p-2 text-sm text-gray-600 dark:text-cyber-text-secondary hover:text-green-600 dark:hover:text-cyber-neon-secondary rounded-lg hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated/50 transition-colors">
+                        هشدارها و اعلان‌ها
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Billing & Subscriptions Section -->
+            <div class="space-y-1" x-data="{ open: false }">
+                <button @click="open = !open" 
+                        class="flex items-center justify-between w-full p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-cyber-bg-elevated transition-colors group">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-gray-500 dark:text-cyber-text-muted group-hover:text-yellow-600 dark:group-hover:text-cyber-neon-warning flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                        </svg>
+                        <span class="font-medium text-gray-700 dark:text-cyber-text-secondary group-hover:text-gray-900 dark:group-hover:text-cyber-neon-warning sidebar-text mr-3">مدیریت مالی</span>
+                    </div>
+                    <svg class="w-4 h-4 text-gray-400 dark:text-cyber-text-muted transition-transform sidebar-text" 
+                         :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+                <div x-show="open && sidebarExpanded" x-transition class="mr-8 space-y-1">
+                    <a href="{% url 'admin_panel:tenants:billing:dashboard' %}" class="block p-2 text-sm text-gray-600 dark:text-cyber-text-secondary hover:text-yellow-600 dark:hover:text-cyber-neon-warning rounded-lg hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated/50 transition-colors">
+                        داشبورد مالی
+                    </a>
+                    <a href="{% url 'admin_panel:tenants:billing:invoices' %}" class="block p-2 text-sm text-gray-600 dark:text-cyber-text-secondary hover:text-yellow-600 dark:hover:text-cyber-neon-warning rounded-lg hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated/50 transition-colors">
+                        مدیریت فاکتورها
+                    </a>
+                </div>
+            </div>
+            
+        </nav>
+        
+        <!-- Sidebar Footer -->
+        <div class="p-4 border-t dark:border-cyber-neon-primary/20">
+            <!-- User Info -->
+            <div class="flex items-center p-3 bg-gray-50 dark:bg-cyber-bg-elevated rounded-lg mb-3" x-show="sidebarExpanded" x-transition>
+                <div class="p-2 rounded-full bg-primary-100 dark:bg-cyber-neon-primary/20 ml-3 flex-shrink-0">
+                    <svg class="w-5 h-5 text-primary-600 dark:text-cyber-neon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                </div>
+                <div class="flex-1 sidebar-text">
+                    <p class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary">{{ user.get_full_name|default:user.username }}</p>
+                    <p class="text-xs text-gray-500 dark:text-cyber-text-muted">مدیر سیستم</p>
+                </div>
+            </div>
+            
+            <!-- Theme Toggle -->
+            <button @click="toggleTheme()" 
+                    class="flex items-center justify-center w-full p-3 bg-gray-100 dark:bg-cyber-bg-surface rounded-lg hover:bg-gray-200 dark:hover:bg-cyber-bg-elevated transition-all duration-300 mb-3 group">
+                <svg x-show="!darkMode" class="w-5 h-5 text-gray-600 group-hover:text-gray-800 flex-shrink-0" :class="sidebarExpanded ? 'ml-2' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                </svg>
+                <svg x-show="darkMode" class="w-5 h-5 text-cyber-neon-primary group-hover:text-cyber-neon-primary/80 flex-shrink-0" :class="sidebarExpanded ? 'ml-2' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                </svg>
+                <span class="text-sm font-medium text-gray-700 dark:text-cyber-text-secondary sidebar-text" x-text="darkMode ? 'حالت روز' : 'حالت شب'"></span>
+            </button>
+            
+            <!-- Logout -->
+            <a href="{% url 'admin_panel:unified_logout' %}" 
+               class="flex items-center justify-center w-full p-3 bg-red-100 dark:bg-cyber-neon-danger/20 text-red-700 dark:text-cyber-neon-danger rounded-lg hover:bg-red-200 dark:hover:bg-cyber-neon-danger/30 transition-colors">
+                <svg class="w-5 h-5 flex-shrink-0" :class="sidebarExpanded ? 'ml-2' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                </svg>
+                <span class="text-sm font-medium sidebar-text">خروج</span>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Main Content Area -->
+    <div class="transition-all duration-300" :class="sidebarExpanded ? 'content-with-sidebar-expanded' : 'content-with-sidebar-collapsed'">
+        
+        <!-- Top Header with Useful Components -->
+        <header class="bg-white dark:bg-cyber-bg-secondary shadow-lg dark:shadow-cyber-neon-primary/10 border-b dark:border-cyber-neon-primary/20 sticky top-0 z-40">
+            <div class="px-6 py-4">
+                <div class="flex items-center justify-between">
+                    
+                    <!-- Page Title and Breadcrumb -->
+                    <div class="flex items-center space-x-4 space-x-reverse">
+                        <h1 class="text-xl font-bold text-gray-900 dark:text-cyber-text-primary">
+                            {% block page_title %}{% block nav_title %}پنل مدیریت زرگر{% endblock %}{% endblock %}
+                        </h1>
+                        {% block breadcrumb %}{% endblock %}
+                    </div>
+                    
+                    <!-- Useful Components -->
+                    <div class="flex items-center space-x-4 space-x-reverse">
+                        
+                        <!-- System Status Indicator -->
+                        <div class="flex items-center space-x-2 space-x-reverse">
+                            <div class="w-3 h-3 bg-green-500 dark:bg-cyber-neon-secondary rounded-full animate-pulse"></div>
+                            <span class="text-sm text-gray-600 dark:text-cyber-text-secondary">سیستم سالم</span>
+                        </div>
+                        
+                        <!-- Quick Stats -->
+                        <div class="hidden lg:flex items-center space-x-4 space-x-reverse text-sm">
+                            <div class="flex items-center space-x-2 space-x-reverse">
+                                <svg class="w-4 h-4 text-blue-500 dark:text-cyber-neon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                </svg>
+                                <span class="text-gray-600 dark:text-cyber-text-secondary">{{ total_tenants|default:"0" }} تنانت</span>
+                            </div>
+                            <div class="flex items-center space-x-2 space-x-reverse">
+                                <svg class="w-4 h-4 text-green-500 dark:text-cyber-neon-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                </svg>
+                                <span class="text-gray-600 dark:text-cyber-text-secondary">{{ active_users|default:"0" }} کاربر فعال</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Notifications -->
+                        <div class="relative" x-data="{ open: false }">
+                            <button @click="open = !open" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-cyber-bg-elevated transition-colors relative">
+                                <svg class="w-5 h-5 text-gray-500 dark:text-cyber-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM10.07 2.82l3.12 3.12M7.05 5.84l3.12 3.12M4.03 8.86l3.12 3.12M1.01 11.88l3.12 3.12"></path>
+                                </svg>
+                                <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 dark:bg-cyber-neon-danger rounded-full notification-badge"></span>
+                            </button>
+                            
+                            <div x-show="open" @click.away="open = false" 
+                                 x-transition:enter="transition ease-out duration-100"
+                                 x-transition:enter-start="transform opacity-0 scale-95"
+                                 x-transition:enter-end="transform opacity-100 scale-100"
+                                 x-transition:leave="transition ease-in duration-75"
+                                 x-transition:leave-start="transform opacity-100 scale-100"
+                                 x-transition:leave-end="transform opacity-0 scale-95"
+                                 class="absolute left-0 mt-2 w-80 bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl border dark:border-cyber-neon-primary/20 z-50">
+                                <div class="p-4">
+                                    <h3 class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary mb-3">اعلان‌های اخیر</h3>
+                                    <div class="space-y-2">
+                                        <div class="p-2 bg-blue-50 dark:bg-cyber-neon-primary/10 rounded-lg">
+                                            <p class="text-xs text-blue-800 dark:text-cyber-neon-primary">تنانت جدید ثبت شد</p>
+                                        </div>
+                                        <div class="p-2 bg-green-50 dark:bg-cyber-neon-secondary/10 rounded-lg">
+                                            <p class="text-xs text-green-800 dark:text-cyber-neon-secondary">پشتیبان‌گیری با موفقیت انجام شد</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Quick Actions -->
+                        <div class="flex items-center space-x-2 space-x-reverse">
+                            <a href="{% url 'admin_panel:tenants:tenant_create' %}" 
+                               class="quick-action-btn bg-primary-500 dark:bg-cyber-neon-primary hover:bg-primary-600 dark:hover:bg-cyber-neon-primary/80 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all">
+                                <svg class="w-4 h-4 inline-block ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                </svg>
+                                تنانت جدید
+                            </a>
+                        </div>
+                        
+                        <!-- Current Time -->
+                        <div class="hidden lg:block text-sm text-gray-600 dark:text-cyber-text-secondary" x-data="currentTime()" x-text="time"></div>
+                        
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Main Content -->
+        <main class="p-6">
+            <!-- Messages -->
+            {% if messages %}
+                <div class="mb-6">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} {% if message.tags == 'error' %}bg-red-100 border-red-300 text-red-800 dark:bg-cyber-neon-danger/10 dark:border-cyber-neon-danger/30 dark:text-cyber-neon-danger{% elif message.tags == 'success' %}bg-green-100 border-green-300 text-green-800 dark:bg-cyber-neon-secondary/10 dark:border-cyber-neon-secondary/30 dark:text-cyber-neon-secondary{% else %}bg-blue-100 border-blue-300 text-blue-800 dark:bg-cyber-neon-primary/10 dark:border-cyber-neon-primary/30 dark:text-cyber-neon-primary{% endif %} px-4 py-3 rounded-lg mb-4 border">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            <!-- Page Content -->
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 hidden">
+        <div class="bg-white dark:bg-cyber-bg-surface rounded-lg p-6 glass-effect">
+            <div class="flex items-center space-x-3 space-x-reverse">
+                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500 dark:border-cyber-neon-primary"></div>
+                <span class="text-gray-700 dark:text-cyber-text-primary">در حال بارگذاری...</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Custom JavaScript -->
+    {% block extra_js %}{% endblock %}
+    
+    <script>
+        // Main Alpine.js app
+        function adminApp() {
+            return {
+                darkMode: localStorage.getItem('theme') === 'dark' || false,
+                sidebarExpanded: localStorage.getItem('sidebarExpanded') !== 'false',
+                currentPage: '{{ request.resolver_match.url_name|default:"" }}',
+                
+                init() {
+                    // Apply theme on init
+                    if (this.darkMode) {
+                        document.documentElement.classList.add('dark');
+                    }
+                },
+                
+                toggleTheme() {
+                    this.darkMode = !this.darkMode;
+                    localStorage.setItem('theme', this.darkMode ? 'dark' : 'light');
+                    if (this.darkMode) {
+                        document.documentElement.classList.add('dark');
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                    }
+                },
+                
+                toggleSidebar() {
+                    this.sidebarExpanded = !this.sidebarExpanded;
+                    localStorage.setItem('sidebarExpanded', this.sidebarExpanded);
+                }
+            }
+        }
+        
+        // Current time component
+        function currentTime() {
+            return {
+                time: '',
+                init() {
+                    this.updateTime();
+                    setInterval(() => this.updateTime(), 1000);
+                },
+                updateTime() {
+                    const now = new Date();
+                    this.time = now.toLocaleTimeString('fa-IR');
+                }
+            }
+        }
+        
+        // Global JavaScript utilities
+        window.ZargarAdmin = {
+            showLoading: function() {
+                document.getElementById('loading-overlay').classList.remove('hidden');
+            },
+            hideLoading: function() {
+                document.getElementById('loading-overlay').classList.add('hidden');
+            },
+            showMessage: function(message, type = 'info') {
+                // Create and show toast message
+                const toast = document.createElement('div');
+                const bgColor = type === 'error' ? 'bg-red-500' : type === 'success' ? 'bg-green-500' : 'bg-blue-500';
+                toast.className = `fixed top-4 left-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-transform duration-300 translate-x-full`;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => toast.classList.remove('translate-x-full'), 100);
+                setTimeout(() => {
+                    toast.classList.add('translate-x-full');
+                    setTimeout(() => document.body.removeChild(toast), 300);
+                }, 3000);
+            },
+            formatPersianNumber: function(number) {
+                const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+                return number.toString().replace(/\d/g, (digit) => persianDigits[digit]);
+            },
+            formatCurrency: function(amount) {
+                return new Intl.NumberFormat('fa-IR').format(amount) + ' تومان';
+            }
+        };
+        
+        // HTMX configuration
+        document.addEventListener('htmx:beforeRequest', function() {
+            ZargarAdmin.showLoading();
+        });
+        
+        document.addEventListener('htmx:afterRequest', function() {
+            ZargarAdmin.hideLoading();
+        });
+    </script>
+</body>
+</html>
