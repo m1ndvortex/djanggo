@@ -231,6 +231,11 @@ input[type="password"],
 select,
 textarea {
     transition: all 0.2s ease;
+    background-color: #ffffff;
+    border: 1px solid #d1d5db;
+    color: #374151;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
 }
 
 input[type="text"]:focus,
@@ -239,9 +244,21 @@ input[type="password"]:focus,
 select:focus,
 textarea:focus {
     outline: none;
-    ring: 2px;
-    ring-color: rgb(59, 130, 246);
+    box-shadow: 0 0 0 2px rgb(59, 130, 246);
     border-color: rgb(59, 130, 246);
+}
+
+/* Dark Mode Form Styles */
+.dark input[type="text"],
+.dark input[type="email"],
+.dark input[type="password"],
+.dark select,
+.dark textarea {
+    background-color: #1f2937 !important;
+    border: 2px solid #374151 !important;
+    color: #f9fafb !important;
+    padding: 0.75rem 1rem !important;
+    border-radius: 0.5rem !important;
 }
 
 .dark input[type="text"]:focus,
@@ -249,8 +266,59 @@ textarea:focus {
 .dark input[type="password"]:focus,
 .dark select:focus,
 .dark textarea:focus {
-    ring-color: #00D4FF;
-    border-color: #00D4FF;
+    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.3) !important;
+    border-color: #00D4FF !important;
+    background-color: #111827 !important;
+    outline: none !important;
+}
+
+.dark input[type="text"]::placeholder,
+.dark input[type="email"]::placeholder,
+.dark input[type="password"]::placeholder,
+.dark textarea::placeholder {
+    color: #9ca3af !important;
+}
+
+/* Form Labels in Dark Mode */
+.dark label,
+.dark .form-label {
+    color: #f3f4f6 !important;
+    font-weight: 600;
+}
+
+/* Form Help Text in Dark Mode */
+.dark .form-help-text,
+.dark .form-help,
+.dark .help-text,
+.dark small {
+    color: #d1d5db !important;
+}
+
+/* Select dropdown styling in dark mode */
+.dark select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: left 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-left: 2.5rem;
+}
+
+/* Form group styling */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+/* Error styling in dark mode */
+.dark .form-error {
+    color: #fca5a5 !important;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
 }
 
 /* Table Styles */

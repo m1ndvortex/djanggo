@@ -1,0 +1,358 @@
+{% extends 'admin_panel/base_improved.html' %}
+{% load static %}
+
+{% block title %}Domain Settings - پنل مدیریت زرگر{% endblock %}
+
+{% block page_title %}تنظیمات دامنه{% endblock %}
+
+{% block breadcrumb %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3 space-x-reverse">
+        <li class="inline-flex items-center">
+            <a href="{% url 'admin_panel:dashboard' %}" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-cyber-text-secondary dark:hover:text-cyber-neon-primary">
+                <svg class="w-3 h-3 ml-2.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+                </svg>
+                داشبورد
+            </a>
+        </li>
+        <li>
+            <div class="flex items-center">
+                <svg class="w-3 h-3 text-gray-400 mx-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                </svg>
+                <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2 dark:text-cyber-text-muted">تنظیمات دامنه</span>
+            </div>
+        </li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .domain-preview {
+        background: linear-gradient(145deg, #f8fafc 0%, #e2e8f0 100%);
+        border: 2px solid #e2e8f0;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        transition: all 0.3s ease;
+    }
+    
+    .dark .domain-preview {
+        background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 100%);
+        border: 2px solid rgba(0, 212, 255, 0.2);
+        backdrop-filter: blur(8px);
+    }
+    
+    .domain-example {
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        background: rgba(0, 0, 0, 0.05);
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        color: #1f2937;
+        font-size: 0.875rem;
+        margin: 0.5rem 0;
+    }
+    
+    .dark .domain-example {
+        background: rgba(0, 212, 255, 0.1);
+        border: 1px solid rgba(0, 212, 255, 0.2);
+        color: #00D4FF;
+    }
+    
+    .current-settings {
+        background: linear-gradient(145deg, #ecfdf5 0%, #d1fae5 100%);
+        border: 2px solid #10b981;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .dark .current-settings {
+        background: linear-gradient(145deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.05) 100%);
+        border: 2px solid rgba(0, 255, 136, 0.3);
+    }
+    
+    .warning-box {
+        background: linear-gradient(145deg, #fef3c7 0%, #fde68a 100%);
+        border: 2px solid #f59e0b;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+    }
+    
+    .dark .warning-box {
+        background: linear-gradient(145deg, rgba(255, 184, 0, 0.1) 0%, rgba(255, 184, 0, 0.05) 100%);
+        border: 2px solid rgba(255, 184, 0, 0.3);
+    }
+    
+    /* Ensure all form inputs have proper dark mode styling */
+    .dark input[type="text"],
+    .dark input[type="email"],
+    .dark input[type="password"],
+    .dark select,
+    .dark textarea {
+        background-color: #1f2937 !important;
+        border: 2px solid #374151 !important;
+        color: #f9fafb !important;
+        padding: 0.75rem 1rem !important;
+        border-radius: 0.5rem !important;
+    }
+    
+    .dark input[type="text"]:focus,
+    .dark input[type="email"]:focus,
+    .dark input[type="password"]:focus,
+    .dark select:focus,
+    .dark textarea:focus {
+        background-color: #111827 !important;
+        border-color: #00D4FF !important;
+        box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.3) !important;
+        outline: none !important;
+    }
+    
+    .dark input[type="text"]::placeholder,
+    .dark input[type="email"]::placeholder,
+    .dark input[type="password"]::placeholder,
+    .dark textarea::placeholder {
+        color: #9ca3af !important;
+    }
+    
+    /* Fix any remaining white backgrounds */
+    .dark .bg-white {
+        background-color: rgba(37, 42, 58, 0.8) !important;
+    }
+    
+    /* Form labels in dark mode */
+    .dark .form-label {
+        color: #f3f4f6 !important;
+        font-weight: 600;
+    }
+    
+    /* Form help text in dark mode */
+    .dark .form-help {
+        color: #d1d5db !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Current Settings Display -->
+<div class="current-settings">
+    <div class="flex items-center mb-4">
+        <svg class="w-6 h-6 text-green-600 dark:text-cyber-neon-secondary ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <h3 class="text-lg font-bold text-green-800 dark:text-cyber-neon-secondary">تنظیمات فعلی دامنه</h3>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+            <p class="text-sm font-medium text-green-700 dark:text-cyber-text-secondary">دامنه پایه:</p>
+            <p class="text-lg font-bold text-green-900 dark:text-cyber-neon-secondary">{{ current_domain }}</p>
+        </div>
+        <div>
+            <p class="text-sm font-medium text-green-700 dark:text-cyber-text-secondary">پروتکل:</p>
+            <p class="text-lg font-bold text-green-900 dark:text-cyber-neon-secondary">{{ current_protocol|upper }}</p>
+        </div>
+        <div>
+            <p class="text-sm font-medium text-green-700 dark:text-cyber-text-secondary">جداکننده:</p>
+            <p class="text-lg font-bold text-green-900 dark:text-cyber-neon-secondary">"{{ current_separator }}"</p>
+        </div>
+    </div>
+    <div class="mt-4">
+        <p class="text-sm font-medium text-green-700 dark:text-cyber-text-secondary mb-2">مثال URL تنانت:</p>
+        <div class="domain-example">{{ example_url }}</div>
+    </div>
+</div>
+
+<!-- Domain Settings Form -->
+<div class="bg-gray-50 dark:bg-cyber-bg-surface rounded-lg shadow dark:shadow-2xl p-6 glass-effect">
+    <div class="section-header">
+        <svg class="w-6 h-6 text-blue-500 dark:text-cyber-neon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9"></path>
+        </svg>
+        <h2 class="text-xl font-bold text-gray-900 dark:text-cyber-text-primary">تغییر تنظیمات دامنه</h2>
+    </div>
+    
+    <form method="post" id="domain-settings-form">
+        {% csrf_token %}
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Base Domain -->
+            <div class="form-group">
+                <label for="{{ form.base_domain.id_for_label }}" class="form-label">
+                    {{ form.base_domain.label }}
+                    <span class="text-red-500 dark:text-red-400">*</span>
+                </label>
+                {{ form.base_domain }}
+                {% if form.base_domain.errors %}
+                    {% for error in form.base_domain.errors %}
+                        <p class="form-error">{{ error }}</p>
+                    {% endfor %}
+                {% endif %}
+                {% if form.base_domain.help_text %}
+                    <p class="form-help">{{ form.base_domain.help_text }}</p>
+                {% endif %}
+            </div>
+            
+            <!-- Protocol -->
+            <div class="form-group">
+                <label for="{{ form.protocol.id_for_label }}" class="form-label">
+                    {{ form.protocol.label }}
+                    <span class="text-red-500 dark:text-red-400">*</span>
+                </label>
+                {{ form.protocol }}
+                {% if form.protocol.errors %}
+                    {% for error in form.protocol.errors %}
+                        <p class="form-error">{{ error }}</p>
+                    {% endfor %}
+                {% endif %}
+                {% if form.protocol.help_text %}
+                    <p class="form-help">{{ form.protocol.help_text }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Subdomain Separator -->
+        <div class="form-group">
+            <label for="{{ form.subdomain_separator.id_for_label }}" class="form-label">
+                {{ form.subdomain_separator.label }}
+                <span class="text-red-500 dark:text-red-400">*</span>
+            </label>
+            {{ form.subdomain_separator }}
+            {% if form.subdomain_separator.errors %}
+                {% for error in form.subdomain_separator.errors %}
+                    <p class="form-error">{{ error }}</p>
+                {% endfor %}
+            {% endif %}
+            {% if form.subdomain_separator.help_text %}
+                <p class="form-help">{{ form.subdomain_separator.help_text }}</p>
+            {% endif %}
+        </div>
+        
+        <!-- Live Preview -->
+        <div class="domain-preview" id="domain-preview">
+            <h4 class="text-lg font-bold text-gray-900 dark:text-cyber-text-primary mb-3">پیش‌نمایش URL های تنانت</h4>
+            <div id="preview-examples">
+                <div class="domain-example">https://shop1.zargar.com</div>
+                <div class="domain-example">https://goldstore.zargar.com</div>
+                <div class="domain-example">https://jewelry-palace.zargar.com</div>
+            </div>
+        </div>
+        
+        <!-- Warning -->
+        <div class="warning-box">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-6 w-6 text-yellow-600 dark:text-cyber-neon-warning" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <div class="mr-3">
+                    <h4 class="text-base font-bold text-yellow-800 dark:text-cyber-neon-warning">
+                        هشدار مهم
+                    </h4>
+                    <div class="mt-3 text-sm text-yellow-700 dark:text-cyber-text-secondary">
+                        <p class="font-medium mb-2">تغییر دامنه پایه تأثیرات زیر را خواهد داشت:</p>
+                        <ul class="list-disc list-inside space-y-1 text-sm">
+                            <li>تمام تنانت‌های موجود باید DNS خود را به‌روزرسانی کنند</li>
+                            <li>لینک‌های موجود ممکن است کار نکنند</li>
+                            <li>نیاز به راه‌اندازی مجدد سرور</li>
+                            <li>به‌روزرسانی تنظیمات SSL/TLS</li>
+                            <li>اطلاع‌رسانی به تمام کاربران</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Form Actions -->
+        <div class="flex items-center justify-end space-x-4 space-x-reverse pt-6">
+            <a href="{% url 'admin_panel:dashboard' %}" class="btn-secondary">
+                <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                انصراف
+            </a>
+            <button type="submit" class="btn-primary" id="submit-btn">
+                <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                ذخیره تغییرات
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('domain-settings-form');
+    const baseDomainInput = document.getElementById('{{ form.base_domain.id_for_label }}');
+    const protocolSelect = document.getElementById('{{ form.protocol.id_for_label }}');
+    const separatorInput = document.getElementById('{{ form.subdomain_separator.id_for_label }}');
+    const previewContainer = document.getElementById('preview-examples');
+    
+    // Update preview when inputs change
+    function updatePreview() {
+        const baseDomain = baseDomainInput.value.trim();
+        const protocol = protocolSelect.value;
+        const separator = separatorInput.value;
+        
+        if (baseDomain) {
+            const examples = [
+                `${protocol}://shop1${separator}${baseDomain}`,
+                `${protocol}://goldstore${separator}${baseDomain}`,
+                `${protocol}://jewelry-palace${separator}${baseDomain}`
+            ];
+            
+            previewContainer.innerHTML = examples.map(url => 
+                `<div class="domain-example">${url}</div>`
+            ).join('');
+        }
+    }
+    
+    // Add event listeners
+    baseDomainInput.addEventListener('input', updatePreview);
+    protocolSelect.addEventListener('change', updatePreview);
+    separatorInput.addEventListener('input', updatePreview);
+    
+    // Initial preview update
+    updatePreview();
+    
+    // Form submission handling
+    form.addEventListener('submit', function(e) {
+        const baseDomain = baseDomainInput.value.trim();
+        
+        if (!baseDomain) {
+            e.preventDefault();
+            ZargarAdmin.showMessage('لطفاً دامنه پایه را وارد کنید.', 'error');
+            return;
+        }
+        
+        // Confirm changes
+        const confirmMessage = `آیا مطمئن هستید که می‌خواهید دامنه پایه را به "${baseDomain}" تغییر دهید؟\n\nاین تغییر نیاز به راه‌اندازی مجدد سرور دارد.`;
+        
+        if (!confirm(confirmMessage)) {
+            e.preventDefault();
+            return;
+        }
+        
+        // Show loading state
+        const submitBtn = document.getElementById('submit-btn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            در حال ذخیره...
+        `;
+        
+        ZargarAdmin.showLoading();
+    });
+});
+</script>
+{% endblock %}

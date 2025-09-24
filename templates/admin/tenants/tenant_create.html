@@ -1,4 +1,4 @@
-{% extends 'admin/base_admin.html' %}
+{% extends 'admin_panel/base_improved.html' %}
 {% load static %}
 
 {% block title %}ایجاد تنانت جدید - پنل مدیریت زرگر{% endblock %}
@@ -7,89 +7,334 @@
 
 {% block extra_css %}
 <style>
+    /* Form Sections */
     .form-section {
         background: white;
-        border-radius: 0.5rem;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-        padding: 1.5rem;
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+    
+    .dark .form-section {
+        background: linear-gradient(145deg, rgba(37, 42, 58, 0.9) 0%, rgba(26, 29, 41, 0.95) 100%);
+        border: 1px solid rgba(0, 212, 255, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(0, 212, 255, 0.05);
+        backdrop-filter: blur(16px);
+    }
+    
+    /* Form Groups */
+    .form-group {
         margin-bottom: 1.5rem;
     }
-    .dark .form-section {
-        background: var(--cyber-bg-surface);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    }
-    .form-group {
-        margin-bottom: 1rem;
-    }
+    
+    /* Form Labels */
     .form-label {
         display: block;
         font-size: 0.875rem;
-        font-weight: 500;
+        font-weight: 600;
         color: #374151;
         margin-bottom: 0.5rem;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     }
+    
     .dark .form-label {
-        color: var(--cyber-text-secondary);
+        color: #B8BCC8;
+        text-shadow: 0 1px 2px rgba(0, 212, 255, 0.1);
     }
-    .form-input {
+    
+    /* Form Inputs */
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    select,
+    textarea {
         width: 100%;
-        padding: 0.5rem 0.75rem;
-        border: 1px solid #d1d5db;
-        border-radius: 0.375rem;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 0.5rem;
         font-size: 0.875rem;
-        transition: all 0.2s;
+        transition: all 0.3s ease;
+        background: white;
+        color: #1f2937;
+        font-family: 'Vazirmatn', sans-serif;
     }
-    .form-input:focus {
+    
+    input[type="text"]:focus,
+    input[type="email"]:focus,
+    input[type="tel"]:focus,
+    select:focus,
+    textarea:focus {
         outline: none;
         border-color: #3b82f6;
         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        transform: translateY(-1px);
     }
-    .dark .form-input {
-        background: var(--cyber-bg-elevated);
+    
+    .dark input[type="text"],
+    .dark input[type="email"],
+    .dark input[type="tel"],
+    .dark select,
+    .dark textarea {
+        background: linear-gradient(145deg, rgba(45, 51, 72, 0.8) 0%, rgba(37, 42, 58, 0.9) 100%);
+        border: 2px solid rgba(0, 212, 255, 0.2);
+        color: #FFFFFF;
+        backdrop-filter: blur(8px);
+    }
+    
+    .dark input[type="text"]:focus,
+    .dark input[type="email"]:focus,
+    .dark input[type="tel"]:focus,
+    .dark select:focus,
+    .dark textarea:focus {
+        border-color: #00D4FF;
+        box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.2), 0 0 20px rgba(0, 212, 255, 0.1);
+        background: linear-gradient(145deg, rgba(45, 51, 72, 0.9) 0%, rgba(37, 42, 58, 1) 100%);
+    }
+    
+    /* Placeholder styling */
+    input::placeholder,
+    textarea::placeholder {
+        color: #9ca3af;
+        opacity: 1;
+    }
+    
+    .dark input::placeholder,
+    .dark textarea::placeholder {
+        color: #6B7280;
+    }
+    
+    /* Domain URL special styling */
+    .domain-input-group {
+        display: flex;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        border: 2px solid #e5e7eb;
+        transition: all 0.3s ease;
+    }
+    
+    .domain-input-group:focus-within {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .dark .domain-input-group {
+        border-color: rgba(0, 212, 255, 0.2);
+    }
+    
+    .dark .domain-input-group:focus-within {
+        border-color: #00D4FF;
+        box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.2);
+    }
+    
+    .domain-input-group input {
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        flex: 1;
+    }
+    
+    .domain-suffix {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        background: #f9fafb;
+        color: #6b7280;
+        font-size: 0.875rem;
+        font-weight: 500;
+        border-left: 1px solid #e5e7eb;
+    }
+    
+    .dark .domain-suffix {
+        background: linear-gradient(145deg, rgba(26, 29, 41, 0.8) 0%, rgba(11, 14, 26, 0.9) 100%);
+        color: #B8BCC8;
+        border-left-color: rgba(0, 212, 255, 0.2);
+    }
+    
+    /* Checkbox styling */
+    input[type="checkbox"] {
+        width: 1.25rem;
+        height: 1.25rem;
+        border: 2px solid #d1d5db;
+        border-radius: 0.375rem;
+        background: white;
+        transition: all 0.2s ease;
+    }
+    
+    input[type="checkbox"]:checked {
+        background: #3b82f6;
+        border-color: #3b82f6;
+    }
+    
+    .dark input[type="checkbox"] {
+        background: rgba(45, 51, 72, 0.8);
         border-color: rgba(0, 212, 255, 0.3);
-        color: var(--cyber-text-primary);
     }
-    .dark .form-input:focus {
-        border-color: var(--cyber-neon-primary);
-        box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+    
+    .dark input[type="checkbox"]:checked {
+        background: #00D4FF;
+        border-color: #00D4FF;
     }
+    
+    /* Error and Help Text */
     .form-error {
         color: #dc2626;
         font-size: 0.75rem;
-        margin-top: 0.25rem;
+        margin-top: 0.5rem;
+        font-weight: 500;
     }
+    
     .dark .form-error {
-        color: var(--cyber-neon-danger);
+        color: #FF4757;
     }
+    
     .form-help {
         color: #6b7280;
         font-size: 0.75rem;
-        margin-top: 0.25rem;
+        margin-top: 0.5rem;
+        line-height: 1.4;
     }
+    
     .dark .form-help {
-        color: var(--cyber-text-muted);
+        color: #9CA3AF;
+    }
+    
+    /* Warning Box */
+    .warning-box {
+        background: linear-gradient(145deg, #fef3c7 0%, #fde68a 100%);
+        border: 1px solid #f59e0b;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .dark .warning-box {
+        background: linear-gradient(145deg, rgba(255, 184, 0, 0.1) 0%, rgba(255, 184, 0, 0.05) 100%);
+        border: 1px solid rgba(255, 184, 0, 0.3);
+        backdrop-filter: blur(8px);
+    }
+    
+    /* Section Headers */
+    .section-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid #f3f4f6;
+    }
+    
+    .dark .section-header {
+        border-bottom-color: rgba(0, 212, 255, 0.1);
+    }
+    
+    .section-header svg {
+        margin-left: 0.75rem;
+        flex-shrink: 0;
+    }
+    
+    /* Button Improvements */
+    .btn-primary {
+        background: linear-gradient(145deg, #3b82f6 0%, #2563eb 100%);
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        color: white;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px -3px rgba(59, 130, 246, 0.4);
+    }
+    
+    .dark .btn-primary {
+        background: linear-gradient(145deg, #00D4FF 0%, #00B8E6 100%);
+        box-shadow: 0 4px 6px -1px rgba(0, 212, 255, 0.3);
+    }
+    
+    .dark .btn-primary:hover {
+        box-shadow: 0 8px 15px -3px rgba(0, 212, 255, 0.4), 0 0 20px rgba(0, 212, 255, 0.2);
+    }
+    
+    .btn-secondary {
+        background: #f3f4f6;
+        border: 2px solid #e5e7eb;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        color: #374151;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-secondary:hover {
+        background: #e5e7eb;
+        transform: translateY(-1px);
+    }
+    
+    .dark .btn-secondary {
+        background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 100%);
+        border-color: rgba(0, 212, 255, 0.2);
+        color: #B8BCC8;
+    }
+    
+    .dark .btn-secondary:hover {
+        background: linear-gradient(145deg, rgba(45, 51, 72, 0.9) 0%, rgba(37, 42, 58, 1) 100%);
+        border-color: rgba(0, 212, 255, 0.3);
+    }
+    
+    /* Responsive improvements */
+    @media (max-width: 768px) {
+        .form-section {
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        select,
+        textarea {
+            padding: 0.625rem 0.875rem;
+        }
     }
 </style>
 {% endblock %}
 
-{% block page_header %}
-<div class="bg-white dark:bg-cyber-bg-secondary rounded-lg shadow-lg dark:shadow-2xl p-6 mb-6 cyber-glass">
-    <div class="flex items-center justify-between">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary">ایجاد تنانت جدید</h1>
-            <p class="text-gray-600 dark:text-cyber-text-secondary mt-1">فروشگاه طلا و جواهر جدید را به سیستم اضافه کنید</p>
-        </div>
-        <div class="flex space-x-3 space-x-reverse">
-            <a href="{% url 'admin_panel:tenants:tenant_list' %}" 
-               class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
-                <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+{% block page_title %}ایجاد تنانت جدید{% endblock %}
+
+{% block breadcrumb %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3 space-x-reverse">
+        <li class="inline-flex items-center">
+            <a href="{% url 'admin_panel:dashboard' %}" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-cyber-text-secondary dark:hover:text-cyber-neon-primary">
+                <svg class="w-3 h-3 ml-2.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
                 </svg>
-                بازگشت به لیست
+                داشبورد
             </a>
-        </div>
-    </div>
-</div>
+        </li>
+        <li>
+            <div class="flex items-center">
+                <svg class="w-3 h-3 text-gray-400 mx-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                </svg>
+                <a href="{% url 'admin_panel:tenants:tenant_list' %}" class="ml-1 text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-cyber-text-secondary dark:hover:text-cyber-neon-primary md:ml-2">مدیریت تنانت‌ها</a>
+            </div>
+        </li>
+        <li>
+            <div class="flex items-center">
+                <svg class="w-3 h-3 text-gray-400 mx-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                </svg>
+                <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2 dark:text-cyber-text-muted">ایجاد تنانت جدید</span>
+            </div>
+        </li>
+    </ol>
+</nav>
 {% endblock %}
 
 {% block content %}
@@ -98,12 +343,12 @@
     
     <!-- Basic Information Section -->
     <div class="form-section cyber-card">
-        <h3 class="text-lg font-medium text-gray-900 dark:text-cyber-text-primary mb-4 flex items-center">
-            <svg class="w-5 h-5 ml-2 text-primary-500 dark:text-cyber-neon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        <div class="section-header">
+            <svg class="w-6 h-6 text-blue-500 dark:text-cyber-neon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
             </svg>
-            اطلاعات پایه فروشگاه
-        </h3>
+            <h3 class="text-xl font-bold text-gray-900 dark:text-cyber-text-primary">اطلاعات پایه فروشگاه</h3>
+        </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Shop Name -->
@@ -127,12 +372,12 @@
             <div class="form-group">
                 <label for="{{ form.domain_url.id_for_label }}" class="form-label">
                     {{ form.domain_url.label }}
-                    <span class="text-red-500">*</span>
+                    <span class="text-red-500 dark:text-red-400">*</span>
                 </label>
-                <div class="flex">
+                <div class="domain-input-group">
                     {{ form.domain_url }}
-                    <span class="inline-flex items-center px-3 py-2 border border-r-0 border-gray-300 dark:border-cyber-neon-primary/30 bg-gray-50 dark:bg-cyber-bg-elevated text-gray-500 dark:text-cyber-text-muted text-sm rounded-l-md">
-                        .zargar.com
+                    <span class="domain-suffix">
+                        {{ TENANT_SUBDOMAIN_SEPARATOR }}{{ TENANT_BASE_DOMAIN }}
                     </span>
                 </div>
                 {% if form.domain_url.errors %}
@@ -142,6 +387,8 @@
                 {% endif %}
                 {% if form.domain_url.help_text %}
                     <p class="form-help">{{ form.domain_url.help_text }}</p>
+                {% else %}
+                    <p class="form-help">زیردامنه برای تنانت (مثال: shop1{{ TENANT_SUBDOMAIN_SEPARATOR }}{{ TENANT_BASE_DOMAIN }})</p>
                 {% endif %}
             </div>
         </div>
@@ -165,12 +412,12 @@
     
     <!-- Owner Information Section -->
     <div class="form-section cyber-card">
-        <h3 class="text-lg font-medium text-gray-900 dark:text-cyber-text-primary mb-4 flex items-center">
-            <svg class="w-5 h-5 ml-2 text-primary-500 dark:text-cyber-neon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="section-header">
+            <svg class="w-6 h-6 text-purple-500 dark:text-cyber-neon-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
             </svg>
-            اطلاعات مالک فروشگاه
-        </h3>
+            <h3 class="text-xl font-bold text-gray-900 dark:text-cyber-text-primary">اطلاعات مالک فروشگاه</h3>
+        </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Owner Name -->
@@ -244,27 +491,27 @@
     
     <!-- Confirmation Section -->
     <div class="form-section cyber-card">
-        <h3 class="text-lg font-medium text-gray-900 dark:text-cyber-text-primary mb-4 flex items-center">
-            <svg class="w-5 h-5 ml-2 text-yellow-500 dark:text-cyber-neon-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="section-header">
+            <svg class="w-6 h-6 text-yellow-500 dark:text-cyber-neon-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
             </svg>
-            تأیید ایجاد تنانت
-        </h3>
+            <h3 class="text-xl font-bold text-gray-900 dark:text-cyber-text-primary">تأیید ایجاد تنانت</h3>
+        </div>
         
-        <div class="bg-yellow-50 dark:bg-cyber-neon-warning/10 border border-yellow-200 dark:border-cyber-neon-warning/30 rounded-lg p-4 mb-4">
+        <div class="warning-box">
             <div class="flex">
                 <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 text-yellow-400 dark:text-cyber-neon-warning" fill="currentColor" viewBox="0 0 20 20">
+                    <svg class="h-6 w-6 text-yellow-600 dark:text-cyber-neon-warning" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
                     </svg>
                 </div>
                 <div class="mr-3">
-                    <h3 class="text-sm font-medium text-yellow-800 dark:text-cyber-neon-warning">
+                    <h4 class="text-base font-bold text-yellow-800 dark:text-cyber-neon-warning">
                         توجه مهم
-                    </h3>
-                    <div class="mt-2 text-sm text-yellow-700 dark:text-cyber-text-secondary">
-                        <p>با ایجاد این تنانت، عملیات زیر انجام خواهد شد:</p>
-                        <ul class="list-disc list-inside mt-2 space-y-1">
+                    </h4>
+                    <div class="mt-3 text-sm text-yellow-700 dark:text-cyber-text-secondary">
+                        <p class="font-medium mb-2">با ایجاد این تنانت، عملیات زیر انجام خواهد شد:</p>
+                        <ul class="list-disc list-inside space-y-1 text-sm">
                             <li>ایجاد اسکیمای جداگانه در پایگاه داده</li>
                             <li>تنظیم دامنه فرعی برای دسترسی</li>
                             <li>اجرای مایگریشن‌های پایگاه داده</li>
@@ -295,13 +542,16 @@
     </div>
     
     <!-- Form Actions -->
-    <div class="flex items-center justify-end space-x-4 space-x-reverse">
+    <div class="flex items-center justify-end space-x-4 space-x-reverse pt-6">
         <a href="{% url 'admin_panel:tenants:tenant_list' %}" 
-           class="bg-gray-300 dark:bg-cyber-bg-surface hover:bg-gray-400 dark:hover:bg-cyber-bg-elevated text-gray-700 dark:text-cyber-text-secondary px-6 py-2 rounded-lg font-medium transition-colors">
+           class="btn-secondary">
+            <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
             انصراف
         </a>
         <button type="submit" 
-                class="bg-primary-600 dark:bg-cyber-neon-primary hover:bg-primary-700 dark:hover:bg-cyber-neon-primary/80 text-white px-6 py-2 rounded-lg font-medium transition-colors cyber-button"
+                class="btn-primary"
                 id="submit-btn">
             <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>

@@ -5,6 +5,7 @@ from django.urls import path, include
 from . import views
 from . import disaster_recovery_views
 from . import unified_auth_views
+from . import domain_views
 
 app_name = 'admin_panel'
 
@@ -18,6 +19,9 @@ urlpatterns = [
     path('logout/', unified_auth_views.UnifiedAdminLogoutView.as_view(), name='unified_logout'),
     path('2fa/setup/', unified_auth_views.UnifiedAdmin2FASetupView.as_view(), name='2fa_setup'),
     path('session/status/', unified_auth_views.UnifiedAdminSessionStatusView.as_view(), name='session_status'),
+    
+    # Domain Settings
+    path('domain-settings/', domain_views.DomainSettingsView.as_view(), name='domain_settings'),
     
 
     

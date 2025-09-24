@@ -114,6 +114,9 @@ TEMPLATES = [
                 'zargar.core.context_processors.tenant_context',
                 'zargar.core.context_processors.persian_context',
                 'zargar.core.context_processors.theme_context',
+                'zargar.core.context_processors.domain_settings',
+                'zargar.core.context_processors.site_settings',
+                'zargar.core.context_processors.admin_context',
             ],
         },
     },
@@ -308,6 +311,11 @@ TENANT_MODEL = "tenants.Tenant"
 TENANT_DOMAIN_MODEL = "tenants.Domain"
 PUBLIC_SCHEMA_URLCONF = 'zargar.urls_public'
 ROOT_URLCONF = 'zargar.urls_tenants'
+
+# Domain Configuration
+TENANT_BASE_DOMAIN = config('TENANT_BASE_DOMAIN', default='zargar.com')
+TENANT_SUBDOMAIN_SEPARATOR = config('TENANT_SUBDOMAIN_SEPARATOR', default='.')
+TENANT_DOMAIN_PROTOCOL = config('TENANT_DOMAIN_PROTOCOL', default='https')
 
 # Custom User Model
 AUTH_USER_MODEL = 'core.User'

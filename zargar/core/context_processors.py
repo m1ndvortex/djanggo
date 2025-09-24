@@ -1,31 +1,71 @@
 """
-Context processors for ZARGAR jewelry SaaS platform.
+Context processors for the ZARGAR jewelry SaaS platform.
 """
+
 from django.conf import settings
 from django.utils import timezone
-from django.utils.translation import gettext as _
-import jdatetime
-from decimal import Decimal
+
+
+def domain_settings(request):
+    """
+    Add domain-related settings to template context.
+    """
+    return {
+        'TENANT_BASE_DOMAIN': getattr(settings, 'TENANT_BASE_DOMAIN', 'zargar.com'),
+        'TENANT_SUBDOMAIN_SEPARATOR': getattr(settings, 'TENANT_SUBDOMAIN_SEPARATOR', '.'),
+        'TENANT_DOMAIN_PROTOCOL': getattr(settings, 'TENANT_DOMAIN_PROTOCOL', 'https'),
+    }
+
+
+def site_settings(request):
+    """
+    Add site-related settings to template context.
+    """
+    # Use domain from request or fallback to base domain
+    site_domain = getattr(settings, 'TENANT_BASE_DOMAIN', 'zargar.com')
+    
+    # Try to get domain from request host
+    if hasattr(request, 'get_host'):
+        try:
+            host = request.get_host()
+            if host and '.' in host:
+                site_domain = host
+        except:
+            pass
+    
+    return {
+        'SITE_NAME': getattr(settings, 'SITE_NAME', 'ZARGAR'),
+        'SITE_DOMAIN': site_domain,
+        'SITE_URL': f"{getattr(settings, 'TENANT_DOMAIN_PROTOCOL', 'https')}://{site_domain}",
+    }
+
+
+def system_info(request):
+    """
+    Add system information to template context.
+    """
+    return {
+        'CURRENT_TIME': timezone.now(),
+        'DEBUG_MODE': getattr(settings, 'DEBUG', False),
+        'ENVIRONMENT': getattr(settings, 'ENVIRONMENT', 'development'),
+    }
 
 
 def tenant_context(request):
     """
-    Add tenant-specific context to all templates.
+    Add tenant-specific context information.
     """
-    context = {
-        'tenant': getattr(request, 'tenant', None),
-        'tenant_name': getattr(request, 'tenant_name', None),
-        'tenant_domain': getattr(request, 'tenant_domain', None),
-        'is_tenant_context': hasattr(request, 'tenant') and request.tenant is not None,
-        'is_public_context': not (hasattr(request, 'tenant') and request.tenant is not None),
-    }
+    context = {}
     
-    # Add tenant-specific settings if available
+    # Check if we have a tenant in the request
     if hasattr(request, 'tenant') and request.tenant:
+        tenant = request.tenant
         context.update({
-            'tenant_settings': getattr(request.tenant, 'settings', {}),
-            'tenant_logo': getattr(request.tenant, 'logo', None),
-            'tenant_theme': getattr(request.tenant, 'theme_preference', 'light'),
+            'current_tenant': tenant,
+            'tenant_name': tenant.name,
+            'tenant_schema': tenant.schema_name,
+            'tenant_domain': tenant.domain_url,
+            'tenant_full_url': f"{getattr(settings, 'TENANT_DOMAIN_PROTOCOL', 'https')}://{tenant.domain_url}.{getattr(settings, 'TENANT_BASE_DOMAIN', 'zargar.com')}",
         })
     
     return context
@@ -33,292 +73,58 @@ def tenant_context(request):
 
 def persian_context(request):
     """
-    Add Persian localization context to all templates.
+    Add Persian/Farsi localization context.
     """
-    # Get current Persian date
-    now = timezone.now()
-    persian_now = jdatetime.datetime.fromgregorian(datetime=now)
-    
-    # Persian month names
-    persian_months = [
-        'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
-        'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'
-    ]
-    
-    # Persian day names
-    persian_days = [
-        'شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه'
-    ]
-    
-    context = {
-        # Language and direction
-        'LANGUAGE_CODE': 'fa',
+    return {
+        'LANGUAGE_CODE': getattr(settings, 'LANGUAGE_CODE', 'fa'),
         'LANGUAGE_BIDI': True,
-        'language_direction': 'rtl',
-        'is_rtl': True,
-        'persian_locale': True,
-        
-        # Persian date and time
-        'persian_date': persian_now,
-        'persian_date_formatted': persian_now.strftime('%Y/%m/%d'),
-        'persian_datetime_formatted': persian_now.strftime('%Y/%m/%d - %H:%M'),
-        'persian_year': persian_now.year,
-        'persian_month': persian_now.month,
-        'persian_day': persian_now.day,
-        'persian_month_name': persian_months[persian_now.month - 1],
-        'persian_day_name': persian_days[persian_now.weekday()],
-        
-        # Persian number formatting
-        'use_persian_numbers': True,
-        'currency_symbol': 'تومان',
-        'currency_code': 'IRR',
-        'thousand_separator': '٬',
-        'decimal_separator': '٫',
-        
-        # Persian business terms
-        'business_terms': {
-            'weight_unit': 'گرم',
-            'karat_unit': 'عیار',
-            'manufacturing_cost': 'اجرت',
-            'gold_price': 'قیمت طلا',
-            'customer': 'مشتری',
-            'invoice': 'فاکتور',
-            'payment': 'پرداخت',
-            'installment': 'قسط',
-        },
-        
-        # Persian UI text
-        'ui_text': {
-            'dashboard': _('Dashboard'),
-            'inventory': _('Inventory'),
-            'customers': _('Customers'),
-            'sales': _('Sales'),
-            'accounting': _('Accounting'),
-            'reports': _('Reports'),
-            'settings': _('Settings'),
-            'logout': _('Logout'),
-            'login': _('Login'),
-            'save': _('Save'),
-            'cancel': _('Cancel'),
-            'delete': _('Delete'),
-            'edit': _('Edit'),
-            'add': _('Add'),
-            'search': _('Search'),
-            'filter': _('Filter'),
-            'export': _('Export'),
-            'print': _('Print'),
-        }
+        'USE_JALALI': getattr(settings, 'USE_JALALI', True),
     }
-    
-    return context
 
 
 def theme_context(request):
     """
-    Add theme-specific context to all templates.
+    Add theme-related context.
     """
-    theme = getattr(request, 'theme', settings.THEME_SETTINGS['DEFAULT_THEME'])
+    theme_settings = getattr(settings, 'THEME_SETTINGS', {})
+    current_theme = 'light'
     
-    context = {
-        'current_theme': theme,
-        'is_dark_mode': theme == 'dark',
-        'is_light_mode': theme == 'light',
-        'theme_classes': getattr(request, 'theme_classes', ''),
-        'theme_type': getattr(request, 'theme_type', 'modern'),
-        'available_themes': settings.THEME_SETTINGS['AVAILABLE_THEMES'],
+    # Try to get theme from cookie
+    if hasattr(request, 'COOKIES'):
+        cookie_name = theme_settings.get('THEME_COOKIE_NAME', 'zargar_theme')
+        current_theme = request.COOKIES.get(cookie_name, theme_settings.get('DEFAULT_THEME', 'light'))
+    
+    return {
+        'CURRENT_THEME': current_theme,
+        'AVAILABLE_THEMES': theme_settings.get('AVAILABLE_THEMES', ['light', 'dark']),
+        'THEME_SETTINGS': theme_settings,
     }
+
+
+def admin_context(request):
+    """
+    Add admin-specific context for super admin panel.
+    """
+    context = {}
     
-    # Theme-specific settings
-    if theme == 'dark':
+    # Check if user is a super admin
+    if hasattr(request, 'user') and request.user.is_authenticated:
+        # Check if user is a SuperAdmin (from tenants app)
+        try:
+            from zargar.tenants.models import SuperAdmin
+            is_super_admin = SuperAdmin.objects.filter(
+                username=request.user.username
+            ).exists()
+            context['is_super_admin'] = is_super_admin
+        except:
+            context['is_super_admin'] = False
+        
+        # Add user info
         context.update({
-            'cybersecurity_theme': True,
-            'glassmorphism_enabled': True,
-            'neon_effects_enabled': True,
-            'animations_enabled': True,
-            'cyber_colors': {
-                'primary': '#00D4FF',
-                'secondary': '#00FF88',
-                'tertiary': '#FF6B35',
-                'warning': '#FFB800',
-                'danger': '#FF4757',
-                'success': '#00FF88',
-                'purple': '#A55EEA',
-            },
-            'cyber_backgrounds': {
-                'primary': '#0B0E1A',
-                'secondary': '#1A1D29',
-                'surface': '#252A3A',
-                'elevated': '#2D3348',
-            }
-        })
-    else:
-        context.update({
-            'modern_theme': True,
-            'clean_design': True,
-            'professional_layout': True,
-            'light_colors': {
-                'primary': '#1F2937',
-                'secondary': '#374151',
-                'accent': '#3B82F6',
-                'success': '#10B981',
-                'warning': '#F59E0B',
-                'danger': '#EF4444',
-            }
+            'current_user': request.user,
+            'user_full_name': request.user.get_full_name() or request.user.username,
+            'user_is_staff': getattr(request.user, 'is_staff', False),
+            'user_is_superuser': getattr(request.user, 'is_superuser', False),
         })
     
     return context
-
-
-def persian_number_formatter(request):
-    """
-    Add Persian number formatting functions to templates.
-    """
-    def format_persian_number(number):
-        """Convert English digits to Persian digits."""
-        if number is None:
-            return ''
-        
-        english_digits = '0123456789'
-        persian_digits = '۰۱۲۳۴۵۶۷۸۹'
-        
-        str_number = str(number)
-        for i, digit in enumerate(english_digits):
-            str_number = str_number.replace(digit, persian_digits[i])
-        
-        return str_number
-    
-    def format_persian_currency(amount):
-        """Format currency in Persian with Toman."""
-        if amount is None:
-            return ''
-        
-        # Format with thousand separators
-        formatted = f"{amount:,.0f}"
-        
-        # Convert to Persian digits
-        persian_formatted = format_persian_number(formatted)
-        
-        # Replace comma with Persian thousand separator
-        persian_formatted = persian_formatted.replace(',', '٬')
-        
-        return f"{persian_formatted} تومان"
-    
-    def format_persian_weight(grams):
-        """Format weight in Persian with grams."""
-        if grams is None:
-            return ''
-        
-        formatted = f"{grams:.3f}"
-        persian_formatted = format_persian_number(formatted)
-        persian_formatted = persian_formatted.replace('.', '٫')
-        
-        return f"{persian_formatted} گرم"
-    
-    def convert_to_mithqal(grams):
-        """Convert grams to Mithqal (traditional Persian weight unit)."""
-        if grams is None:
-            return ''
-        
-        # 1 Mithqal = 4.608 grams (traditional Iranian measurement)
-        mithqal = float(grams) / 4.608
-        formatted = f"{mithqal:.3f}"
-        persian_formatted = format_persian_number(formatted)
-        persian_formatted = persian_formatted.replace('.', '٫')
-        
-        return f"{persian_formatted} مثقال"
-    
-    def convert_to_soot(grams):
-        """Convert grams to Soot (traditional Persian weight unit)."""
-        if grams is None:
-            return ''
-        
-        # 1 Soot = 3.456 grams (traditional Iranian measurement)
-        soot = float(grams) / 3.456
-        formatted = f"{soot:.3f}"
-        persian_formatted = format_persian_number(formatted)
-        persian_formatted = persian_formatted.replace('.', '٫')
-        
-        return f"{persian_formatted} سوت"
-    
-    return {
-        'format_persian_number': format_persian_number,
-        'format_persian_currency': format_persian_currency,
-        'format_persian_weight': format_persian_weight,
-        'convert_to_mithqal': convert_to_mithqal,
-        'convert_to_soot': convert_to_soot,
-    }
-
-
-def persian_calendar_context(request):
-    """
-    Add Persian calendar context to templates.
-    """
-    now = timezone.now()
-    persian_now = jdatetime.datetime.fromgregorian(datetime=now)
-    
-    # Calculate fiscal year (Persian calendar year)
-    fiscal_year_start = jdatetime.datetime(persian_now.year, 1, 1)
-    fiscal_year_end = jdatetime.datetime(persian_now.year, 12, 29)  # Esfand can have 29 or 30 days
-    
-    # Check if it's a leap year
-    is_leap_year = jdatetime.j_y_is_leap(persian_now.year)
-    if is_leap_year:
-        fiscal_year_end = jdatetime.datetime(persian_now.year, 12, 30)
-    
-    context = {
-        'persian_calendar': {
-            'current_date': persian_now,
-            'current_year': persian_now.year,
-            'current_month': persian_now.month,
-            'current_day': persian_now.day,
-            'is_leap_year': is_leap_year,
-            'fiscal_year_start': fiscal_year_start,
-            'fiscal_year_end': fiscal_year_end,
-            'days_in_year': 366 if is_leap_year else 365,
-        },
-        'persian_holidays': get_persian_holidays(persian_now.year),
-    }
-    
-    return context
-
-
-def get_persian_holidays(year):
-    """
-    Get Persian holidays for the given year.
-    """
-    holidays = [
-        {'date': jdatetime.date(year, 1, 1), 'name': 'نوروز - سال نو'},
-        {'date': jdatetime.date(year, 1, 2), 'name': 'عید نوروز'},
-        {'date': jdatetime.date(year, 1, 3), 'name': 'عید نوروز'},
-        {'date': jdatetime.date(year, 1, 4), 'name': 'عید نوروز'},
-        {'date': jdatetime.date(year, 1, 12), 'name': 'روز جمهوری اسلامی ایران'},
-        {'date': jdatetime.date(year, 1, 13), 'name': 'سیزده بدر'},
-        {'date': jdatetime.date(year, 3, 14), 'name': 'رحلت امام خمینی'},
-        {'date': jdatetime.date(year, 3, 15), 'name': 'قیام ۱۵ خرداد'},
-        {'date': jdatetime.date(year, 6, 30), 'name': 'شهادت امام علی (ع)'},
-        {'date': jdatetime.date(year, 7, 27), 'name': 'عید سعید فطر'},
-        {'date': jdatetime.date(year, 10, 2), 'name': 'عید سعید قربان'},
-        {'date': jdatetime.date(year, 10, 10), 'name': 'عید سعید غدیر خم'},
-        {'date': jdatetime.date(year, 10, 28), 'name': 'تاسوعای حسینی'},
-        {'date': jdatetime.date(year, 10, 29), 'name': 'عاشورای حسینی'},
-        {'date': jdatetime.date(year, 11, 18), 'name': 'اربعین حسینی'},
-        {'date': jdatetime.date(year, 11, 28), 'name': 'رحلت رسول اکرم'},
-        {'date': jdatetime.date(year, 12, 1), 'name': 'شهادت امام رضا (ع)'},
-        {'date': jdatetime.date(year, 12, 9), 'name': 'تولد حضرت فاطمه (س)'},
-    ]
-    
-    return holidays
-
-
-def frontend_settings_context(request):
-    """
-    Add frontend framework settings to templates.
-    """
-    return {
-        'frontend_settings': settings.FRONTEND_SETTINGS,
-        'tailwind_version': settings.FRONTEND_SETTINGS['TAILWIND_CSS_VERSION'],
-        'flowbite_version': settings.FRONTEND_SETTINGS['FLOWBITE_VERSION'],
-        'alpine_version': settings.FRONTEND_SETTINGS['ALPINE_JS_VERSION'],
-        'htmx_version': settings.FRONTEND_SETTINGS['HTMX_VERSION'],
-        'framer_motion_version': settings.FRONTEND_SETTINGS['FRAMER_MOTION_VERSION'],
-    }
