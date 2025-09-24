@@ -6,6 +6,7 @@ from . import views
 from . import disaster_recovery_views
 from . import unified_auth_views
 from . import domain_views
+from . import security_views
 
 app_name = 'admin_panel'
 
@@ -53,6 +54,13 @@ urlpatterns = [
     path('health/alerts/', views.SystemHealthAlertsView.as_view(), name='system_health_alerts'),
     path('health/alerts/action/', views.AlertActionView.as_view(), name='alert_action'),
     path('health/reports/', views.SystemHealthReportsView.as_view(), name='system_health_reports'),
+    
+    # Security Dashboard
+    path('security/', security_views.SecurityDashboardView.as_view(), name='security_dashboard'),
+    path('security/metrics/api/', security_views.SecurityMetricsAPIView.as_view(), name='security_metrics_api'),
+    path('security/trends/api/', security_views.SecurityTrendsAPIView.as_view(), name='security_trends_api'),
+    path('security/event/resolve/', security_views.SecurityEventResolveView.as_view(), name='security_event_resolve'),
+    path('security/activity/investigate/', security_views.SuspiciousActivityInvestigateView.as_view(), name='suspicious_activity_investigate'),
     
     # Disaster Recovery
     path('disaster-recovery/', disaster_recovery_views.DisasterRecoveryDashboardView.as_view(), name='disaster_recovery_dashboard'),

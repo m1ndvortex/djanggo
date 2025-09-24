@@ -1,0 +1,629 @@
+{% extends "admin_panel/base_unified.html" %}
+{% load static %}
+
+{% block title %}داشبورد امنیت - پنل مدیریت زرگر{% endblock %}
+
+{% block extra_css %}
+<style>
+    .security-metric-card {
+        @apply bg-white dark:bg-cyber-bg-surface rounded-lg shadow-lg dark:shadow-2xl border dark:border-cyber-neon-primary/20 p-6 transition-all duration-300;
+    }
+    
+    .security-metric-card:hover {
+        @apply transform scale-105 shadow-xl dark:shadow-cyber-neon-primary/20;
+    }
+    
+    .threat-level-critical {
+        @apply text-red-600 dark:text-cyber-neon-danger bg-red-50 dark:bg-cyber-neon-danger/10;
+    }
+    
+    .threat-level-high {
+        @apply text-orange-600 dark:text-cyber-neon-tertiary bg-orange-50 dark:bg-cyber-neon-tertiary/10;
+    }
+    
+    .threat-level-warning {
+        @apply text-yellow-600 dark:text-cyber-neon-warning bg-yellow-50 dark:bg-cyber-neon-warning/10;
+    }
+    
+    .threat-level-normal {
+        @apply text-green-600 dark:text-cyber-neon-secondary bg-green-50 dark:bg-cyber-neon-secondary/10;
+    }
+    
+    .cyber-glass {
+        backdrop-filter: blur(16px) saturate(150%);
+        background: linear-gradient(145deg, rgba(37, 42, 58, 0.8) 0%, rgba(26, 29, 41, 0.9) 50%, rgba(11, 14, 26, 0.95) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
+    
+    .neon-border {
+        border-image: linear-gradient(90deg, #00D4FF, #00FF88, #FF6B35) 1;
+        animation: neon-pulse 2s ease-in-out infinite alternate;
+    }
+    
+    @keyframes neon-pulse {
+        from { box-shadow: 0 0 20px rgba(0, 212, 255, 0.1); }
+        to { box-shadow: 0 0 30px rgba(0, 212, 255, 0.3), 0 0 60px rgba(0, 255, 136, 0.1); }
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+    
+    .pulse-animation {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+</style>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-8">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-cyber-text-primary">
+                داشبورد امنیت
+            </h1>
+            <p class="mt-2 text-gray-600 dark:text-cyber-text-secondary">
+                نظارت بر امنیت سیستم و تهدیدات در زمان واقعی
+            </p>
+        </div>
+        
+        <div class="flex space-x-4 space-x-reverse">
+            <button onclick="refreshSecurityMetrics()" 
+                    class="bg-primary-600 dark:bg-cyber-neon-primary hover:bg-primary-700 dark:hover:bg-cyber-neon-primary/80 text-white px-4 py-2 rounded-lg transition-colors">
+                <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                بروزرسانی
+            </button>
+            
+            <div class="flex items-center space-x-2 space-x-reverse bg-white dark:bg-cyber-bg-surface px-4 py-2 rounded-lg shadow-lg dark:shadow-2xl">
+                <div class="w-3 h-3 bg-green-500 dark:bg-cyber-neon-secondary rounded-full pulse-animation"></div>
+                <span class="text-sm text-gray-600 dark:text-cyber-text-secondary">زنده</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Security Status Overview -->
+<div class="mb-8">
+    <div class="security-metric-card dark:cyber-glass threat-level-{{ security_status.level }}">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-2xl font-bold">وضعیت امنیتی سیستم</h2>
+                <p class="text-4xl font-bold mt-2" id="security-status-text">{{ security_status.text }}</p>
+                <p class="text-sm mt-1" id="security-status-description">{{ security_status.description }}</p>
+            </div>
+            <div class="p-4 rounded-full">
+                {% if security_status.level == 'critical' %}
+                    <svg class="w-16 h-16 text-red-600 dark:text-cyber-neon-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                {% elif security_status.level == 'high' %}
+                    <svg class="w-16 h-16 text-orange-600 dark:text-cyber-neon-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                {% elif security_status.level == 'warning' %}
+                    <svg class="w-16 h-16 text-yellow-600 dark:text-cyber-neon-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                {% else %}
+                    <svg class="w-16 h-16 text-green-600 dark:text-cyber-neon-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                    </svg>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Security Metrics Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" id="security-metrics-grid">
+    <!-- Failed Logins -->
+    <div class="security-metric-card dark:cyber-glass">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-red-100 dark:bg-cyber-neon-danger/20">
+                <svg class="w-8 h-8 text-red-600 dark:text-cyber-neon-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">ورود ناموفق</p>
+                <p class="text-3xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers" id="failed-logins-count">
+                    {{ security_metrics.failed_logins }}
+                </p>
+                <p class="text-xs text-gray-500 dark:text-cyber-text-muted">۲۴ ساعت گذشته</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Blocked IPs -->
+    <div class="security-metric-card dark:cyber-glass">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-orange-100 dark:bg-cyber-neon-tertiary/20">
+                <svg class="w-8 h-8 text-orange-600 dark:text-cyber-neon-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">IP های مسدود</p>
+                <p class="text-3xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers" id="blocked-ips-count">
+                    {{ security_metrics.blocked_ips }}
+                </p>
+                <p class="text-xs text-gray-500 dark:text-cyber-text-muted">فعال</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Suspicious Activities -->
+    <div class="security-metric-card dark:cyber-glass">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 dark:bg-cyber-neon-warning/20">
+                <svg class="w-8 h-8 text-yellow-600 dark:text-cyber-neon-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">فعالیت مشکوک</p>
+                <p class="text-3xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers" id="suspicious-activities-count">
+                    {{ security_metrics.suspicious_activities }}
+                </p>
+                <p class="text-xs text-gray-500 dark:text-cyber-text-muted">۲۴ ساعت گذشته</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Critical Events -->
+    <div class="security-metric-card dark:cyber-glass">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-purple-100 dark:bg-cyber-neon-purple/20">
+                <svg class="w-8 h-8 text-purple-600 dark:text-cyber-neon-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">رویدادهای بحرانی</p>
+                <p class="text-3xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers" id="critical-events-count">
+                    {{ security_metrics.critical_events }}
+                </p>
+                <p class="text-xs text-gray-500 dark:text-cyber-text-muted">۲۴ ساعت گذشته</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts and Trends -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <!-- Security Trends Chart -->
+    <div class="security-metric-card dark:cyber-glass">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">روند امنیتی (۷ روز گذشته)</h3>
+        <div class="chart-container">
+            <canvas id="securityTrendsChart"></canvas>
+        </div>
+    </div>
+    
+    <!-- Threat Distribution -->
+    <div class="security-metric-card dark:cyber-glass">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">توزیع تهدیدات</h3>
+        <div class="chart-container">
+            <canvas id="threatDistributionChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Active Threats -->
+{% if active_threats %}
+<div class="mb-8">
+    <h2 class="text-xl font-bold text-gray-900 dark:text-cyber-text-primary mb-4">تهدیدات فعال</h2>
+    <div class="security-metric-card dark:cyber-glass">
+        <div class="space-y-4">
+            {% for threat in active_threats %}
+            <div class="flex items-center justify-between p-4 border-r-4 
+                        {% if threat.severity == 'critical' %}border-red-500 dark:border-cyber-neon-danger bg-red-50 dark:bg-cyber-neon-danger/10
+                        {% else %}border-orange-500 dark:border-cyber-neon-tertiary bg-orange-50 dark:bg-cyber-neon-tertiary/10{% endif %} 
+                        rounded-lg">
+                <div class="flex-1">
+                    <h4 class="font-semibold text-gray-900 dark:text-cyber-text-primary">
+                        {{ threat.get_event_type_display }}
+                    </h4>
+                    <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">
+                        IP: {{ threat.ip_address }} | {{ threat.created_at|timesince }} پیش
+                    </p>
+                    {% if threat.details %}
+                    <p class="text-xs text-gray-500 dark:text-cyber-text-muted mt-1">
+                        {{ threat.details|truncatechars:100 }}
+                    </p>
+                    {% endif %}
+                </div>
+                <div class="flex space-x-2 space-x-reverse">
+                    <span class="px-3 py-1 text-xs font-medium rounded-full
+                                {% if threat.severity == 'critical' %}bg-red-100 text-red-800 dark:bg-cyber-neon-danger/20 dark:text-cyber-neon-danger
+                                {% else %}bg-orange-100 text-orange-800 dark:bg-cyber-neon-tertiary/20 dark:text-cyber-neon-tertiary{% endif %}">
+                        {{ threat.get_severity_display }}
+                    </span>
+                    <button onclick="resolveSecurityEvent('{{ threat.id }}')" 
+                            class="px-3 py-1 text-xs bg-green-600 dark:bg-cyber-neon-secondary text-white rounded hover:bg-green-700 dark:hover:bg-cyber-neon-secondary/80 transition-colors">
+                        حل شده
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Suspicious Activities -->
+{% if suspicious_activities %}
+<div class="mb-8">
+    <h2 class="text-xl font-bold text-gray-900 dark:text-cyber-text-primary mb-4">فعالیت‌های مشکوک</h2>
+    <div class="security-metric-card dark:cyber-glass">
+        <div class="space-y-4">
+            {% for activity in suspicious_activities %}
+            <div class="flex items-center justify-between p-4 border-r-4 border-yellow-500 dark:border-cyber-neon-warning bg-yellow-50 dark:bg-cyber-neon-warning/10 rounded-lg">
+                <div class="flex-1">
+                    <h4 class="font-semibold text-gray-900 dark:text-cyber-text-primary">
+                        {{ activity.get_activity_type_display }}
+                    </h4>
+                    <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">
+                        IP: {{ activity.ip_address }} | اعتماد: {{ activity.confidence_score|floatformat:2 }}
+                    </p>
+                    <p class="text-xs text-gray-500 dark:text-cyber-text-muted">
+                        {{ activity.created_at|timesince }} پیش
+                    </p>
+                </div>
+                <div class="flex space-x-2 space-x-reverse">
+                    <span class="px-3 py-1 text-xs font-medium rounded-full
+                                {% if activity.risk_level == 'critical' %}bg-red-100 text-red-800 dark:bg-cyber-neon-danger/20 dark:text-cyber-neon-danger
+                                {% elif activity.risk_level == 'high' %}bg-orange-100 text-orange-800 dark:bg-cyber-neon-tertiary/20 dark:text-cyber-neon-tertiary
+                                {% else %}bg-yellow-100 text-yellow-800 dark:bg-cyber-neon-warning/20 dark:text-cyber-neon-warning{% endif %}">
+                        {{ activity.get_risk_level_display }}
+                    </span>
+                    <button onclick="investigateSuspiciousActivity('{{ activity.id }}')" 
+                            class="px-3 py-1 text-xs bg-blue-600 dark:bg-cyber-neon-primary text-white rounded hover:bg-blue-700 dark:hover:bg-cyber-neon-primary/80 transition-colors">
+                        بررسی
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Recent Security Events -->
+<div class="mb-8">
+    <h2 class="text-xl font-bold text-gray-900 dark:text-cyber-text-primary mb-4">رویدادهای امنیتی اخیر</h2>
+    <div class="security-metric-card dark:cyber-glass">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-cyber-neon-primary/20">
+                <thead class="bg-gray-50 dark:bg-cyber-bg-elevated">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                            نوع رویداد
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                            شدت
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                            IP آدرس
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                            زمان
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">
+                            وضعیت
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-cyber-bg-surface divide-y divide-gray-200 dark:divide-cyber-neon-primary/20">
+                    {% for event in recent_events %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated/50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-cyber-text-primary">
+                            {{ event.get_event_type_display }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 py-1 text-xs font-medium rounded-full
+                                        {% if event.severity == 'critical' %}bg-red-100 text-red-800 dark:bg-cyber-neon-danger/20 dark:text-cyber-neon-danger
+                                        {% elif event.severity == 'high' %}bg-orange-100 text-orange-800 dark:bg-cyber-neon-tertiary/20 dark:text-cyber-neon-tertiary
+                                        {% elif event.severity == 'medium' %}bg-yellow-100 text-yellow-800 dark:bg-cyber-neon-warning/20 dark:text-cyber-neon-warning
+                                        {% else %}bg-green-100 text-green-800 dark:bg-cyber-neon-secondary/20 dark:text-cyber-neon-secondary{% endif %}">
+                                {{ event.get_severity_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-cyber-text-secondary">
+                            {{ event.ip_address }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-cyber-text-secondary">
+                            {{ event.created_at|timesince }} پیش
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if event.is_resolved %}
+                                <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 dark:bg-cyber-neon-secondary/20 dark:text-cyber-neon-secondary rounded-full">
+                                    حل شده
+                                </span>
+                            {% else %}
+                                <span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 dark:bg-cyber-neon-danger/20 dark:text-cyber-neon-danger rounded-full">
+                                    فعال
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-cyber-text-muted">
+                            رویداد امنیتی در ۲۴ ساعت گذشته ثبت نشده است
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Auto-refresh indicator -->
+<div class="fixed bottom-4 left-4 bg-white dark:bg-cyber-bg-surface shadow-lg dark:shadow-2xl rounded-lg p-3 border dark:border-cyber-neon-primary/20">
+    <div class="flex items-center space-x-2 space-x-reverse">
+        <div class="w-2 h-2 bg-green-500 dark:bg-cyber-neon-secondary rounded-full animate-pulse"></div>
+        <span class="text-sm text-gray-600 dark:text-cyber-text-secondary">بروزرسانی خودکار</span>
+        <span id="refreshTimer" class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary">30s</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let refreshInterval;
+let timerInterval;
+let timeLeft = 30;
+let securityTrendsChart = null;
+let threatDistributionChart = null;
+
+// Initialize charts and auto-refresh
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+    startAutoRefresh();
+});
+
+function initializeCharts() {
+    // Destroy existing charts if they exist
+    if (securityTrendsChart) {
+        securityTrendsChart.destroy();
+        securityTrendsChart = null;
+    }
+    if (threatDistributionChart) {
+        threatDistributionChart.destroy();
+        threatDistributionChart = null;
+    }
+    
+    // Security Trends Chart
+    const trendsCtx = document.getElementById('securityTrendsChart').getContext('2d');
+    createSecurityTrendsChart(trendsCtx);
+    
+    // Threat Distribution Chart
+    const distributionCtx = document.getElementById('threatDistributionChart').getContext('2d');
+    createThreatDistributionChart(distributionCtx);
+}
+
+function createSecurityTrendsChart(ctx) {
+    // Fetch trends data
+    fetch('{% url "admin_panel:security_trends_api" %}?days=7')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                securityTrendsChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.trends.map(d => d.date_persian),
+                        datasets: [{
+                            label: 'رویدادهای امنیتی',
+                            data: data.trends.map(d => d.events),
+                            borderColor: document.documentElement.classList.contains('dark') ? '#00D4FF' : '#3b82f6',
+                            backgroundColor: document.documentElement.classList.contains('dark') ? 'rgba(0, 212, 255, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: document.documentElement.classList.contains('dark') ? '#FFFFFF' : '#374151'
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: document.documentElement.classList.contains('dark') ? '#B8BCC8' : '#6B7280'
+                                },
+                                grid: {
+                                    color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    color: document.documentElement.classList.contains('dark') ? '#B8BCC8' : '#6B7280'
+                                },
+                                grid: {
+                                    color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching trends data:', error);
+        });
+}
+
+function createThreatDistributionChart(ctx) {
+    // Mock data for threat distribution - in real implementation, fetch from API
+    const threatData = {
+        labels: ['ورود ناموفق', 'فعالیت مشکوک', 'حمله بروت فورس', 'دسترسی غیرمجاز'],
+        datasets: [{
+            data: [{{ security_metrics.failed_logins }}, {{ security_metrics.suspicious_activities }}, {{ security_metrics.brute_force_attempts }}, {{ security_metrics.unauthorized_access }}],
+            backgroundColor: [
+                document.documentElement.classList.contains('dark') ? '#FF4757' : '#ef4444',
+                document.documentElement.classList.contains('dark') ? '#FFB800' : '#f59e0b',
+                document.documentElement.classList.contains('dark') ? '#FF6B35' : '#f97316',
+                document.documentElement.classList.contains('dark') ? '#A55EEA' : '#8b5cf6'
+            ],
+            borderColor: [
+                document.documentElement.classList.contains('dark') ? '#FF4757' : '#ef4444',
+                document.documentElement.classList.contains('dark') ? '#FFB800' : '#f59e0b',
+                document.documentElement.classList.contains('dark') ? '#FF6B35' : '#f97316',
+                document.documentElement.classList.contains('dark') ? '#A55EEA' : '#8b5cf6'
+            ],
+            borderWidth: 2
+        }]
+    };
+    
+    threatDistributionChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: threatData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: document.documentElement.classList.contains('dark') ? '#FFFFFF' : '#374151',
+                        padding: 20
+                    }
+                }
+            }
+        }
+    });
+}
+
+function refreshSecurityMetrics() {
+    fetch('{% url "admin_panel:security_metrics_api" %}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateMetricsDisplay(data.metrics, data.security_status);
+                initializeCharts(); // Refresh charts with new data
+            } else {
+                console.error('Error refreshing metrics:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error connecting to server:', error);
+        });
+}
+
+function updateMetricsDisplay(metrics, securityStatus) {
+    // Update metric counts
+    document.getElementById('failed-logins-count').textContent = metrics.failed_logins;
+    document.getElementById('blocked-ips-count').textContent = metrics.blocked_ips;
+    document.getElementById('suspicious-activities-count').textContent = metrics.suspicious_activities;
+    document.getElementById('critical-events-count').textContent = metrics.critical_events;
+    
+    // Update security status
+    document.getElementById('security-status-text').textContent = securityStatus.text;
+    document.getElementById('security-status-description').textContent = securityStatus.description;
+}
+
+function resolveSecurityEvent(eventId) {
+    const notes = prompt('یادداشت حل مسئله (اختیاری):');
+    
+    fetch('{% url "admin_panel:security_event_resolve" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: `event_id=${eventId}&notes=${encodeURIComponent(notes || '')}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            ZargarAdmin.showMessage('رویداد امنیتی حل شد', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            ZargarAdmin.showMessage('خطا در حل رویداد امنیتی', 'error');
+        }
+    });
+}
+
+function investigateSuspiciousActivity(activityId) {
+    const notes = prompt('یادداشت بررسی:');
+    const falsePositive = confirm('آیا این فعالیت مثبت کاذب است؟');
+    
+    fetch('{% url "admin_panel:suspicious_activity_investigate" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: `activity_id=${activityId}&notes=${encodeURIComponent(notes || '')}&false_positive=${falsePositive}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            ZargarAdmin.showMessage('فعالیت مشکوک بررسی شد', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            ZargarAdmin.showMessage('خطا در بررسی فعالیت مشکوک', 'error');
+        }
+    });
+}
+
+function startAutoRefresh() {
+    // Auto-refresh every 30 seconds
+    refreshInterval = setInterval(refreshSecurityMetrics, 30000);
+    
+    // Update timer display
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        document.getElementById('refreshTimer').textContent = timeLeft + 's';
+        
+        if (timeLeft <= 0) {
+            timeLeft = 30;
+        }
+    }, 1000);
+}
+
+// Stop auto-refresh when page is hidden
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        clearInterval(refreshInterval);
+        clearInterval(timerInterval);
+    } else {
+        startAutoRefresh();
+        timeLeft = 30;
+    }
+});
+
+// Global ZargarAdmin object for notifications
+window.ZargarAdmin = {
+    showMessage: function(message, type) {
+        // Simple notification system
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+            type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+        }`;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+};
+</script>
+
+<!-- CSRF Token for AJAX requests -->
+{% csrf_token %}
+{% endblock %}
