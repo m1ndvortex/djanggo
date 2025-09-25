@@ -1,5 +1,6 @@
 {% extends 'admin_panel/base_unified.html' %}
 {% load static %}
+{% csrf_token %}
 
 {% block title %}ماتریس مجوزها - پنل مدیریت زرگر{% endblock %}
 
@@ -336,12 +337,12 @@
                             <!-- Permission Cells -->
                             {% for role in roles %}
                             <td class="px-2 py-3 text-center">
-                                <div class="matrix-cell {% if permission.id in matrix|default_if_none:role.id %}has-permission{% else %}no-permission{% endif %}" 
+                                <div class="matrix-cell {% if permission in role.permissions.all %}has-permission{% else %}no-permission{% endif %}" 
                                      data-role="{{ role.id }}" 
                                      data-permission="{{ permission.id }}"
                                      @click="togglePermission({{ role.id }}, {{ permission.id }})">
                                     
-                                    {% if permission.id in matrix|default_if_none:role.id %}
+                                    {% if permission in role.permissions.all %}
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                     </svg>
@@ -470,10 +471,94 @@ function permissionMatrix() {
             });
         },
         
-        togglePermission(roleId, permissionId) {
-            // This would typically make an API call to toggle the permission
-            // For now, just show an alert
-            alert(`Toggle permission ${permissionId} for role ${roleId}`);
+        async togglePermission(roleId, permissionId) {
+            try {
+                // Show loading state
+                const cell = document.querySelector(`.matrix-cell[data-role="${roleId}"][data-permission="${permissionId}"]`);
+                const originalClass = cell.className;
+                cell.innerHTML = '<div class="animate-pulse w-4 h-4 bg-gray-300 rounded"></div>';
+                
+                // Get CSRF token from cookies
+                const getCsrfToken = () => {
+                    const cookieValue = document.cookie
+                        .split('; ')
+                        .find(row => row.startsWith('csrftoken='));
+                    return cookieValue ? cookieValue.split('=')[1] : null;
+                };
+                const csrfToken = getCsrfToken();
+                
+                // Make API call
+                const formData = new FormData();
+                formData.append('role_id', roleId);
+                formData.append('permission_id', permissionId);
+                if (csrfToken) {
+                    formData.append('csrfmiddlewaretoken', csrfToken);
+                }
+                
+                const response = await fetch('/super-panel/security/rbac/api/toggle-permission/', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'same-origin',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': csrfToken,
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update UI based on result
+                    if (data.has_permission) {
+                        cell.className = originalClass.replace('no-permission', 'has-permission');
+                        cell.innerHTML = `
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        `;
+                    } else {
+                        cell.className = originalClass.replace('has-permission', 'no-permission');
+                        cell.innerHTML = `
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        `;
+                    }
+                    
+                    // Show success message
+                    ZargarUnifiedAdmin.showMessage(data.message, 'success');
+                    
+                } else {
+                    // Restore original state
+                    cell.className = originalClass;
+                    cell.innerHTML = originalClass.includes('has-permission') ? 
+                        `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>` :
+                        `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>`;
+                    
+                    // Show error message
+                    ZargarUnifiedAdmin.showMessage(data.error || 'خطا در تغییر مجوز', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Error toggling permission:', error);
+                
+                // Restore original state
+                const cell = document.querySelector(`.matrix-cell[data-role="${roleId}"][data-permission="${permissionId}"]`);
+                const originalClass = cell.className;
+                cell.innerHTML = originalClass.includes('has-permission') ? 
+                    `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>` :
+                    `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>`;
+                
+                ZargarUnifiedAdmin.showMessage('خطا در ارتباط با سرور', 'error');
+            }
         },
         
         exportMatrix() {

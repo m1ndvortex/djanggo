@@ -184,14 +184,14 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
                                     <div class="user-avatar bg-primary-100 dark:bg-cyber-neon-primary/20 text-primary-600 dark:text-cyber-neon-primary ml-4">
-                                        {{ assignment.user.get_full_name|default:assignment.user.username|first|upper }}
+                                        {{ assignment.user_username|first|upper }}
                                     </div>
                                     <div>
                                         <div class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary">
-                                            {{ assignment.user.get_full_name|default:assignment.user.username }}
+                                            {{ assignment.user_username }}
                                         </div>
                                         <div class="text-sm text-gray-500 dark:text-cyber-text-muted">
-                                            {{ assignment.user.email }}
+                                            {{ assignment.user_email }}
                                         </div>
                                     </div>
                                 </div>
@@ -224,13 +224,13 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex items-center space-x-2 space-x-reverse">
-                                    <button @click="viewUserPermissions({{ assignment.user.id }}, '{{ assignment.user.get_full_name|default:assignment.user.username }}')"
+                                    <button @click="viewUserPermissions({{ assignment.user_id }}, '{{ assignment.user_username }}')"
                                             class="text-primary-600 dark:text-cyber-neon-primary hover:text-primary-700 dark:hover:text-cyber-neon-primary/80">
                                         مجوزها
                                     </button>
                                     
                                     {% if assignment.is_active %}
-                                    <button @click="removeRole({{ assignment.user.id }}, {{ assignment.role.id }}, '{{ assignment.user.get_full_name|default:assignment.user.username }}', '{{ assignment.role.name_persian|default:assignment.role.name }}')"
+                                    <button @click="removeRole({{ assignment.user_id }}, {{ assignment.role.id }}, '{{ assignment.user_username }}', '{{ assignment.role.name_persian|default:assignment.role.name }}')"
                                             class="text-red-600 dark:text-cyber-neon-danger hover:text-red-700 dark:hover:text-cyber-neon-danger/80">
                                         حذف
                                     </button>

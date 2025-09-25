@@ -762,3 +762,73 @@ class RBACService:
         
         logger.info(f"Cleaned up {count} expired role assignments")
         return count
+    
+    @staticmethod
+    @transaction.atomic
+    def toggle_role_permission(role_id, permission_id, updated_by_id=None, updated_by_username=''):
+        """
+        Toggle a permission for a role (add if not exists, remove if exists).
+        
+        Args:
+            role_id: ID of the role
+            permission_id: ID of the permission
+            updated_by_id: ID of the user making the change
+            updated_by_username: Username of the user making the change
+        
+        Returns:
+            dict: Result with success status and whether permission was added or removed
+        """
+        try:
+            role = SuperAdminRole.objects.get(id=role_id, is_active=True)
+            permission = SuperAdminPermission.objects.get(id=permission_id, is_active=True)
+            
+            # Check if role currently has this permission
+            has_permission = role.permissions.filter(id=permission_id).exists()
+            
+            if has_permission:
+                # Remove permission
+                role.permissions.remove(permission)
+                action = 'removed'
+                audit_action = 'permission_removed_from_role'
+            else:
+                # Add permission
+                role.permissions.add(permission)
+                action = 'added'
+                audit_action = 'permission_added_to_role'
+            
+            # Clear cache for all users with this role
+            user_roles = SuperAdminUserRole.objects.filter(role=role, is_active=True)
+            for user_role in user_roles:
+                clear_user_permission_cache(user_role.user_id)
+            
+            # Log the action
+            RolePermissionAuditLog.log_action(
+                action=audit_action,
+                object_type='role_permission',
+                object_id=role.id,
+                object_name=f"{role.name} - {permission.name}",
+                old_values={'has_permission': has_permission},
+                new_values={'has_permission': not has_permission},
+                performed_by_id=updated_by_id or 0,
+                performed_by_username=updated_by_username or 'system'
+            )
+            
+            logger.info(f"Permission {permission.codename} {action} for role {role.name} by {updated_by_username}")
+            
+            return {
+                'success': True,
+                'action': action,
+                'has_permission': not has_permission,
+                'role_name': role.name_persian or role.name,
+                'permission_name': permission.name_persian or permission.name
+            }
+            
+        except SuperAdminRole.DoesNotExist:
+            logger.error(f"Role with ID {role_id} not found")
+            raise ValidationError(_("نقش یافت نشد."))
+        except SuperAdminPermission.DoesNotExist:
+            logger.error(f"Permission with ID {permission_id} not found")
+            raise ValidationError(_("مجوز یافت نشد."))
+        except Exception as e:
+            logger.error(f"Error toggling permission {permission_id} for role {role_id}: {e}")
+            raise ValidationError(f"خطا در تغییر مجوز: {e}")

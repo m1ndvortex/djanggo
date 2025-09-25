@@ -14,6 +14,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.core.paginator import Paginator
 from django.db.models import Q, Count
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 import json
 import logging
 
@@ -526,4 +527,49 @@ class UserPermissionsAPIView(SuperAdminRequiredMixin, View):
             return JsonResponse({
                 'success': False,
                 'error': 'خطا در دریافت مجوزهای کاربر'
+            })
+
+
+@method_decorator(require_permission('rbac.manage'), name='dispatch')
+class ToggleRolePermissionAPIView(SuperAdminRequiredMixin, View):
+    """
+    API view to toggle a permission for a role.
+    """
+    
+    def post(self, request):
+        """Toggle permission for a role."""
+        try:
+            role_id = request.POST.get('role_id')
+            permission_id = request.POST.get('permission_id')
+            
+            if not role_id or not permission_id:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'شناسه نقش و مجوز الزامی است.'
+                })
+            
+            result = RBACService.toggle_role_permission(
+                role_id=int(role_id),
+                permission_id=int(permission_id),
+                updated_by_id=request.user.id,
+                updated_by_username=request.user.username
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'action': result['action'],
+                'has_permission': result['has_permission'],
+                'message': f"مجوز {result['permission_name']} برای نقش {result['role_name']} {'افزوده' if result['action'] == 'added' else 'حذف'} شد."
+            })
+            
+        except ValidationError as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            })
+        except Exception as e:
+            logger.error(f"Error toggling role permission: {str(e)}")
+            return JsonResponse({
+                'success': False,
+                'error': 'خطا در تغییر مجوز نقش'
             })

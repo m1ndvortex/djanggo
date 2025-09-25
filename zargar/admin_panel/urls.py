@@ -82,6 +82,7 @@ urlpatterns = [
     path('security/rbac/api/stats/', rbac_views.RBACStatsAPIView.as_view(), name='rbac_stats_api'),
     path('security/rbac/api/role/delete/', rbac_views.DeleteRoleAPIView.as_view(), name='rbac_delete_role_api'),
     path('security/rbac/api/user/permissions/', rbac_views.UserPermissionsAPIView.as_view(), name='rbac_user_permissions_api'),
+    path('security/rbac/api/toggle-permission/', rbac_views.ToggleRolePermissionAPIView.as_view(), name='rbac_toggle_permission_api'),
     
     # Audit Log Management
     path('security/audit-logs/', audit_views.AuditLogListView.as_view(), name='audit_logs'),
