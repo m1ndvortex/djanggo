@@ -303,3 +303,45 @@ class SessionSecurityMiddleware(MiddlewareMixin):
         else:
             ip = request.META.get('REMOTE_ADDR', '')
         return ip
+
+class ImpersonationAuditMiddleware(MiddlewareMixin):
+    """
+    Middleware to audit and control user impersonation activities.
+    """
+    
+    def process_request(self, request):
+        """Process impersonation-related requests."""
+        if not request.user.is_authenticated:
+            return None
+        
+        # Check if user is currently impersonating
+        if hasattr(request, 'session') and request.session.get('impersonating_user_id'):
+            # Log impersonation activity
+            SecurityEvent.log_event(
+                event_type='impersonation_activity',
+                request=request,
+                user=request.user,
+                severity='medium',
+                details={
+                    'impersonated_user_id': request.session.get('impersonating_user_id'),
+                    'action': request.path,
+                    'method': request.method,
+                }
+            )
+            
+            # Check impersonation time limits
+            impersonation_start = request.session.get('impersonation_start_time')
+            if impersonation_start:
+                start_time = timezone.datetime.fromisoformat(impersonation_start)
+                max_duration = timezone.timedelta(hours=2)  # 2 hour limit
+                
+                if timezone.now() - start_time > max_duration:
+                    # End impersonation due to time limit
+                    request.session.pop('impersonating_user_id', None)
+                    request.session.pop('impersonation_start_time', None)
+                    request.session.pop('original_user_id', None)
+                    
+                    messages.warning(request, _('Impersonation session expired due to time limit.'))
+                    return redirect('admin_panel:dashboard')
+        
+        return None

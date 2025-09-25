@@ -10,6 +10,7 @@ from . import security_views
 from . import audit_views
 from . import rbac_views
 from . import settings_views
+from . import security_policy_views
 
 app_name = 'admin_panel'
 
@@ -102,6 +103,14 @@ urlpatterns = [
     path('settings/rollback/', settings_views.SettingRollbackView.as_view(), name='setting_rollback'),
     path('settings/export/', settings_views.SettingsExportView.as_view(), name='settings_export'),
     path('settings/import/', settings_views.SettingsImportView.as_view(), name='settings_import'),
+    
+    # Security Policy Settings
+    path('settings/security-policies/', security_policy_views.SecurityPolicyManagementView.as_view(), name='security_policies'),
+    path('settings/security-policies/update/', security_policy_views.SecurityPolicyUpdateView.as_view(), name='security_policy_update'),
+    path('settings/security-policies/reset/', security_policy_views.SecurityPolicyResetView.as_view(), name='security_policy_reset'),
+    path('settings/security-policies/validate/', security_policy_views.SecurityPolicyValidateView.as_view(), name='security_policy_validate'),
+    path('settings/security-policies/test/', security_policy_views.SecurityPolicyTestView.as_view(), name='security_policy_test'),
+    path('settings/security-policies/history/', security_policy_views.SecurityPolicyHistoryView.as_view(), name='security_policy_history'),
     
     # Notification Settings
     path('settings/notifications/', settings_views.NotificationSettingsView.as_view(), name='notification_settings'),

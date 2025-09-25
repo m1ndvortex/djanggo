@@ -1,0 +1,743 @@
+{% extends 'admin_panel/base_unified.html' %}
+{% load static %}
+
+{% block title %}سیاست‌های امنیتی - پنل مدیریت یکپارچه زرگر{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Custom styles for security policy interface */
+    .policy-card {
+        transition: all 0.3s ease;
+    }
+    
+    .policy-card:hover {
+        transform: translateY(-2px);
+    }
+    
+    .dark .policy-card {
+        background: linear-gradient(135deg, rgba(37, 42, 58, 0.8), rgba(45, 51, 72, 0.6));
+        border: 1px solid rgba(0, 212, 255, 0.2);
+    }
+    
+    .dark .policy-card:hover {
+        border-color: rgba(0, 212, 255, 0.4);
+        box-shadow: 0 10px 25px rgba(0, 212, 255, 0.1);
+    }
+    
+    .config-input {
+        transition: all 0.3s ease;
+    }
+    
+    .dark .config-input {
+        background: rgba(37, 42, 58, 0.8);
+        border: 1px solid rgba(0, 212, 255, 0.3);
+        color: #ffffff;
+    }
+    
+    .dark .config-input:focus {
+        border-color: rgba(0, 212, 255, 0.6);
+        box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+    }
+    
+    .policy-status-active {
+        background: linear-gradient(90deg, #10B981, #059669);
+    }
+    
+    .policy-status-inactive {
+        background: linear-gradient(90deg, #6B7280, #4B5563);
+    }
+    
+    .dark .policy-status-active {
+        background: linear-gradient(90deg, rgba(0, 255, 136, 0.8), rgba(0, 255, 136, 0.6));
+    }
+    
+    .neon-border {
+        border: 1px solid transparent;
+        background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 255, 136, 0.1));
+        border-image: linear-gradient(135deg, #00D4FF, #00FF88) 1;
+    }
+    
+    .dark .neon-border {
+        border: 1px solid rgba(0, 212, 255, 0.3);
+        box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-cyber-bg-primary" x-data="securityPolicyManager()">
+    <!-- Header -->
+    <div class="bg-white dark:bg-cyber-bg-secondary shadow-sm border-b border-gray-200 dark:border-cyber-bg-elevated">
+        <div class="px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary">سیاست‌های امنیتی</h1>
+                    <p class="text-sm text-gray-600 dark:text-cyber-text-secondary mt-1">
+                        مدیریت و پیکربندی سیاست‌های امنیتی سیستم
+                    </p>
+                </div>
+                
+                <!-- Statistics -->
+                <div class="flex space-x-4 space-x-reverse">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-blue-600 dark:text-cyber-neon-primary">{{ total_policies }}</div>
+                        <div class="text-xs text-gray-500 dark:text-cyber-text-muted">کل سیاست‌ها</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-green-600 dark:text-cyber-neon-secondary">{{ active_policies }}</div>
+                        <div class="text-xs text-gray-500 dark:text-cyber-text-muted">فعال</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="p-6">
+        <!-- Policy Cards Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {% for policy_type, policy_data in policies_by_type.items %}
+            <div class="policy-card bg-white dark:bg-cyber-bg-secondary rounded-lg shadow-lg p-6 neon-border">
+                <!-- Policy Header -->
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-3 space-x-reverse">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center
+                                    {% if policy_type == 'password' %}bg-blue-100 dark:bg-blue-900/30{% endif %}
+                                    {% if policy_type == 'session' %}bg-green-100 dark:bg-green-900/30{% endif %}
+                                    {% if policy_type == 'rate_limit' %}bg-yellow-100 dark:bg-yellow-900/30{% endif %}
+                                    {% if policy_type == 'authentication' %}bg-purple-100 dark:bg-purple-900/30{% endif %}">
+                            {% if policy_type == 'password' %}
+                                <svg class="w-5 h-5 text-blue-600 dark:text-cyber-neon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                </svg>
+                            {% elif policy_type == 'session' %}
+                                <svg class="w-5 h-5 text-green-600 dark:text-cyber-neon-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            {% elif policy_type == 'rate_limit' %}
+                                <svg class="w-5 h-5 text-yellow-600 dark:text-cyber-neon-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                            {% elif policy_type == 'authentication' %}
+                                <svg class="w-5 h-5 text-purple-600 dark:text-cyber-neon-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                                </svg>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">{{ policy_data.display_name }}</h3>
+                            <div class="flex items-center space-x-2 space-x-reverse mt-1">
+                                {% if policy_data.active_policy %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium policy-status-active text-white">
+                                        فعال
+                                    </span>
+                                    <span class="text-xs text-gray-500 dark:text-cyber-text-muted">
+                                        آخرین به‌روزرسانی: {{ policy_data.active_policy.updated_at|date:"Y/m/d H:i" }}
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium policy-status-inactive text-white">
+                                        پیش‌فرض
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="flex space-x-2 space-x-reverse">
+                        <button @click="editPolicy('{{ policy_type }}', {{ policy_data.current_config|safe }})" 
+                                class="px-3 py-1 text-sm bg-blue-600 dark:bg-cyber-neon-primary text-white rounded-lg hover:bg-blue-700 dark:hover:bg-cyber-neon-primary/80 transition-colors">
+                            ویرایش
+                        </button>
+                        <button @click="resetPolicy('{{ policy_type }}')" 
+                                class="px-3 py-1 text-sm bg-gray-600 dark:bg-cyber-bg-elevated text-white rounded-lg hover:bg-gray-700 dark:hover:bg-cyber-bg-elevated/80 transition-colors">
+                            بازنشانی
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Policy Configuration Preview -->
+                <div class="space-y-3">
+                    {% if policy_type == 'password' %}
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-cyber-text-secondary">حداقل طول:</span>
+                                <span class="font-medium text-gray-900 dark:text-cyber-text-primary">{{ policy_data.current_config.min_length }} کاراکتر</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-cyber-text-secondary">حروف بزرگ:</span>
+                                <span class="font-medium text-gray-900 dark:text-cyber-text-primary">
+                                    {% if policy_data.current_config.require_uppercase %}الزامی{% else %}اختیاری{% endif %}
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-cyber-text-secondary">اعداد:</span>
+                                <span class="font-medium text-gray-900 dark:text-cyber-text-primary">
+                                    {% if policy_data.current_config.require_numbers %}الزامی{% else %}اختیاری{% endif %}
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-cyber-text-secondary">حداکثر عمر:</span>
+                                <span class="font-medium text-gray-900 dark:text-cyber-text-primary">{{ policy_data.current_config.max_age_days }} روز</span>
+                            </div>
+                        </div>
+                    {% elif policy_type == 'session' %}
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-cyber-text-secondary">مهلت نشست:</span>
+                                <span class="font-medium text-gray-900 dark:text-cyber-text-primary">{{ policy_data.current_config.timeout_minutes }} دقیقه</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-cyber-text-secondary">نشست‌های همزمان:</span>
+                                <span class="font-medium text-gray-900 dark:text-cyber-text-primary">{{ policy_data.current_config.max_concurrent_sessions }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-cyber-text-secondary">تمدید خودکار:</span>
+                                <span class="font-medium text-gray-900 dark:text-cyber-text-primary">
+                                    {% if policy_data.current_config.extend_on_activity %}فعال{% else %}غیرفعال{% endif %}
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-cyber-text-secondary">کوکی امن:</span>
+                                <span class="font-medium text-gray-900 dark:text-cyber-text-primary">
+                                    {% if policy_data.current_config.secure_cookies %}فعال{% else %}غیرفعال{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    {% elif policy_type == 'rate_limit' %}
+                        <div class="space-y-2 text-sm">
+                            {% for limit_type, limit_config in policy_data.current_config.limits.items %}
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-cyber-text-secondary">{{ limit_type }}:</span>
+                                <span class="font-medium text-gray-900 dark:text-cyber-text-primary">
+                                    {{ limit_config.requests }} درخواست در {{ limit_config.window_minutes }} دقیقه
+                                </span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% elif policy_type == 'authentication' %}
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-cyber-text-secondary">احراز هویت دومرحله‌ای:</span>
+                                <span class="font-medium text-gray-900 dark:text-cyber-text-primary">
+                                    {% if policy_data.current_config.require_2fa %}الزامی{% else %}اختیاری{% endif %}
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-cyber-text-secondary">تلاش‌های ناموفق:</span>
+                                <span class="font-medium text-gray-900 dark:text-cyber-text-primary">{{ policy_data.current_config.lockout_attempts }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-cyber-text-secondary">مدت قفل:</span>
+                                <span class="font-medium text-gray-900 dark:text-cyber-text-primary">{{ policy_data.current_config.lockout_duration_minutes }} دقیقه</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-cyber-text-secondary">مدت اعتبار توکن:</span>
+                                <span class="font-medium text-gray-900 dark:text-cyber-text-primary">{{ policy_data.current_config.password_reset_token_expiry_hours }} ساعت</span>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Policy Edit Modal -->
+    <div x-show="showEditModal" x-transition class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <!-- Background overlay -->
+            <div x-show="showEditModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" 
+                 x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" 
+                 x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75" 
+                 @click="closeEditModal()"></div>
+
+            <!-- Modal panel -->
+            <div x-show="showEditModal" x-transition:enter="ease-out duration-300" 
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" 
+                 x-transition:leave="ease-in duration-200" 
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" 
+                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 class="inline-block w-full max-w-4xl p-6 my-8 overflow-hidden text-right align-middle transition-all transform bg-white dark:bg-cyber-bg-secondary shadow-xl rounded-lg">
+                
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary" x-text="'ویرایش ' + getPolicyDisplayName(editingPolicyType)"></h3>
+                    <button @click="closeEditModal()" class="text-gray-400 hover:text-gray-600 dark:text-cyber-text-muted dark:hover:text-cyber-text-secondary">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Modal Content -->
+                <div class="space-y-6">
+                    <!-- Password Policy Form -->
+                    <div x-show="editingPolicyType === 'password'" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                                    حداقل طول رمز عبور
+                                </label>
+                                <input type="number" x-model="editingConfig.min_length" min="4" max="128"
+                                       class="config-input w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <p class="text-xs text-gray-500 dark:text-cyber-text-muted mt-1">حداقل ۴ و حداکثر ۱۲۸ کاراکتر</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                                    حداکثر عمر رمز عبور (روز)
+                                </label>
+                                <input type="number" x-model="editingConfig.max_age_days" min="1" max="365"
+                                       class="config-input w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <p class="text-xs text-gray-500 dark:text-cyber-text-muted mt-1">حداقل ۱ و حداکثر ۳۶۵ روز</p>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-3">
+                                <label class="flex items-center">
+                                    <input type="checkbox" x-model="editingConfig.require_uppercase" 
+                                           class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <span class="mr-2 text-sm text-gray-700 dark:text-cyber-text-secondary">الزام به حروف بزرگ انگلیسی</span>
+                                </label>
+                                
+                                <label class="flex items-center">
+                                    <input type="checkbox" x-model="editingConfig.require_lowercase" 
+                                           class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <span class="mr-2 text-sm text-gray-700 dark:text-cyber-text-secondary">الزام به حروف کوچک انگلیسی</span>
+                                </label>
+                            </div>
+                            
+                            <div class="space-y-3">
+                                <label class="flex items-center">
+                                    <input type="checkbox" x-model="editingConfig.require_numbers" 
+                                           class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <span class="mr-2 text-sm text-gray-700 dark:text-cyber-text-secondary">الزام به اعداد</span>
+                                </label>
+                                
+                                <label class="flex items-center">
+                                    <input type="checkbox" x-model="editingConfig.require_special_chars" 
+                                           class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <span class="mr-2 text-sm text-gray-700 dark:text-cyber-text-secondary">الزام به کاراکترهای خاص</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                                تعداد رمزهای عبور قبلی برای جلوگیری از استفاده مجدد
+                            </label>
+                            <input type="number" x-model="editingConfig.prevent_reuse_count" min="0" max="50"
+                                   class="config-input w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <p class="text-xs text-gray-500 dark:text-cyber-text-muted mt-1">حداکثر ۵۰ رمز عبور</p>
+                        </div>
+                    </div>
+
+                    <!-- Session Policy Form -->
+                    <div x-show="editingPolicyType === 'session'" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                                    مهلت نشست (دقیقه)
+                                </label>
+                                <input type="number" x-model="editingConfig.timeout_minutes" min="5" max="10080"
+                                       class="config-input w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <p class="text-xs text-gray-500 dark:text-cyber-text-muted mt-1">حداقل ۵ دقیقه، حداکثر یک هفته</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                                    حداکثر نشست‌های همزمان
+                                </label>
+                                <input type="number" x-model="editingConfig.max_concurrent_sessions" min="1" max="100"
+                                       class="config-input w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <p class="text-xs text-gray-500 dark:text-cyber-text-muted mt-1">حداقل ۱، حداکثر ۱۰۰ نشست</p>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <label class="flex items-center">
+                                <input type="checkbox" x-model="editingConfig.require_reauth_for_sensitive" 
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="mr-2 text-sm text-gray-700 dark:text-cyber-text-secondary">نیاز به احراز هویت مجدد برای عملیات حساس</span>
+                            </label>
+                            
+                            <label class="flex items-center">
+                                <input type="checkbox" x-model="editingConfig.extend_on_activity" 
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="mr-2 text-sm text-gray-700 dark:text-cyber-text-secondary">تمدید خودکار نشست با فعالیت کاربر</span>
+                            </label>
+                            
+                            <label class="flex items-center">
+                                <input type="checkbox" x-model="editingConfig.secure_cookies" 
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="mr-2 text-sm text-gray-700 dark:text-cyber-text-secondary">استفاده از کوکی‌های امن (HTTPS)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Rate Limit Policy Form -->
+                    <div x-show="editingPolicyType === 'rate_limit'" class="space-y-4">
+                        <div class="space-y-4">
+                            <template x-for="(limitConfig, limitType) in editingConfig.limits" :key="limitType">
+                                <div class="p-4 border border-gray-200 dark:border-cyber-bg-elevated rounded-lg">
+                                    <h4 class="font-medium text-gray-900 dark:text-cyber-text-primary mb-3" x-text="getRateLimitDisplayName(limitType)"></h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                                                تعداد درخواست مجاز
+                                            </label>
+                                            <input type="number" x-model="limitConfig.requests" min="1" max="10000"
+                                                   class="config-input w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                                                پنجره زمانی (دقیقه)
+                                            </label>
+                                            <input type="number" x-model="limitConfig.window_minutes" min="1" max="1440"
+                                                   class="config-input w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Authentication Policy Form -->
+                    <div x-show="editingPolicyType === 'authentication'" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                                    تعداد تلاش‌های ناموفق برای قفل کردن حساب
+                                </label>
+                                <input type="number" x-model="editingConfig.lockout_attempts" min="1" max="100"
+                                       class="config-input w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                                    مدت زمان قفل شدن حساب (دقیقه)
+                                </label>
+                                <input type="number" x-model="editingConfig.lockout_duration_minutes" min="1" max="10080"
+                                       class="config-input w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                                    مدت اعتبار توکن بازنشانی رمز عبور (ساعت)
+                                </label>
+                                <input type="number" x-model="editingConfig.password_reset_token_expiry_hours" min="1" max="168"
+                                       class="config-input w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                                    مدت اعتبار "مرا به خاطر بسپار" (روز)
+                                </label>
+                                <input type="number" x-model="editingConfig.remember_me_duration_days" min="1" max="365"
+                                       class="config-input w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="flex items-center">
+                                <input type="checkbox" x-model="editingConfig.require_2fa" 
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="mr-2 text-sm text-gray-700 dark:text-cyber-text-secondary">الزام به احراز هویت دومرحله‌ای</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Actions -->
+                <div class="flex justify-end space-x-3 space-x-reverse mt-6 pt-6 border-t border-gray-200 dark:border-cyber-bg-elevated">
+                    <button @click="closeEditModal()" 
+                            class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-cyber-text-secondary bg-gray-100 dark:bg-cyber-bg-elevated hover:bg-gray-200 dark:hover:bg-cyber-bg-elevated/80 rounded-lg transition-colors">
+                        انصراف
+                    </button>
+                    <button @click="testPolicy()" 
+                            class="px-4 py-2 text-sm font-medium text-yellow-700 dark:text-cyber-neon-warning bg-yellow-100 dark:bg-yellow-900/30 hover:bg-yellow-200 dark:hover:bg-yellow-900/50 rounded-lg transition-colors">
+                        تست
+                    </button>
+                    <button @click="savePolicy()" :disabled="saving"
+                            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-cyber-neon-primary hover:bg-blue-700 dark:hover:bg-cyber-neon-primary/80 rounded-lg transition-colors disabled:opacity-50">
+                        <span x-show="!saving">ذخیره</span>
+                        <span x-show="saving">در حال ذخیره...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div x-show="showConfirmModal" x-transition class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <!-- Background overlay -->
+            <div x-show="showConfirmModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" 
+                 x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" 
+                 x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75"></div>
+
+            <!-- Modal panel -->
+            <div x-show="showConfirmModal" x-transition:enter="ease-out duration-300" 
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" 
+                 x-transition:leave="ease-in duration-200" 
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" 
+                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 class="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-right align-middle transition-all transform bg-white dark:bg-cyber-bg-secondary shadow-xl rounded-lg">
+                
+                <div class="flex items-center mb-4">
+                    <div class="flex-shrink-0">
+                        <svg class="w-6 h-6 text-yellow-600 dark:text-cyber-neon-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                    </div>
+                    <div class="mr-3">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-cyber-text-primary">تأیید تغییرات</h3>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <p class="text-sm text-gray-600 dark:text-cyber-text-secondary" x-text="confirmMessage"></p>
+                </div>
+                
+                <div class="flex justify-end space-x-3 space-x-reverse">
+                    <button @click="showConfirmModal = false" 
+                            class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-cyber-text-secondary bg-gray-100 dark:bg-cyber-bg-elevated hover:bg-gray-200 dark:hover:bg-cyber-bg-elevated/80 rounded-lg transition-colors">
+                        انصراف
+                    </button>
+                    <button @click="confirmAction()" 
+                            class="px-4 py-2 text-sm font-medium text-white bg-red-600 dark:bg-cyber-neon-danger hover:bg-red-700 dark:hover:bg-cyber-neon-danger/80 rounded-lg transition-colors">
+                        تأیید
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div x-show="showToast" x-transition class="fixed bottom-4 left-4 z-50" style="display: none;">
+        <div class="bg-white dark:bg-cyber-bg-secondary shadow-lg rounded-lg p-4 border border-gray-200 dark:border-cyber-bg-elevated max-w-sm">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <svg x-show="toastType === 'success'" class="w-5 h-5 text-green-600 dark:text-cyber-neon-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <svg x-show="toastType === 'error'" class="w-5 h-5 text-red-600 dark:text-cyber-neon-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </div>
+                <div class="mr-3">
+                    <p class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary" x-text="toastMessage"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function securityPolicyManager() {
+    return {
+        showEditModal: false,
+        showConfirmModal: false,
+        showToast: false,
+        editingPolicyType: null,
+        editingConfig: {},
+        originalConfig: {},
+        saving: false,
+        confirmMessage: '',
+        confirmCallback: null,
+        toastMessage: '',
+        toastType: 'success',
+
+        editPolicy(policyType, config) {
+            this.editingPolicyType = policyType;
+            this.originalConfig = JSON.parse(JSON.stringify(config));
+            this.editingConfig = JSON.parse(JSON.stringify(config));
+            this.showEditModal = true;
+        },
+
+        closeEditModal() {
+            this.showEditModal = false;
+            this.editingPolicyType = null;
+            this.editingConfig = {};
+            this.originalConfig = {};
+        },
+
+        resetPolicy(policyType) {
+            this.confirmMessage = `آیا مطمئن هستید که می‌خواهید سیاست ${this.getPolicyDisplayName(policyType)} را به تنظیمات پیش‌فرض بازگردانید؟`;
+            this.confirmCallback = () => this.performResetPolicy(policyType);
+            this.showConfirmModal = true;
+        },
+
+        async performResetPolicy(policyType) {
+            try {
+                const response = await fetch('{% url "admin_panel:security_policy_reset" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        policy_type: policyType,
+                        reason: 'Reset to default via UI'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.showToast = true;
+                    this.toastType = 'success';
+                    this.toastMessage = data.message;
+                    
+                    // Reload page after short delay
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    this.showToast = true;
+                    this.toastType = 'error';
+                    this.toastMessage = data.error;
+                }
+            } catch (error) {
+                this.showToast = true;
+                this.toastType = 'error';
+                this.toastMessage = 'خطای غیرمنتظره‌ای رخ داد';
+            }
+            
+            this.showConfirmModal = false;
+            
+            // Hide toast after 3 seconds
+            setTimeout(() => {
+                this.showToast = false;
+            }, 3000);
+        },
+
+        async savePolicy() {
+            if (this.saving) return;
+            
+            this.saving = true;
+            
+            try {
+                const response = await fetch('{% url "admin_panel:security_policy_update" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        policy_type: this.editingPolicyType,
+                        configuration: this.editingConfig,
+                        reason: 'Updated via UI'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.showToast = true;
+                    this.toastType = 'success';
+                    this.toastMessage = data.message;
+                    
+                    this.closeEditModal();
+                    
+                    // Reload page after short delay
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    this.showToast = true;
+                    this.toastType = 'error';
+                    this.toastMessage = data.error;
+                }
+            } catch (error) {
+                this.showToast = true;
+                this.toastType = 'error';
+                this.toastMessage = 'خطای غیرمنتظره‌ای رخ داد';
+            }
+            
+            this.saving = false;
+            
+            // Hide toast after 3 seconds
+            setTimeout(() => {
+                this.showToast = false;
+            }, 3000);
+        },
+
+        async testPolicy() {
+            try {
+                const response = await fetch('{% url "admin_panel:security_policy_test" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        policy_type: this.editingPolicyType,
+                        configuration: this.editingConfig,
+                        test_data: {}
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.showToast = true;
+                    this.toastType = 'success';
+                    this.toastMessage = 'تست سیاست با موفقیت انجام شد';
+                    console.log('Test results:', data.test_results);
+                } else {
+                    this.showToast = true;
+                    this.toastType = 'error';
+                    this.toastMessage = data.error;
+                }
+            } catch (error) {
+                this.showToast = true;
+                this.toastType = 'error';
+                this.toastMessage = 'خطای غیرمنتظره‌ای رخ داد';
+            }
+            
+            // Hide toast after 3 seconds
+            setTimeout(() => {
+                this.showToast = false;
+            }, 3000);
+        },
+
+        confirmAction() {
+            if (this.confirmCallback) {
+                this.confirmCallback();
+                this.confirmCallback = null;
+            }
+        },
+
+        getPolicyDisplayName(policyType) {
+            const names = {
+                'password': 'سیاست رمز عبور',
+                'session': 'سیاست نشست',
+                'rate_limit': 'سیاست محدودیت نرخ',
+                'authentication': 'سیاست احراز هویت'
+            };
+            return names[policyType] || policyType;
+        },
+
+        getRateLimitDisplayName(limitType) {
+            const names = {
+                'login': 'ورود به سیستم',
+                'api_call': 'فراخوانی API',
+                'password_reset': 'بازنشانی رمز عبور',
+                '2fa_verify': 'تأیید دومرحله‌ای',
+                'data_export': 'صادرات داده'
+            };
+            return names[limitType] || limitType;
+        }
+    }
+}
+</script>
+{% endblock %}
