@@ -1,0 +1,322 @@
+{% extends 'admin_panel/base_unified.html' %}
+{% load i18n %}
+
+{% block title %}تاریخچه تنظیم: {{ setting.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .history-item {
+        @apply bg-white dark:bg-cyber-bg-surface rounded-lg shadow-sm border border-gray-200 dark:border-cyber-neon-primary/20 p-4;
+        transition: all 0.3s ease;
+    }
+    
+    .history-item:hover {
+        @apply shadow-md dark:shadow-cyber-neon-primary/10;
+        transform: translateY(-1px);
+    }
+    
+    .diff-old {
+        @apply bg-red-50 dark:bg-cyber-neon-danger/10 text-red-800 dark:text-cyber-neon-danger;
+    }
+    
+    .diff-new {
+        @apply bg-green-50 dark:bg-cyber-neon-success/10 text-green-800 dark:text-cyber-neon-success;
+    }
+    
+    .glassmorphism {
+        backdrop-filter: blur(10px);
+        background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .dark .glassmorphism {
+        background: rgba(0, 20, 40, 0.3);
+        border: 1px solid rgba(0, 255, 255, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-cyber-bg-primary" x-data="historyManager()">
+    <!-- Header -->
+    <div class="bg-white dark:bg-cyber-bg-surface shadow-sm border-b dark:border-cyber-neon-primary/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Breadcrumb -->
+                <nav class="flex items-center space-x-2 rtl:space-x-reverse text-sm">
+                    <a href="{% url 'admin_panel:dashboard' %}" class="text-gray-500 dark:text-cyber-text-muted hover:text-gray-700 dark:hover:text-cyber-text-secondary">
+                        پنل مدیریت
+                    </a>
+                    <svg class="w-4 h-4 text-gray-400 dark:text-cyber-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    <a href="{% url 'admin_panel:settings_management' %}" class="text-gray-500 dark:text-cyber-text-muted hover:text-gray-700 dark:hover:text-cyber-text-secondary">
+                        تنظیمات
+                    </a>
+                    <svg class="w-4 h-4 text-gray-400 dark:text-cyber-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    <span class="text-gray-900 dark:text-cyber-text-primary font-medium">تاریخچه تغییرات</span>
+                </nav>
+                
+                <!-- Close Button -->
+                <button onclick="window.close()" 
+                        class="px-4 py-2 bg-gray-600 dark:bg-cyber-bg-elevated text-white dark:text-cyber-text-primary rounded-lg hover:bg-gray-700 dark:hover:bg-cyber-bg-surface transition-colors">
+                    بستن
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {% if error %}
+        <div class="bg-red-50 dark:bg-cyber-neon-danger/10 border border-red-200 dark:border-cyber-neon-danger/30 rounded-lg p-4 mb-6">
+            <div class="flex">
+                <svg class="w-5 h-5 text-red-400 dark:text-cyber-neon-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div class="mr-3">
+                    <h3 class="text-sm font-medium text-red-800 dark:text-cyber-neon-danger">خطا</h3>
+                    <p class="text-sm text-red-700 dark:text-cyber-neon-danger/80 mt-1">{{ error }}</p>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        
+        <!-- Setting Info -->
+        <div class="bg-white dark:bg-cyber-bg-surface rounded-lg shadow-sm border border-gray-200 dark:border-cyber-neon-primary/20 p-6 mb-8">
+            <div class="flex items-start justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary mb-2">
+                        {{ setting.name }}
+                    </h1>
+                    <p class="text-gray-600 dark:text-cyber-text-secondary mb-4">
+                        {{ setting.description }}
+                    </p>
+                    <div class="flex items-center space-x-4 rtl:space-x-reverse text-sm">
+                        <span class="text-gray-500 dark:text-cyber-text-muted">
+                            <strong>کلید:</strong> {{ setting.key }}
+                        </span>
+                        <span class="text-gray-500 dark:text-cyber-text-muted">
+                            <strong>نوع:</strong> {{ setting.get_setting_type_display }}
+                        </span>
+                        <span class="text-gray-500 dark:text-cyber-text-muted">
+                            <strong>دسته‌بندی:</strong> {{ setting.get_category_display }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="text-left">
+                    <div class="text-sm text-gray-500 dark:text-cyber-text-muted mb-1">مقدار فعلی:</div>
+                    <div class="px-3 py-2 bg-gray-100 dark:bg-cyber-bg-elevated rounded-lg font-mono text-sm">
+                        {{ setting.get_display_value }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Timeline -->
+        <div class="space-y-6">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-cyber-text-primary">
+                تاریخچه تغییرات
+            </h2>
+            
+            {% if history %}
+            <div class="relative">
+                <!-- Timeline Line -->
+                <div class="absolute right-4 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-cyber-neon-primary/20"></div>
+                
+                <div class="space-y-6">
+                    {% for entry in history %}
+                    <div class="relative flex items-start">
+                        <!-- Timeline Dot -->
+                        <div class="absolute right-2 w-4 h-4 bg-primary-500 dark:bg-cyber-neon-primary rounded-full border-2 border-white dark:border-cyber-bg-primary"></div>
+                        
+                        <!-- Content -->
+                        <div class="mr-12 flex-1">
+                            <div class="history-item">
+                                <div class="flex items-start justify-between mb-4">
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary">
+                                            {{ entry.changed_by_username|default:"سیستم" }}
+                                        </div>
+                                        <div class="text-xs text-gray-500 dark:text-cyber-text-muted">
+                                            {{ entry.changed_at|date:"Y/m/d H:i:s" }}
+                                        </div>
+                                    </div>
+                                    
+                                    <button @click="rollbackToVersion({{ entry.id }})" 
+                                            class="px-3 py-1 text-xs bg-blue-100 dark:bg-cyber-neon-info/20 text-blue-700 dark:text-cyber-neon-info rounded-lg hover:bg-blue-200 dark:hover:bg-cyber-neon-info/30 transition-colors">
+                                        بازگردانی
+                                    </button>
+                                </div>
+                                
+                                {% if entry.change_reason %}
+                                <div class="mb-3">
+                                    <div class="text-xs text-gray-500 dark:text-cyber-text-muted mb-1">دلیل تغییر:</div>
+                                    <div class="text-sm text-gray-700 dark:text-cyber-text-secondary">
+                                        {{ entry.change_reason }}
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Value Changes -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <div class="text-xs text-gray-500 dark:text-cyber-text-muted mb-1">مقدار قبلی:</div>
+                                        <div class="p-3 rounded-lg font-mono text-sm diff-old">
+                                            {{ entry.old_value|default:"—" }}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-gray-500 dark:text-cyber-text-muted mb-1">مقدار جدید:</div>
+                                        <div class="p-3 rounded-lg font-mono text-sm diff-new">
+                                            {{ entry.new_value }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center py-12">
+                <svg class="w-12 h-12 text-gray-400 dark:text-cyber-text-muted mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <h3 class="text-lg font-medium text-gray-900 dark:text-cyber-text-primary mb-2">
+                    تاریخچه‌ای یافت نشد
+                </h3>
+                <p class="text-gray-500 dark:text-cyber-text-muted">
+                    هنوز هیچ تغییری برای این تنظیم ثبت نشده است.
+                </p>
+            </div>
+            {% endif %}
+        </div>
+        
+        {% endif %}
+    </div>
+
+    <!-- Rollback Confirmation Modal -->
+    <div x-show="showRollbackModal" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 overflow-y-auto"
+         style="display: none;">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 transition-opacity bg-gray-500 dark:bg-cyber-bg-primary bg-opacity-75 dark:bg-opacity-75" 
+                 @click="showRollbackModal = false"></div>
+
+            <div class="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-right align-middle transition-all transform bg-white dark:bg-cyber-bg-surface shadow-xl rounded-2xl glassmorphism">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-cyber-text-primary mb-4">
+                    تأیید بازگردانی
+                </h3>
+                
+                <p class="text-sm text-gray-600 dark:text-cyber-text-secondary mb-6">
+                    آیا مطمئن هستید که می‌خواهید این تنظیم را به نسخه انتخاب شده بازگردانید؟
+                </p>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                        دلیل بازگردانی (اختیاری)
+                    </label>
+                    <textarea x-model="rollbackReason" 
+                              rows="3"
+                              class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-md bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary"
+                              placeholder="دلیل بازگردانی را وارد کنید..."></textarea>
+                </div>
+                
+                <div class="flex justify-end space-x-3 rtl:space-x-reverse">
+                    <button type="button" 
+                            @click="showRollbackModal = false"
+                            class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-cyber-text-secondary bg-gray-100 dark:bg-cyber-bg-elevated rounded-lg hover:bg-gray-200 dark:hover:bg-cyber-bg-surface transition-colors">
+                        انصراف
+                    </button>
+                    <button type="button" 
+                            @click="confirmRollback()"
+                            class="px-4 py-2 text-sm font-medium text-white bg-red-600 dark:bg-cyber-neon-danger rounded-lg hover:bg-red-700 dark:hover:bg-cyber-neon-danger/80 transition-colors">
+                        بازگردانی
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div x-show="loading" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-40 flex items-center justify-center bg-gray-500 dark:bg-cyber-bg-primary bg-opacity-75 dark:bg-opacity-75"
+         style="display: none;">
+        <div class="bg-white dark:bg-cyber-bg-surface rounded-lg p-6 shadow-xl glassmorphism">
+            <div class="flex items-center">
+                <svg class="animate-spin -mr-1 ml-3 h-5 w-5 text-primary-600 dark:text-cyber-neon-primary" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="text-gray-900 dark:text-cyber-text-primary">در حال بازگردانی...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function historyManager() {
+    return {
+        loading: false,
+        showRollbackModal: false,
+        rollbackHistoryId: null,
+        rollbackReason: '',
+        
+        rollbackToVersion(historyId) {
+            this.rollbackHistoryId = historyId;
+            this.rollbackReason = '';
+            this.showRollbackModal = true;
+        },
+        
+        async confirmRollback() {
+            if (!this.rollbackHistoryId) return;
+            
+            this.loading = true;
+            this.showRollbackModal = false;
+            
+            try {
+                const response = await fetch('{% url "admin_panel:setting_rollback" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        key: '{{ setting_key }}',
+                        history_id: this.rollbackHistoryId,
+                        reason: this.rollbackReason || 'Rollback from history interface'
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    alert('تنظیم با موفقیت بازگردانده شد');
+                    window.location.reload();
+                } else {
+                    alert('خطا در بازگردانی: ' + data.error);
+                }
+            } catch (error) {
+                alert('خطای شبکه');
+            } finally {
+                this.loading = false;
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

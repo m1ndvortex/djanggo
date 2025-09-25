@@ -115,7 +115,7 @@
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
 
 - [ ] 5. System Settings Management
-  - [ ] 5.1 Create settings models and backend
+  - [x] 5.1 Create settings models and backend
 
 
 
@@ -129,6 +129,11 @@
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6_
 
   - [ ] 5.2 Build settings management frontend
+
+
+
+
+
     - **Create new "تنظیمات" (Settings) tab in main super admin navigation**
     - Build categorized settings interface with Persian RTL layout and theme-aware styling
     - Implement settings forms with validation and cybersecurity styling for dark mode

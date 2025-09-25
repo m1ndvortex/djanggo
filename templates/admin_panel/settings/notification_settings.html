@@ -1,0 +1,377 @@
+{% extends 'admin_panel/base_unified.html' %}
+{% load i18n %}
+
+{% block title %}تنظیمات اعلان‌ها{% endblock %}
+
+{% block extra_css %}
+<style>
+    .notification-card {
+        @apply bg-white dark:bg-cyber-bg-surface rounded-lg shadow-sm border border-gray-200 dark:border-cyber-neon-primary/20;
+        transition: all 0.3s ease;
+    }
+    
+    .notification-card:hover {
+        @apply shadow-md dark:shadow-cyber-neon-primary/10;
+        transform: translateY(-1px);
+    }
+    
+    .priority-badge {
+        @apply px-2 py-1 text-xs rounded-full font-medium;
+    }
+    
+    .priority-low {
+        @apply bg-gray-100 dark:bg-cyber-bg-elevated text-gray-700 dark:text-cyber-text-secondary;
+    }
+    
+    .priority-medium {
+        @apply bg-yellow-100 dark:bg-cyber-neon-warning/20 text-yellow-700 dark:text-cyber-neon-warning;
+    }
+    
+    .priority-high {
+        @apply bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400;
+    }
+    
+    .priority-critical {
+        @apply bg-red-100 dark:bg-cyber-neon-danger/20 text-red-700 dark:text-cyber-neon-danger;
+    }
+    
+    .glassmorphism {
+        backdrop-filter: blur(10px);
+        background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .dark .glassmorphism {
+        background: rgba(0, 20, 40, 0.3);
+        border: 1px solid rgba(0, 255, 255, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-cyber-bg-primary" x-data="notificationManager()">
+    <!-- Header -->
+    <div class="bg-white dark:bg-cyber-bg-surface shadow-sm border-b dark:border-cyber-neon-primary/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Breadcrumb -->
+                <nav class="flex items-center space-x-2 rtl:space-x-reverse text-sm">
+                    <a href="{% url 'admin_panel:dashboard' %}" class="text-gray-500 dark:text-cyber-text-muted hover:text-gray-700 dark:hover:text-cyber-text-secondary">
+                        پنل مدیریت
+                    </a>
+                    <svg class="w-4 h-4 text-gray-400 dark:text-cyber-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    <a href="{% url 'admin_panel:settings_management' %}" class="text-gray-500 dark:text-cyber-text-muted hover:text-gray-700 dark:hover:text-cyber-text-secondary">
+                        تنظیمات
+                    </a>
+                    <svg class="w-4 h-4 text-gray-400 dark:text-cyber-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    <span class="text-gray-900 dark:text-cyber-text-primary font-medium">مدیریت اعلان‌ها</span>
+                </nav>
+                
+                <!-- Actions -->
+                <div class="flex items-center space-x-3 rtl:space-x-reverse">
+                    <button @click="showCreateModal = true" 
+                            class="px-4 py-2 bg-primary-600 dark:bg-cyber-neon-primary text-white rounded-lg hover:bg-primary-700 dark:hover:bg-cyber-neon-primary/80 transition-colors">
+                        <svg class="w-4 h-4 inline ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        اعلان جدید
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Event Type Tabs -->
+        <div class="mb-8">
+            <div class="flex flex-wrap gap-2 p-1 bg-gray-100 dark:bg-cyber-bg-elevated rounded-lg">
+                <button @click="selectedEventType = 'all'" 
+                        :class="selectedEventType === 'all' ? 'bg-primary-100 dark:bg-cyber-neon-primary/20 text-primary-700 dark:text-cyber-neon-primary' : 'text-gray-600 dark:text-cyber-text-secondary hover:text-gray-900 dark:hover:text-cyber-text-primary'"
+                        class="px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:bg-gray-100 dark:hover:bg-cyber-bg-elevated">
+                    همه
+                </button>
+                {% for event_type, event_label in event_types %}
+                <button @click="selectedEventType = '{{ event_type }}'" 
+                        :class="selectedEventType === '{{ event_type }}' ? 'bg-primary-100 dark:bg-cyber-neon-primary/20 text-primary-700 dark:text-cyber-neon-primary' : 'text-gray-600 dark:text-cyber-text-secondary hover:text-gray-900 dark:hover:text-cyber-text-primary'"
+                        class="px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:bg-gray-100 dark:hover:bg-cyber-bg-elevated">
+                    {{ event_label }}
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Notification Settings -->
+        <div class="space-y-6">
+            {% for event_type, settings in settings_by_event.items %}
+            <div x-show="selectedEventType === 'all' || selectedEventType === '{{ event_type }}'" 
+                 class="notification-card">
+                <div class="p-6 border-b border-gray-200 dark:border-cyber-neon-primary/20">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">
+                        {{ event_type|title }}
+                    </h3>
+                    <p class="text-sm text-gray-600 dark:text-cyber-text-secondary mt-1">
+                        تنظیمات اعلان برای رویدادهای {{ event_type }}
+                    </p>
+                </div>
+                
+                <div class="p-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                        {% for setting in settings %}
+                        <div class="border border-gray-200 dark:border-cyber-neon-primary/20 rounded-lg p-4" 
+                             x-data="notificationSetting({{ setting.id }}, {{ setting.is_enabled|yesno:'true,false' }})">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex-1">
+                                    <h4 class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary">
+                                        {{ setting.name }}
+                                    </h4>
+                                    <div class="flex items-center space-x-2 rtl:space-x-reverse mt-1">
+                                        <span class="text-xs text-gray-500 dark:text-cyber-text-muted">
+                                            {{ setting.get_notification_type_display }}
+                                        </span>
+                                        <span class="priority-badge priority-{{ setting.priority_threshold }}">
+                                            {{ setting.get_priority_threshold_display }}
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <label class="flex items-center">
+                                    <input type="checkbox" 
+                                           x-model="enabled"
+                                           @change="toggleEnabled()"
+                                           class="rounded border-gray-300 dark:border-cyber-neon-primary/30 text-primary-600 dark:text-cyber-neon-primary focus:ring-primary-500 dark:focus:ring-cyber-neon-primary">
+                                </label>
+                            </div>
+                            
+                            <div class="space-y-3 text-sm">
+                                <div>
+                                    <span class="text-gray-500 dark:text-cyber-text-muted">گیرندگان:</span>
+                                    <div class="mt-1">
+                                        {% if setting.recipients %}
+                                        <div class="flex flex-wrap gap-1">
+                                            {% for recipient in setting.recipients %}
+                                            <span class="px-2 py-1 bg-gray-100 dark:bg-cyber-bg-elevated text-gray-700 dark:text-cyber-text-secondary rounded text-xs">
+                                                {{ recipient }}
+                                            </span>
+                                            {% endfor %}
+                                        </div>
+                                        {% else %}
+                                        <span class="text-gray-400 dark:text-cyber-text-muted text-xs">تعریف نشده</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                {% if setting.conditions %}
+                                <div>
+                                    <span class="text-gray-500 dark:text-cyber-text-muted">شرایط:</span>
+                                    <div class="mt-1 text-xs text-gray-600 dark:text-cyber-text-secondary">
+                                        {{ setting.conditions|length }} شرط تعریف شده
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if setting.throttle_minutes > 0 %}
+                                <div>
+                                    <span class="text-gray-500 dark:text-cyber-text-muted">محدودیت ارسال:</span>
+                                    <span class="text-xs text-gray-600 dark:text-cyber-text-secondary">
+                                        {{ setting.throttle_minutes }} دقیقه
+                                    </span>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 dark:border-cyber-neon-primary/10">
+                                <button @click="editSetting({{ setting.id }})" 
+                                        class="text-xs text-primary-600 dark:text-cyber-neon-primary hover:text-primary-700 dark:hover:text-cyber-neon-primary/80">
+                                    ویرایش
+                                </button>
+                                <button @click="testNotification({{ setting.id }})" 
+                                        class="text-xs text-green-600 dark:text-cyber-neon-success hover:text-green-700 dark:hover:text-cyber-neon-success/80">
+                                    تست
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-12">
+                <svg class="w-12 h-12 text-gray-400 dark:text-cyber-text-muted mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM4.828 7l10.586 10.586c.781.781 2.047.781 2.828 0l1.414-1.414c.781-.781.781-2.047 0-2.828L9.242 3.828c-.781-.781-2.047-.781-2.828 0L4.828 5.414c-.781.781-.781 2.047 0 2.828z"></path>
+                </svg>
+                <h3 class="text-lg font-medium text-gray-900 dark:text-cyber-text-primary mb-2">
+                    اعلانی تعریف نشده
+                </h3>
+                <p class="text-gray-500 dark:text-cyber-text-muted">
+                    هنوز هیچ تنظیم اعلانی تعریف نشده است.
+                </p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Test Notification Modal -->
+    <div x-show="showTestModal" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 overflow-y-auto"
+         style="display: none;">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 transition-opacity bg-gray-500 dark:bg-cyber-bg-primary bg-opacity-75 dark:bg-opacity-75" 
+                 @click="showTestModal = false"></div>
+
+            <div class="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-right align-middle transition-all transform bg-white dark:bg-cyber-bg-surface shadow-xl rounded-2xl glassmorphism">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-cyber-text-primary mb-4">
+                    تست اعلان
+                </h3>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                        داده‌های تست (JSON)
+                    </label>
+                    <textarea x-model="testData" 
+                              rows="6"
+                              class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-md bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary font-mono text-sm"
+                              placeholder='{"test_message": true, "user": "admin"}'></textarea>
+                </div>
+                
+                <div class="flex justify-end space-x-3 rtl:space-x-reverse">
+                    <button type="button" 
+                            @click="showTestModal = false"
+                            class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-cyber-text-secondary bg-gray-100 dark:bg-cyber-bg-elevated rounded-lg hover:bg-gray-200 dark:hover:bg-cyber-bg-surface transition-colors">
+                        انصراف
+                    </button>
+                    <button type="button" 
+                            @click="runTest()"
+                            class="px-4 py-2 text-sm font-medium text-white bg-green-600 dark:bg-cyber-neon-success rounded-lg hover:bg-green-700 dark:hover:bg-cyber-neon-success/80 transition-colors">
+                        اجرای تست
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div x-show="loading" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-40 flex items-center justify-center bg-gray-500 dark:bg-cyber-bg-primary bg-opacity-75 dark:bg-opacity-75"
+         style="display: none;">
+        <div class="bg-white dark:bg-cyber-bg-surface rounded-lg p-6 shadow-xl glassmorphism">
+            <div class="flex items-center">
+                <svg class="animate-spin -mr-1 ml-3 h-5 w-5 text-primary-600 dark:text-cyber-neon-primary" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="text-gray-900 dark:text-cyber-text-primary">در حال پردازش...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function notificationManager() {
+    return {
+        selectedEventType: 'all',
+        loading: false,
+        showTestModal: false,
+        showCreateModal: false,
+        testSettingId: null,
+        testData: '{"test_message": true, "timestamp": "' + new Date().toISOString() + '"}',
+        
+        editSetting(settingId) {
+            // Implementation for editing notification setting
+            console.log('Edit setting:', settingId);
+        },
+        
+        testNotification(settingId) {
+            this.testSettingId = settingId;
+            this.showTestModal = true;
+        },
+        
+        async runTest() {
+            if (!this.testSettingId) return;
+            
+            this.loading = true;
+            this.showTestModal = false;
+            
+            try {
+                let testDataObj;
+                try {
+                    testDataObj = JSON.parse(this.testData);
+                } catch (e) {
+                    alert('فرمت JSON نامعتبر است');
+                    return;
+                }
+                
+                const response = await fetch(`/admin-panel/settings/notifications/${this.testSettingId}/test/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        test_data: testDataObj
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    alert('تست اعلان با موفقیت انجام شد');
+                } else {
+                    alert('خطا در تست اعلان: ' + data.error);
+                }
+            } catch (error) {
+                alert('خطای شبکه');
+            } finally {
+                this.loading = false;
+            }
+        }
+    }
+}
+
+function notificationSetting(settingId, initialEnabled) {
+    return {
+        settingId: settingId,
+        enabled: initialEnabled,
+        
+        async toggleEnabled() {
+            try {
+                const response = await fetch(`/admin-panel/settings/notifications/${this.settingId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        is_enabled: this.enabled
+                    })
+                });
+                
+                const data = await response.json();
+                if (!data.success) {
+                    // Revert the change if it failed
+                    this.enabled = !this.enabled;
+                    alert('خطا در به‌روزرسانی: ' + data.error);
+                }
+            } catch (error) {
+                // Revert the change if it failed
+                this.enabled = !this.enabled;
+                alert('خطای شبکه');
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

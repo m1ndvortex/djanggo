@@ -14,7 +14,7 @@ from zargar.admin_panel.models import (
     NotificationSetting, 
     SettingChangeHistory
 )
-from zargar.admin_panel.services import SettingsManager, NotificationManager
+from zargar.admin_panel.services.settings_service import SettingsManager, NotificationManager
 from zargar.core.security_models import AuditLog
 
 User = get_user_model()

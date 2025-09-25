@@ -9,6 +9,7 @@ from . import domain_views
 from . import security_views
 from . import audit_views
 from . import rbac_views
+from . import settings_views
 
 app_name = 'admin_panel'
 
@@ -91,6 +92,21 @@ urlpatterns = [
     path('security/audit-logs/search/api/', audit_views.AuditLogSearchAPIView.as_view(), name='audit_log_search_api'),
     path('security/audit-logs/integrity/check/', audit_views.AuditLogIntegrityCheckView.as_view(), name='audit_log_integrity_check'),
     path('security/audit-logs/stats/api/', audit_views.AuditLogStatsAPIView.as_view(), name='audit_log_stats_api'),
+    
+    # Settings Management
+    path('settings/', settings_views.SettingsManagementView.as_view(), name='settings_management'),
+    path('settings/update/', settings_views.SettingUpdateView.as_view(), name='setting_update'),
+    path('settings/bulk-update/', settings_views.BulkSettingsUpdateView.as_view(), name='bulk_settings_update'),
+    path('settings/reset/', settings_views.SettingResetView.as_view(), name='setting_reset'),
+    path('settings/history/<str:key>/', settings_views.SettingHistoryView.as_view(), name='setting_history'),
+    path('settings/rollback/', settings_views.SettingRollbackView.as_view(), name='setting_rollback'),
+    path('settings/export/', settings_views.SettingsExportView.as_view(), name='settings_export'),
+    path('settings/import/', settings_views.SettingsImportView.as_view(), name='settings_import'),
+    
+    # Notification Settings
+    path('settings/notifications/', settings_views.NotificationSettingsView.as_view(), name='notification_settings'),
+    path('settings/notifications/<int:setting_id>/', settings_views.NotificationSettingUpdateView.as_view(), name='notification_setting_update'),
+    path('settings/notifications/<int:setting_id>/test/', settings_views.NotificationTestView.as_view(), name='notification_test'),
     
     # Disaster Recovery
     path('disaster-recovery/', disaster_recovery_views.DisasterRecoveryDashboardView.as_view(), name='disaster_recovery_dashboard'),
