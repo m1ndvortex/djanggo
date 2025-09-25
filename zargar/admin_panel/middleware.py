@@ -1,32 +1,22 @@
 """
-Middleware for admin panel impersonation audit logging.
+Security policy enforcement middleware for the admin panel.
 """
-from django.utils.deprecation import MiddlewareMixin
-from django.utils import timezone
-from django.urls import resolve
-from django.contrib.auth import get_user_model
-from django_tenants.utils import get_tenant_model
-import logging
 import json
+from django.http import JsonResponse, HttpResponseForbidden
+from django.utils import timezone
+from django.utils.deprecation import MiddlewareMixin
+from django.contrib.auth import logout
+from django.shortcuts import redirect
+from django.urls import reverse
+from django.contrib import messages
+from django.utils.translation import gettext as _
+from .security_services import security_enforcer
+from zargar.core.security_models import SecurityEvent
 
-from .models import ImpersonationSession
-from .hijack_permissions import get_client_ip
 
-logger = logging.getLogger('hijack_audit')
-User = get_user_model()
-Tenant = get_tenant_model()
-
-
-class ImpersonationAuditMiddleware(MiddlewareMixin):
+class SecurityPolicyMiddleware(MiddlewareMixin):
     """
-    Middleware to track and audit all impersonation activities.
-    
-    This middleware:
-    1. Detects when impersonation starts and ends
-    2. Logs all actions performed during impersonation
-    3. Tracks page visits during impersonation
-    4. Monitors for suspicious activity
-    5. Automatically expires long-running sessions
+    Middleware to enforce security policies across the admin panel.
     """
     
     def __init__(self, get_response):
@@ -34,349 +24,282 @@ class ImpersonationAuditMiddleware(MiddlewareMixin):
         super().__init__(get_response)
     
     def process_request(self, request):
-        """Process incoming request to track impersonation activity."""
-        # Check if user is being hijacked
-        if hasattr(request, 'user') and request.user.is_authenticated:
-            hijack_history = getattr(request.session, 'hijack_history', [])
-            
-            if hijack_history:
-                # User is being impersonated
-                self._handle_impersonation_request(request, hijack_history)
-            else:
-                # Check if this is the end of an impersonation session
-                self._check_impersonation_end(request)
-    
-    def process_response(self, request, response):
-        """Process response to log page visits and actions."""
-        if hasattr(request, 'user') and request.user.is_authenticated:
-            hijack_history = getattr(request.session, 'hijack_history', [])
-            
-            if hijack_history:
-                self._log_page_visit(request, response)
-                self._log_actions(request, response)
+        """Process incoming requests for security policy enforcement."""
         
-        return response
-    
-    def _handle_impersonation_request(self, request, hijack_history):
-        """Handle request during active impersonation."""
-        try:
-            # Get the current impersonation session
-            session = self._get_or_create_impersonation_session(request, hijack_history)
-            
-            if session:
-                # Update session activity
-                self._update_session_activity(session, request)
-                
-                # Check for suspicious activity
-                self._check_suspicious_activity(session, request)
-                
-                # Store session in request for other middleware/views
-                request.impersonation_session = session
+        # Skip security checks for certain paths
+        if self._should_skip_security_check(request):
+            return None
         
-        except Exception as e:
-            logger.error(f"Error handling impersonation request: {str(e)}")
+        # Check rate limiting
+        rate_limit_response = self._check_rate_limiting(request)
+        if rate_limit_response:
+            return rate_limit_response
+        
+        # Check session policies
+        session_response = self._check_session_policies(request)
+        if session_response:
+            return session_response
+        
+        # Check authentication policies
+        auth_response = self._check_authentication_policies(request)
+        if auth_response:
+            return auth_response
+        
+        return None
     
-    def _get_or_create_impersonation_session(self, request, hijack_history):
-        """Get existing or create new impersonation session."""
-        try:
-            # Get admin and target user info from hijack history
-            if not hijack_history:
-                return None
-            
-            # hijack_history contains the original user info
-            admin_user_id = hijack_history[0]  # Original user ID
-            target_user = request.user  # Current impersonated user
-            
-            # Get tenant information
-            tenant = getattr(request, 'tenant', None)
-            tenant_schema = tenant.schema_name if tenant else 'public'
-            tenant_domain = tenant.domain_url if tenant else 'admin'
-            
-            # Check if session already exists
-            session_id = request.session.get('impersonation_session_id')
-            if session_id:
-                try:
-                    session = ImpersonationSession.objects.get(session_id=session_id)
-                    if session.is_active:
-                        return session
-                except ImpersonationSession.DoesNotExist:
-                    pass
-            
-            # Create new session
-            session = ImpersonationSession.objects.create(
-                admin_user_id=admin_user_id,
-                admin_username=self._get_username_by_id(admin_user_id),
-                target_user_id=target_user.id,
-                target_username=target_user.username,
-                tenant_schema=tenant_schema,
-                tenant_domain=tenant_domain,
-                ip_address=get_client_ip(request),
-                user_agent=request.META.get('HTTP_USER_AGENT', ''),
-                status='active'
+    def _should_skip_security_check(self, request):
+        """Check if security checks should be skipped for this request."""
+        skip_paths = [
+            '/admin/login/',
+            '/admin/logout/',
+            '/admin/password_reset/',
+            '/static/',
+            '/media/',
+            '/health/',
+            '/api/health/',
+        ]
+        
+        return any(request.path.startswith(path) for path in skip_paths)
+    
+    def _check_rate_limiting(self, request):
+        """Check and enforce rate limiting policies."""
+        # Get client identifier (IP address)
+        client_ip = self._get_client_ip(request)
+        
+        # Determine rate limit type based on request
+        limit_type = self._get_rate_limit_type(request)
+        if not limit_type:
+            return None
+        
+        # Check if rate limited
+        is_limited, remaining, reset_time = security_enforcer.check_rate_limit(
+            client_ip, limit_type, request.path
+        )
+        
+        if is_limited:
+            # Log security event
+            SecurityEvent.log_event(
+                event_type='api_rate_limit',
+                request=request,
+                severity='medium',
+                details={
+                    'limit_type': limit_type,
+                    'client_ip': client_ip,
+                    'path': request.path,
+                    'reset_time': reset_time.isoformat(),
+                }
             )
             
-            # Store session ID in Django session
-            request.session['impersonation_session_id'] = str(session.session_id)
-            
-            logger.info(f"Created impersonation session: {session.session_id}")
-            return session
+            # Return rate limit response
+            if request.content_type == 'application/json' or request.path.startswith('/api/'):
+                return JsonResponse({
+                    'error': 'Rate limit exceeded',
+                    'message': _('Too many requests. Please try again later.'),
+                    'retry_after': int((reset_time - timezone.now()).total_seconds()),
+                }, status=429)
+            else:
+                return HttpResponseForbidden(
+                    _('Rate limit exceeded. Please try again later.')
+                )
         
-        except Exception as e:
-            logger.error(f"Error creating impersonation session: {str(e)}")
+        # Record the request
+        security_enforcer.record_request(client_ip, limit_type, request.path)
+        
+        return None
+    
+    def _check_session_policies(self, request):
+        """Check and enforce session policies."""
+        if not request.user.is_authenticated:
             return None
-    
-    def _update_session_activity(self, session, request):
-        """Update session with current activity."""
-        try:
-            # Check if session has expired
-            if session.is_expired:
-                session.terminate_session('timeout')
-                logger.warning(f"Impersonation session {session.session_id} expired and terminated")
-                return
-            
-            # Update last activity (this is implicit through the request)
-            # We don't need to save on every request to avoid performance issues
-            
-        except Exception as e:
-            logger.error(f"Error updating session activity: {str(e)}")
-    
-    def _check_suspicious_activity(self, session, request):
-        """Check for suspicious activity during impersonation."""
-        try:
-            suspicious_indicators = []
-            
-            # Check for rapid page changes (potential automation)
-            if len(session.pages_visited) > 50:  # More than 50 pages in one session
-                suspicious_indicators.append("Excessive page visits")
-            
-            # Check for unusual user agent changes
-            current_user_agent = request.META.get('HTTP_USER_AGENT', '')
-            if current_user_agent != session.user_agent:
-                suspicious_indicators.append("User agent changed during session")
-            
-            # Check for IP address changes
-            current_ip = get_client_ip(request)
-            if current_ip != session.ip_address:
-                suspicious_indicators.append("IP address changed during session")
-            
-            # Check session duration (flag if longer than 2 hours)
-            if session.duration.total_seconds() > 7200:  # 2 hours
-                suspicious_indicators.append("Session duration exceeds 2 hours")
-            
-            # Flag session if suspicious indicators found
-            if suspicious_indicators and not session.is_suspicious:
-                reason = "; ".join(suspicious_indicators)
-                session.flag_as_suspicious(reason)
-                logger.warning(f"Impersonation session {session.session_id} flagged as suspicious: {reason}")
         
-        except Exception as e:
-            logger.error(f"Error checking suspicious activity: {str(e)}")
-    
-    def _log_page_visit(self, request, response):
-        """Log page visit during impersonation."""
-        try:
-            session_id = request.session.get('impersonation_session_id')
-            if not session_id:
-                return
-            
-            session = ImpersonationSession.objects.get(session_id=session_id)
-            
-            # Get page information
-            url = request.get_full_path()
-            title = self._extract_page_title(response)
-            
-            # Avoid logging duplicate consecutive visits to the same page
-            if session.pages_visited:
-                last_visit = session.pages_visited[-1]
-                if last_visit.get('url') == url:
-                    return
-            
-            session.add_page_visit(url, title)
+        # Check session timeout
+        session_timeout = security_enforcer.get_session_timeout()
+        last_activity = request.session.get('last_activity')
         
-        except Exception as e:
-            logger.error(f"Error logging page visit: {str(e)}")
-    
-    def _log_actions(self, request, response):
-        """Log actions performed during impersonation."""
-        try:
-            # Only log POST, PUT, PATCH, DELETE requests (actions that modify data)
-            if request.method not in ['POST', 'PUT', 'PATCH', 'DELETE']:
-                return
-            
-            session_id = request.session.get('impersonation_session_id')
-            if not session_id:
-                return
-            
-            session = ImpersonationSession.objects.get(session_id=session_id)
-            
-            # Determine action type based on URL and method
-            action_type = self._determine_action_type(request)
-            description = self._generate_action_description(request, response)
-            
-            session.add_action(action_type, description, request.get_full_path())
-            
-            logger.info(f"Action logged for session {session.session_id}: {action_type} - {description}")
-        
-        except Exception as e:
-            logger.error(f"Error logging action: {str(e)}")
-    
-    def _check_impersonation_end(self, request):
-        """Check if impersonation session has ended."""
-        try:
-            session_id = request.session.get('impersonation_session_id')
-            if session_id:
-                # Impersonation has ended, close the session
-                try:
-                    session = ImpersonationSession.objects.get(session_id=session_id)
-                    if session.is_active:
-                        session.end_session('user_logout')
-                        logger.info(f"Impersonation session {session.session_id} ended")
-                except ImpersonationSession.DoesNotExist:
-                    pass
+        if last_activity:
+            last_activity_time = timezone.datetime.fromisoformat(last_activity)
+            if timezone.now() - last_activity_time > timezone.timedelta(seconds=session_timeout):
+                # Session expired
+                SecurityEvent.log_event(
+                    event_type='logout',
+                    request=request,
+                    user=request.user,
+                    severity='low',
+                    details={'reason': 'session_timeout'}
+                )
                 
-                # Remove session ID from Django session
-                del request.session['impersonation_session_id']
+                logout(request)
+                messages.warning(request, _('Your session has expired. Please log in again.'))
+                return redirect('admin:login')
         
-        except Exception as e:
-            logger.error(f"Error checking impersonation end: {str(e)}")
-    
-    def _get_username_by_id(self, user_id):
-        """Get username by user ID (handles both SuperAdmin and User models)."""
-        try:
-            # Try SuperAdmin first (from public schema)
-            from zargar.tenants.admin_models import SuperAdmin
-            try:
-                admin = SuperAdmin.objects.get(id=user_id)
-                return admin.username
-            except SuperAdmin.DoesNotExist:
-                pass
-            
-            # Try regular User model
-            try:
-                user = User.objects.get(id=user_id)
-                return user.username
-            except User.DoesNotExist:
-                pass
-            
-            return f"Unknown User (ID: {user_id})"
+        # Update last activity if session should be extended
+        if security_enforcer.session_service.extend_session_on_activity():
+            request.session['last_activity'] = timezone.now().isoformat()
         
-        except Exception:
-            return f"Unknown User (ID: {user_id})"
+        # Check for sensitive actions requiring re-authentication
+        if self._is_sensitive_action(request):
+            reauth_time = request.session.get('last_reauth')
+            if not reauth_time or (timezone.now() - timezone.datetime.fromisoformat(reauth_time)).total_seconds() > 900:  # 15 minutes
+                # Require re-authentication
+                request.session['pending_sensitive_action'] = {
+                    'path': request.path,
+                    'method': request.method,
+                    'data': request.POST.dict() if request.method == 'POST' else {},
+                }
+                return redirect('admin:reauth_required')
+        
+        return None
     
-    def _extract_page_title(self, response):
-        """Extract page title from response content."""
-        try:
-            if response.get('Content-Type', '').startswith('text/html'):
-                content = response.content.decode('utf-8', errors='ignore')
-                
-                # Simple title extraction
-                start = content.find('<title>')
-                if start != -1:
-                    start += 7  # len('<title>')
-                    end = content.find('</title>', start)
-                    if end != -1:
-                        return content[start:end].strip()
-            
+    def _check_authentication_policies(self, request):
+        """Check and enforce authentication policies."""
+        if not request.user.is_authenticated:
             return None
         
-        except Exception:
-            return None
-    
-    def _determine_action_type(self, request):
-        """Determine the type of action based on request."""
-        try:
-            url_name = resolve(request.path_info).url_name
-            method = request.method.lower()
-            
-            # Map URL patterns to action types
-            action_mapping = {
-                'create': 'create',
-                'add': 'create',
-                'edit': 'update',
-                'update': 'update',
-                'delete': 'delete',
-                'remove': 'delete',
-                'login': 'authentication',
-                'logout': 'authentication',
-                'password': 'security',
-                'settings': 'configuration',
-            }
-            
-            # Check URL name for action type
-            if url_name:
-                for pattern, action in action_mapping.items():
-                    if pattern in url_name.lower():
-                        return action
-            
-            # Fallback to HTTP method
-            method_mapping = {
-                'post': 'create',
-                'put': 'update',
-                'patch': 'update',
-                'delete': 'delete',
-            }
-            
-            return method_mapping.get(method, 'unknown')
+        # Check if 2FA is required but not enabled
+        if security_enforcer.requires_2fa(request.user):
+            if not hasattr(request.user, 'two_factor_enabled') or not request.user.two_factor_enabled:
+                # Redirect to 2FA setup
+                if not request.path.startswith('/admin/2fa/'):
+                    return redirect('admin:2fa_setup')
         
-        except Exception:
-            return 'unknown'
-    
-    def _generate_action_description(self, request, response):
-        """Generate human-readable description of the action."""
-        try:
-            method = request.method
-            path = request.path_info
-            
-            # Get form data for POST requests
-            form_data = {}
-            if method == 'POST' and request.POST:
-                # Only log non-sensitive fields
-                sensitive_fields = ['password', 'token', 'secret', 'key']
-                for key, value in request.POST.items():
-                    if not any(sensitive in key.lower() for sensitive in sensitive_fields):
-                        form_data[key] = value
-            
-            description = f"{method} request to {path}"
-            
-            if form_data:
-                description += f" with data: {json.dumps(form_data, default=str)[:200]}"
-            
-            # Add response status
-            if hasattr(response, 'status_code'):
-                description += f" (Status: {response.status_code})"
-            
-            return description
+        # Check if account is locked
+        if security_enforcer.auth_service.is_account_locked(request.user):
+            logout(request)
+            messages.error(request, _('Your account has been locked due to security concerns.'))
+            return redirect('admin:login')
         
-        except Exception:
-            return f"{request.method} request to {request.path_info}"
+        return None
+    
+    def _get_client_ip(self, request):
+        """Extract client IP address from request."""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0].strip()
+        else:
+            ip = request.META.get('REMOTE_ADDR', '')
+        return ip
+    
+    def _get_rate_limit_type(self, request):
+        """Determine the rate limit type for the request."""
+        if request.path.startswith('/admin/login/'):
+            return 'login'
+        elif request.path.startswith('/admin/password_reset/'):
+            return 'password_reset'
+        elif request.path.startswith('/api/'):
+            return 'api_call'
+        elif 'export' in request.path:
+            return 'data_export'
+        elif any(keyword in request.path for keyword in ['bulk', 'batch']):
+            return 'bulk_operation'
+        elif request.path.startswith('/admin/search/'):
+            return 'search'
+        elif 'report' in request.path:
+            return 'report_generation'
+        
+        return None
+    
+    def _is_sensitive_action(self, request):
+        """Check if the current request is for a sensitive action."""
+        sensitive_patterns = [
+            '/admin/auth/user/.*?/password/',
+            '/admin/auth/user/.*?/delete/',
+            '/admin/security/',
+            '/admin/backup/restore/',
+            '/admin/tenant/.*?/delete/',
+            '/admin/export/financial/',
+        ]
+        
+        import re
+        return any(re.match(pattern, request.path) for pattern in sensitive_patterns)
 
 
-class ImpersonationCleanupMiddleware(MiddlewareMixin):
+class PasswordPolicyMiddleware(MiddlewareMixin):
     """
-    Middleware to cleanup expired impersonation sessions.
-    This runs periodically to maintain database hygiene.
+    Middleware to enforce password policies.
     """
-    
-    def __init__(self, get_response):
-        self.get_response = get_response
-        self.cleanup_counter = 0
-        super().__init__(get_response)
     
     def process_request(self, request):
-        """Periodically cleanup expired sessions."""
-        self.cleanup_counter += 1
+        """Check for password policy violations."""
+        if not request.user.is_authenticated:
+            return None
         
-        # Run cleanup every 100 requests to avoid performance impact
-        if self.cleanup_counter >= 100:
-            self.cleanup_counter = 0
-            self._cleanup_expired_sessions()
+        # Check if password has expired
+        if security_enforcer.password_service.is_password_expired(request.user):
+            # Skip check for password change pages
+            if not request.path.startswith('/admin/password_change/'):
+                messages.warning(
+                    request, 
+                    _('Your password has expired. Please change it now.')
+                )
+                return redirect('admin:password_change')
+        
+        return None
+
+
+class SessionSecurityMiddleware(MiddlewareMixin):
+    """
+    Middleware to enhance session security.
+    """
     
-    def _cleanup_expired_sessions(self):
-        """Cleanup expired impersonation sessions."""
-        try:
-            count = ImpersonationSession.objects.cleanup_expired_sessions()
-            if count > 0:
-                logger.info(f"Cleaned up {count} expired impersonation sessions")
+    def process_request(self, request):
+        """Enhance session security."""
+        if not request.user.is_authenticated:
+            return None
         
-        except Exception as e:
-            logger.error(f"Error cleaning up expired sessions: {str(e)}")
+        # Check for session hijacking indicators
+        stored_ip = request.session.get('client_ip')
+        current_ip = self._get_client_ip(request)
+        
+        if stored_ip and stored_ip != current_ip:
+            # Potential session hijacking
+            SecurityEvent.log_event(
+                event_type='session_hijack',
+                request=request,
+                user=request.user,
+                severity='high',
+                details={
+                    'stored_ip': stored_ip,
+                    'current_ip': current_ip,
+                    'user_agent': request.META.get('HTTP_USER_AGENT', ''),
+                }
+            )
+            
+            logout(request)
+            messages.error(request, _('Security alert: Your session has been terminated.'))
+            return redirect('admin:login')
+        
+        # Store client IP for future checks
+        if not stored_ip:
+            request.session['client_ip'] = current_ip
+        
+        # Check user agent consistency
+        stored_ua = request.session.get('user_agent')
+        current_ua = request.META.get('HTTP_USER_AGENT', '')
+        
+        if stored_ua and stored_ua != current_ua:
+            # User agent changed - potential security issue
+            SecurityEvent.log_event(
+                event_type='session_anomaly',
+                request=request,
+                user=request.user,
+                severity='medium',
+                details={
+                    'stored_user_agent': stored_ua,
+                    'current_user_agent': current_ua,
+                }
+            )
+        
+        # Store user agent for future checks
+        if not stored_ua:
+            request.session['user_agent'] = current_ua
+        
+        return None
+    
+    def _get_client_ip(self, request):
+        """Extract client IP address from request."""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0].strip()
+        else:
+            ip = request.META.get('REMOTE_ADDR', '')
+        return ip

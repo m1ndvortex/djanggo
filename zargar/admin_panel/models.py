@@ -892,6 +892,243 @@ class RestoreJob(models.Model):
         self.save(update_fields=['status', 'completed_at', 'error_message'])
 
 
+class SecurityPolicy(models.Model):
+    """
+    Model for storing security policy configurations.
+    """
+    POLICY_TYPES = [
+        ('password', _('Password Policy')),
+        ('session', _('Session Policy')),
+        ('rate_limit', _('Rate Limiting Policy')),
+        ('authentication', _('Authentication Policy')),
+        ('access_control', _('Access Control Policy')),
+    ]
+    
+    name = models.CharField(
+        max_length=200,
+        verbose_name=_('Policy Name'),
+        help_text=_('Human-readable name for this security policy')
+    )
+    
+    policy_type = models.CharField(
+        max_length=50,
+        choices=POLICY_TYPES,
+        verbose_name=_('Policy Type')
+    )
+    
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name=_('Is Active'),
+        help_text=_('Whether this policy is currently active')
+    )
+    
+    configuration = models.JSONField(
+        default=dict,
+        verbose_name=_('Policy Configuration'),
+        help_text=_('JSON configuration for the security policy')
+    )
+    
+    description = models.TextField(
+        blank=True,
+        verbose_name=_('Description'),
+        help_text=_('Description of what this policy does')
+    )
+    
+    # Audit fields
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by_id = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_('Created By ID'),
+        help_text=_('ID of the user who created this policy')
+    )
+    
+    created_by_username = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name=_('Created By Username'),
+        help_text=_('Username of the user who created this policy')
+    )
+    
+    updated_by_id = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_('Updated By ID'),
+        help_text=_('ID of the user who last updated this policy')
+    )
+    
+    updated_by_username = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name=_('Updated By Username'),
+        help_text=_('Username of the user who last updated this policy')
+    )
+    
+    class Meta:
+        verbose_name = _('Security Policy')
+        verbose_name_plural = _('Security Policies')
+        db_table = 'admin_security_policy'
+        ordering = ['policy_type', 'name']
+        unique_together = ['policy_type', 'name']
+        indexes = [
+            models.Index(fields=['policy_type', 'is_active']),
+            models.Index(fields=['is_active', 'updated_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.get_policy_type_display()}: {self.name}"
+    
+    def clean(self):
+        """Validate policy configuration based on type."""
+        super().clean()
+        
+        if self.policy_type == 'password':
+            self._validate_password_policy()
+        elif self.policy_type == 'session':
+            self._validate_session_policy()
+        elif self.policy_type == 'rate_limit':
+            self._validate_rate_limit_policy()
+        elif self.policy_type == 'authentication':
+            self._validate_authentication_policy()
+    
+    def _validate_password_policy(self):
+        """Validate password policy configuration."""
+        required_fields = ['min_length', 'require_uppercase', 'require_lowercase', 
+                          'require_numbers', 'require_special_chars', 'max_age_days']
+        
+        for field in required_fields:
+            if field not in self.configuration:
+                raise ValidationError(f'Password policy missing required field: {field}')
+        
+        # Validate numeric fields
+        if not isinstance(self.configuration.get('min_length'), int) or self.configuration['min_length'] < 1:
+            raise ValidationError('Password min_length must be a positive integer')
+        
+        if not isinstance(self.configuration.get('max_age_days'), int) or self.configuration['max_age_days'] < 1:
+            raise ValidationError('Password max_age_days must be a positive integer')
+    
+    def _validate_session_policy(self):
+        """Validate session policy configuration."""
+        required_fields = ['timeout_minutes', 'max_concurrent_sessions', 'require_reauth_for_sensitive']
+        
+        for field in required_fields:
+            if field not in self.configuration:
+                raise ValidationError(f'Session policy missing required field: {field}')
+        
+        # Validate numeric fields
+        if not isinstance(self.configuration.get('timeout_minutes'), int) or self.configuration['timeout_minutes'] < 1:
+            raise ValidationError('Session timeout_minutes must be a positive integer')
+        
+        if not isinstance(self.configuration.get('max_concurrent_sessions'), int) or self.configuration['max_concurrent_sessions'] < 1:
+            raise ValidationError('Session max_concurrent_sessions must be a positive integer')
+    
+    def _validate_rate_limit_policy(self):
+        """Validate rate limiting policy configuration."""
+        required_fields = ['limits']
+        
+        for field in required_fields:
+            if field not in self.configuration:
+                raise ValidationError(f'Rate limit policy missing required field: {field}')
+        
+        # Validate limits structure
+        limits = self.configuration.get('limits', {})
+        if not isinstance(limits, dict):
+            raise ValidationError('Rate limit policy limits must be a dictionary')
+        
+        for limit_type, config in limits.items():
+            if not isinstance(config, dict):
+                raise ValidationError(f'Rate limit config for {limit_type} must be a dictionary')
+            
+            if 'requests' not in config or 'window_minutes' not in config:
+                raise ValidationError(f'Rate limit config for {limit_type} must have requests and window_minutes')
+    
+    def _validate_authentication_policy(self):
+        """Validate authentication policy configuration."""
+        required_fields = ['require_2fa', 'lockout_attempts', 'lockout_duration_minutes']
+        
+        for field in required_fields:
+            if field not in self.configuration:
+                raise ValidationError(f'Authentication policy missing required field: {field}')
+    
+    @classmethod
+    def get_active_policy(cls, policy_type):
+        """Get the active policy for a given type."""
+        try:
+            return cls.objects.filter(policy_type=policy_type, is_active=True).first()
+        except cls.DoesNotExist:
+            return None
+    
+    @classmethod
+    def get_password_policy(cls):
+        """Get the active password policy configuration."""
+        policy = cls.get_active_policy('password')
+        if policy:
+            return policy.configuration
+        
+        # Return default password policy
+        return {
+            'min_length': 8,
+            'require_uppercase': True,
+            'require_lowercase': True,
+            'require_numbers': True,
+            'require_special_chars': True,
+            'max_age_days': 90,
+            'prevent_reuse_count': 5,
+            'special_chars': '!@#$%^&*()_+-=[]{}|;:,.<>?',
+        }
+    
+    @classmethod
+    def get_session_policy(cls):
+        """Get the active session policy configuration."""
+        policy = cls.get_active_policy('session')
+        if policy:
+            return policy.configuration
+        
+        # Return default session policy
+        return {
+            'timeout_minutes': 480,  # 8 hours
+            'max_concurrent_sessions': 3,
+            'require_reauth_for_sensitive': True,
+            'extend_on_activity': True,
+            'secure_cookies': True,
+        }
+    
+    @classmethod
+    def get_rate_limit_policy(cls):
+        """Get the active rate limiting policy configuration."""
+        policy = cls.get_active_policy('rate_limit')
+        if policy:
+            return policy.configuration
+        
+        # Return default rate limiting policy
+        return {
+            'limits': {
+                'login': {'requests': 5, 'window_minutes': 60},
+                'api_call': {'requests': 1000, 'window_minutes': 60},
+                'password_reset': {'requests': 3, 'window_minutes': 60},
+                '2fa_verify': {'requests': 10, 'window_minutes': 60},
+                'data_export': {'requests': 10, 'window_minutes': 60},
+            }
+        }
+    
+    @classmethod
+    def get_authentication_policy(cls):
+        """Get the active authentication policy configuration."""
+        policy = cls.get_active_policy('authentication')
+        if policy:
+            return policy.configuration
+        
+        # Return default authentication policy
+        return {
+            'require_2fa': False,
+            'lockout_attempts': 5,
+            'lockout_duration_minutes': 30,
+            'password_reset_token_expiry_hours': 24,
+            'remember_me_duration_days': 30,
+        }
+
+
 class SystemSetting(models.Model):
     """
     Model for storing system-wide configuration settings.
