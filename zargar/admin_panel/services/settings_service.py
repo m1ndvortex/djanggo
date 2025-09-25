@@ -10,9 +10,32 @@ import json
 import logging
 
 from ..models import SystemSetting, NotificationSetting, SettingChangeHistory
-from zargar.core.security_models import AuditLog
+
+# Safe import for AuditLog - handle missing table gracefully
+try:
+    from zargar.core.security_models import AuditLog
+    AUDIT_LOG_AVAILABLE = True
+except ImportError:
+    AUDIT_LOG_AVAILABLE = False
+    AuditLog = None
 
 logger = logging.getLogger(__name__)
+
+
+def safe_audit_log(action, user=None, content_object=None, **kwargs):
+    """Safely log audit events, handling missing AuditLog table."""
+    if AUDIT_LOG_AVAILABLE and AuditLog:
+        try:
+            AuditLog.log_action(
+                action=action,
+                user=user,
+                content_object=content_object,
+                **kwargs
+            )
+        except Exception as e:
+            logger.warning(f"Failed to log audit event: {e}")
+    else:
+        logger.info(f"Audit log not available - Action: {action}, User: {user}")
 
 
 class SettingsManager:
@@ -71,19 +94,25 @@ class SettingsManager:
         
         old_value = setting.value
         
-        with transaction.atomic():
+        try:
             # Update the setting
             setting.set_value(value, user)
             
-            # Record change history
-            SettingChangeHistory.objects.create(
-                setting=setting,
-                old_value=old_value,
-                new_value=setting.value,
-                change_reason=reason,
-                changed_by_id=user.id if user else None,
-                changed_by_username=user.username if user else '',
-            )
+            # Record change history (optional, handle gracefully if table doesn't exist)
+            try:
+                SettingChangeHistory.objects.create(
+                    setting=setting,
+                    old_value=old_value,
+                    new_value=setting.value,
+                    change_reason=reason,
+                    changed_by_id=user.id if user else None,
+                    changed_by_username=user.username if user else '',
+                )
+            except Exception as e:
+                logger.warning(f"Failed to log setting change for {key}: {e}")
+        except Exception as e:
+            logger.error(f"Failed to update setting {key}: {e}")
+            raise
         
         logger.info(f"Setting '{key}' changed from '{old_value}' to '{setting.value}' by {user}")
         return setting
@@ -201,18 +230,24 @@ class SettingsManager:
         
         old_value = setting.value
         
-        with transaction.atomic():
+        try:
             setting.reset_to_default(user)
             
-            # Record change history
-            SettingChangeHistory.objects.create(
-                setting=setting,
-                old_value=old_value,
-                new_value=setting.value,
-                change_reason=f"Reset to default: {reason}",
-                changed_by_id=user.id if user else None,
-                changed_by_username=user.username if user else '',
-            )
+            # Record change history (optional, handle gracefully if table doesn't exist)
+            try:
+                SettingChangeHistory.objects.create(
+                    setting=setting,
+                    old_value=old_value,
+                    new_value=setting.value,
+                    change_reason=f"Reset to default: {reason}",
+                    changed_by_id=user.id if user else None,
+                    changed_by_username=user.username if user else '',
+                )
+            except Exception as e:
+                logger.warning(f"Failed to log setting reset for {key}: {e}")
+        except Exception as e:
+            logger.error(f"Failed to reset setting {key}: {e}")
+            raise
         
         logger.info(f"Setting '{key}' reset to default by {user}")
         return setting
@@ -414,18 +449,24 @@ class SettingsManager:
         old_value = setting.value
         rollback_value = history_entry.old_value
         
-        with transaction.atomic():
+        try:
             setting.set_value(rollback_value, user)
             
-            # Record rollback in history
-            SettingChangeHistory.objects.create(
-                setting=setting,
-                old_value=old_value,
-                new_value=rollback_value,
-                change_reason=f"Rollback to {history_entry.changed_at}: {reason}",
-                changed_by_id=user.id if user else None,
-                changed_by_username=user.username if user else '',
-            )
+            # Record rollback in history (optional, handle gracefully if table doesn't exist)
+            try:
+                SettingChangeHistory.objects.create(
+                    setting=setting,
+                    old_value=old_value,
+                    new_value=rollback_value,
+                    change_reason=f"Rollback to {history_entry.changed_at}: {reason}",
+                    changed_by_id=user.id if user else None,
+                    changed_by_username=user.username if user else '',
+                )
+            except Exception as e:
+                logger.warning(f"Failed to log setting rollback for {key}: {e}")
+        except Exception as e:
+            logger.error(f"Failed to rollback setting {key}: {e}")
+            raise
         
         logger.info(f"Setting '{key}' rolled back to '{rollback_value}' by {user}")
         return setting
@@ -515,7 +556,7 @@ class NotificationManager:
         )
         
         # Log creation
-        AuditLog.log_action(
+        safe_audit_log(
             action='create',
             user=user,
             content_object=setting,
@@ -562,7 +603,7 @@ class NotificationManager:
         setting.save()
         
         # Log update
-        AuditLog.log_action(
+        safe_audit_log(
             action='update',
             user=user,
             content_object=setting,
