@@ -11,6 +11,7 @@ from . import audit_views
 from . import rbac_views
 from . import settings_views
 from . import security_policy_views
+from . import notification_views
 
 app_name = 'admin_panel'
 
@@ -112,10 +113,21 @@ urlpatterns = [
     path('settings/security-policies/test/', security_policy_views.SecurityPolicyTestView.as_view(), name='security_policy_test'),
     path('settings/security-policies/history/', security_policy_views.SecurityPolicyHistoryView.as_view(), name='security_policy_history'),
     
-    # Notification Settings
+    # Notification Settings (Legacy)
     path('settings/notifications/', settings_views.NotificationSettingsView.as_view(), name='notification_settings'),
     path('settings/notifications/<int:setting_id>/', settings_views.NotificationSettingUpdateView.as_view(), name='notification_setting_update'),
     path('settings/notifications/<int:setting_id>/test/', settings_views.NotificationTestView.as_view(), name='notification_test'),
+    
+    # New Notification Management
+    path('settings/notifications-management/', notification_views.NotificationManagementView.as_view(), name='notifications_management'),
+    
+    # Notification Management API endpoints
+    path('api/notifications/email-config/', notification_views.EmailConfigurationAPIView.as_view(), name='api_email_config'),
+    path('api/notifications/email-test/', notification_views.EmailTestAPIView.as_view(), name='api_email_test'),
+    path('api/notifications/send-test/', notification_views.SendTestEmailAPIView.as_view(), name='api_send_test_email'),
+    path('api/notifications/alert-config/', notification_views.AlertConfigurationAPIView.as_view(), name='api_alert_config'),
+    path('api/notifications/delivery-stats/', notification_views.DeliveryStatisticsAPIView.as_view(), name='api_delivery_stats'),
+    path('api/notifications/test/', notification_views.NotificationTestAPIView.as_view(), name='api_notification_test'),
     
     # Disaster Recovery
     path('disaster-recovery/', disaster_recovery_views.DisasterRecoveryDashboardView.as_view(), name='disaster_recovery_dashboard'),

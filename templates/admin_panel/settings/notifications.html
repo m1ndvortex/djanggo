@@ -1,0 +1,908 @@
+{% extends 'admin_panel/base_unified.html' %}
+{% load i18n %}
+
+{% block title %}مدیریت اعلان‌ها{% endblock %}
+
+{% block extra_css %}
+<style>
+    .notification-card {
+        @apply bg-white dark:bg-cyber-bg-surface rounded-lg shadow-sm border border-gray-200 dark:border-cyber-neon-primary/20;
+        transition: all 0.3s ease;
+    }
+    
+    .notification-card:hover {
+        @apply shadow-md dark:shadow-cyber-neon-primary/10;
+        transform: translateY(-1px);
+    }
+    
+    .status-badge {
+        @apply px-2 py-1 text-xs rounded-full font-medium;
+    }
+    
+    .status-success {
+        @apply bg-green-100 dark:bg-cyber-neon-success/20 text-green-700 dark:text-cyber-neon-success;
+    }
+    
+    .status-error {
+        @apply bg-red-100 dark:bg-cyber-neon-danger/20 text-red-700 dark:text-cyber-neon-danger;
+    }
+    
+    .status-warning {
+        @apply bg-yellow-100 dark:bg-cyber-neon-warning/20 text-yellow-700 dark:text-cyber-neon-warning;
+    }
+    
+    .status-info {
+        @apply bg-blue-100 dark:bg-cyber-neon-info/20 text-blue-700 dark:text-cyber-neon-info;
+    }
+    
+    .glassmorphism {
+        backdrop-filter: blur(10px);
+        background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .dark .glassmorphism {
+        background: rgba(0, 20, 40, 0.3);
+        border: 1px solid rgba(0, 255, 255, 0.1);
+    }
+    
+    .cyber-glow {
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+    }
+    
+    .dark .cyber-glow {
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-cyber-bg-primary" x-data="notificationManager()">
+    <!-- Header -->
+    <div class="bg-white dark:bg-cyber-bg-surface shadow-sm border-b dark:border-cyber-neon-primary/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Breadcrumb -->
+                <nav class="flex items-center space-x-2 rtl:space-x-reverse text-sm">
+                    <a href="{% url 'admin_panel:dashboard' %}" class="text-gray-500 dark:text-cyber-text-muted hover:text-gray-700 dark:hover:text-cyber-text-secondary">
+                        پنل مدیریت
+                    </a>
+                    <svg class="w-4 h-4 text-gray-400 dark:text-cyber-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    <a href="{% url 'admin_panel:settings_management' %}" class="text-gray-500 dark:text-cyber-text-muted hover:text-gray-700 dark:hover:text-cyber-text-secondary">
+                        تنظیمات
+                    </a>
+                    <svg class="w-4 h-4 text-gray-400 dark:text-cyber-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    <span class="text-gray-900 dark:text-cyber-text-primary font-medium">مدیریت اعلان‌ها</span>
+                </nav>
+                
+                <!-- Actions -->
+                <div class="flex items-center space-x-3 rtl:space-x-reverse">
+                    <button @click="refreshStatus()" 
+                            class="px-3 py-2 text-gray-600 dark:text-cyber-text-secondary hover:text-gray-900 dark:hover:text-cyber-text-primary border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                    </button>
+                    <button @click="showTestEmailModal = true" 
+                            class="px-4 py-2 bg-green-600 dark:bg-cyber-neon-success text-white rounded-lg hover:bg-green-700 dark:hover:bg-cyber-neon-success/80 transition-colors">
+                        <svg class="w-4 h-4 inline ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                        </svg>
+                        تست ایمیل
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Tab Navigation -->
+        <div class="mb-8">
+            <div class="flex flex-wrap gap-2 p-1 bg-gray-100 dark:bg-cyber-bg-elevated rounded-lg">
+                <button @click="activeTab = 'email'" 
+                        :class="activeTab === 'email' ? 'bg-primary-100 dark:bg-cyber-neon-primary/20 text-primary-700 dark:text-cyber-neon-primary cyber-glow' : 'text-gray-600 dark:text-cyber-text-secondary hover:text-gray-900 dark:hover:text-cyber-text-primary'"
+                        class="px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:bg-gray-100 dark:hover:bg-cyber-bg-elevated">
+                    <svg class="w-4 h-4 inline ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                    </svg>
+                    تنظیمات ایمیل
+                </button>
+                <button @click="activeTab = 'alerts'" 
+                        :class="activeTab === 'alerts' ? 'bg-primary-100 dark:bg-cyber-neon-primary/20 text-primary-700 dark:text-cyber-neon-primary cyber-glow' : 'text-gray-600 dark:text-cyber-text-secondary hover:text-gray-900 dark:hover:text-cyber-text-primary'"
+                        class="px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:bg-gray-100 dark:hover:bg-cyber-bg-elevated">
+                    <svg class="w-4 h-4 inline ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM4.828 7l10.586 10.586c.781.781 2.047.781 2.828 0l1.414-1.414c.781-.781.781-2.047 0-2.828L9.242 3.828c-.781-.781-2.047-.781-2.828 0L4.828 5.414c-.781.781-.781 2.047 0 2.828z"></path>
+                    </svg>
+                    تنظیمات هشدار
+                </button>
+                <button @click="activeTab = 'status'" 
+                        :class="activeTab === 'status' ? 'bg-primary-100 dark:bg-cyber-neon-primary/20 text-primary-700 dark:text-cyber-neon-primary cyber-glow' : 'text-gray-600 dark:text-cyber-text-secondary hover:text-gray-900 dark:hover:text-cyber-text-primary'"
+                        class="px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:bg-gray-100 dark:hover:bg-cyber-bg-elevated">
+                    <svg class="w-4 h-4 inline ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    وضعیت تحویل
+                </button>
+            </div>
+        </div>
+
+        <!-- Email Configuration Tab -->
+        <div x-show="activeTab === 'email'" class="space-y-6">
+            <div class="notification-card">
+                <div class="p-6 border-b border-gray-200 dark:border-cyber-neon-primary/20">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">
+                                تنظیمات سرور ایمیل
+                            </h3>
+                            <p class="text-sm text-gray-600 dark:text-cyber-text-secondary mt-1">
+                                پیکربندی سرور SMTP برای ارسال اعلان‌ها
+                            </p>
+                        </div>
+                        <div class="flex items-center space-x-2 rtl:space-x-reverse">
+                            <span :class="emailStatus.connected ? 'status-success' : 'status-error'" class="status-badge">
+                                <span x-text="emailStatus.connected ? 'متصل' : 'قطع'"></span>
+                            </span>
+                            <button @click="testEmailConnection()" 
+                                    :disabled="loading"
+                                    class="px-3 py-1 text-sm bg-blue-600 dark:bg-cyber-neon-info text-white rounded hover:bg-blue-700 dark:hover:bg-cyber-neon-info/80 transition-colors disabled:opacity-50">
+                                تست اتصال
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <form @submit.prevent="saveEmailConfig()" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                                    میزبان SMTP
+                                </label>
+                                <input type="text" 
+                                       x-model="emailConfig.host"
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-md bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-transparent"
+                                       placeholder="smtp.gmail.com">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                                    پورت
+                                </label>
+                                <input type="number" 
+                                       x-model="emailConfig.port"
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-md bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-transparent"
+                                       placeholder="587">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                                    نام کاربری
+                                </label>
+                                <input type="text" 
+                                       x-model="emailConfig.username"
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-md bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-transparent"
+                                       placeholder="your-email@domain.com">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                                    رمز عبور
+                                </label>
+                                <input type="password" 
+                                       x-model="emailConfig.password"
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-md bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-transparent"
+                                       placeholder="••••••••">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                                    آدرس فرستنده
+                                </label>
+                                <input type="email" 
+                                       x-model="emailConfig.from_email"
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-md bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-transparent"
+                                       placeholder="noreply@zargar.local">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                                    تایم‌اوت (ثانیه)
+                                </label>
+                                <input type="number" 
+                                       x-model="emailConfig.timeout"
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-md bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-transparent"
+                                       placeholder="30">
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-6 rtl:space-x-reverse">
+                            <label class="flex items-center">
+                                <input type="checkbox" 
+                                       x-model="emailConfig.use_tls"
+                                       class="rounded border-gray-300 dark:border-cyber-neon-primary/30 text-primary-600 dark:text-cyber-neon-primary focus:ring-primary-500 dark:focus:ring-cyber-neon-primary">
+                                <span class="mr-2 text-sm text-gray-700 dark:text-cyber-text-secondary">استفاده از TLS</span>
+                            </label>
+                            
+                            <label class="flex items-center">
+                                <input type="checkbox" 
+                                       x-model="emailConfig.use_ssl"
+                                       class="rounded border-gray-300 dark:border-cyber-neon-primary/30 text-primary-600 dark:text-cyber-neon-primary focus:ring-primary-500 dark:focus:ring-cyber-neon-primary">
+                                <span class="mr-2 text-sm text-gray-700 dark:text-cyber-text-secondary">استفاده از SSL</span>
+                            </label>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-3 rtl:space-x-reverse">
+                            <button type="button" 
+                                    @click="resetEmailConfig()"
+                                    class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-cyber-text-secondary bg-gray-100 dark:bg-cyber-bg-elevated rounded-lg hover:bg-gray-200 dark:hover:bg-cyber-bg-surface transition-colors">
+                                بازنشانی
+                            </button>
+                            <button type="submit" 
+                                    :disabled="loading"
+                                    class="px-4 py-2 text-sm font-medium text-white bg-primary-600 dark:bg-cyber-neon-primary rounded-lg hover:bg-primary-700 dark:hover:bg-cyber-neon-primary/80 transition-colors disabled:opacity-50">
+                                ذخیره تنظیمات
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alert Configuration Tab -->
+        <div x-show="activeTab === 'alerts'" class="space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Security Alerts -->
+                <div class="notification-card">
+                    <div class="p-6 border-b border-gray-200 dark:border-cyber-neon-primary/20">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">
+                            هشدارهای امنیتی
+                        </h3>
+                        <p class="text-sm text-gray-600 dark:text-cyber-text-secondary mt-1">
+                            آستانه‌های هشدار برای رویدادهای امنیتی
+                        </p>
+                    </div>
+                    
+                    <div class="p-6 space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                                آستانه ورود ناموفق
+                            </label>
+                            <input type="number" 
+                                   x-model="alertThresholds.security_events.failed_login_threshold"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-md bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-transparent">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                                بازه زمانی ورود ناموفق (دقیقه)
+                            </label>
+                            <input type="number" 
+                                   x-model="alertThresholds.security_events.failed_login_window_minutes"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-md bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-transparent">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                                آستانه فعالیت مشکوک
+                            </label>
+                            <input type="number" 
+                                   x-model="alertThresholds.security_events.suspicious_activity_threshold"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-md bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-transparent">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                                آستانه محدودیت نرخ
+                            </label>
+                            <input type="number" 
+                                   x-model="alertThresholds.security_events.rate_limit_threshold"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-md bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-transparent">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Health Alerts -->
+                <div class="notification-card">
+                    <div class="p-6 border-b border-gray-200 dark:border-cyber-neon-primary/20">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">
+                            هشدارهای سلامت سیستم
+                        </h3>
+                        <p class="text-sm text-gray-600 dark:text-cyber-text-secondary mt-1">
+                            آستانه‌های هشدار برای عملکرد سیستم
+                        </p>
+                    </div>
+                    
+                    <div class="p-6 space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                                آستانه استفاده از CPU (%)
+                            </label>
+                            <input type="number" 
+                                   x-model="alertThresholds.system_health.cpu_usage_threshold"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-md bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-transparent">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                                آستانه استفاده از حافظه (%)
+                            </label>
+                            <input type="number" 
+                                   x-model="alertThresholds.system_health.memory_usage_threshold"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-md bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-transparent">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                                آستانه استفاده از دیسک (%)
+                            </label>
+                            <input type="number" 
+                                   x-model="alertThresholds.system_health.disk_usage_threshold"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-md bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-transparent">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                                آستانه زمان پاسخ (میلی‌ثانیه)
+                            </label>
+                            <input type="number" 
+                                   x-model="alertThresholds.system_health.response_time_threshold"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-md bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-transparent">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notification Recipients -->
+            <div class="notification-card">
+                <div class="p-6 border-b border-gray-200 dark:border-cyber-neon-primary/20">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">
+                        گیرندگان اعلان‌ها
+                    </h3>
+                    <p class="text-sm text-gray-600 dark:text-cyber-text-secondary mt-1">
+                        مدیریت فهرست گیرندگان برای انواع مختلف اعلان‌ها
+                    </p>
+                </div>
+                
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <template x-for="(recipients, category) in notificationRecipients" :key="category">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2" x-text="getRecipientCategoryName(category)">
+                                </label>
+                                <div class="space-y-2">
+                                    <template x-for="(email, index) in recipients" :key="index">
+                                        <div class="flex items-center space-x-2 rtl:space-x-reverse">
+                                            <input type="email" 
+                                                   x-model="recipients[index]"
+                                                   class="flex-1 px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-md bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-transparent text-sm"
+                                                   placeholder="email@domain.com">
+                                            <button @click="removeRecipient(category, index)" 
+                                                    class="p-2 text-red-600 dark:text-cyber-neon-danger hover:bg-red-50 dark:hover:bg-cyber-neon-danger/10 rounded">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </template>
+                                    <button @click="addRecipient(category)" 
+                                            class="w-full px-3 py-2 border-2 border-dashed border-gray-300 dark:border-cyber-neon-primary/30 rounded-md text-gray-500 dark:text-cyber-text-muted hover:border-primary-500 dark:hover:border-cyber-neon-primary hover:text-primary-600 dark:hover:text-cyber-neon-primary transition-colors text-sm">
+                                        + افزودن ایمیل
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-3 rtl:space-x-reverse">
+                <button @click="resetAlertConfig()" 
+                        class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-cyber-text-secondary bg-gray-100 dark:bg-cyber-bg-elevated rounded-lg hover:bg-gray-200 dark:hover:bg-cyber-bg-surface transition-colors">
+                    بازنشانی
+                </button>
+                <button @click="saveAlertConfig()" 
+                        :disabled="loading"
+                        class="px-4 py-2 text-sm font-medium text-white bg-primary-600 dark:bg-cyber-neon-primary rounded-lg hover:bg-primary-700 dark:hover:bg-cyber-neon-primary/80 transition-colors disabled:opacity-50">
+                    ذخیره تنظیمات
+                </button>
+            </div>
+        </div>
+
+        <!-- Delivery Status Tab -->
+        <div x-show="activeTab === 'status'" class="space-y-6">
+            <div class="notification-card">
+                <div class="p-6 border-b border-gray-200 dark:border-cyber-neon-primary/20">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">
+                                آمار تحویل اعلان‌ها
+                            </h3>
+                            <p class="text-sm text-gray-600 dark:text-cyber-text-secondary mt-1">
+                                وضعیت و آمار ارسال اعلان‌ها در ۳۰ روز گذشته
+                            </p>
+                        </div>
+                        <button @click="refreshDeliveryStats()" 
+                                class="px-3 py-2 text-sm bg-blue-600 dark:bg-cyber-neon-info text-white rounded hover:bg-blue-700 dark:hover:bg-cyber-neon-info/80 transition-colors">
+                            به‌روزرسانی
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                        <div class="text-center p-4 bg-green-50 dark:bg-cyber-neon-success/10 rounded-lg">
+                            <div class="text-2xl font-bold text-green-600 dark:text-cyber-neon-success" x-text="deliveryStats.total_sent || 0"></div>
+                            <div class="text-sm text-green-700 dark:text-cyber-neon-success">ارسال موفق</div>
+                        </div>
+                        <div class="text-center p-4 bg-red-50 dark:bg-cyber-neon-danger/10 rounded-lg">
+                            <div class="text-2xl font-bold text-red-600 dark:text-cyber-neon-danger" x-text="deliveryStats.total_failed || 0"></div>
+                            <div class="text-sm text-red-700 dark:text-cyber-neon-danger">ارسال ناموفق</div>
+                        </div>
+                        <div class="text-center p-4 bg-yellow-50 dark:bg-cyber-neon-warning/10 rounded-lg">
+                            <div class="text-2xl font-bold text-yellow-600 dark:text-cyber-neon-warning" x-text="deliveryStats.pending || 0"></div>
+                            <div class="text-sm text-yellow-700 dark:text-cyber-neon-warning">در انتظار</div>
+                        </div>
+                        <div class="text-center p-4 bg-blue-50 dark:bg-cyber-neon-info/10 rounded-lg">
+                            <div class="text-2xl font-bold text-blue-600 dark:text-cyber-neon-info" x-text="Math.round(deliveryStats.success_rate || 0) + '%'"></div>
+                            <div class="text-sm text-blue-700 dark:text-cyber-neon-info">نرخ موفقیت</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Notifications -->
+            <div class="notification-card">
+                <div class="p-6 border-b border-gray-200 dark:border-cyber-neon-primary/20">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">
+                        اعلان‌های اخیر
+                    </h3>
+                    <p class="text-sm text-gray-600 dark:text-cyber-text-secondary mt-1">
+                        فهرست اعلان‌های ارسال شده در ۲۴ ساعت گذشته
+                    </p>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 dark:bg-cyber-bg-elevated">
+                            <tr>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">زمان</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">نوع</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">گیرنده</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">وضعیت</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-cyber-text-muted uppercase tracking-wider">جزئیات</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white dark:bg-cyber-bg-surface divide-y divide-gray-200 dark:divide-cyber-neon-primary/20">
+                            <template x-for="notification in recentNotifications" :key="notification.id">
+                                <tr class="hover:bg-gray-50 dark:hover:bg-cyber-bg-elevated/50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-cyber-text-primary" x-text="formatDateTime(notification.timestamp)"></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-cyber-text-primary" x-text="notification.type"></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-cyber-text-primary" x-text="notification.recipient"></td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span :class="getStatusClass(notification.status)" class="status-badge" x-text="getStatusText(notification.status)"></span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-cyber-text-muted" x-text="notification.details || '-'"></td>
+                                </tr>
+                            </template>
+                            <tr x-show="recentNotifications.length === 0">
+                                <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-cyber-text-muted">
+                                    اعلانی در ۲۴ ساعت گذشته ارسال نشده است
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Email Modal -->
+    <div x-show="showTestEmailModal" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 overflow-y-auto"
+         style="display: none;">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 transition-opacity bg-gray-500 dark:bg-cyber-bg-primary bg-opacity-75 dark:bg-opacity-75" 
+                 @click="showTestEmailModal = false"></div>
+
+            <div class="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-right align-middle transition-all transform bg-white dark:bg-cyber-bg-surface shadow-xl rounded-2xl glassmorphism">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-cyber-text-primary mb-4">
+                    ارسال ایمیل تست
+                </h3>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">
+                        آدرس ایمیل گیرنده
+                    </label>
+                    <input type="email" 
+                           x-model="testEmail"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-md bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-cyber-neon-primary focus:border-transparent"
+                           placeholder="test@example.com">
+                </div>
+                
+                <div class="flex justify-end space-x-3 rtl:space-x-reverse">
+                    <button type="button" 
+                            @click="showTestEmailModal = false"
+                            class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-cyber-text-secondary bg-gray-100 dark:bg-cyber-bg-elevated rounded-lg hover:bg-gray-200 dark:hover:bg-cyber-bg-surface transition-colors">
+                        انصراف
+                    </button>
+                    <button type="button" 
+                            @click="sendTestEmail()"
+                            :disabled="loading || !testEmail"
+                            class="px-4 py-2 text-sm font-medium text-white bg-green-600 dark:bg-cyber-neon-success rounded-lg hover:bg-green-700 dark:hover:bg-cyber-neon-success/80 transition-colors disabled:opacity-50">
+                        ارسال
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div x-show="loading" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-40 flex items-center justify-center bg-gray-500 dark:bg-cyber-bg-primary bg-opacity-75 dark:bg-opacity-75"
+         style="display: none;">
+        <div class="bg-white dark:bg-cyber-bg-surface rounded-lg p-6 shadow-xl glassmorphism">
+            <div class="flex items-center">
+                <svg class="animate-spin -mr-1 ml-3 h-5 w-5 text-primary-600 dark:text-cyber-neon-primary" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="text-gray-900 dark:text-cyber-text-primary">در حال پردازش...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function notificationManager() {
+    return {
+        activeTab: 'email',
+        loading: false,
+        showTestEmailModal: false,
+        testEmail: '',
+        
+        // Email Configuration
+        emailConfig: {
+            host: 'localhost',
+            port: 587,
+            username: '',
+            password: '',
+            use_tls: true,
+            use_ssl: false,
+            from_email: 'noreply@zargar.local',
+            timeout: 30
+        },
+        
+        emailStatus: {
+            connected: false,
+            last_test: null,
+            error: null
+        },
+        
+        // Alert Configuration
+        alertThresholds: {
+            security_events: {
+                failed_login_threshold: 5,
+                failed_login_window_minutes: 15,
+                suspicious_activity_threshold: 3,
+                rate_limit_threshold: 10
+            },
+            system_health: {
+                cpu_usage_threshold: 80,
+                memory_usage_threshold: 85,
+                disk_usage_threshold: 90,
+                response_time_threshold: 5000
+            }
+        },
+        
+        notificationRecipients: {
+            security_alerts: [],
+            system_health: [],
+            backup_alerts: [],
+            tenant_alerts: [],
+            critical_alerts: []
+        },
+        
+        // Delivery Status
+        deliveryStats: {
+            total_sent: 0,
+            total_failed: 0,
+            pending: 0,
+            success_rate: 0
+        },
+        
+        recentNotifications: [],
+        
+        async init() {
+            await this.loadEmailConfig();
+            await this.loadAlertConfig();
+            await this.loadDeliveryStats();
+        },
+        
+        // Email Configuration Methods
+        async loadEmailConfig() {
+            try {
+                const response = await fetch('/admin-panel/api/notifications/email-config/');
+                const data = await response.json();
+                if (data.success) {
+                    this.emailConfig = { ...this.emailConfig, ...data.config };
+                    this.emailStatus = data.status || this.emailStatus;
+                }
+            } catch (error) {
+                console.error('Error loading email config:', error);
+            }
+        },
+        
+        async saveEmailConfig() {
+            this.loading = true;
+            try {
+                const response = await fetch('/admin-panel/api/notifications/email-config/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': this.getCsrfToken()
+                    },
+                    body: JSON.stringify(this.emailConfig)
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    this.showNotification('تنظیمات ایمیل با موفقیت ذخیره شد', 'success');
+                    this.emailStatus = data.status || this.emailStatus;
+                } else {
+                    this.showNotification('خطا در ذخیره تنظیمات: ' + data.error, 'error');
+                }
+            } catch (error) {
+                this.showNotification('خطای شبکه', 'error');
+            } finally {
+                this.loading = false;
+            }
+        },
+        
+        async testEmailConnection() {
+            this.loading = true;
+            try {
+                const response = await fetch('/admin-panel/api/notifications/email-test/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': this.getCsrfToken()
+                    },
+                    body: JSON.stringify(this.emailConfig)
+                });
+                
+                const data = await response.json();
+                this.emailStatus = data.result || this.emailStatus;
+                
+                if (data.result.success) {
+                    this.showNotification('اتصال ایمیل با موفقیت تست شد', 'success');
+                } else {
+                    this.showNotification('خطا در تست اتصال: ' + data.result.error, 'error');
+                }
+            } catch (error) {
+                this.showNotification('خطای شبکه', 'error');
+            } finally {
+                this.loading = false;
+            }
+        },
+        
+        async sendTestEmail() {
+            if (!this.testEmail) return;
+            
+            this.loading = true;
+            this.showTestEmailModal = false;
+            
+            try {
+                const response = await fetch('/admin-panel/api/notifications/send-test/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': this.getCsrfToken()
+                    },
+                    body: JSON.stringify({
+                        recipient: this.testEmail,
+                        config: this.emailConfig
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    this.showNotification('ایمیل تست با موفقیت ارسال شد', 'success');
+                } else {
+                    this.showNotification('خطا در ارسال ایمیل: ' + data.error, 'error');
+                }
+            } catch (error) {
+                this.showNotification('خطای شبکه', 'error');
+            } finally {
+                this.loading = false;
+            }
+        },
+        
+        resetEmailConfig() {
+            this.emailConfig = {
+                host: 'localhost',
+                port: 587,
+                username: '',
+                password: '',
+                use_tls: true,
+                use_ssl: false,
+                from_email: 'noreply@zargar.local',
+                timeout: 30
+            };
+        },
+        
+        // Alert Configuration Methods
+        async loadAlertConfig() {
+            try {
+                const response = await fetch('/admin-panel/api/notifications/alert-config/');
+                const data = await response.json();
+                if (data.success) {
+                    this.alertThresholds = { ...this.alertThresholds, ...data.thresholds };
+                    this.notificationRecipients = { ...this.notificationRecipients, ...data.recipients };
+                }
+            } catch (error) {
+                console.error('Error loading alert config:', error);
+            }
+        },
+        
+        async saveAlertConfig() {
+            this.loading = true;
+            try {
+                const response = await fetch('/admin-panel/api/notifications/alert-config/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': this.getCsrfToken()
+                    },
+                    body: JSON.stringify({
+                        thresholds: this.alertThresholds,
+                        recipients: this.notificationRecipients
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    this.showNotification('تنظیمات هشدار با موفقیت ذخیره شد', 'success');
+                } else {
+                    this.showNotification('خطا در ذخیره تنظیمات: ' + data.error, 'error');
+                }
+            } catch (error) {
+                this.showNotification('خطای شبکه', 'error');
+            } finally {
+                this.loading = false;
+            }
+        },
+        
+        resetAlertConfig() {
+            this.alertThresholds = {
+                security_events: {
+                    failed_login_threshold: 5,
+                    failed_login_window_minutes: 15,
+                    suspicious_activity_threshold: 3,
+                    rate_limit_threshold: 10
+                },
+                system_health: {
+                    cpu_usage_threshold: 80,
+                    memory_usage_threshold: 85,
+                    disk_usage_threshold: 90,
+                    response_time_threshold: 5000
+                }
+            };
+            
+            this.notificationRecipients = {
+                security_alerts: [],
+                system_health: [],
+                backup_alerts: [],
+                tenant_alerts: [],
+                critical_alerts: []
+            };
+        },
+        
+        addRecipient(category) {
+            if (!this.notificationRecipients[category]) {
+                this.notificationRecipients[category] = [];
+            }
+            this.notificationRecipients[category].push('');
+        },
+        
+        removeRecipient(category, index) {
+            this.notificationRecipients[category].splice(index, 1);
+        },
+        
+        getRecipientCategoryName(category) {
+            const names = {
+                security_alerts: 'هشدارهای امنیتی',
+                system_health: 'سلامت سیستم',
+                backup_alerts: 'هشدارهای پشتیبان‌گیری',
+                tenant_alerts: 'هشدارهای تنانت',
+                critical_alerts: 'هشدارهای بحرانی'
+            };
+            return names[category] || category;
+        },
+        
+        // Delivery Status Methods
+        async loadDeliveryStats() {
+            try {
+                const response = await fetch('/admin-panel/api/notifications/delivery-stats/');
+                const data = await response.json();
+                if (data.success) {
+                    this.deliveryStats = data.stats;
+                    this.recentNotifications = data.recent || [];
+                }
+            } catch (error) {
+                console.error('Error loading delivery stats:', error);
+            }
+        },
+        
+        async refreshDeliveryStats() {
+            await this.loadDeliveryStats();
+            this.showNotification('آمار تحویل به‌روزرسانی شد', 'info');
+        },
+        
+        async refreshStatus() {
+            await this.loadEmailConfig();
+            await this.loadDeliveryStats();
+            this.showNotification('وضعیت به‌روزرسانی شد', 'info');
+        },
+        
+        // Utility Methods
+        formatDateTime(timestamp) {
+            if (!timestamp) return '-';
+            return new Date(timestamp).toLocaleString('fa-IR');
+        },
+        
+        getStatusClass(status) {
+            const classes = {
+                'sent': 'status-success',
+                'failed': 'status-error',
+                'pending': 'status-warning',
+                'delivered': 'status-success'
+            };
+            return classes[status] || 'status-info';
+        },
+        
+        getStatusText(status) {
+            const texts = {
+                'sent': 'ارسال شده',
+                'failed': 'ناموفق',
+                'pending': 'در انتظار',
+                'delivered': 'تحویل شده'
+            };
+            return texts[status] || status;
+        },
+        
+        getCsrfToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+        },
+        
+        showNotification(message, type = 'info') {
+            // Simple notification - you can enhance this with a proper notification system
+            const colors = {
+                success: 'green',
+                error: 'red',
+                warning: 'yellow',
+                info: 'blue'
+            };
+            
+            console.log(`[${type.toUpperCase()}] ${message}`);
+            alert(message); // Replace with proper notification system
+        }
+    }
+}
+</script>
+{% endblock %}
