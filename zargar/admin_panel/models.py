@@ -2857,3 +2857,619 @@ class RolePermissionAuditLog(models.Model):
             ip_address=ip_address,
             user_agent=user_agent
         )
+
+
+class ExternalServiceConfiguration(models.Model):
+    """
+    Model for storing external service integration configurations.
+    """
+    SERVICE_TYPES = [
+        ('gold_price_api', _('Gold Price API')),
+        ('payment_gateway', _('Payment Gateway')),
+        ('sms_service', _('SMS Service')),
+        ('email_service', _('Email Service')),
+        ('backup_storage', _('Backup Storage')),
+        ('analytics_service', _('Analytics Service')),
+        ('notification_service', _('Notification Service')),
+        ('custom', _('Custom Service')),
+    ]
+    
+    STATUS_CHOICES = [
+        ('active', _('Active')),
+        ('inactive', _('Inactive')),
+        ('testing', _('Testing')),
+        ('error', _('Error')),
+        ('maintenance', _('Maintenance')),
+    ]
+    
+    AUTHENTICATION_TYPES = [
+        ('api_key', _('API Key')),
+        ('bearer_token', _('Bearer Token')),
+        ('basic_auth', _('Basic Authentication')),
+        ('oauth2', _('OAuth 2.0')),
+        ('custom_header', _('Custom Header')),
+        ('none', _('No Authentication')),
+    ]
+    
+    # Service identification
+    service_id = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        verbose_name=_('Service ID'),
+        help_text=_('Unique identifier for this service configuration')
+    )
+    
+    name = models.CharField(
+        max_length=200,
+        verbose_name=_('Service Name'),
+        help_text=_('Human-readable name for this service')
+    )
+    
+    service_type = models.CharField(
+        max_length=50,
+        choices=SERVICE_TYPES,
+        verbose_name=_('Service Type')
+    )
+    
+    description = models.TextField(
+        blank=True,
+        verbose_name=_('Description'),
+        help_text=_('Description of what this service does')
+    )
+    
+    # Connection settings
+    base_url = models.URLField(
+        verbose_name=_('Base URL'),
+        help_text=_('Base URL for the external service API')
+    )
+    
+    timeout_seconds = models.PositiveIntegerField(
+        default=30,
+        verbose_name=_('Timeout (seconds)'),
+        help_text=_('Request timeout in seconds')
+    )
+    
+    max_retries = models.PositiveIntegerField(
+        default=3,
+        verbose_name=_('Max Retries'),
+        help_text=_('Maximum number of retry attempts')
+    )
+    
+    # Authentication
+    authentication_type = models.CharField(
+        max_length=20,
+        choices=AUTHENTICATION_TYPES,
+        default='api_key',
+        verbose_name=_('Authentication Type')
+    )
+    
+    api_key = models.CharField(
+        max_length=500,
+        blank=True,
+        verbose_name=_('API Key'),
+        help_text=_('API key for authentication (encrypted)')
+    )
+    
+    username = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name=_('Username'),
+        help_text=_('Username for basic authentication')
+    )
+    
+    password = models.CharField(
+        max_length=500,
+        blank=True,
+        verbose_name=_('Password'),
+        help_text=_('Password for basic authentication (encrypted)')
+    )
+    
+    oauth_client_id = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name=_('OAuth Client ID')
+    )
+    
+    oauth_client_secret = models.CharField(
+        max_length=500,
+        blank=True,
+        verbose_name=_('OAuth Client Secret'),
+        help_text=_('OAuth client secret (encrypted)')
+    )
+    
+    custom_headers = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name=_('Custom Headers'),
+        help_text=_('Additional headers to send with requests')
+    )
+    
+    # Rate limiting
+    rate_limit_requests = models.PositiveIntegerField(
+        default=100,
+        verbose_name=_('Rate Limit (requests)'),
+        help_text=_('Maximum requests per time window')
+    )
+    
+    rate_limit_window_seconds = models.PositiveIntegerField(
+        default=3600,
+        verbose_name=_('Rate Limit Window (seconds)'),
+        help_text=_('Time window for rate limiting in seconds')
+    )
+    
+    # Status and health
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='inactive',
+        verbose_name=_('Status')
+    )
+    
+    is_enabled = models.BooleanField(
+        default=True,
+        verbose_name=_('Is Enabled'),
+        help_text=_('Whether this service is enabled for use')
+    )
+    
+    last_health_check = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Last Health Check')
+    )
+    
+    health_check_interval_minutes = models.PositiveIntegerField(
+        default=15,
+        verbose_name=_('Health Check Interval (minutes)'),
+        help_text=_('How often to check service health')
+    )
+    
+    last_error_message = models.TextField(
+        blank=True,
+        verbose_name=_('Last Error Message')
+    )
+    
+    last_error_time = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Last Error Time')
+    )
+    
+    # Statistics
+    total_requests = models.BigIntegerField(
+        default=0,
+        verbose_name=_('Total Requests'),
+        help_text=_('Total number of requests made to this service')
+    )
+    
+    successful_requests = models.BigIntegerField(
+        default=0,
+        verbose_name=_('Successful Requests')
+    )
+    
+    failed_requests = models.BigIntegerField(
+        default=0,
+        verbose_name=_('Failed Requests')
+    )
+    
+    average_response_time_ms = models.FloatField(
+        default=0.0,
+        verbose_name=_('Average Response Time (ms)')
+    )
+    
+    # Configuration
+    configuration = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name=_('Service Configuration'),
+        help_text=_('Service-specific configuration parameters')
+    )
+    
+    # Audit fields
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by_id = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_('Created By ID')
+    )
+    
+    created_by_username = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name=_('Created By Username')
+    )
+    
+    class Meta:
+        verbose_name = _('External Service Configuration')
+        verbose_name_plural = _('External Service Configurations')
+        db_table = 'admin_external_service_config'
+        ordering = ['name']
+        indexes = [
+            models.Index(fields=['service_type', 'status']),
+            models.Index(fields=['is_enabled', 'status']),
+            models.Index(fields=['last_health_check']),
+            models.Index(fields=['service_id']),
+        ]
+    
+    def __str__(self):
+        return f"{self.name} ({self.get_service_type_display()})"
+    
+    @property
+    def is_healthy(self):
+        """Check if service is healthy based on last health check."""
+        if not self.last_health_check:
+            return False
+        
+        # Consider service unhealthy if no check in 2x the interval
+        max_age = timezone.timedelta(minutes=self.health_check_interval_minutes * 2)
+        return timezone.now() - self.last_health_check < max_age
+    
+    @property
+    def success_rate(self):
+        """Calculate success rate percentage."""
+        if self.total_requests == 0:
+            return 0.0
+        return (self.successful_requests / self.total_requests) * 100
+    
+    @property
+    def failure_rate(self):
+        """Calculate failure rate percentage."""
+        return 100.0 - self.success_rate
+    
+    def update_statistics(self, success=True, response_time_ms=None):
+        """Update service statistics."""
+        self.total_requests += 1
+        if success:
+            self.successful_requests += 1
+        else:
+            self.failed_requests += 1
+        
+        if response_time_ms is not None:
+            # Update average response time using exponential moving average
+            alpha = 0.1  # Smoothing factor
+            if self.average_response_time_ms == 0:
+                self.average_response_time_ms = response_time_ms
+            else:
+                self.average_response_time_ms = (
+                    alpha * response_time_ms + 
+                    (1 - alpha) * self.average_response_time_ms
+                )
+        
+        self.save(update_fields=[
+            'total_requests', 'successful_requests', 'failed_requests',
+            'average_response_time_ms'
+        ])
+    
+    def record_error(self, error_message):
+        """Record an error for this service."""
+        self.last_error_message = error_message
+        self.last_error_time = timezone.now()
+        self.status = 'error'
+        self.save(update_fields=['last_error_message', 'last_error_time', 'status'])
+    
+    def mark_healthy(self):
+        """Mark service as healthy after successful health check."""
+        self.last_health_check = timezone.now()
+        if self.status == 'error':
+            self.status = 'active'
+        self.save(update_fields=['last_health_check', 'status'])
+    
+    def get_masked_credentials(self):
+        """Get credentials with sensitive data masked for display."""
+        masked = {}
+        if self.api_key:
+            masked['api_key'] = f"{'*' * (len(self.api_key) - 4)}{self.api_key[-4:]}"
+        if self.password:
+            masked['password'] = '*' * 8
+        if self.oauth_client_secret:
+            masked['oauth_client_secret'] = f"{'*' * (len(self.oauth_client_secret) - 4)}{self.oauth_client_secret[-4:]}"
+        return masked
+
+
+class APIRateLimitConfiguration(models.Model):
+    """
+    Model for configuring API rate limits for different endpoints and users.
+    """
+    LIMIT_TYPES = [
+        ('global', _('Global Limit')),
+        ('per_user', _('Per User Limit')),
+        ('per_ip', _('Per IP Limit')),
+        ('per_endpoint', _('Per Endpoint Limit')),
+        ('per_tenant', _('Per Tenant Limit')),
+    ]
+    
+    TIME_WINDOWS = [
+        (60, _('Per Minute')),
+        (3600, _('Per Hour')),
+        (86400, _('Per Day')),
+        (604800, _('Per Week')),
+        (2592000, _('Per Month')),
+    ]
+    
+    # Configuration identification
+    config_id = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        verbose_name=_('Configuration ID')
+    )
+    
+    name = models.CharField(
+        max_length=200,
+        verbose_name=_('Configuration Name'),
+        help_text=_('Human-readable name for this rate limit configuration')
+    )
+    
+    description = models.TextField(
+        blank=True,
+        verbose_name=_('Description')
+    )
+    
+    # Rate limit settings
+    limit_type = models.CharField(
+        max_length=20,
+        choices=LIMIT_TYPES,
+        verbose_name=_('Limit Type')
+    )
+    
+    endpoint_pattern = models.CharField(
+        max_length=500,
+        blank=True,
+        verbose_name=_('Endpoint Pattern'),
+        help_text=_('URL pattern to match (regex supported)')
+    )
+    
+    requests_limit = models.PositiveIntegerField(
+        verbose_name=_('Requests Limit'),
+        help_text=_('Maximum number of requests allowed')
+    )
+    
+    time_window_seconds = models.PositiveIntegerField(
+        choices=TIME_WINDOWS,
+        verbose_name=_('Time Window'),
+        help_text=_('Time window for the rate limit')
+    )
+    
+    # Enforcement settings
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name=_('Is Active')
+    )
+    
+    block_duration_seconds = models.PositiveIntegerField(
+        default=3600,
+        verbose_name=_('Block Duration (seconds)'),
+        help_text=_('How long to block after limit exceeded')
+    )
+    
+    warning_threshold_percentage = models.PositiveIntegerField(
+        default=80,
+        verbose_name=_('Warning Threshold (%)'),
+        help_text=_('Percentage of limit to trigger warning')
+    )
+    
+    # Response settings
+    custom_error_message = models.TextField(
+        blank=True,
+        verbose_name=_('Custom Error Message'),
+        help_text=_('Custom message to show when rate limit exceeded')
+    )
+    
+    custom_headers = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name=_('Custom Headers'),
+        help_text=_('Additional headers to include in rate limit responses')
+    )
+    
+    # Exemptions
+    exempt_user_ids = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name=_('Exempt User IDs'),
+        help_text=_('List of user IDs exempt from this rate limit')
+    )
+    
+    exempt_ip_addresses = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name=_('Exempt IP Addresses'),
+        help_text=_('List of IP addresses exempt from this rate limit')
+    )
+    
+    # Statistics
+    total_requests_blocked = models.BigIntegerField(
+        default=0,
+        verbose_name=_('Total Requests Blocked')
+    )
+    
+    total_warnings_issued = models.BigIntegerField(
+        default=0,
+        verbose_name=_('Total Warnings Issued')
+    )
+    
+    last_triggered = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Last Triggered')
+    )
+    
+    # Audit fields
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by_id = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_('Created By ID')
+    )
+    
+    created_by_username = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name=_('Created By Username')
+    )
+    
+    class Meta:
+        verbose_name = _('API Rate Limit Configuration')
+        verbose_name_plural = _('API Rate Limit Configurations')
+        db_table = 'admin_api_rate_limit_config'
+        ordering = ['name']
+        indexes = [
+            models.Index(fields=['limit_type', 'is_active']),
+            models.Index(fields=['endpoint_pattern']),
+            models.Index(fields=['is_active', 'last_triggered']),
+            models.Index(fields=['config_id']),
+        ]
+    
+    def __str__(self):
+        return f"{self.name} ({self.requests_limit}/{self.get_time_window_seconds_display()})"
+    
+    @property
+    def time_window_display(self):
+        """Get human-readable time window."""
+        return dict(self.TIME_WINDOWS).get(self.time_window_seconds, f"{self.time_window_seconds}s")
+    
+    def is_exempt_user(self, user_id):
+        """Check if user is exempt from this rate limit."""
+        return user_id in self.exempt_user_ids
+    
+    def is_exempt_ip(self, ip_address):
+        """Check if IP address is exempt from this rate limit."""
+        return ip_address in self.exempt_ip_addresses
+    
+    def record_block(self):
+        """Record that this rate limit blocked a request."""
+        self.total_requests_blocked += 1
+        self.last_triggered = timezone.now()
+        self.save(update_fields=['total_requests_blocked', 'last_triggered'])
+    
+    def record_warning(self):
+        """Record that this rate limit issued a warning."""
+        self.total_warnings_issued += 1
+        self.save(update_fields=['total_warnings_issued'])
+
+
+class IntegrationHealthCheck(models.Model):
+    """
+    Model for storing integration health check results.
+    """
+    CHECK_TYPES = [
+        ('connectivity', _('Connectivity Check')),
+        ('authentication', _('Authentication Check')),
+        ('functionality', _('Functionality Check')),
+        ('performance', _('Performance Check')),
+        ('data_integrity', _('Data Integrity Check')),
+    ]
+    
+    STATUS_CHOICES = [
+        ('healthy', _('Healthy')),
+        ('warning', _('Warning')),
+        ('critical', _('Critical')),
+        ('unknown', _('Unknown')),
+    ]
+    
+    # Check identification
+    check_id = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        verbose_name=_('Check ID')
+    )
+    
+    service = models.ForeignKey(
+        ExternalServiceConfiguration,
+        on_delete=models.CASCADE,
+        related_name='health_checks',
+        verbose_name=_('Service')
+    )
+    
+    check_type = models.CharField(
+        max_length=20,
+        choices=CHECK_TYPES,
+        verbose_name=_('Check Type')
+    )
+    
+    # Check results
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        verbose_name=_('Status')
+    )
+    
+    response_time_ms = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name=_('Response Time (ms)')
+    )
+    
+    success = models.BooleanField(
+        verbose_name=_('Success'),
+        help_text=_('Whether the health check was successful')
+    )
+    
+    # Check details
+    details = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name=_('Check Details'),
+        help_text=_('Detailed information about the health check')
+    )
+    
+    error_message = models.TextField(
+        blank=True,
+        verbose_name=_('Error Message')
+    )
+    
+    warnings = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name=_('Warnings'),
+        help_text=_('List of warning messages from the health check')
+    )
+    
+    # Metrics
+    metrics = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name=_('Metrics'),
+        help_text=_('Performance and other metrics from the health check')
+    )
+    
+    # Timing
+    checked_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_('Checked At')
+    )
+    
+    next_check_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Next Check At')
+    )
+    
+    class Meta:
+        verbose_name = _('Integration Health Check')
+        verbose_name_plural = _('Integration Health Checks')
+        db_table = 'admin_integration_health_check'
+        ordering = ['-checked_at']
+        indexes = [
+            models.Index(fields=['service', 'checked_at']),
+            models.Index(fields=['status', 'checked_at']),
+            models.Index(fields=['check_type', 'status']),
+            models.Index(fields=['next_check_at']),
+            models.Index(fields=['check_id']),
+        ]
+    
+    def __str__(self):
+        return f"{self.service.name} - {self.get_check_type_display()} ({self.get_status_display()})"
+    
+    @property
+    def is_overdue(self):
+        """Check if the next health check is overdue."""
+        if not self.next_check_at:
+            return False
+        return timezone.now() > self.next_check_at
+    
+    def calculate_next_check(self):
+        """Calculate when the next health check should run."""
+        interval = timezone.timedelta(minutes=self.service.health_check_interval_minutes)
+        self.next_check_at = self.checked_at + interval
+        self.save(update_fields=['next_check_at'])
