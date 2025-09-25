@@ -892,6 +892,735 @@ class RestoreJob(models.Model):
         self.save(update_fields=['status', 'completed_at', 'error_message'])
 
 
+class SystemSetting(models.Model):
+    """
+    Model for storing system-wide configuration settings.
+    """
+    SETTING_TYPES = [
+        ('string', _('String')),
+        ('integer', _('Integer')),
+        ('float', _('Float')),
+        ('boolean', _('Boolean')),
+        ('json', _('JSON')),
+        ('text', _('Text')),
+        ('email', _('Email')),
+        ('url', _('URL')),
+        ('password', _('Password')),
+    ]
+    
+    CATEGORIES = [
+        ('general', _('General')),
+        ('security', _('Security')),
+        ('authentication', _('Authentication')),
+        ('notifications', _('Notifications')),
+        ('backup', _('Backup')),
+        ('integration', _('Integration')),
+        ('performance', _('Performance')),
+        ('localization', _('Localization')),
+        ('ui', _('User Interface')),
+        ('api', _('API')),
+    ]
+    
+    # Setting identification
+    key = models.CharField(
+        max_length=200,
+        unique=True,
+        verbose_name=_('Setting Key'),
+        help_text=_('Unique identifier for this setting')
+    )
+    
+    name = models.CharField(
+        max_length=200,
+        verbose_name=_('Setting Name'),
+        help_text=_('Human-readable name for this setting')
+    )
+    
+    description = models.TextField(
+        blank=True,
+        verbose_name=_('Description'),
+        help_text=_('Detailed description of what this setting controls')
+    )
+    
+    # Setting value and type
+    value = models.TextField(
+        blank=True,
+        verbose_name=_('Value'),
+        help_text=_('Current value of the setting')
+    )
+    
+    default_value = models.TextField(
+        blank=True,
+        verbose_name=_('Default Value'),
+        help_text=_('Default value for this setting')
+    )
+    
+    setting_type = models.CharField(
+        max_length=20,
+        choices=SETTING_TYPES,
+        default='string',
+        verbose_name=_('Setting Type')
+    )
+    
+    # Organization
+    category = models.CharField(
+        max_length=50,
+        choices=CATEGORIES,
+        default='general',
+        verbose_name=_('Category')
+    )
+    
+    section = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name=_('Section'),
+        help_text=_('Sub-section within category for organization')
+    )
+    
+    # Validation and constraints
+    validation_rules = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name=_('Validation Rules'),
+        help_text=_('JSON object containing validation rules')
+    )
+    
+    choices = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name=_('Choices'),
+        help_text=_('List of valid choices for this setting')
+    )
+    
+    # Behavior flags
+    is_sensitive = models.BooleanField(
+        default=False,
+        verbose_name=_('Is Sensitive'),
+        help_text=_('Whether this setting contains sensitive information')
+    )
+    
+    requires_restart = models.BooleanField(
+        default=False,
+        verbose_name=_('Requires Restart'),
+        help_text=_('Whether changing this setting requires system restart')
+    )
+    
+    is_readonly = models.BooleanField(
+        default=False,
+        verbose_name=_('Is Read Only'),
+        help_text=_('Whether this setting can be modified through UI')
+    )
+    
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name=_('Is Active'),
+        help_text=_('Whether this setting is currently active')
+    )
+    
+    # Display options
+    display_order = models.PositiveIntegerField(
+        default=0,
+        verbose_name=_('Display Order'),
+        help_text=_('Order for displaying in UI')
+    )
+    
+    help_text = models.TextField(
+        blank=True,
+        verbose_name=_('Help Text'),
+        help_text=_('Help text to display in UI')
+    )
+    
+    # Audit fields
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by_id = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_('Created By ID'),
+        help_text=_('ID of the user who created this setting')
+    )
+    
+    created_by_username = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name=_('Created By Username'),
+        help_text=_('Username of the user who created this setting')
+    )
+    
+    updated_by_id = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_('Updated By ID'),
+        help_text=_('ID of the user who last updated this setting')
+    )
+    
+    updated_by_username = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name=_('Updated By Username'),
+        help_text=_('Username of the user who last updated this setting')
+    )
+    
+    class Meta:
+        verbose_name = _('System Setting')
+        verbose_name_plural = _('System Settings')
+        db_table = 'admin_system_setting'
+        ordering = ['category', 'section', 'display_order', 'name']
+        indexes = [
+            models.Index(fields=['key']),
+            models.Index(fields=['category', 'section']),
+            models.Index(fields=['is_active', 'category']),
+            models.Index(fields=['setting_type', 'category']),
+        ]
+    
+    def __str__(self):
+        return f"{self.name} ({self.key})"
+    
+    def get_typed_value(self):
+        """Return the setting value converted to its proper type."""
+        if not self.value:
+            return self.get_typed_default_value()
+        
+        try:
+            if self.setting_type == 'boolean':
+                return self.value.lower() in ('true', '1', 'yes', 'on')
+            elif self.setting_type == 'integer':
+                return int(self.value)
+            elif self.setting_type == 'float':
+                return float(self.value)
+            elif self.setting_type == 'json':
+                import json
+                return json.loads(self.value)
+            else:
+                return self.value
+        except (ValueError, TypeError) as e:
+            return self.get_typed_default_value()
+        except Exception as e:  # Catch JSON decode errors and other exceptions
+            return self.get_typed_default_value()
+    
+    def get_typed_default_value(self):
+        """Return the default value converted to its proper type."""
+        if not self.default_value:
+            return self._get_type_default()
+        
+        try:
+            if self.setting_type == 'boolean':
+                return self.default_value.lower() in ('true', '1', 'yes', 'on')
+            elif self.setting_type == 'integer':
+                return int(self.default_value)
+            elif self.setting_type == 'float':
+                return float(self.default_value)
+            elif self.setting_type == 'json':
+                import json
+                return json.loads(self.default_value)
+            else:
+                return self.default_value
+        except (ValueError, TypeError) as e:
+            return self._get_type_default()
+        except Exception as e:  # Catch JSON decode errors and other exceptions
+            return self._get_type_default()
+    
+    def _get_type_default(self):
+        """Get default value based on setting type."""
+        defaults = {
+            'string': '',
+            'integer': 0,
+            'float': 0.0,
+            'boolean': False,
+            'json': {},
+            'text': '',
+            'email': '',
+            'url': '',
+            'password': '',
+        }
+        return defaults.get(self.setting_type, '')
+    
+    def set_value(self, value, user=None):
+        """Set the setting value with validation and audit logging."""
+        old_value = self.value
+        
+        # Convert value to string for storage
+        if self.setting_type == 'json':
+            import json
+            self.value = json.dumps(value, ensure_ascii=False)
+        elif self.setting_type == 'boolean':
+            self.value = 'true' if value else 'false'
+        else:
+            self.value = str(value)
+        
+        # Update audit fields
+        if user:
+            self.updated_by_id = user.id
+            self.updated_by_username = user.username
+        
+        self.save()
+        
+        # Log the change
+        self._log_change(old_value, self.value, user)
+    
+    def _log_change(self, old_value, new_value, user):
+        """Log setting change to audit system."""
+        try:
+            from zargar.core.security_models import AuditLog
+            
+            AuditLog.log_action(
+                action='configuration_change',
+                user=user,
+                content_object=self,
+                old_values={'value': old_value},
+                new_values={'value': new_value},
+                details={
+                    'setting_key': self.key,
+                    'setting_name': self.name,
+                    'category': self.category,
+                    'requires_restart': self.requires_restart,
+                }
+            )
+        except Exception as e:
+            # If audit logging fails, log to standard logger but don't fail the operation
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to log setting change for {self.key}: {e}")
+    
+    def validate_value(self, value):
+        """Validate a value against this setting's rules."""
+        errors = []
+        
+        # Type validation
+        try:
+            if self.setting_type == 'integer':
+                int(value)
+            elif self.setting_type == 'float':
+                float(value)
+            elif self.setting_type == 'boolean':
+                if str(value).lower() not in ('true', 'false', '1', '0', 'yes', 'no', 'on', 'off'):
+                    errors.append(_('Invalid boolean value'))
+            elif self.setting_type == 'json':
+                import json
+                json.loads(value)
+            elif self.setting_type == 'email':
+                from django.core.validators import validate_email
+                validate_email(value)
+            elif self.setting_type == 'url':
+                from django.core.validators import URLValidator
+                URLValidator()(value)
+        except (ValueError, TypeError, ValidationError) as e:
+            errors.append(str(e))
+        
+        # Choice validation
+        if self.choices and value not in self.choices:
+            errors.append(_('Value must be one of: {}').format(', '.join(self.choices)))
+        
+        # Custom validation rules
+        if self.validation_rules:
+            errors.extend(self._validate_custom_rules(value))
+        
+        return errors
+    
+    def _validate_custom_rules(self, value):
+        """Validate value against custom validation rules."""
+        errors = []
+        rules = self.validation_rules
+        
+        if 'min_length' in rules:
+            if len(str(value)) < rules['min_length']:
+                errors.append(_('Value must be at least {} characters').format(rules['min_length']))
+        
+        if 'max_length' in rules:
+            if len(str(value)) > rules['max_length']:
+                errors.append(_('Value must be at most {} characters').format(rules['max_length']))
+        
+        if 'min_value' in rules and self.setting_type in ('integer', 'float'):
+            try:
+                if float(value) < rules['min_value']:
+                    errors.append(_('Value must be at least {}').format(rules['min_value']))
+            except (ValueError, TypeError):
+                pass
+        
+        if 'max_value' in rules and self.setting_type in ('integer', 'float'):
+            try:
+                if float(value) > rules['max_value']:
+                    errors.append(_('Value must be at most {}').format(rules['max_value']))
+            except (ValueError, TypeError):
+                pass
+        
+        if 'pattern' in rules:
+            import re
+            if not re.match(rules['pattern'], str(value)):
+                errors.append(_('Value does not match required pattern'))
+        
+        return errors
+    
+    def reset_to_default(self, user=None):
+        """Reset setting to its default value."""
+        old_value = self.value
+        self.value = self.default_value
+        
+        if user:
+            self.updated_by_id = user.id
+            self.updated_by_username = user.username
+        
+        self.save()
+        
+        # Log the reset
+        self._log_change(old_value, self.value, user)
+
+
+class NotificationSetting(models.Model):
+    """
+    Model for storing notification configuration settings.
+    """
+    NOTIFICATION_TYPES = [
+        ('email', _('Email')),
+        ('sms', _('SMS')),
+        ('push', _('Push Notification')),
+        ('webhook', _('Webhook')),
+        ('slack', _('Slack')),
+        ('telegram', _('Telegram')),
+    ]
+    
+    EVENT_TYPES = [
+        ('security_alert', _('Security Alert')),
+        ('backup_complete', _('Backup Complete')),
+        ('backup_failed', _('Backup Failed')),
+        ('system_error', _('System Error')),
+        ('maintenance_start', _('Maintenance Start')),
+        ('maintenance_end', _('Maintenance End')),
+        ('tenant_created', _('Tenant Created')),
+        ('tenant_suspended', _('Tenant Suspended')),
+        ('payment_failed', _('Payment Failed')),
+        ('storage_full', _('Storage Full')),
+        ('performance_issue', _('Performance Issue')),
+        ('integration_failure', _('Integration Failure')),
+    ]
+    
+    PRIORITY_LEVELS = [
+        ('low', _('Low')),
+        ('medium', _('Medium')),
+        ('high', _('High')),
+        ('critical', _('Critical')),
+    ]
+    
+    # Notification identification
+    name = models.CharField(
+        max_length=200,
+        verbose_name=_('Notification Name'),
+        help_text=_('Human-readable name for this notification setting')
+    )
+    
+    event_type = models.CharField(
+        max_length=50,
+        choices=EVENT_TYPES,
+        verbose_name=_('Event Type'),
+        help_text=_('Type of event that triggers this notification')
+    )
+    
+    notification_type = models.CharField(
+        max_length=20,
+        choices=NOTIFICATION_TYPES,
+        verbose_name=_('Notification Type'),
+        help_text=_('Method of notification delivery')
+    )
+    
+    # Targeting
+    recipients = models.JSONField(
+        default=list,
+        verbose_name=_('Recipients'),
+        help_text=_('List of recipients (emails, phone numbers, etc.)')
+    )
+    
+    recipient_roles = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name=_('Recipient Roles'),
+        help_text=_('List of user roles that should receive this notification')
+    )
+    
+    # Conditions
+    conditions = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name=_('Conditions'),
+        help_text=_('Conditions that must be met for notification to be sent')
+    )
+    
+    priority_threshold = models.CharField(
+        max_length=20,
+        choices=PRIORITY_LEVELS,
+        default='medium',
+        verbose_name=_('Priority Threshold'),
+        help_text=_('Minimum priority level to trigger notification')
+    )
+    
+    # Timing and throttling
+    is_enabled = models.BooleanField(
+        default=True,
+        verbose_name=_('Is Enabled'),
+        help_text=_('Whether this notification is currently active')
+    )
+    
+    throttle_minutes = models.PositiveIntegerField(
+        default=0,
+        verbose_name=_('Throttle Minutes'),
+        help_text=_('Minimum minutes between notifications of same type (0 = no throttling)')
+    )
+    
+    quiet_hours_start = models.TimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Quiet Hours Start'),
+        help_text=_('Start time for quiet hours (no notifications)')
+    )
+    
+    quiet_hours_end = models.TimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Quiet Hours End'),
+        help_text=_('End time for quiet hours')
+    )
+    
+    # Template and formatting
+    subject_template = models.CharField(
+        max_length=500,
+        blank=True,
+        verbose_name=_('Subject Template'),
+        help_text=_('Template for notification subject/title')
+    )
+    
+    message_template = models.TextField(
+        blank=True,
+        verbose_name=_('Message Template'),
+        help_text=_('Template for notification message body')
+    )
+    
+    template_variables = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name=_('Template Variables'),
+        help_text=_('Available variables for use in templates')
+    )
+    
+    # Delivery configuration
+    delivery_config = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name=_('Delivery Configuration'),
+        help_text=_('Provider-specific configuration (SMTP settings, API keys, etc.)')
+    )
+    
+    retry_attempts = models.PositiveIntegerField(
+        default=3,
+        verbose_name=_('Retry Attempts'),
+        help_text=_('Number of times to retry failed deliveries')
+    )
+    
+    retry_delay_minutes = models.PositiveIntegerField(
+        default=5,
+        verbose_name=_('Retry Delay Minutes'),
+        help_text=_('Minutes to wait between retry attempts')
+    )
+    
+    # Statistics
+    total_sent = models.PositiveIntegerField(
+        default=0,
+        verbose_name=_('Total Sent'),
+        help_text=_('Total number of notifications sent')
+    )
+    
+    total_failed = models.PositiveIntegerField(
+        default=0,
+        verbose_name=_('Total Failed'),
+        help_text=_('Total number of failed deliveries')
+    )
+    
+    last_sent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Last Sent At'),
+        help_text=_('When this notification was last sent')
+    )
+    
+    # Audit fields
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by_id = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_('Created By ID'),
+        help_text=_('ID of the user who created this notification setting')
+    )
+    
+    created_by_username = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name=_('Created By Username'),
+        help_text=_('Username of the user who created this notification setting')
+    )
+    
+    class Meta:
+        verbose_name = _('Notification Setting')
+        verbose_name_plural = _('Notification Settings')
+        db_table = 'admin_notification_setting'
+        ordering = ['event_type', 'notification_type', 'name']
+        indexes = [
+            models.Index(fields=['event_type', 'is_enabled']),
+            models.Index(fields=['notification_type', 'is_enabled']),
+            models.Index(fields=['is_enabled', 'priority_threshold']),
+        ]
+        unique_together = ['event_type', 'notification_type', 'name']
+    
+    def __str__(self):
+        return f"{self.name} ({self.get_event_type_display()} → {self.get_notification_type_display()})"
+    
+    def should_send_notification(self, priority='medium', event_data=None):
+        """Check if notification should be sent based on conditions."""
+        if not self.is_enabled:
+            return False
+        
+        # Check priority threshold
+        priority_order = ['low', 'medium', 'high', 'critical']
+        if priority_order.index(priority) < priority_order.index(self.priority_threshold):
+            return False
+        
+        # Check quiet hours
+        if self.quiet_hours_start and self.quiet_hours_end:
+            current_time = timezone.now().time()
+            if self.quiet_hours_start <= current_time <= self.quiet_hours_end:
+                return False
+        
+        # Check throttling
+        if self.throttle_minutes > 0 and self.last_sent_at:
+            time_since_last = timezone.now() - self.last_sent_at
+            if time_since_last.total_seconds() < (self.throttle_minutes * 60):
+                return False
+        
+        # Check custom conditions
+        if self.conditions and event_data:
+            if not self._evaluate_conditions(event_data):
+                return False
+        
+        return True
+    
+    def _evaluate_conditions(self, event_data):
+        """Evaluate custom conditions against event data."""
+        for condition_key, condition_value in self.conditions.items():
+            if condition_key not in event_data:
+                return False
+            
+            event_value = event_data[condition_key]
+            
+            # Handle different condition types
+            if isinstance(condition_value, dict):
+                if 'equals' in condition_value and event_value != condition_value['equals']:
+                    return False
+                if 'contains' in condition_value and condition_value['contains'] not in str(event_value):
+                    return False
+                if 'greater_than' in condition_value and event_value <= condition_value['greater_than']:
+                    return False
+                if 'less_than' in condition_value and event_value >= condition_value['less_than']:
+                    return False
+            else:
+                if event_value != condition_value:
+                    return False
+        
+        return True
+    
+    def render_message(self, event_data=None):
+        """Render notification message using template and event data."""
+        context = {}
+        context.update(self.template_variables)
+        if event_data:
+            context.update(event_data)
+        
+        # Simple template rendering (can be enhanced with Django templates)
+        subject = self.subject_template
+        message = self.message_template
+        
+        for key, value in context.items():
+            placeholder = f"{{{key}}}"
+            subject = subject.replace(placeholder, str(value))
+            message = message.replace(placeholder, str(value))
+        
+        return subject, message
+    
+    def record_sent(self):
+        """Record that notification was sent successfully."""
+        self.total_sent += 1
+        self.last_sent_at = timezone.now()
+        self.save(update_fields=['total_sent', 'last_sent_at'])
+    
+    def record_failed(self):
+        """Record that notification delivery failed."""
+        self.total_failed += 1
+        self.save(update_fields=['total_failed'])
+
+
+class SettingChangeHistory(models.Model):
+    """
+    Model to track history of setting changes for rollback functionality.
+    """
+    setting = models.ForeignKey(
+        SystemSetting,
+        on_delete=models.CASCADE,
+        related_name='change_history',
+        verbose_name=_('Setting')
+    )
+    
+    old_value = models.TextField(
+        blank=True,
+        verbose_name=_('Old Value')
+    )
+    
+    new_value = models.TextField(
+        blank=True,
+        verbose_name=_('New Value')
+    )
+    
+    change_reason = models.CharField(
+        max_length=500,
+        blank=True,
+        verbose_name=_('Change Reason'),
+        help_text=_('Reason for the change')
+    )
+    
+    # Audit fields
+    changed_at = models.DateTimeField(auto_now_add=True)
+    changed_by_id = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_('Changed By ID')
+    )
+    
+    changed_by_username = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name=_('Changed By Username')
+    )
+    
+    ip_address = models.GenericIPAddressField(
+        null=True,
+        blank=True,
+        verbose_name=_('IP Address')
+    )
+    
+    user_agent = models.TextField(
+        blank=True,
+        verbose_name=_('User Agent')
+    )
+    
+    class Meta:
+        verbose_name = _('Setting Change History')
+        verbose_name_plural = _('Setting Change History')
+        db_table = 'admin_setting_change_history'
+        ordering = ['-changed_at']
+        indexes = [
+            models.Index(fields=['setting', 'changed_at']),
+            models.Index(fields=['changed_by_id', 'changed_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.setting.name} changed at {self.changed_at}"
+
+
 class TenantSnapshot(models.Model):
     """
     Model to track temporary snapshots created before high-risk operations.

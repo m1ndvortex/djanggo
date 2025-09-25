@@ -1,6 +1,6 @@
 """
-Services package for admin panel business logic.
+Services for admin panel functionality.
 """
-from .rbac_service import RBACService
+from .settings_service import SettingsManager, NotificationManager
 
-__all__ = ['RBACService']
+__all__ = ['SettingsManager', 'NotificationManager']
