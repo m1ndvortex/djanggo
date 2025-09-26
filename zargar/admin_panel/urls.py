@@ -12,6 +12,7 @@ from . import rbac_views
 from . import settings_views
 from . import security_policy_views
 from . import notification_views
+from . import integration_views
 
 app_name = 'admin_panel'
 
@@ -128,6 +129,13 @@ urlpatterns = [
     path('api/notifications/alert-config/', notification_views.AlertConfigurationAPIView.as_view(), name='api_alert_config'),
     path('api/notifications/delivery-stats/', notification_views.DeliveryStatisticsAPIView.as_view(), name='api_delivery_stats'),
     path('api/notifications/test/', notification_views.NotificationTestAPIView.as_view(), name='api_notification_test'),
+    
+    # Integration Settings
+    path('settings/integrations/', integration_views.IntegrationSettingsView.as_view(), name='integration_settings'),
+    path('settings/integrations/service/', integration_views.ServiceConfigurationView.as_view(), name='service_configuration'),
+    path('settings/integrations/rate-limit/', integration_views.RateLimitConfigurationView.as_view(), name='rate_limit_configuration'),
+    path('settings/integrations/health/', integration_views.IntegrationHealthView.as_view(), name='integration_health'),
+    path('settings/integrations/health/history/', integration_views.IntegrationHealthHistoryView.as_view(), name='integration_health_history'),
     
     # Disaster Recovery
     path('disaster-recovery/', disaster_recovery_views.DisasterRecoveryDashboardView.as_view(), name='disaster_recovery_dashboard'),

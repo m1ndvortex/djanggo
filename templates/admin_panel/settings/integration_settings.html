@@ -1,0 +1,909 @@
+{% extends 'admin_panel/base_unified.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}تنظیمات یکپارچه‌سازی - پنل مدیریت زرگر{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Integration-specific styles */
+    .integration-card {
+        transition: all 0.3s ease;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    
+    .dark .integration-card {
+        border: 1px solid rgba(0, 212, 255, 0.2);
+        background: rgba(0, 212, 255, 0.05);
+    }
+    
+    .integration-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    .dark .integration-card:hover {
+        box-shadow: 0 8px 25px rgba(0, 212, 255, 0.2);
+    }
+    
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-left: 8px;
+    }
+    
+    .status-healthy { background-color: #10B981; }
+    .status-warning { background-color: #F59E0B; }
+    .status-critical { background-color: #EF4444; }
+    .status-unknown { background-color: #6B7280; }
+    
+    .dark .status-healthy { background-color: #00FF88; }
+    .dark .status-warning { background-color: #FFB800; }
+    .dark .status-critical { background-color: #FF4757; }
+    .dark .status-unknown { background-color: #B8BCC8; }
+    
+    .metric-card {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .dark .metric-card {
+        background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 212, 255, 0.05));
+        border: 1px solid rgba(0, 212, 255, 0.2);
+    }
+    
+    .progress-ring {
+        transform: rotate(-90deg);
+    }
+    
+    .progress-ring-circle {
+        transition: stroke-dashoffset 0.35s;
+        transform-origin: 50% 50%;
+    }
+    
+    /* Form styling */
+    .form-section {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    
+    .dark .form-section {
+        background: rgba(0, 212, 255, 0.1);
+        border: 1px solid rgba(0, 212, 255, 0.2);
+    }
+    
+    /* Health monitoring styles */
+    .health-timeline {
+        position: relative;
+    }
+    
+    .health-timeline::before {
+        content: '';
+        position: absolute;
+        right: 20px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: linear-gradient(to bottom, #10B981, #F59E0B, #EF4444);
+    }
+    
+    .dark .health-timeline::before {
+        background: linear-gradient(to bottom, #00FF88, #FFB800, #FF4757);
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-right: 50px;
+        margin-bottom: 20px;
+    }
+    
+    .timeline-dot {
+        position: absolute;
+        right: 14px;
+        top: 8px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 2px solid white;
+    }
+    
+    .dark .timeline-dot {
+        border-color: #0B0E1A;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-cyber-bg-primary" x-data="integrationSettings()">
+    {% csrf_token %}
+    
+    <!-- Header -->
+    <div class="bg-white dark:bg-cyber-bg-secondary shadow-sm dark:shadow-cyber-neon-primary/10 border-b dark:border-cyber-neon-primary/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <div class="p-2 rounded-lg bg-blue-100 dark:bg-cyber-neon-primary/20 ml-3">
+                        <svg class="w-6 h-6 text-blue-600 dark:text-cyber-neon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary">تنظیمات یکپارچه‌سازی</h1>
+                        <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">مدیریت سرویس‌های خارجی و API</p>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <button @click="showAddServiceModal = true" 
+                            class="bg-blue-600 dark:bg-cyber-neon-primary hover:bg-blue-700 dark:hover:bg-cyber-neon-primary/80 text-white px-4 py-2 rounded-lg transition-colors flex items-center">
+                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        افزودن سرویس
+                    </button>
+                    
+                    <button @click="refreshHealthStatus()" 
+                            class="bg-green-600 dark:bg-cyber-neon-secondary hover:bg-green-700 dark:hover:bg-cyber-neon-secondary/80 text-white px-4 py-2 rounded-lg transition-colors flex items-center">
+                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        بررسی وضعیت
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Overview Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Total Services -->
+            <div class="metric-card rounded-xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">کل سرویس‌ها</p>
+                        <p class="text-3xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ total_services }}</p>
+                    </div>
+                    <div class="p-3 bg-blue-100 dark:bg-cyber-neon-primary/20 rounded-full">
+                        <svg class="w-8 h-8 text-blue-600 dark:text-cyber-neon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Healthy Services -->
+            <div class="metric-card rounded-xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">سرویس‌های سالم</p>
+                        <p class="text-3xl font-bold text-green-600 dark:text-cyber-neon-secondary persian-numbers">{{ healthy_services }}</p>
+                    </div>
+                    <div class="p-3 bg-green-100 dark:bg-cyber-neon-secondary/20 rounded-full">
+                        <svg class="w-8 h-8 text-green-600 dark:text-cyber-neon-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Overall Health -->
+            <div class="metric-card rounded-xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">وضعیت کلی</p>
+                        <p class="text-lg font-bold 
+                           {% if overall_health == 'healthy' %}text-green-600 dark:text-cyber-neon-secondary
+                           {% elif overall_health == 'warning' %}text-yellow-600 dark:text-cyber-neon-warning
+                           {% else %}text-red-600 dark:text-cyber-neon-danger{% endif %}">
+                            {% if overall_health == 'healthy' %}سالم
+                            {% elif overall_health == 'warning' %}هشدار
+                            {% else %}بحرانی{% endif %}
+                        </p>
+                    </div>
+                    <div class="relative w-16 h-16">
+                        <svg class="progress-ring w-16 h-16" viewBox="0 0 120 120">
+                            <circle class="progress-ring-circle stroke-gray-200 dark:stroke-gray-700" 
+                                    stroke-width="8" fill="transparent" r="52" cx="60" cy="60"/>
+                            <circle class="progress-ring-circle 
+                                   {% if overall_health == 'healthy' %}stroke-green-600 dark:stroke-cyber-neon-secondary
+                                   {% elif overall_health == 'warning' %}stroke-yellow-600 dark:stroke-cyber-neon-warning
+                                   {% else %}stroke-red-600 dark:stroke-cyber-neon-danger{% endif %}" 
+                                    stroke-width="8" fill="transparent" r="52" cx="60" cy="60"
+                                    stroke-dasharray="326.73" 
+                                    stroke-dashoffset="{{ 326.73|floatformat:2 }}"/>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-sm font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">
+                                {% if total_services > 0 %}{{ healthy_services|floatformat:0 }}/{{ total_services }}{% else %}0{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Rate Limits -->
+            <div class="metric-card rounded-xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 dark:text-cyber-text-secondary">محدودیت‌های نرخ</p>
+                        <p class="text-3xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ rate_limits.count }}</p>
+                    </div>
+                    <div class="p-3 bg-purple-100 dark:bg-cyber-neon-purple/20 rounded-full">
+                        <svg class="w-8 h-8 text-purple-600 dark:text-cyber-neon-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="bg-white dark:bg-cyber-bg-secondary rounded-xl shadow-sm dark:shadow-cyber-neon-primary/10 mb-8">
+            <div class="border-b border-gray-200 dark:border-cyber-neon-primary/20">
+                <nav class="flex space-x-8 space-x-reverse px-6" aria-label="Tabs">
+                    <button @click="activeTab = 'services'" 
+                            :class="{ 'border-blue-500 dark:border-cyber-neon-primary text-blue-600 dark:text-cyber-neon-primary': activeTab === 'services' }"
+                            class="whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 dark:text-cyber-text-muted hover:text-gray-700 dark:hover:text-cyber-text-secondary hover:border-gray-300 dark:hover:border-cyber-neon-primary/50 transition-colors">
+                        سرویس‌های خارجی
+                    </button>
+                    <button @click="activeTab = 'rate_limits'" 
+                            :class="{ 'border-blue-500 dark:border-cyber-neon-primary text-blue-600 dark:text-cyber-neon-primary': activeTab === 'rate_limits' }"
+                            class="whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 dark:text-cyber-text-muted hover:text-gray-700 dark:hover:text-cyber-text-secondary hover:border-gray-300 dark:hover:border-cyber-neon-primary/50 transition-colors">
+                        محدودیت‌های نرخ
+                    </button>
+                    <button @click="activeTab = 'health_monitoring'" 
+                            :class="{ 'border-blue-500 dark:border-cyber-neon-primary text-blue-600 dark:text-cyber-neon-primary': activeTab === 'health_monitoring' }"
+                            class="whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 dark:text-cyber-text-muted hover:text-gray-700 dark:hover:text-cyber-text-secondary hover:border-gray-300 dark:hover:border-cyber-neon-primary/50 transition-colors">
+                        نظارت سلامت
+                    </button>
+                    <button @click="activeTab = 'testing'" 
+                            :class="{ 'border-blue-500 dark:border-cyber-neon-primary text-blue-600 dark:text-cyber-neon-primary': activeTab === 'testing' }"
+                            class="whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 dark:text-cyber-text-muted hover:text-gray-700 dark:hover:text-cyber-text-secondary hover:border-gray-300 dark:hover:border-cyber-neon-primary/50 transition-colors">
+                        تست اتصال
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="p-6">
+                
+                <!-- External Services Tab -->
+                <div x-show="activeTab === 'services'" x-transition>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                        {% for service in services %}
+                        <div class="integration-card rounded-xl p-6 bg-white dark:bg-cyber-bg-surface">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex items-center">
+                                    <span class="status-indicator status-{{ service.status|default:'unknown' }}"></span>
+                                    <div>
+                                        <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">{{ service.name }}</h3>
+                                        <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">{{ service.get_service_type_display }}</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-2 space-x-reverse">
+                                    <button @click="testServiceConnection('{{ service.service_id }}')" 
+                                            class="p-2 text-gray-400 dark:text-cyber-text-muted hover:text-blue-600 dark:hover:text-cyber-neon-primary transition-colors">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                                        </svg>
+                                    </button>
+                                    <button @click="editService('{{ service.service_id }}')" 
+                                            class="p-2 text-gray-400 dark:text-cyber-text-muted hover:text-blue-600 dark:hover:text-cyber-neon-primary transition-colors">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-3">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600 dark:text-cyber-text-secondary">URL پایه:</span>
+                                    <span class="text-gray-900 dark:text-cyber-text-primary font-mono text-xs">{{ service.base_url|truncatechars:30 }}</span>
+                                </div>
+                                
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600 dark:text-cyber-text-secondary">نوع احراز هویت:</span>
+                                    <span class="text-gray-900 dark:text-cyber-text-primary">{{ service.get_authentication_type_display }}</span>
+                                </div>
+                                
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600 dark:text-cyber-text-secondary">نرخ موفقیت:</span>
+                                    <span class="text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ service.success_rate|floatformat:1 }}%</span>
+                                </div>
+                                
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600 dark:text-cyber-text-secondary">زمان پاسخ میانگین:</span>
+                                    <span class="text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ service.average_response_time_ms|floatformat:0 }}ms</span>
+                                </div>
+                                
+                                {% if service.last_health_check %}
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600 dark:text-cyber-text-secondary">آخرین بررسی:</span>
+                                    <span class="text-gray-900 dark:text-cyber-text-primary">{{ service.last_health_check|timesince }} پیش</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            {% if service.last_error_message %}
+                            <div class="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-lg">
+                                <p class="text-sm text-red-800 dark:text-red-400">{{ service.last_error_message|truncatechars:100 }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% empty %}
+                        <div class="col-span-full text-center py-12">
+                            <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-cyber-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-cyber-text-primary">هیچ سرویسی تعریف نشده</h3>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-cyber-text-muted">برای شروع، اولین سرویس خارجی خود را اضافه کنید.</p>
+                            <div class="mt-6">
+                                <button @click="showAddServiceModal = true" 
+                                        class="bg-blue-600 dark:bg-cyber-neon-primary hover:bg-blue-700 dark:hover:bg-cyber-neon-primary/80 text-white px-4 py-2 rounded-lg transition-colors">
+                                    افزودن سرویس
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Rate Limits Tab -->
+                <div x-show="activeTab === 'rate_limits'" x-transition>
+                    <div class="space-y-6">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">محدودیت‌های نرخ API</h3>
+                            <button @click="showAddRateLimitModal = true" 
+                                    class="bg-purple-600 dark:bg-cyber-neon-purple hover:bg-purple-700 dark:hover:bg-cyber-neon-purple/80 text-white px-4 py-2 rounded-lg transition-colors">
+                                افزودن محدودیت
+                            </button>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {% for rate_limit in rate_limits %}
+                            <div class="integration-card rounded-xl p-6 bg-white dark:bg-cyber-bg-surface">
+                                <div class="flex items-start justify-between mb-4">
+                                    <div>
+                                        <h4 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">{{ rate_limit.name }}</h4>
+                                        <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">{{ rate_limit.get_limit_type_display }}</p>
+                                    </div>
+                                    <div class="flex items-center space-x-2 space-x-reverse">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full 
+                                              {% if rate_limit.is_active %}bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400
+                                              {% else %}bg-gray-100 dark:bg-gray-800/20 text-gray-800 dark:text-gray-400{% endif %}">
+                                            {% if rate_limit.is_active %}فعال{% else %}غیرفعال{% endif %}
+                                        </span>
+                                        <button @click="editRateLimit('{{ rate_limit.config_id }}')" 
+                                                class="p-2 text-gray-400 dark:text-cyber-text-muted hover:text-purple-600 dark:hover:text-cyber-neon-purple transition-colors">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="space-y-3">
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-gray-600 dark:text-cyber-text-secondary">حد مجاز:</span>
+                                        <span class="text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ rate_limit.requests_limit }} درخواست</span>
+                                    </div>
+                                    
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-gray-600 dark:text-cyber-text-secondary">بازه زمانی:</span>
+                                        <span class="text-gray-900 dark:text-cyber-text-primary">{{ rate_limit.time_window_display }}</span>
+                                    </div>
+                                    
+                                    {% if rate_limit.endpoint_pattern %}
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-gray-600 dark:text-cyber-text-secondary">الگوی endpoint:</span>
+                                        <span class="text-gray-900 dark:text-cyber-text-primary font-mono text-xs">{{ rate_limit.endpoint_pattern|truncatechars:20 }}</span>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-gray-600 dark:text-cyber-text-secondary">درخواست‌های مسدود شده:</span>
+                                        <span class="text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ rate_limit.total_requests_blocked }}</span>
+                                    </div>
+                                    
+                                    {% if rate_limit.last_triggered %}
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-gray-600 dark:text-cyber-text-secondary">آخرین فعال‌سازی:</span>
+                                        <span class="text-gray-900 dark:text-cyber-text-primary">{{ rate_limit.last_triggered|timesince }} پیش</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="col-span-full text-center py-12">
+                                <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-cyber-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                </svg>
+                                <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-cyber-text-primary">هیچ محدودیت نرخی تعریف نشده</h3>
+                                <p class="mt-1 text-sm text-gray-500 dark:text-cyber-text-muted">برای کنترل ترافیک API، محدودیت‌های نرخ تعریف کنید.</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Health Monitoring Tab -->
+                <div x-show="activeTab === 'health_monitoring'" x-transition>
+                    <div class="space-y-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">نظارت سلامت سرویس‌ها</h3>
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <!-- Health Timeline -->
+                            <div class="form-section rounded-xl p-6">
+                                <h4 class="text-md font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">تاریخچه سلامت</h4>
+                                <div class="health-timeline">
+                                    {% for check in health_statuses|slice:":10" %}
+                                    <div class="timeline-item">
+                                        <div class="timeline-dot status-{{ check.status }}"></div>
+                                        <div class="bg-gray-50 dark:bg-cyber-bg-elevated rounded-lg p-3">
+                                            <div class="flex justify-between items-start mb-2">
+                                                <h5 class="font-medium text-gray-900 dark:text-cyber-text-primary">{{ check.service.name }}</h5>
+                                                <span class="text-xs text-gray-500 dark:text-cyber-text-muted">{{ check.checked_at|timesince }} پیش</span>
+                                            </div>
+                                            <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">{{ check.get_check_type_display }}</p>
+                                            {% if check.response_time_ms %}
+                                            <p class="text-xs text-gray-500 dark:text-cyber-text-muted persian-numbers">زمان پاسخ: {{ check.response_time_ms|floatformat:0 }}ms</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% empty %}
+                                    <div class="text-center py-8">
+                                        <p class="text-gray-500 dark:text-cyber-text-muted">هیچ بررسی سلامتی ثبت نشده</p>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <!-- Health Statistics -->
+                            <div class="form-section rounded-xl p-6">
+                                <h4 class="text-md font-semibold text-gray-900 dark:text-cyber-text-primary mb-4">آمار سلامت</h4>
+                                <div class="space-y-4">
+                                    {% for service in services %}
+                                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-cyber-bg-elevated rounded-lg">
+                                        <div class="flex items-center">
+                                            <span class="status-indicator status-{{ service.status|default:'unknown' }}"></span>
+                                            <div>
+                                                <p class="font-medium text-gray-900 dark:text-cyber-text-primary">{{ service.name }}</p>
+                                                <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">{{ service.get_service_type_display }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="text-left">
+                                            <p class="text-sm font-medium text-gray-900 dark:text-cyber-text-primary persian-numbers">{{ service.success_rate|floatformat:1 }}%</p>
+                                            <p class="text-xs text-gray-500 dark:text-cyber-text-muted persian-numbers">{{ service.average_response_time_ms|floatformat:0 }}ms</p>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Testing Tab -->
+                <div x-show="activeTab === 'testing'" x-transition>
+                    <div class="space-y-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">تست اتصال سرویس‌ها</h3>
+                        
+                        <div class="form-section rounded-xl p-6">
+                            {% if services %}
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {% for service in services %}
+                                <div class="bg-gray-50 dark:bg-cyber-bg-elevated rounded-lg p-4">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div>
+                                            <h4 class="font-medium text-gray-900 dark:text-cyber-text-primary">{{ service.name }}</h4>
+                                            <p class="text-sm text-gray-600 dark:text-cyber-text-secondary">{{ service.get_service_type_display }}</p>
+                                        </div>
+                                        <span class="status-indicator status-{{ service.status|default:'unknown' }}"></span>
+                                    </div>
+                                    
+                                    <button @click="testServiceConnection('{{ service.service_id }}')" 
+                                            :disabled="testingServices.includes('{{ service.service_id }}')"
+                                            class="w-full bg-blue-600 dark:bg-cyber-neon-primary hover:bg-blue-700 dark:hover:bg-cyber-neon-primary/80 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center">
+                                        <svg x-show="!testingServices.includes('{{ service.service_id }}')" class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                                        </svg>
+                                        <svg x-show="testingServices.includes('{{ service.service_id }}')" class="animate-spin w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <span x-text="testingServices.includes('{{ service.service_id }}') ? 'در حال تست...' : 'تست اتصال'"></span>
+                                    </button>
+                                    
+                                    <!-- Test Results -->
+                                    <div x-show="testResults['{{ service.service_id }}']" x-transition class="mt-3">
+                                        <div :class="testResults['{{ service.service_id }}']?.success ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800/30' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/30'" 
+                                             class="p-3 rounded-lg border">
+                                            <p :class="testResults['{{ service.service_id }}']?.success ? 'text-green-800 dark:text-green-400' : 'text-red-800 dark:text-red-400'" 
+                                               class="text-sm" x-text="testResults['{{ service.service_id }}']?.message"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-12">
+                                <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-cyber-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                                </svg>
+                                <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-cyber-text-primary">هیچ سرویسی برای تست موجود نیست</h3>
+                                <p class="mt-1 text-sm text-gray-500 dark:text-cyber-text-muted">ابتدا سرویس‌های خارجی را تعریف کنید تا بتوانید اتصال آن‌ها را تست کنید.</p>
+                                <div class="mt-6">
+                                    <button @click="activeTab = 'services'; showAddServiceModal = true" 
+                                            class="bg-blue-600 dark:bg-cyber-neon-primary hover:bg-blue-700 dark:hover:bg-cyber-neon-primary/80 text-white px-4 py-2 rounded-lg transition-colors">
+                                        افزودن سرویس اول
+                                    </button>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Service Modal -->
+    <div x-show="showAddServiceModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-600 bg-opacity-50 dark:bg-black dark:bg-opacity-70 overflow-y-auto h-full w-full z-50" style="display: none;">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-xl bg-white dark:bg-cyber-bg-secondary border-gray-200 dark:border-cyber-neon-primary/20">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">افزودن سرویس خارجی</h3>
+                <button @click="showAddServiceModal = false" class="text-gray-400 dark:text-cyber-text-muted hover:text-gray-600 dark:hover:text-cyber-text-secondary">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <form @submit.prevent="submitServiceForm()" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">نام سرویس</label>
+                        <input x-model="serviceForm.name" type="text" required 
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-cyber-neon-primary focus:border-transparent bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">نوع سرویس</label>
+                        <select x-model="serviceForm.service_type" required 
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-cyber-neon-primary focus:border-transparent bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary">
+                            {% for value, label in service_types %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">URL پایه</label>
+                    <input x-model="serviceForm.base_url" type="url" required 
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-cyber-neon-primary focus:border-transparent bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">توضیحات</label>
+                    <textarea x-model="serviceForm.description" rows="3" 
+                              class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-cyber-neon-primary focus:border-transparent bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary"></textarea>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">نوع احراز هویت</label>
+                        <select x-model="serviceForm.authentication_type" 
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-cyber-neon-primary focus:border-transparent bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary">
+                            {% for value, label in authentication_types %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div x-show="serviceForm.authentication_type === 'api_key'">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">کلید API</label>
+                        <input x-model="serviceForm.api_key" type="password" 
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-cyber-neon-primary focus:border-transparent bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary">
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-4 space-x-reverse pt-6 border-t dark:border-cyber-neon-primary/20">
+                    <button type="button" @click="showAddServiceModal = false" 
+                            class="px-4 py-2 text-gray-700 dark:text-cyber-text-secondary bg-gray-100 dark:bg-cyber-bg-elevated hover:bg-gray-200 dark:hover:bg-cyber-bg-surface rounded-lg transition-colors">
+                        انصراف
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 bg-blue-600 dark:bg-cyber-neon-primary hover:bg-blue-700 dark:hover:bg-cyber-neon-primary/80 text-white rounded-lg transition-colors">
+                        افزودن سرویس
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Rate Limit Modal -->
+    <div x-show="showAddRateLimitModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-600 bg-opacity-50 dark:bg-black dark:bg-opacity-70 overflow-y-auto h-full w-full z-50" style="display: none;">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-xl bg-white dark:bg-cyber-bg-secondary border-gray-200 dark:border-cyber-neon-primary/20">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-cyber-text-primary">افزودن محدودیت نرخ</h3>
+                <button @click="showAddRateLimitModal = false" class="text-gray-400 dark:text-cyber-text-muted hover:text-gray-600 dark:hover:text-cyber-text-secondary">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <form @submit.prevent="submitRateLimitForm()" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">نام محدودیت</label>
+                        <input x-model="rateLimitForm.name" type="text" required 
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-cyber-neon-purple focus:border-transparent bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">نوع محدودیت</label>
+                        <select x-model="rateLimitForm.limit_type" required 
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-cyber-neon-purple focus:border-transparent bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary">
+                            {% for value, label in rate_limit_types %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">حد مجاز درخواست</label>
+                        <input x-model="rateLimitForm.requests_limit" type="number" min="1" required 
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-cyber-neon-purple focus:border-transparent bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">بازه زمانی</label>
+                        <select x-model="rateLimitForm.time_window_seconds" required 
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-cyber-neon-purple focus:border-transparent bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary">
+                            <option value="60">در دقیقه</option>
+                            <option value="3600">در ساعت</option>
+                            <option value="86400">در روز</option>
+                            <option value="604800">در هفته</option>
+                            <option value="2592000">در ماه</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-cyber-text-secondary mb-2">الگوی Endpoint (اختیاری)</label>
+                    <input x-model="rateLimitForm.endpoint_pattern" type="text" placeholder="/api/v1/*" 
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-cyber-neon-primary/30 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-cyber-neon-purple focus:border-transparent bg-white dark:bg-cyber-bg-elevated text-gray-900 dark:text-cyber-text-primary">
+                </div>
+                
+                <div class="flex justify-end space-x-4 space-x-reverse pt-6 border-t dark:border-cyber-neon-primary/20">
+                    <button type="button" @click="showAddRateLimitModal = false" 
+                            class="px-4 py-2 text-gray-700 dark:text-cyber-text-secondary bg-gray-100 dark:bg-cyber-bg-elevated hover:bg-gray-200 dark:hover:bg-cyber-bg-surface rounded-lg transition-colors">
+                        انصراف
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 bg-purple-600 dark:bg-cyber-neon-purple hover:bg-purple-700 dark:hover:bg-cyber-neon-purple/80 text-white rounded-lg transition-colors">
+                        افزودن محدودیت
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function integrationSettings() {
+    return {
+        activeTab: 'services',
+        showAddServiceModal: false,
+        showAddRateLimitModal: false,
+        testingServices: [],
+        testResults: {},
+        
+        serviceForm: {
+            name: '',
+            service_type: 'gold_price_api',
+            base_url: '',
+            description: '',
+            authentication_type: 'api_key',
+            api_key: ''
+        },
+        
+        rateLimitForm: {
+            name: '',
+            limit_type: 'per_user',
+            requests_limit: 100,
+            time_window_seconds: 3600,
+            endpoint_pattern: ''
+        },
+        
+        async testServiceConnection(serviceId) {
+            if (this.testingServices.includes(serviceId)) return;
+            
+            this.testingServices.push(serviceId);
+            
+            try {
+                // Get CSRF token
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                                 document.querySelector('meta[name=csrf-token]')?.getAttribute('content') ||
+                                 document.querySelector('input[name=csrfmiddlewaretoken]')?.value;
+                
+                if (!csrfToken) {
+                    this.testResults[serviceId] = {
+                        success: false,
+                        message: 'خطا: CSRF token یافت نشد'
+                    };
+                    return;
+                }
+                
+                const formData = new URLSearchParams();
+                formData.append('action', 'test_connection');
+                formData.append('service_id', serviceId);
+                formData.append('csrfmiddlewaretoken', csrfToken);
+                
+                const response = await fetch('/super-panel/settings/integrations/service/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: formData
+                });
+                
+                const result = await response.json();
+                this.testResults[serviceId] = result;
+                
+                // Auto-hide result after 10 seconds
+                setTimeout(() => {
+                    delete this.testResults[serviceId];
+                }, 10000);
+                
+            } catch (error) {
+                console.error('Error testing connection:', error);
+                this.testResults[serviceId] = {
+                    success: false,
+                    message: 'خطا در برقراری ارتباط با سرور: ' + error.message
+                };
+            } finally {
+                this.testingServices = this.testingServices.filter(id => id !== serviceId);
+            }
+        },
+        
+        async refreshHealthStatus() {
+            try {
+                const response = await fetch('/super-panel/settings/integrations/health/');
+                const data = await response.json();
+                
+                // Refresh the page to show updated health status
+                window.location.reload();
+                
+            } catch (error) {
+                console.error('Error refreshing health status:', error);
+            }
+        },
+        
+        async submitServiceForm() {
+            try {
+                // Get CSRF token
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                                 document.querySelector('meta[name=csrf-token]')?.getAttribute('content') ||
+                                 document.querySelector('input[name=csrfmiddlewaretoken]')?.value;
+                
+                if (!csrfToken) {
+                    alert('خطا: CSRF token یافت نشد');
+                    return;
+                }
+                
+                // Prepare form data
+                const formData = new URLSearchParams();
+                formData.append('action', 'create');
+                formData.append('name', this.serviceForm.name);
+                formData.append('service_type', this.serviceForm.service_type);
+                formData.append('base_url', this.serviceForm.base_url);
+                formData.append('description', this.serviceForm.description);
+                formData.append('authentication_type', this.serviceForm.authentication_type);
+                formData.append('api_key', this.serviceForm.api_key);
+                formData.append('csrfmiddlewaretoken', csrfToken);
+                
+                const response = await fetch('/super-panel/settings/integrations/service/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    this.showAddServiceModal = false;
+                    this.resetServiceForm();
+                    // Show success message
+                    alert('سرویس با موفقیت اضافه شد!');
+                    window.location.reload();
+                } else {
+                    alert('خطا: ' + (result.error || 'خطای نامشخص'));
+                }
+                
+            } catch (error) {
+                console.error('Error submitting form:', error);
+                alert('خطا در ارسال فرم: ' + error.message);
+            }
+        },
+        
+        async submitRateLimitForm() {
+            try {
+                const response = await fetch('/super-panel/settings/integrations/rate-limit/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: new URLSearchParams({
+                        action: 'create',
+                        ...this.rateLimitForm
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    this.showAddRateLimitModal = false;
+                    this.resetRateLimitForm();
+                    window.location.reload();
+                } else {
+                    alert('خطا: ' + result.error);
+                }
+                
+            } catch (error) {
+                alert('خطا در ارسال فرم');
+            }
+        },
+        
+        resetServiceForm() {
+            this.serviceForm = {
+                name: '',
+                service_type: 'gold_price_api',
+                base_url: '',
+                description: '',
+                authentication_type: 'api_key',
+                api_key: ''
+            };
+        },
+        
+        resetRateLimitForm() {
+            this.rateLimitForm = {
+                name: '',
+                limit_type: 'per_user',
+                requests_limit: 100,
+                time_window_seconds: 3600,
+                endpoint_pattern: ''
+            };
+        },
+        
+        editService(serviceId) {
+            // TODO: Implement edit service functionality
+            console.log('Edit service:', serviceId);
+        },
+        
+        editRateLimit(configId) {
+            // TODO: Implement edit rate limit functionality
+            console.log('Edit rate limit:', configId);
+        }
+    }
+}
+</script>
+{% endblock %}
