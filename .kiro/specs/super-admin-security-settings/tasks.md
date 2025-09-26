@@ -227,7 +227,12 @@
     - Write frontend tests for integration settings UI, theme switching, and UI navigation
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6_
 
-- [ ] 9. Navigation Integration & URL Configuration
+- [x] 9. Navigation Integration & URL Configuration
+
+
+
+
+
   - **Update existing super admin navigation to include new "تنظیمات" (Settings) main tab**
   - **Ensure all security features are accessible through "امنیت و حسابرسی" dropdown menu**
   - **Ensure all settings features are accessible through "تنظیمات" dropdown menu**

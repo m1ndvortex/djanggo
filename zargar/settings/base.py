@@ -117,6 +117,8 @@ TEMPLATES = [
                 'zargar.core.context_processors.domain_settings',
                 'zargar.core.context_processors.site_settings',
                 'zargar.core.context_processors.admin_context',
+                'zargar.admin_panel.context_processors.admin_navigation',
+                'zargar.admin_panel.context_processors.admin_theme',
             ],
         },
     },

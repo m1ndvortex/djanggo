@@ -61,6 +61,7 @@ urlpatterns = [
     path('health/alerts/action/', views.AlertActionView.as_view(), name='alert_action'),
     path('health/reports/', views.SystemHealthReportsView.as_view(), name='system_health_reports'),
     
+    # Security & Audit Section
     # Security Dashboard
     path('security/', security_views.SecurityDashboardView.as_view(), name='security_dashboard'),
     path('security/metrics/api/', security_views.SecurityMetricsAPIView.as_view(), name='security_metrics_api'),
@@ -74,20 +75,6 @@ urlpatterns = [
     path('security/events/investigate/', security_views.SecurityEventInvestigateView.as_view(), name='security_event_investigate'),
     path('security/events/bulk-action/', security_views.SecurityEventBulkActionView.as_view(), name='security_event_bulk_action'),
     
-    # RBAC Management
-    path('security/rbac/', rbac_views.RBACManagementView.as_view(), name='rbac_management'),
-    path('security/rbac/roles/', rbac_views.RoleListView.as_view(), name='rbac_role_list'),
-    path('security/rbac/roles/create/', rbac_views.CreateRoleView.as_view(), name='rbac_create_role'),
-    path('security/rbac/roles/<int:role_id>/', rbac_views.RoleDetailView.as_view(), name='rbac_role_detail'),
-    path('security/rbac/assignments/', rbac_views.UserRoleAssignmentView.as_view(), name='rbac_user_assignments'),
-    path('security/rbac/assignments/remove/', rbac_views.RemoveUserRoleView.as_view(), name='rbac_remove_user_role'),
-    path('security/rbac/matrix/', rbac_views.PermissionMatrixView.as_view(), name='rbac_permission_matrix'),
-    # RBAC API endpoints
-    path('security/rbac/api/stats/', rbac_views.RBACStatsAPIView.as_view(), name='rbac_stats_api'),
-    path('security/rbac/api/role/delete/', rbac_views.DeleteRoleAPIView.as_view(), name='rbac_delete_role_api'),
-    path('security/rbac/api/user/permissions/', rbac_views.UserPermissionsAPIView.as_view(), name='rbac_user_permissions_api'),
-    path('security/rbac/api/toggle-permission/', rbac_views.ToggleRolePermissionAPIView.as_view(), name='rbac_toggle_permission_api'),
-    
     # Audit Log Management
     path('security/audit-logs/', audit_views.AuditLogListView.as_view(), name='audit_logs'),
     path('security/audit-logs/<int:log_id>/', audit_views.AuditLogDetailView.as_view(), name='audit_log_detail'),
@@ -96,7 +83,22 @@ urlpatterns = [
     path('security/audit-logs/integrity/check/', audit_views.AuditLogIntegrityCheckView.as_view(), name='audit_log_integrity_check'),
     path('security/audit-logs/stats/api/', audit_views.AuditLogStatsAPIView.as_view(), name='audit_log_stats_api'),
     
-    # Settings Management
+    # RBAC Management (Access Control)
+    path('security/access-control/', rbac_views.RBACManagementView.as_view(), name='rbac_management'),
+    path('security/access-control/roles/', rbac_views.RoleListView.as_view(), name='rbac_role_list'),
+    path('security/access-control/roles/create/', rbac_views.CreateRoleView.as_view(), name='rbac_create_role'),
+    path('security/access-control/roles/<int:role_id>/', rbac_views.RoleDetailView.as_view(), name='rbac_role_detail'),
+    path('security/access-control/assignments/', rbac_views.UserRoleAssignmentView.as_view(), name='rbac_user_assignments'),
+    path('security/access-control/assignments/remove/', rbac_views.RemoveUserRoleView.as_view(), name='rbac_remove_user_role'),
+    path('security/access-control/matrix/', rbac_views.PermissionMatrixView.as_view(), name='rbac_permission_matrix'),
+    # RBAC API endpoints
+    path('security/access-control/api/stats/', rbac_views.RBACStatsAPIView.as_view(), name='rbac_stats_api'),
+    path('security/access-control/api/role/delete/', rbac_views.DeleteRoleAPIView.as_view(), name='rbac_delete_role_api'),
+    path('security/access-control/api/user/permissions/', rbac_views.UserPermissionsAPIView.as_view(), name='rbac_user_permissions_api'),
+    path('security/access-control/api/toggle-permission/', rbac_views.ToggleRolePermissionAPIView.as_view(), name='rbac_toggle_permission_api'),
+    
+    # Settings Section
+    # General Settings Management
     path('settings/', settings_views.SettingsManagementView.as_view(), name='settings_management'),
     path('settings/update/', settings_views.SettingUpdateView.as_view(), name='setting_update'),
     path('settings/bulk-update/', settings_views.BulkSettingsUpdateView.as_view(), name='bulk_settings_update'),
@@ -114,13 +116,19 @@ urlpatterns = [
     path('settings/security-policies/test/', security_policy_views.SecurityPolicyTestView.as_view(), name='security_policy_test'),
     path('settings/security-policies/history/', security_policy_views.SecurityPolicyHistoryView.as_view(), name='security_policy_history'),
     
-    # Notification Settings (Legacy)
-    path('settings/notifications/', settings_views.NotificationSettingsView.as_view(), name='notification_settings'),
-    path('settings/notifications/<int:setting_id>/', settings_views.NotificationSettingUpdateView.as_view(), name='notification_setting_update'),
-    path('settings/notifications/<int:setting_id>/test/', settings_views.NotificationTestView.as_view(), name='notification_test'),
+    # Notification Management
+    path('settings/notifications/', notification_views.NotificationManagementView.as_view(), name='notifications_management'),
+    # Legacy notification settings (for backward compatibility)
+    path('settings/notifications/legacy/', settings_views.NotificationSettingsView.as_view(), name='notification_settings'),
+    path('settings/notifications/legacy/<int:setting_id>/', settings_views.NotificationSettingUpdateView.as_view(), name='notification_setting_update'),
+    path('settings/notifications/legacy/<int:setting_id>/test/', settings_views.NotificationTestView.as_view(), name='notification_test'),
     
-    # New Notification Management
-    path('settings/notifications-management/', notification_views.NotificationManagementView.as_view(), name='notifications_management'),
+    # Integration Settings
+    path('settings/integrations/', integration_views.IntegrationSettingsView.as_view(), name='integration_settings'),
+    path('settings/integrations/service/', integration_views.ServiceConfigurationView.as_view(), name='service_configuration'),
+    path('settings/integrations/rate-limit/', integration_views.RateLimitConfigurationView.as_view(), name='rate_limit_configuration'),
+    path('settings/integrations/health/', integration_views.IntegrationHealthView.as_view(), name='integration_health'),
+    path('settings/integrations/health/history/', integration_views.IntegrationHealthHistoryView.as_view(), name='integration_health_history'),
     
     # Notification Management API endpoints
     path('api/notifications/email-config/', notification_views.EmailConfigurationAPIView.as_view(), name='api_email_config'),
@@ -129,13 +137,6 @@ urlpatterns = [
     path('api/notifications/alert-config/', notification_views.AlertConfigurationAPIView.as_view(), name='api_alert_config'),
     path('api/notifications/delivery-stats/', notification_views.DeliveryStatisticsAPIView.as_view(), name='api_delivery_stats'),
     path('api/notifications/test/', notification_views.NotificationTestAPIView.as_view(), name='api_notification_test'),
-    
-    # Integration Settings
-    path('settings/integrations/', integration_views.IntegrationSettingsView.as_view(), name='integration_settings'),
-    path('settings/integrations/service/', integration_views.ServiceConfigurationView.as_view(), name='service_configuration'),
-    path('settings/integrations/rate-limit/', integration_views.RateLimitConfigurationView.as_view(), name='rate_limit_configuration'),
-    path('settings/integrations/health/', integration_views.IntegrationHealthView.as_view(), name='integration_health'),
-    path('settings/integrations/health/history/', integration_views.IntegrationHealthHistoryView.as_view(), name='integration_health_history'),
     
     # Disaster Recovery
     path('disaster-recovery/', disaster_recovery_views.DisasterRecoveryDashboardView.as_view(), name='disaster_recovery_dashboard'),
