@@ -4,11 +4,12 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV DEBIAN_FRONTEND=noninteractive
+ENV NODE_VERSION=20.x
 
 # Set work directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies including Node.js
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         postgresql-client \
@@ -16,11 +17,18 @@ RUN apt-get update \
         libpq-dev \
         gettext \
         curl \
+        gnupg \
+    && curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION} | bash - \
+    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy package.json and install Node.js dependencies
+COPY package.json package-lock.json* /app/
+RUN npm ci --omit=dev --ignore-scripts
 
 # Copy project
 COPY . /app/

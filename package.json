@@ -6,6 +6,11 @@
   "scripts": {
     "test": "jest",
     "test:rtl": "jest tests/frontend/test_rtl_components.js",
+    "test:alpine": "jest tests/frontend/test_alpine_components.js",
+    "test:htmx": "jest tests/frontend/test_htmx_integration.js",
+    "test:pos": "jest tests/frontend/test_pos_interactive.js",
+    "test:dashboard": "jest tests/frontend/test_dashboard_interactive.js",
+    "test:interactive": "jest tests/frontend/test_alpine_components.js tests/frontend/test_htmx_integration.js tests/frontend/test_pos_interactive.js tests/frontend/test_dashboard_interactive.js",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "build:css": "tailwindcss -i static/scss/base.scss -o static/css/base-compiled.css --watch",
@@ -68,10 +73,7 @@
       "!**/node_modules/**"
     ],
     "coverageDirectory": "tests/frontend/coverage",
-    "coverageReporters": ["text", "lcov", "html"],
-    "moduleNameMapping": {
-      "^@/(.*)$": "<rootDir>/static/js/$1"
-    }
+    "coverageReporters": ["text", "lcov", "html"]
   },
   "lint-staged": {
     "*.js": ["eslint --fix", "prettier --write"],
