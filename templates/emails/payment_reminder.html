@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>یادآوری پرداخت</title>
+    <style>
+        body {
+            font-family: 'Vazir', 'Tahoma', sans-serif;
+            direction: rtl;
+            text-align: right;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background-color: #d4af37;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .content {
+            padding: 30px;
+            line-height: 1.8;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+        }
+        .reminder-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .amount {
+            font-size: 18px;
+            font-weight: bold;
+            color: #d4af37;
+        }
+        .due-date {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>طلا و جواهرات زرگر</h1>
+            <h2>یادآوری پرداخت قسط</h2>
+        </div>
+        <div class="content">
+            <p>سلام {{ customer_name }} عزیز،</p>
+            
+            <div class="reminder-box">
+                <p><strong>شماره قرارداد:</strong> {{ contract_number }}</p>
+                <p><strong>مبلغ قسط:</strong> <span class="amount">{{ amount }} تومان</span></p>
+                <p><strong>تاریخ سررسید:</strong> <span class="due-date">{{ due_date }}</span></p>
+            </div>
+            
+            <p>
+                لطفاً در اسرع وقت نسبت به پرداخت قسط خود اقدام فرمایید.
+            </p>
+            
+            <p>
+                برای پرداخت می‌توانید به فروشگاه مراجعه کرده یا با شماره تلفن {{ contact_phone|default:"021-12345678" }} تماس بگیرید.
+            </p>
+            
+            <p>
+                با تشکر از همکاری شما
+            </p>
+        </div>
+        <div class="footer">
+            <p>طلا و جواهرات زرگر</p>
+            <p>تلفن: {{ contact_phone|default:"021-12345678" }}</p>
+            <p>این ایمیل به صورت خودکار ارسال شده است.</p>
+        </div>
+    </div>
+</body>
+</html>

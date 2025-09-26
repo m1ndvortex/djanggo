@@ -917,15 +917,28 @@
     - Write integration tests for mobile API functionality
     - _Requirements: 16.4, 16.5, 16.6_
 
-- [ ] 16. Background Processing & External Integrations
-  - [ ] 16.1 Implement Celery task system (Backend)
+- [-] 16. Background Processing & External Integrations
+
+
+
+
+  - [x] 16.1 Implement Celery task system (Backend)
+
+
+
+
     - Configure Celery with Redis broker for background task processing
     - Create gold price update tasks with Iranian market API integration
     - Build automated backup tasks with scheduling
     - Write tests for Celery task execution and error handling
     - _Requirements: 1.7, 8.2_
 
-  - [ ] 16.2 Build external service integrations (Backend)
+  - [x] 16.2 Build external service integrations (Backend)
+
+
+
+
+
     - Implement Iranian gold market price API integration
     - Create SMS service integration for Persian notifications
     - Build email service integration with Persian templates

@@ -14,6 +14,7 @@ from django.core.exceptions import ValidationError
 import logging
 
 from .models import GoldInstallmentContract, GoldInstallmentPayment, GoldWeightAdjustment
+from zargar.core.external_services import IranianGoldPriceAPI
 
 logger = logging.getLogger(__name__)
 
@@ -22,22 +23,19 @@ class GoldPriceService:
     """
     Service for fetching and managing gold prices from Iranian market APIs.
     Provides real-time gold price integration with caching and fallback mechanisms.
+    
+    This class now delegates to the enhanced IranianGoldPriceAPI for better integration.
     """
     
-    # Iranian gold market API endpoints (mock URLs for development)
-    GOLD_PRICE_APIS = {
-        'primary': 'https://api.tgju.org/v1/market/indicator/summary-table-data/gold_18',
-        'secondary': 'https://api.bonbast.com/gold',
-        'fallback': 'https://api.arz.ir/gold'
-    }
-    
-    CACHE_KEY_PREFIX = 'gold_price'
-    CACHE_TIMEOUT = 300  # 5 minutes
+    # Maintain backward compatibility
+    CACHE_KEY_PREFIX = IranianGoldPriceAPI.CACHE_KEY_PREFIX
+    CACHE_TIMEOUT = IranianGoldPriceAPI.CACHE_TIMEOUT
+    GOLD_PRICE_APIS = IranianGoldPriceAPI.GOLD_PRICE_APIS
     
     @classmethod
     def get_current_gold_price(cls, karat: int = 18) -> Dict[str, Decimal]:
         """
-        Get current gold price for specified karat.
+        Get current gold price for specified karat using enhanced Iranian API integration.
         
         Args:
             karat: Gold karat (default 18)
@@ -45,129 +43,22 @@ class GoldPriceService:
         Returns:
             Dictionary with price information
         """
-        cache_key = f"{cls.CACHE_KEY_PREFIX}_{karat}"
-        cached_price = cache.get(cache_key)
+        # Use the enhanced Iranian Gold Price API
+        price_data = IranianGoldPriceAPI.get_current_gold_price(karat)
         
-        if cached_price:
-            logger.info(f"Retrieved cached gold price for {karat}k: {cached_price}")
-            return cached_price
-        
-        # Try to fetch from APIs
-        price_data = cls._fetch_from_apis(karat)
-        
-        if price_data:
-            # Cache the result
-            cache.set(cache_key, price_data, cls.CACHE_TIMEOUT)
-            logger.info(f"Fetched and cached gold price for {karat}k: {price_data}")
-            return price_data
-        
-        # Fallback to default price if all APIs fail
-        fallback_price = cls._get_fallback_price(karat)
-        logger.warning(f"Using fallback gold price for {karat}k: {fallback_price}")
-        return fallback_price
-    
-    @classmethod
-    def _fetch_from_apis(cls, karat: int) -> Optional[Dict[str, Decimal]]:
-        """
-        Fetch gold price from external APIs.
-        
-        Args:
-            karat: Gold karat
-            
-        Returns:
-            Price data dictionary or None if all APIs fail
-        """
-        for api_name, api_url in cls.GOLD_PRICE_APIS.items():
-            try:
-                response = requests.get(api_url, timeout=10)
-                response.raise_for_status()
-                
-                # Parse response based on API
-                price_data = cls._parse_api_response(response.json(), api_name, karat)
-                if price_data:
-                    return price_data
-                    
-            except requests.RequestException as e:
-                logger.warning(f"Failed to fetch from {api_name}: {e}")
-                continue
-            except Exception as e:
-                logger.error(f"Error parsing response from {api_name}: {e}")
-                continue
-        
-        return None
-    
-    @classmethod
-    def _parse_api_response(cls, data: dict, api_name: str, karat: int) -> Optional[Dict[str, Decimal]]:
-        """
-        Parse API response to extract gold price.
-        
-        Args:
-            data: API response data
-            api_name: Name of the API
-            karat: Gold karat
-            
-        Returns:
-            Parsed price data or None
-        """
-        try:
-            if api_name == 'primary':
-                # TGJU API format (mock structure)
-                price_per_gram = Decimal(str(data.get('price', 0)))
-            elif api_name == 'secondary':
-                # Bonbast API format (mock structure)
-                price_per_gram = Decimal(str(data.get('gold_18', 0)))
-            else:
-                # Generic fallback format
-                price_per_gram = Decimal(str(data.get('price', 0)))
-            
-            if price_per_gram <= 0:
-                return None
-            
-            # Adjust price based on karat if not 18k
-            if karat != 18:
-                price_per_gram = price_per_gram * (Decimal(karat) / Decimal('18'))
-            
-            return {
-                'price_per_gram': price_per_gram.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
-                'karat': karat,
-                'timestamp': timezone.now(),
-                'source': api_name,
-                'currency': 'IRR'  # Iranian Rial (Toman = IRR/10)
-            }
-            
-        except (ValueError, KeyError, TypeError) as e:
-            logger.error(f"Error parsing {api_name} response: {e}")
-            return None
-    
-    @classmethod
-    def _get_fallback_price(cls, karat: int) -> Dict[str, Decimal]:
-        """
-        Get fallback gold price when APIs are unavailable.
-        
-        Args:
-            karat: Gold karat
-            
-        Returns:
-            Fallback price data
-        """
-        # Base fallback price for 18k gold (3.5M Toman per gram)
-        base_price = Decimal('3500000')
-        
-        # Adjust for different karats
-        adjusted_price = base_price * (Decimal(karat) / Decimal('18'))
-        
+        # Convert to expected format for backward compatibility
         return {
-            'price_per_gram': adjusted_price.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
-            'karat': karat,
-            'timestamp': timezone.now(),
-            'source': 'fallback',
-            'currency': 'IRR'
+            'price_per_gram': price_data['price_per_gram'],
+            'karat': price_data['karat'],
+            'timestamp': price_data['timestamp'],
+            'source': price_data['source'],
+            'currency': 'TMN'  # Toman for Iranian market
         }
     
     @classmethod
     def get_price_trend(cls, karat: int = 18, days: int = 30) -> List[Dict]:
         """
-        Get gold price trend for specified period.
+        Get gold price trend for specified period using enhanced Iranian API.
         
         Args:
             karat: Gold karat
@@ -176,43 +67,17 @@ class GoldPriceService:
         Returns:
             List of price data points
         """
-        # For now, return mock trend data
-        # In production, this would fetch historical data
-        current_price = cls.get_current_gold_price(karat)['price_per_gram']
-        trend_data = []
-        
-        for i in range(days):
-            date = timezone.now().date() - timedelta(days=days-i-1)
-            # Mock price variation (±5%)
-            variation = Decimal('0.95') + (Decimal('0.1') * Decimal(str(i % 10)) / Decimal('10'))
-            price = (current_price * variation).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-            
-            trend_data.append({
-                'date': date,
-                'price_per_gram': price,
-                'karat': karat
-            })
-        
-        return trend_data
+        return IranianGoldPriceAPI.get_price_trend(karat, days)
     
     @classmethod
     def invalidate_cache(cls, karat: Optional[int] = None):
         """
-        Invalidate gold price cache.
+        Invalidate gold price cache using enhanced Iranian API.
         
         Args:
             karat: Specific karat to invalidate, or None for all
         """
-        if karat:
-            cache_key = f"{cls.CACHE_KEY_PREFIX}_{karat}"
-            cache.delete(cache_key)
-        else:
-            # Invalidate all karat caches
-            for k in [14, 18, 21, 22, 24]:
-                cache_key = f"{cls.CACHE_KEY_PREFIX}_{k}"
-                cache.delete(cache_key)
-        
-        logger.info(f"Invalidated gold price cache for karat: {karat or 'all'}")
+        IranianGoldPriceAPI.invalidate_cache(karat)
 
 
 class PaymentProcessingService:

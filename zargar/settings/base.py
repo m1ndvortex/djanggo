@@ -448,6 +448,40 @@ HIJACK_INSERT_BEFORE = '</body>'  # Where to insert the hijack banner
 HIJACK_NOTIFY_ADMIN = True  # Notify admin of hijack sessions
 HIJACK_NOTIFY_USER = False  # Don't notify the hijacked user
 
+# External Service Configuration
+
+# Iranian SMS Providers Configuration
+KAVENEGAR_SMS_API_KEY = config('KAVENEGAR_SMS_API_KEY', default='')
+KAVENEGAR_SMS_API_SECRET = config('KAVENEGAR_SMS_API_SECRET', default='')
+KAVENEGAR_SMS_SENDER = config('KAVENEGAR_SMS_SENDER', default='10008663')
+
+MELIPAYAMAK_SMS_API_KEY = config('MELIPAYAMAK_SMS_API_KEY', default='')
+MELIPAYAMAK_SMS_API_SECRET = config('MELIPAYAMAK_SMS_API_SECRET', default='')
+MELIPAYAMAK_SMS_SENDER = config('MELIPAYAMAK_SMS_SENDER', default='10008663')
+
+FARAPAYAMAK_SMS_API_KEY = config('FARAPAYAMAK_SMS_API_KEY', default='')
+FARAPAYAMAK_SMS_API_SECRET = config('FARAPAYAMAK_SMS_API_SECRET', default='')
+FARAPAYAMAK_SMS_SENDER = config('FARAPAYAMAK_SMS_SENDER', default='10008663')
+
+SMS_IR_SMS_API_KEY = config('SMS_IR_SMS_API_KEY', default='')
+SMS_IR_SMS_API_SECRET = config('SMS_IR_SMS_API_SECRET', default='')
+SMS_IR_SMS_SENDER = config('SMS_IR_SMS_SENDER', default='10008663')
+
+# Test phone number for SMS connectivity validation
+SMS_TEST_PHONE_NUMBER = config('SMS_TEST_PHONE_NUMBER', default=None)
+
+# Email Configuration
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@zargar.com')
+EMAIL_TEST_RECIPIENT = config('EMAIL_TEST_RECIPIENT', default=None)
+
+# External Service Health Check Configuration
+EXTERNAL_SERVICE_HEALTH_CHECK_INTERVAL = config('EXTERNAL_SERVICE_HEALTH_CHECK_INTERVAL', default=3600, cast=int)  # 1 hour
+GOLD_PRICE_UPDATE_INTERVAL = config('GOLD_PRICE_UPDATE_INTERVAL', default=300, cast=int)  # 5 minutes
+
+# Iranian Gold Price API Configuration
+IRANIAN_GOLD_PRICE_CACHE_TIMEOUT = config('IRANIAN_GOLD_PRICE_CACHE_TIMEOUT', default=300, cast=int)  # 5 minutes
+IRANIAN_GOLD_PRICE_API_TIMEOUT = config('IRANIAN_GOLD_PRICE_API_TIMEOUT', default=10, cast=int)  # 10 seconds
+
 # Logging
 LOGGING = {
     'version': 1,
@@ -480,6 +514,12 @@ LOGGING = {
             'filename': BASE_DIR / 'logs' / 'hijack_audit.log',
             'formatter': 'verbose',
         },
+        'external_services': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'external_services.log',
+            'formatter': 'verbose',
+        },
     },
     'root': {
         'handlers': ['console', 'file'],
@@ -498,6 +538,16 @@ LOGGING = {
         },
         'hijack_audit': {
             'handlers': ['hijack_audit', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'zargar.core.external_services': {
+            'handlers': ['external_services', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'zargar.core.external_service_tasks': {
+            'handlers': ['external_services', 'console'],
             'level': 'INFO',
             'propagate': False,
         },
