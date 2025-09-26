@@ -1,12 +1,16 @@
 /**
  * Enhanced RTL-first base CSS for ZARGAR jewelry SaaS platform
  * Supports dual theme system with modern light and cybersecurity dark modes
+ * Integrated with Tailwind CSS and Flowbite components
  */
 
 /* Import Tailwind CSS */
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
+
+/* Import Flowbite components */
+@import 'flowbite/dist/flowbite.min.css';
 
 /* Persian fonts with fallbacks */
 @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;200;300;400;500;600;700;800;900&family=Yekan+Bakh:wght@300;400;500;600;700;800&display=swap');
@@ -620,4 +624,489 @@ body {
 
 .dark ::-webkit-scrollbar-thumb:hover {
   background: var(--cyber-neon-primary);
+}
+/* Enhan
+ced RTL Flowbite Component Overrides */
+
+/* RTL Dropdown Enhancements */
+.rtl-dropdown {
+  direction: rtl;
+  text-align: right;
+}
+
+.cyber-dropdown {
+  @apply bg-cyber-bg-surface/90 border-cyber-border-glass backdrop-blur-md;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.cyber-dropdown .dropdown-item {
+  @apply text-cyber-text-primary hover:bg-cyber-bg-elevated/50 hover:text-cyber-neon-primary;
+  transition: all 0.2s ease;
+}
+
+.light-dropdown {
+  @apply bg-white border-gray-200 shadow-lg;
+}
+
+.light-dropdown .dropdown-item {
+  @apply text-gray-900 hover:bg-gray-50 hover:text-blue-600;
+  transition: all 0.2s ease;
+}
+
+/* RTL Modal Enhancements */
+.rtl-modal {
+  direction: rtl;
+}
+
+.rtl-modal-close {
+  left: 1rem;
+  right: auto;
+}
+
+.cyber-modal .modal-content {
+  @apply bg-cyber-bg-surface border-cyber-border-glass backdrop-blur-md;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.cyber-modal .modal-header {
+  @apply border-cyber-border-glass;
+}
+
+.cyber-modal .modal-footer {
+  @apply border-cyber-border-glass;
+}
+
+.light-modal .modal-content {
+  @apply bg-white border-gray-200 shadow-xl;
+}
+
+/* RTL Tooltip Enhancements */
+.persian-tooltip {
+  font-family: 'Vazirmatn', sans-serif;
+  direction: rtl;
+  text-align: right;
+}
+
+.cyber-tooltip {
+  @apply bg-cyber-bg-elevated text-cyber-text-primary border-cyber-border-glass;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+
+.light-tooltip {
+  @apply bg-gray-900 text-white;
+}
+
+/* RTL Accordion Enhancements */
+.rtl-accordion {
+  direction: rtl;
+}
+
+.cyber-accordion-item {
+  @apply bg-cyber-bg-surface/50 border-cyber-border-glass hover:bg-cyber-bg-elevated/50;
+  transition: all 0.3s ease;
+}
+
+.cyber-accordion-item[aria-expanded="true"] {
+  @apply bg-cyber-bg-elevated border-cyber-neon-primary/30;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+}
+
+.light-accordion-item {
+  @apply bg-white border-gray-200 hover:bg-gray-50;
+  transition: all 0.3s ease;
+}
+
+.light-accordion-item[aria-expanded="true"] {
+  @apply bg-blue-50 border-blue-200;
+}
+
+/* RTL Tab Enhancements */
+.rtl-tabs {
+  direction: rtl;
+}
+
+.cyber-tab {
+  @apply text-cyber-text-secondary hover:text-cyber-neon-primary border-transparent hover:border-cyber-neon-primary/30;
+  transition: all 0.3s ease;
+}
+
+.cyber-tab[aria-selected="true"] {
+  @apply text-cyber-neon-primary border-cyber-neon-primary;
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+}
+
+.light-tab {
+  @apply text-gray-600 hover:text-blue-600 border-transparent hover:border-blue-300;
+  transition: all 0.3s ease;
+}
+
+.light-tab[aria-selected="true"] {
+  @apply text-blue-600 border-blue-600;
+}
+
+/* RTL Carousel Enhancements */
+.rtl-carousel {
+  direction: rtl;
+}
+
+.rtl-carousel [data-carousel-prev] {
+  right: 1rem;
+  left: auto;
+}
+
+.rtl-carousel [data-carousel-next] {
+  left: 1rem;
+  right: auto;
+}
+
+/* Enhanced Persian Input Components */
+.persian-input {
+  font-family: 'Vazirmatn', sans-serif;
+  direction: rtl;
+  text-align: right;
+  @apply px-4 py-3 rounded-lg border transition-all duration-300;
+}
+
+.persian-input:not(.dark) {
+  @apply bg-white border-gray-300 text-gray-900 placeholder-gray-500;
+}
+
+.persian-input:not(.dark):focus {
+  @apply border-blue-500 ring-2 ring-blue-500/20 outline-none;
+}
+
+.persian-input.dark {
+  @apply bg-cyber-bg-surface/60 border-cyber-border-glass text-cyber-text-primary placeholder-cyber-text-muted;
+  backdrop-filter: blur(8px);
+}
+
+.persian-input.dark:focus {
+  @apply border-cyber-neon-primary ring-2 ring-cyber-neon-primary/20 outline-none;
+  background: rgba(37, 42, 58, 0.8);
+}
+
+.persian-currency-input {
+  @apply font-mono;
+}
+
+/* Persian Calendar Component */
+.persian-calendar {
+  font-family: 'Vazirmatn', sans-serif;
+  direction: rtl;
+  min-width: 280px;
+}
+
+.persian-calendar button[data-date] {
+  @apply w-8 h-8 flex items-center justify-center;
+}
+
+.persian-calendar button[data-date]:hover {
+  @apply transform scale-105;
+}
+
+.persian-calendar button[data-date].selected {
+  @apply bg-blue-600 text-white;
+}
+
+.dark .persian-calendar button[data-date].selected {
+  @apply bg-cyber-neon-primary text-cyber-bg-primary;
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+}
+
+/* Search Results Component */
+.search-results {
+  font-family: 'Vazirmatn', sans-serif;
+  direction: rtl;
+  min-width: 300px;
+}
+
+.search-results [data-result-id] {
+  @apply transition-all duration-200;
+}
+
+.search-results [data-result-id]:hover {
+  @apply transform translate-x-1;
+}
+
+/* Notification Enhancements */
+#persian-notifications {
+  font-family: 'Vazirmatn', sans-serif;
+  direction: rtl;
+}
+
+#persian-notifications .notification {
+  @apply transform transition-all duration-300;
+}
+
+/* Enhanced Animation Classes */
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+.animate-slide-out-right {
+  animation: slide-out-right 0.3s ease-in;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.4s ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s ease-out;
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 0.6s ease-in-out;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s linear infinite;
+}
+
+/* Responsive RTL Enhancements */
+@media (max-width: 768px) {
+  .persian-calendar {
+    min-width: 260px;
+  }
+  
+  .search-results {
+    min-width: 280px;
+  }
+  
+  .rtl-modal .modal-content {
+    margin: 1rem;
+  }
+  
+  .cyber-glass-card {
+    @apply mx-2 p-4;
+  }
+  
+  .persian-input {
+    @apply px-3 py-2 text-sm;
+  }
+}
+
+@media (max-width: 480px) {
+  .persian-calendar {
+    min-width: 240px;
+  }
+  
+  .search-results {
+    min-width: 260px;
+  }
+  
+  .cyber-neon-button {
+    @apply px-4 py-2 text-sm;
+  }
+  
+  .light-button {
+    @apply px-4 py-2 text-sm;
+  }
+}
+
+/* Enhanced Focus Styles for Accessibility */
+.focus-visible:focus {
+  @apply outline-none ring-2 ring-offset-2;
+}
+
+.light .focus-visible:focus {
+  @apply ring-blue-500 ring-offset-white;
+}
+
+.dark .focus-visible:focus {
+  @apply ring-cyber-neon-primary ring-offset-cyber-bg-primary;
+}
+
+/* Enhanced Selection Styles */
+::selection {
+  @apply bg-blue-600 text-white;
+}
+
+.dark ::selection {
+  @apply bg-cyber-neon-primary text-cyber-bg-primary;
+}
+
+/* Enhanced Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+.dark ::-webkit-scrollbar-track {
+  @apply bg-cyber-bg-surface;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  @apply bg-cyber-border-glass rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  @apply bg-cyber-neon-primary/50;
+}
+
+/* Print Optimizations */
+@media print {
+  .theme-toggle,
+  #persian-notifications,
+  .search-results,
+  .persian-calendar {
+    display: none !important;
+  }
+  
+  .dark {
+    @apply bg-white text-black;
+  }
+  
+  .cyber-glass-card,
+  .light-card {
+    @apply bg-white border-gray-300 shadow-none;
+  }
+  
+  .cyber-neon-button,
+  .light-button {
+    @apply bg-white border-gray-300 text-black shadow-none;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .dark {
+    --cyber-border-glass: rgba(255, 255, 255, 0.3);
+    --cyber-border-neon: rgba(0, 212, 255, 0.6);
+    --cyber-text-secondary: #E5E7EB;
+  }
+  
+  .light {
+    --light-border: #374151;
+    --light-text-secondary: #1F2937;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .animate-neon-pulse,
+  .animate-cyber-glow,
+  .animate-float,
+  .animate-shimmer {
+    animation: none !important;
+  }
+}
+
+/* Enhanced Typography for Persian Text */
+.persian-text {
+  font-family: 'Vazirmatn', 'Yekan Bakh', 'Tahoma', sans-serif;
+  direction: rtl;
+  text-align: right;
+  line-height: 1.7;
+  letter-spacing: 0.025em;
+}
+
+.persian-heading {
+  font-family: 'Yekan Bakh', 'Vazirmatn', sans-serif;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.persian-body {
+  line-height: 1.8;
+  letter-spacing: 0.025em;
+}
+
+/* Enhanced Number Display */
+.persian-numbers {
+  font-feature-settings: 'lnum' 1, 'tnum' 1;
+  direction: ltr;
+  display: inline-block;
+  text-align: right;
+}
+
+.persian-currency {
+  @apply font-semibold;
+}
+
+.dark .persian-currency {
+  @apply text-cyber-neon-secondary;
+  text-shadow: 0 0 8px rgba(0, 255, 136, 0.2);
+}
+
+.light .persian-currency {
+  @apply text-green-600;
+}
+
+/* Component State Classes */
+.component-loading {
+  @apply opacity-50 pointer-events-none;
+}
+
+.component-error {
+  @apply border-red-500 bg-red-50;
+}
+
+.dark .component-error {
+  @apply border-red-500/50 bg-red-900/20;
+}
+
+.component-success {
+  @apply border-green-500 bg-green-50;
+}
+
+.dark .component-success {
+  @apply border-green-500/50 bg-green-900/20;
+}
+
+/* Utility Classes for RTL Layout */
+.rtl-space-x-reverse > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 1;
+}
+
+.rtl-divide-x-reverse > :not([hidden]) ~ :not([hidden]) {
+  --tw-divide-x-reverse: 1;
+}
+
+/* Enhanced Glassmorphism Effects */
+.glass-effect {
+  backdrop-filter: blur(16px) saturate(180%);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark .glass-effect {
+  background: rgba(37, 42, 58, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-hover:hover {
+  backdrop-filter: blur(20px) saturate(200%);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark .glass-hover:hover {
+  background: rgba(37, 42, 58, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }

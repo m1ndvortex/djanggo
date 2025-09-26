@@ -1,0 +1,99 @@
+{
+  "name": "zargar-jewelry-saas",
+  "version": "1.0.0",
+  "description": "Persian RTL-first jewelry SaaS platform with dual theme system",
+  "main": "static/js/theme-toggle.js",
+  "scripts": {
+    "test": "jest",
+    "test:rtl": "jest tests/frontend/test_rtl_components.js",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "build:css": "tailwindcss -i static/scss/base.scss -o static/css/base-compiled.css --watch",
+    "build:css:prod": "tailwindcss -i static/scss/base.scss -o static/css/base-compiled.css --minify",
+    "lint:js": "eslint static/js/**/*.js",
+    "lint:css": "stylelint static/css/**/*.css static/scss/**/*.scss",
+    "format": "prettier --write static/js/**/*.js static/css/**/*.css",
+    "validate:rtl": "python tests/frontend/run_rtl_tests.py",
+    "dev": "concurrently \"npm run build:css\" \"python manage.py runserver\"",
+    "prepare": "husky install"
+  },
+  "keywords": [
+    "jewelry",
+    "saas",
+    "persian",
+    "rtl",
+    "tailwindcss",
+    "flowbite",
+    "django",
+    "cybersecurity-theme"
+  ],
+  "author": "ZARGAR Development Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@tailwindcss/aspect-ratio": "^0.4.2",
+    "@tailwindcss/forms": "^0.5.7",
+    "@tailwindcss/typography": "^0.5.10",
+    "autoprefixer": "^10.4.16",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.55.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-jest": "^27.6.0",
+    "husky": "^8.0.3",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "jsdom": "^23.0.1",
+    "lint-staged": "^15.2.0",
+    "postcss": "^8.4.32",
+    "prettier": "^3.1.1",
+    "stylelint": "^16.0.2",
+    "stylelint-config-standard": "^36.0.0",
+    "tailwindcss": "^3.3.6"
+  },
+  "dependencies": {
+    "alpinejs": "^3.13.3",
+    "flowbite": "^2.2.1",
+    "framer-motion": "^10.16.16",
+    "htmx.org": "^1.9.10"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "setupFilesAfterEnv": ["<rootDir>/tests/frontend/jest.setup.js"],
+    "testMatch": [
+      "**/tests/frontend/**/*.test.js",
+      "**/tests/frontend/test_*.js"
+    ],
+    "collectCoverageFrom": [
+      "static/js/**/*.js",
+      "!static/js/**/*.min.js",
+      "!**/node_modules/**"
+    ],
+    "coverageDirectory": "tests/frontend/coverage",
+    "coverageReporters": ["text", "lcov", "html"],
+    "moduleNameMapping": {
+      "^@/(.*)$": "<rootDir>/static/js/$1"
+    }
+  },
+  "lint-staged": {
+    "*.js": ["eslint --fix", "prettier --write"],
+    "*.{css,scss}": ["stylelint --fix", "prettier --write"],
+    "*.{json,md}": ["prettier --write"]
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ],
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zargar/zargar-jewelry-saas.git"
+  },
+  "bugs": {
+    "url": "https://github.com/zargar/zargar-jewelry-saas/issues"
+  },
+  "homepage": "https://zargar.com"
+}
