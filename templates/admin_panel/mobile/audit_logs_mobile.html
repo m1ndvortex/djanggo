@@ -1,0 +1,827 @@
+{% extends 'admin_panel/base_unified.html' %}
+{% load static %}
+
+{% block title %}لاگ‌های حسابرسی - پنل مدیریت زرگر{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mobile-responsive-security-settings.css' %}">
+<style>
+    /* Mobile-specific audit logs styles */
+    .mobile-audit-header {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+        backdrop-filter: blur(20px);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .dark .mobile-audit-header {
+        background: linear-gradient(135deg, rgba(37, 42, 58, 0.9) 0%, rgba(26, 29, 41, 0.8) 100%);
+        border-color: rgba(0, 212, 255, 0.2);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+    
+    .mobile-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .mobile-audit-log-card {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 0.75rem;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    
+    .dark .mobile-audit-log-card {
+        background: rgba(37, 42, 58, 0.9);
+        border-color: rgba(0, 212, 255, 0.2);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .mobile-audit-log-card:active {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    .dark .mobile-audit-log-card:active {
+        box-shadow: 0 4px 8px rgba(0, 212, 255, 0.2);
+    }
+    
+    .audit-log-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    
+    .dark .audit-log-header {
+        border-bottom-color: rgba(0, 212, 255, 0.2);
+    }
+    
+    .audit-log-action {
+        background: rgba(59, 130, 246, 0.1);
+        color: rgba(59, 130, 246, 1);
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+    
+    .dark .audit-log-action {
+        background: rgba(0, 212, 255, 0.2);
+        color: rgba(0, 212, 255, 1);
+        border-color: rgba(0, 212, 255, 0.3);
+    }
+    
+    .audit-log-time {
+        font-size: 0.75rem;
+        color: rgba(0, 0, 0, 0.6);
+        direction: ltr;
+        text-align: left;
+    }
+    
+    .dark .audit-log-time {
+        color: rgba(255, 255, 255, 0.6);
+    }
+    
+    .audit-log-details {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .audit-log-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.25rem 0;
+    }
+    
+    .audit-log-label {
+        font-weight: 500;
+        color: rgba(0, 0, 0, 0.7);
+        font-size: 0.75rem;
+    }
+    
+    .dark .audit-log-label {
+        color: rgba(255, 255, 255, 0.7);
+    }
+    
+    .audit-log-value {
+        font-weight: 400;
+        text-align: left;
+        direction: ltr;
+        font-size: 0.75rem;
+        max-width: 60%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    .integrity-badge-mobile {
+        position: absolute;
+        top: 0.5rem;
+        left: 0.5rem;
+        font-size: 0.625rem;
+        padding: 0.125rem 0.375rem;
+        border-radius: 0.25rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+    }
+    
+    .integrity-verified-mobile {
+        background-color: rgba(34, 197, 94, 0.2);
+        color: rgb(34, 197, 94);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+    
+    .dark .integrity-verified-mobile {
+        background-color: rgba(0, 255, 136, 0.2);
+        color: rgb(0, 255, 136);
+        border-color: rgba(0, 255, 136, 0.3);
+    }
+    
+    .integrity-warning-mobile {
+        background-color: rgba(245, 158, 11, 0.2);
+        color: rgb(245, 158, 11);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    
+    .dark .integrity-warning-mobile {
+        background-color: rgba(255, 184, 0, 0.2);
+        color: rgb(255, 184, 0);
+        border-color: rgba(255, 184, 0, 0.3);
+    }
+    
+    .mobile-search-container {
+        position: relative;
+        margin-bottom: 1rem;
+    }
+    
+    .mobile-search-input {
+        width: 100%;
+        padding: 0.875rem 1rem 0.875rem 3rem;
+        border-radius: 0.75rem;
+        border: 2px solid rgba(0, 0, 0, 0.1);
+        background: rgba(255, 255, 255, 0.9);
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .dark .mobile-search-input {
+        background: rgba(37, 42, 58, 0.9);
+        border-color: rgba(0, 212, 255, 0.2);
+        color: #ffffff;
+    }
+    
+    .mobile-search-input:focus {
+        outline: none;
+        border-color: rgba(59, 130, 246, 0.5);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        transform: scale(1.02);
+    }
+    
+    .dark .mobile-search-input:focus {
+        border-color: rgba(0, 212, 255, 0.5);
+        box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+    }
+    
+    .mobile-search-icon {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 1.25rem;
+        height: 1.25rem;
+        color: rgba(0, 0, 0, 0.4);
+        pointer-events: none;
+    }
+    
+    .dark .mobile-search-icon {
+        color: rgba(255, 255, 255, 0.4);
+    }
+    
+    .mobile-export-buttons {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .mobile-export-btn {
+        flex: 1;
+        padding: 0.75rem;
+        border-radius: 0.75rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+        min-height: 44px;
+    }
+    
+    .mobile-export-csv {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+    }
+    
+    .dark .mobile-export-csv {
+        background: linear-gradient(135deg, #00D4FF 0%, #A55EEA 100%);
+    }
+    
+    .mobile-export-json {
+        background: rgba(107, 114, 128, 0.9);
+        color: white;
+        border: none;
+    }
+    
+    .dark .mobile-export-json {
+        background: rgba(37, 42, 58, 0.9);
+        border: 1px solid rgba(0, 212, 255, 0.2);
+    }
+    
+    .mobile-export-btn:active {
+        transform: scale(0.98);
+    }
+    
+    .mobile-load-more {
+        width: 100%;
+        padding: 1rem;
+        background: rgba(59, 130, 246, 0.1);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        border-radius: 0.75rem;
+        color: rgba(59, 130, 246, 1);
+        font-weight: 500;
+        margin-top: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .dark .mobile-load-more {
+        background: rgba(0, 212, 255, 0.1);
+        border-color: rgba(0, 212, 255, 0.2);
+        color: rgba(0, 212, 255, 1);
+    }
+    
+    .mobile-load-more:active {
+        transform: scale(0.98);
+        background: rgba(59, 130, 246, 0.2);
+    }
+    
+    .dark .mobile-load-more:active {
+        background: rgba(0, 212, 255, 0.2);
+    }
+    
+    .mobile-empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 1rem;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        margin: 2rem 0;
+    }
+    
+    .dark .mobile-empty-state {
+        background: rgba(37, 42, 58, 0.9);
+        border-color: rgba(0, 212, 255, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-cyber-bg-primary">
+    <!-- Mobile Audit Header -->
+    <div class="mobile-audit-header">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center">
+                <svg class="w-8 h-8 text-red-600 dark:text-cyber-neon-danger ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <div>
+                    <h1 class="mobile-title text-gray-900 dark:text-cyber-text-primary font-bold">
+                        لاگ‌های حسابرسی
+                    </h1>
+                    <p class="mobile-subtitle text-gray-600 dark:text-cyber-text-secondary">
+                        مشاهده و مدیریت لاگ‌های سیستم
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Export Buttons -->
+        <div class="mobile-export-buttons">
+            <button onclick="exportAuditLogs('csv')" class="mobile-export-btn mobile-export-csv">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-4-4m4 4l4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                صادرات CSV
+            </button>
+            <button onclick="exportAuditLogs('json')" class="mobile-export-btn mobile-export-json">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 1H7a2 2 0 00-2 2v16a2 2 0 002 2z"></path>
+                </svg>
+                صادرات JSON
+            </button>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="mobile-stats-grid">
+        <div class="mobile-stat-card">
+            <div class="mobile-stat-icon bg-blue-100 dark:bg-cyber-neon-primary/20">
+                <svg class="w-6 h-6 text-blue-600 dark:text-cyber-neon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+            </div>
+            <div class="mobile-stat-number persian-numbers text-gray-900 dark:text-cyber-text-primary">{{ total_all_logs }}</div>
+            <div class="mobile-stat-label text-gray-600 dark:text-cyber-text-secondary">کل لاگ‌ها</div>
+        </div>
+
+        <div class="mobile-stat-card">
+            <div class="mobile-stat-icon bg-green-100 dark:bg-cyber-neon-secondary/20">
+                <svg class="w-6 h-6 text-green-600 dark:text-cyber-neon-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                </svg>
+            </div>
+            <div class="mobile-stat-number persian-numbers text-gray-900 dark:text-cyber-text-primary">{{ total_filtered_logs }}</div>
+            <div class="mobile-stat-label text-gray-600 dark:text-cyber-text-secondary">فیلتر شده</div>
+        </div>
+
+        <div class="mobile-stat-card">
+            <div class="mobile-stat-icon bg-yellow-100 dark:bg-cyber-neon-warning/20">
+                <svg class="w-6 h-6 text-yellow-600 dark:text-cyber-neon-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="mobile-stat-number persian-numbers text-gray-900 dark:text-cyber-text-primary">
+                {{ recent_activity|length }}
+            </div>
+            <div class="mobile-stat-label text-gray-600 dark:text-cyber-text-secondary">۲۴ ساعت اخیر</div>
+        </div>
+
+        <div class="mobile-stat-card">
+            <div class="mobile-stat-icon bg-red-100 dark:bg-cyber-neon-danger/20">
+                <svg class="w-6 h-6 text-red-600 dark:text-cyber-neon-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+            </div>
+            <div class="mobile-stat-number persian-numbers text-gray-900 dark:text-cyber-text-primary">0</div>
+            <div class="mobile-stat-label text-gray-600 dark:text-cyber-text-secondary">نیاز به بررسی</div>
+        </div>
+    </div>
+
+    <!-- Search -->
+    <div class="mobile-search-container">
+        <input type="text" 
+               id="mobileSearchInput"
+               placeholder="جستجو در لاگ‌ها..."
+               class="mobile-search-input"
+               value="{{ current_filters.search }}">
+        <svg class="mobile-search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+    </div>
+
+    <!-- Mobile Filter Toggle -->
+    <button class="mobile-filter-toggle" onclick="toggleMobileFilters()">
+        <span>فیلترهای پیشرفته</span>
+        <svg class="w-5 h-5 transition-transform duration-300" id="filterToggleIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+    </button>
+
+    <!-- Mobile Filter Panel -->
+    <div class="mobile-filter-panel" id="mobileFilterPanel">
+        <form method="get" class="space-y-4">
+            <div class="mobile-form-group">
+                <label class="mobile-form-label">عملیات</label>
+                <select name="action" class="mobile-form-input">
+                    <option value="">همه عملیات</option>
+                    {% for action in filter_options.action_types %}
+                        <option value="{{ action }}" {% if current_filters.action == action %}selected{% endif %}>{{ action }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mobile-form-group">
+                <label class="mobile-form-label">وضعیت یکپارچگی</label>
+                <select name="integrity_status" class="mobile-form-input">
+                    {% for value, label in integrity_status_choices %}
+                        <option value="{{ value }}" {% if current_filters.integrity_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mobile-form-group">
+                <label class="mobile-form-label">نام کاربری</label>
+                <input type="text" name="username" value="{{ current_filters.username }}" 
+                       placeholder="نام کاربری" class="mobile-form-input">
+            </div>
+
+            <div class="mobile-form-group">
+                <label class="mobile-form-label">آدرس IP</label>
+                <input type="text" name="ip_address" value="{{ current_filters.ip_address }}" 
+                       placeholder="192.168.1.1" class="mobile-form-input">
+            </div>
+
+            <div class="mobile-form-group">
+                <label class="mobile-form-label">تنانت</label>
+                <select name="tenant_schema" class="mobile-form-input">
+                    <option value="">همه تنانت‌ها</option>
+                    {% for schema in filter_options.tenant_schemas %}
+                        <option value="{{ schema }}" {% if current_filters.tenant_schema == schema %}selected{% endif %}>{{ schema }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mobile-btn-row">
+                <div class="mobile-form-group" style="margin-bottom: 0;">
+                    <label class="mobile-form-label">از تاریخ</label>
+                    <input type="date" name="date_from" value="{{ current_filters.date_from }}" class="mobile-form-input">
+                </div>
+                <div class="mobile-form-group" style="margin-bottom: 0;">
+                    <label class="mobile-form-label">تا تاریخ</label>
+                    <input type="date" name="date_to" value="{{ current_filters.date_to }}" class="mobile-form-input">
+                </div>
+            </div>
+
+            <div class="mobile-btn-group">
+                <button type="submit" class="mobile-btn bg-primary-600 dark:bg-cyber-neon-primary text-white">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    اعمال فیلتر
+                </button>
+                <button type="button" onclick="clearMobileFilters()" class="mobile-btn bg-gray-500 dark:bg-cyber-bg-surface text-white">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    پاک کردن
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Audit Logs List -->
+    <div class="space-y-3" id="auditLogsList">
+        {% for log in audit_logs %}
+        <div class="mobile-audit-log-card" onclick="openAuditLogDetails('{{ log.id }}')">
+            <!-- Integrity Badge -->
+            {% if log.checksum %}
+                <span class="integrity-badge-mobile integrity-verified-mobile">تایید</span>
+            {% else %}
+                <span class="integrity-badge-mobile integrity-warning-mobile">هشدار</span>
+            {% endif %}
+            
+            <!-- Header -->
+            <div class="audit-log-header">
+                <div>
+                    <span class="audit-log-action">{{ log.get_action_display }}</span>
+                </div>
+                <div class="audit-log-time persian-numbers">
+                    {{ log.created_at|date:"H:i" }}
+                </div>
+            </div>
+            
+            <!-- Details -->
+            <div class="audit-log-details">
+                <div class="audit-log-row">
+                    <span class="audit-log-label">کاربر:</span>
+                    <span class="audit-log-value">{{ log.user.username|default:"نامشخص" }}</span>
+                </div>
+                
+                <div class="audit-log-row">
+                    <span class="audit-log-label">شیء:</span>
+                    <span class="audit-log-value">{{ log.object_repr|default:"—"|truncatechars:20 }}</span>
+                </div>
+                
+                <div class="audit-log-row">
+                    <span class="audit-log-label">IP:</span>
+                    <span class="audit-log-value">{{ log.ip_address|default:"—" }}</span>
+                </div>
+                
+                <div class="audit-log-row">
+                    <span class="audit-log-label">تنانت:</span>
+                    <span class="audit-log-value">{{ log.tenant_schema|default:"فعلی" }}</span>
+                </div>
+                
+                <div class="audit-log-row">
+                    <span class="audit-log-label">تاریخ:</span>
+                    <span class="audit-log-value persian-numbers">{{ log.created_at|date:"Y/m/d" }}</span>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="mobile-empty-state">
+            <svg class="w-16 h-16 text-gray-400 dark:text-cyber-text-muted mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <h3 class="text-lg font-medium text-gray-900 dark:text-cyber-text-primary mb-2">
+                هیچ لاگ حسابرسی یافت نشد
+            </h3>
+            <p class="text-gray-500 dark:text-cyber-text-muted">
+                فیلترهای خود را تغییر دهید یا بعداً دوباره تلاش کنید
+            </p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Load More Button -->
+    {% if is_paginated and page_obj.has_next %}
+    <button class="mobile-load-more" onclick="loadMoreAuditLogs()">
+        <svg class="w-5 h-5 inline ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+        بارگذاری بیشتر
+    </button>
+    {% endif %}
+
+    <!-- Mobile Pagination -->
+    {% if is_paginated %}
+    <div class="mobile-pagination">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+               class="mobile-pagination-btn">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+            </a>
+        {% endif %}
+        
+        <span class="mobile-pagination-btn active persian-numbers">
+            {{ page_obj.number }}
+        </span>
+        
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+               class="mobile-pagination-btn">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Mobile Audit Log Details Modal -->
+<div id="auditLogDetailsModal" class="mobile-modal">
+    <div class="mobile-modal-content">
+        <div class="mobile-modal-header">
+            <h3 class="mobile-modal-title">جزئیات لاگ حسابرسی</h3>
+            <button class="mobile-modal-close">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <div id="auditLogDetailsContent">
+            <!-- Content will be loaded dynamically -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/mobile-security-settings.js' %}"></script>
+<script>
+let filterPanelOpen = false;
+let currentPage = {{ page_obj.number }};
+let hasNextPage = {{ page_obj.has_next|yesno:"true,false" }};
+let searchTimeout;
+
+// Initialize mobile audit logs
+document.addEventListener('DOMContentLoaded', function() {
+    setupMobileSearch();
+    setupInfiniteScroll();
+    setupTouchFeedback();
+});
+
+function setupMobileSearch() {
+    const searchInput = document.getElementById('mobileSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                performMobileSearch(this.value);
+            }, 500);
+        });
+    }
+}
+
+function performMobileSearch(query) {
+    if (window.mobileSecuritySettings) {
+        window.mobileSecuritySettings.showLoading('در حال جستجو...');
+    }
+    
+    const url = new URL(window.location);
+    if (query.trim()) {
+        url.searchParams.set('search', query);
+    } else {
+        url.searchParams.delete('search');
+    }
+    url.searchParams.delete('page'); // Reset to first page
+    
+    window.location.href = url.toString();
+}
+
+function toggleMobileFilters() {
+    filterPanelOpen = !filterPanelOpen;
+    const panel = document.getElementById('mobileFilterPanel');
+    const icon = document.getElementById('filterToggleIcon');
+    
+    if (panel) {
+        panel.classList.toggle('open', filterPanelOpen);
+    }
+    
+    if (icon) {
+        icon.style.transform = filterPanelOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+    }
+}
+
+function clearMobileFilters() {
+    // Clear all form inputs
+    const form = document.querySelector('#mobileFilterPanel form');
+    if (form) {
+        const inputs = form.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            if (input.type === 'checkbox' || input.type === 'radio') {
+                input.checked = false;
+            } else {
+                input.value = '';
+            }
+        });
+        
+        // Also clear search input
+        const searchInput = document.getElementById('mobileSearchInput');
+        if (searchInput) {
+            searchInput.value = '';
+        }
+        
+        // Submit to clear filters
+        window.location.href = window.location.pathname;
+    }
+}
+
+function setupInfiniteScroll() {
+    // Optional: Implement infinite scroll for better mobile UX
+    let loading = false;
+    
+    window.addEventListener('scroll', () => {
+        if (loading || !hasNextPage) return;
+        
+        const scrollTop = window.pageYOffset;
+        const windowHeight = window.innerHeight;
+        const docHeight = document.documentElement.scrollHeight;
+        
+        if (scrollTop + windowHeight >= docHeight - 100) {
+            loading = true;
+            loadMoreAuditLogs();
+        }
+    });
+}
+
+function loadMoreAuditLogs() {
+    if (!hasNextPage) return;
+    
+    if (window.mobileSecuritySettings) {
+        window.mobileSecuritySettings.showLoading('در حال بارگذاری...');
+    }
+    
+    const url = new URL(window.location);
+    url.searchParams.set('page', currentPage + 1);
+    
+    fetch(url.toString())
+        .then(response => response.text())
+        .then(html => {
+            // Parse the response and extract new audit log cards
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newLogs = doc.querySelectorAll('.mobile-audit-log-card');
+            
+            if (newLogs.length > 0) {
+                const logsList = document.getElementById('auditLogsList');
+                newLogs.forEach(log => {
+                    logsList.appendChild(log);
+                });
+                
+                currentPage++;
+                
+                // Check if there are more pages
+                const nextPageLink = doc.querySelector('.mobile-pagination-btn[href*="page=' + (currentPage + 1) + '"]');
+                hasNextPage = !!nextPageLink;
+                
+                // Update load more button visibility
+                const loadMoreBtn = document.querySelector('.mobile-load-more');
+                if (loadMoreBtn && !hasNextPage) {
+                    loadMoreBtn.style.display = 'none';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error loading more audit logs:', error);
+            if (window.mobileSecuritySettings) {
+                window.mobileSecuritySettings.showMobileToast('خطا در بارگذاری', 'error');
+            }
+        })
+        .finally(() => {
+            if (window.mobileSecuritySettings) {
+                window.mobileSecuritySettings.hideLoading();
+            }
+        });
+}
+
+function setupTouchFeedback() {
+    // Add touch feedback to audit log cards
+    document.querySelectorAll('.mobile-audit-log-card').forEach(card => {
+        card.addEventListener('touchstart', function() {
+            this.style.transform = 'scale(0.98)';
+        });
+        
+        card.addEventListener('touchend', function() {
+            this.style.transform = '';
+        });
+    });
+}
+
+function openAuditLogDetails(logId) {
+    if (window.mobileSecuritySettings) {
+        window.mobileSecuritySettings.showLoading('در حال بارگذاری جزئیات...');
+    }
+    
+    fetch(`{% url "admin_panel:audit_log_detail" 0 %}`.replace('0', logId))
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('auditLogDetailsContent').innerHTML = html;
+            if (window.mobileSecuritySettings) {
+                window.mobileSecuritySettings.openMobileModal('auditLogDetailsModal', 'جزئیات لاگ حسابرسی');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading audit log details:', error);
+            if (window.mobileSecuritySettings) {
+                window.mobileSecuritySettings.showMobileToast('خطا در بارگذاری جزئیات', 'error');
+            }
+        })
+        .finally(() => {
+            if (window.mobileSecuritySettings) {
+                window.mobileSecuritySettings.hideLoading();
+            }
+        });
+}
+
+function exportAuditLogs(format) {
+    // Get current URL parameters for filters
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('format', format);
+    
+    // Create export URL
+    const exportUrl = '{% url "admin_panel:audit_log_export" %}?' + urlParams.toString();
+    
+    // Show loading message
+    if (window.mobileSecuritySettings) {
+        window.mobileSecuritySettings.showMobileToast('در حال آماده‌سازی فایل صادرات...', 'info');
+    }
+    
+    // Create temporary link and trigger download
+    const link = document.createElement('a');
+    link.href = exportUrl;
+    link.download = '';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Show success message after a delay
+    setTimeout(() => {
+        if (window.mobileSecuritySettings) {
+            window.mobileSecuritySettings.showMobileToast('فایل با موفقیت صادر شد', 'success');
+        }
+    }, 2000);
+}
+
+// Handle orientation change
+window.addEventListener('orientationchange', function() {
+    setTimeout(() => {
+        // Refresh layout after orientation change
+        if (window.mobileSecuritySettings) {
+            window.mobileSecuritySettings.refreshCharts();
+        }
+    }, 100);
+});
+</script>
+{% endblock %}

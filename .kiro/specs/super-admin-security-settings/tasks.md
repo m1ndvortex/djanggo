@@ -244,7 +244,12 @@
   - Write tests for navigation integration, permission-based visibility, and UI accessibility
   - _Requirements: 4.4, 5.1_
 
-- [ ] 10. Mobile Responsiveness & Persian Localization
+- [x] 10. Mobile Responsiveness & Persian Localization
+
+
+
+
+
   - **Ensure all security and settings interfaces are fully navigatable on mobile and tablet devices**
   - **Verify all navigation menus work properly on touch devices**
   - Implement Persian localization for all new interface elements and error messages

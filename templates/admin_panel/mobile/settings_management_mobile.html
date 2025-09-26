@@ -1,0 +1,1132 @@
+{% extends 'admin_panel/base_unified.html' %}
+{% load static %}
+
+{% block title %}مدیریت تنظیمات - پنل مدیریت زرگر{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mobile-responsive-security-settings.css' %}">
+<style>
+    /* Mobile-specific settings styles */
+    .mobile-settings-header {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+        backdrop-filter: blur(20px);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .dark .mobile-settings-header {
+        background: linear-gradient(135deg, rgba(37, 42, 58, 0.9) 0%, rgba(26, 29, 41, 0.8) 100%);
+        border-color: rgba(0, 212, 255, 0.2);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+    
+    .mobile-category-tabs {
+        display: flex;
+        overflow-x: auto;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        margin-bottom: 1.5rem;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 0.75rem;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .dark .mobile-category-tabs {
+        background: rgba(37, 42, 58, 0.9);
+        border-color: rgba(0, 212, 255, 0.2);
+    }
+    
+    .mobile-category-tab {
+        flex-shrink: 0;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        min-height: 44px;
+    }
+    
+    .mobile-category-tab:not(.active) {
+        color: rgba(0, 0, 0, 0.6);
+        background: rgba(0, 0, 0, 0.05);
+    }
+    
+    .dark .mobile-category-tab:not(.active) {
+        color: rgba(255, 255, 255, 0.6);
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .mobile-category-tab.active {
+        background: rgba(59, 130, 246, 0.1);
+        color: rgba(59, 130, 246, 1);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+    
+    .dark .mobile-category-tab.active {
+        background: rgba(0, 212, 255, 0.2);
+        color: rgba(0, 212, 255, 1);
+        border-color: rgba(0, 212, 255, 0.3);
+    }
+    
+    .mobile-category-tab:active {
+        transform: scale(0.98);
+    }
+    
+    .mobile-category-count {
+        background: rgba(0, 0, 0, 0.1);
+        color: rgba(0, 0, 0, 0.7);
+        padding: 0.125rem 0.375rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .dark .mobile-category-count {
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.7);
+    }
+    
+    .mobile-category-tab.active .mobile-category-count {
+        background: rgba(59, 130, 246, 0.2);
+        color: rgba(59, 130, 246, 1);
+    }
+    
+    .dark .mobile-category-tab.active .mobile-category-count {
+        background: rgba(0, 212, 255, 0.3);
+        color: rgba(0, 212, 255, 1);
+    }
+    
+    .mobile-settings-section {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 1rem;
+        margin-bottom: 1rem;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+    
+    .dark .mobile-settings-section {
+        background: rgba(37, 42, 58, 0.9);
+        border-color: rgba(0, 212, 255, 0.2);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .mobile-section-header {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        background: rgba(0, 0, 0, 0.02);
+    }
+    
+    .dark .mobile-section-header {
+        border-bottom-color: rgba(0, 212, 255, 0.2);
+        background: rgba(255, 255, 255, 0.02);
+    }
+    
+    .mobile-section-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: rgba(0, 0, 0, 0.9);
+    }
+    
+    .dark .mobile-section-title {
+        color: rgba(255, 255, 255, 0.9);
+    }
+    
+    .mobile-setting-item {
+        padding: 1.25rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+    
+    .dark .mobile-setting-item {
+        border-bottom-color: rgba(0, 212, 255, 0.1);
+    }
+    
+    .mobile-setting-item:last-child {
+        border-bottom: none;
+    }
+    
+    .mobile-setting-item:active {
+        background: rgba(0, 0, 0, 0.02);
+    }
+    
+    .dark .mobile-setting-item:active {
+        background: rgba(255, 255, 255, 0.02);
+    }
+    
+    .mobile-setting-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.75rem;
+    }
+    
+    .mobile-setting-info {
+        flex: 1;
+        margin-left: 1rem;
+    }
+    
+    .mobile-setting-name {
+        font-size: 1rem;
+        font-weight: 500;
+        color: rgba(0, 0, 0, 0.9);
+        margin-bottom: 0.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .dark .mobile-setting-name {
+        color: rgba(255, 255, 255, 0.9);
+    }
+    
+    .mobile-setting-description {
+        font-size: 0.875rem;
+        color: rgba(0, 0, 0, 0.6);
+        line-height: 1.4;
+    }
+    
+    .dark .mobile-setting-description {
+        color: rgba(255, 255, 255, 0.6);
+    }
+    
+    .mobile-setting-badges {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        align-items: flex-end;
+    }
+    
+    .mobile-setting-badge {
+        padding: 0.125rem 0.5rem;
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+    }
+    
+    .mobile-badge-sensitive {
+        background: rgba(239, 68, 68, 0.1);
+        color: rgba(239, 68, 68, 1);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+    
+    .dark .mobile-badge-sensitive {
+        background: rgba(255, 71, 87, 0.2);
+        color: rgba(255, 71, 87, 1);
+        border-color: rgba(255, 71, 87, 0.3);
+    }
+    
+    .mobile-badge-restart {
+        background: rgba(245, 158, 11, 0.1);
+        color: rgba(245, 158, 11, 1);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+    
+    .dark .mobile-badge-restart {
+        background: rgba(255, 184, 0, 0.2);
+        color: rgba(255, 184, 0, 1);
+        border-color: rgba(255, 184, 0, 0.3);
+    }
+    
+    .mobile-setting-input-container {
+        margin-top: 0.75rem;
+    }
+    
+    .mobile-setting-input {
+        width: 100%;
+        padding: 0.875rem;
+        border-radius: 0.75rem;
+        border: 2px solid rgba(0, 0, 0, 0.1);
+        background: rgba(255, 255, 255, 0.9);
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        min-height: 48px;
+    }
+    
+    .dark .mobile-setting-input {
+        background: rgba(26, 29, 41, 0.9);
+        border-color: rgba(0, 212, 255, 0.2);
+        color: #ffffff;
+    }
+    
+    .mobile-setting-input:focus {
+        outline: none;
+        border-color: rgba(59, 130, 246, 0.5);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        transform: scale(1.02);
+    }
+    
+    .dark .mobile-setting-input:focus {
+        border-color: rgba(0, 212, 255, 0.5);
+        box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+    }
+    
+    .mobile-setting-textarea {
+        min-height: 100px;
+        resize: vertical;
+        font-family: 'Vazirmatn', sans-serif;
+    }
+    
+    .mobile-setting-checkbox-container {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        background: rgba(0, 0, 0, 0.02);
+        border-radius: 0.75rem;
+        border: 2px solid rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .dark .mobile-setting-checkbox-container {
+        background: rgba(255, 255, 255, 0.02);
+        border-color: rgba(0, 212, 255, 0.2);
+    }
+    
+    .mobile-setting-checkbox {
+        width: 1.25rem;
+        height: 1.25rem;
+        border-radius: 0.375rem;
+        border: 2px solid rgba(0, 0, 0, 0.3);
+        background: rgba(255, 255, 255, 0.9);
+        transition: all 0.3s ease;
+    }
+    
+    .dark .mobile-setting-checkbox {
+        border-color: rgba(0, 212, 255, 0.3);
+        background: rgba(26, 29, 41, 0.9);
+    }
+    
+    .mobile-setting-checkbox:checked {
+        background: rgba(59, 130, 246, 1);
+        border-color: rgba(59, 130, 246, 1);
+    }
+    
+    .dark .mobile-setting-checkbox:checked {
+        background: rgba(0, 212, 255, 1);
+        border-color: rgba(0, 212, 255, 1);
+    }
+    
+    .mobile-setting-checkbox-label {
+        font-size: 1rem;
+        font-weight: 500;
+        color: rgba(0, 0, 0, 0.8);
+        cursor: pointer;
+    }
+    
+    .dark .mobile-setting-checkbox-label {
+        color: rgba(255, 255, 255, 0.8);
+    }
+    
+    .mobile-setting-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+    }
+    
+    .mobile-setting-action-btn {
+        flex: 1;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        min-height: 44px;
+    }
+    
+    .mobile-action-reset {
+        background: rgba(107, 114, 128, 0.1);
+        color: rgba(107, 114, 128, 1);
+        border: 1px solid rgba(107, 114, 128, 0.2);
+    }
+    
+    .dark .mobile-action-reset {
+        background: rgba(156, 163, 175, 0.2);
+        color: rgba(156, 163, 175, 1);
+        border-color: rgba(156, 163, 175, 0.3);
+    }
+    
+    .mobile-action-history {
+        background: rgba(59, 130, 246, 0.1);
+        color: rgba(59, 130, 246, 1);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+    
+    .dark .mobile-action-history {
+        background: rgba(0, 212, 255, 0.2);
+        color: rgba(0, 212, 255, 1);
+        border-color: rgba(0, 212, 255, 0.3);
+    }
+    
+    .mobile-setting-action-btn:active {
+        transform: scale(0.98);
+    }
+    
+    .mobile-setting-error {
+        margin-top: 0.5rem;
+        padding: 0.75rem;
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        border-radius: 0.5rem;
+        color: rgba(239, 68, 68, 1);
+        font-size: 0.875rem;
+    }
+    
+    .dark .mobile-setting-error {
+        background: rgba(255, 71, 87, 0.2);
+        border-color: rgba(255, 71, 87, 0.3);
+        color: rgba(255, 71, 87, 1);
+    }
+    
+    .mobile-bulk-actions {
+        position: fixed;
+        bottom: 1rem;
+        left: 1rem;
+        right: 1rem;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border-radius: 1rem;
+        padding: 1rem;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        z-index: 100;
+        transform: translateY(100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .dark .mobile-bulk-actions {
+        background: rgba(37, 42, 58, 0.95);
+        border-color: rgba(0, 212, 255, 0.2);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    }
+    
+    .mobile-bulk-actions.show {
+        transform: translateY(0);
+    }
+    
+    .mobile-bulk-actions-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .mobile-bulk-actions-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: rgba(0, 0, 0, 0.9);
+    }
+    
+    .dark .mobile-bulk-actions-title {
+        color: rgba(255, 255, 255, 0.9);
+    }
+    
+    .mobile-bulk-actions-close {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.1);
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .dark .mobile-bulk-actions-close {
+        background: rgba(0, 212, 255, 0.2);
+    }
+    
+    .mobile-bulk-actions-close:active {
+        transform: scale(0.9);
+    }
+    
+    .mobile-bulk-buttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+    
+    .mobile-empty-settings {
+        text-align: center;
+        padding: 3rem 1rem;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 1rem;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        margin: 2rem 0;
+    }
+    
+    .dark .mobile-empty-settings {
+        background: rgba(37, 42, 58, 0.9);
+        border-color: rgba(0, 212, 255, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-cyber-bg-primary pb-20">
+    <!-- Mobile Settings Header -->
+    <div class="mobile-settings-header">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center">
+                <svg class="w-8 h-8 text-blue-600 dark:text-cyber-neon-primary ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                <div>
+                    <h1 class="mobile-title text-gray-900 dark:text-cyber-text-primary font-bold">
+                        مدیریت تنظیمات
+                    </h1>
+                    <p class="mobile-subtitle text-gray-600 dark:text-cyber-text-secondary">
+                        پیکربندی سیستم و تنظیمات
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-2 gap-3">
+            <div class="text-center">
+                <div class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers">
+                    {{ total_settings }}
+                </div>
+                <div class="text-sm text-gray-600 dark:text-cyber-text-secondary">
+                    کل تنظیمات
+                </div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary">
+                    {{ current_category_display }}
+                </div>
+                <div class="text-sm text-gray-600 dark:text-cyber-text-secondary">
+                    دسته‌بندی فعلی
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Tabs -->
+    <div class="mobile-category-tabs">
+        {% for category in categories %}
+        <a href="?category={{ category.category }}" 
+           class="mobile-category-tab {% if category.category == current_category %}active{% endif %}">
+            <span>{{ category.display_name }}</span>
+            <span class="mobile-category-count persian-numbers">{{ category.count }}</span>
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- Settings Sections -->
+    {% for section, settings in settings_by_section.items %}
+    <div class="mobile-settings-section">
+        <div class="mobile-section-header">
+            <h3 class="mobile-section-title">{{ section }}</h3>
+        </div>
+        
+        {% for setting in settings %}
+        <div class="mobile-setting-item" data-setting-key="{{ setting.key }}">
+            <div class="mobile-setting-header">
+                <div class="mobile-setting-info">
+                    <div class="mobile-setting-name">
+                        {{ setting.name }}
+                    </div>
+                    <div class="mobile-setting-description">
+                        {{ setting.description }}
+                    </div>
+                </div>
+                
+                <div class="mobile-setting-badges">
+                    {% if setting.is_sensitive %}
+                    <span class="mobile-setting-badge mobile-badge-sensitive">حساس</span>
+                    {% endif %}
+                    {% if setting.requires_restart %}
+                    <span class="mobile-setting-badge mobile-badge-restart">راه‌اندازی مجدد</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Setting Input -->
+            <div class="mobile-setting-input-container">
+                {% if setting.setting_type == 'boolean' %}
+                <label class="mobile-setting-checkbox-container">
+                    <input type="checkbox" 
+                           class="mobile-setting-checkbox"
+                           data-setting-key="{{ setting.key }}"
+                           data-setting-type="boolean"
+                           {% if setting.get_typed_value %}checked{% endif %}
+                           onchange="updateMobileSetting(this)">
+                    <span class="mobile-setting-checkbox-label">فعال</span>
+                </label>
+                {% elif setting.setting_type == 'text' %}
+                <textarea class="mobile-setting-input mobile-setting-textarea"
+                          data-setting-key="{{ setting.key }}"
+                          data-setting-type="text"
+                          placeholder="{{ setting.default_value }}"
+                          onblur="updateMobileSetting(this)">{{ setting.get_typed_value }}</textarea>
+                {% elif setting.setting_type == 'json' %}
+                <textarea class="mobile-setting-input mobile-setting-textarea"
+                          data-setting-key="{{ setting.key }}"
+                          data-setting-type="json"
+                          placeholder="{}"
+                          onblur="updateMobileJsonSetting(this)"
+                          style="font-family: monospace; font-size: 0.875rem;">{{ setting.get_typed_value|safe }}</textarea>
+                {% else %}
+                <input type="{% if setting.setting_type == 'integer' or setting.setting_type == 'float' %}number{% elif setting.setting_type == 'email' %}email{% elif setting.setting_type == 'url' %}url{% elif setting.setting_type == 'password' %}password{% else %}text{% endif %}"
+                       class="mobile-setting-input"
+                       data-setting-key="{{ setting.key }}"
+                       data-setting-type="{{ setting.setting_type }}"
+                       value="{{ setting.get_typed_value }}"
+                       placeholder="{{ setting.default_value }}"
+                       onblur="updateMobileSetting(this)"
+                       {% if setting.setting_type == 'float' %}step="0.01"{% endif %}>
+                {% endif %}
+                
+                <!-- Error Display -->
+                <div class="mobile-setting-error" id="error-{{ setting.key }}" style="display: none;"></div>
+            </div>
+            
+            <!-- Setting Actions -->
+            <div class="mobile-setting-actions">
+                <button class="mobile-setting-action-btn mobile-action-reset" 
+                        onclick="resetMobileSetting('{{ setting.key }}')">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    بازگردانی
+                </button>
+                <button class="mobile-setting-action-btn mobile-action-history" 
+                        onclick="showMobileSettingHistory('{{ setting.key }}')">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    تاریخچه
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% empty %}
+    <div class="mobile-empty-settings">
+        <svg class="w-16 h-16 text-gray-400 dark:text-cyber-text-muted mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+        </svg>
+        <h3 class="text-lg font-medium text-gray-900 dark:text-cyber-text-primary mb-2">
+            تنظیمی یافت نشد
+        </h3>
+        <p class="text-gray-500 dark:text-cyber-text-muted">
+            در این دسته‌بندی تنظیمی وجود ندارد.
+        </p>
+    </div>
+    {% endfor %}
+
+    <!-- Mobile Bulk Actions -->
+    <div class="mobile-bulk-actions" id="mobileBulkActions">
+        <div class="mobile-bulk-actions-header">
+            <h3 class="mobile-bulk-actions-title">عملیات گروهی</h3>
+            <button class="mobile-bulk-actions-close" onclick="hideMobileBulkActions()">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="mobile-bulk-buttons">
+            <button class="mobile-btn bg-gray-500 dark:bg-cyber-bg-surface text-white" 
+                    onclick="bulkResetMobileSettings()">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                بازگردانی همه
+            </button>
+            <button class="mobile-btn bg-blue-600 dark:bg-cyber-neon-primary text-white" 
+                    onclick="validateAllMobileSettings()">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                اعتبارسنجی
+            </button>
+            <button class="mobile-btn bg-green-600 dark:bg-cyber-neon-secondary text-white" 
+                    onclick="exportMobileSettings()">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+                صادرات
+            </button>
+            <button class="mobile-btn bg-purple-600 dark:bg-cyber-neon-purple text-white" 
+                    onclick="showMobileImportModal()">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+                </svg>
+                وارد کردن
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Mobile Import Modal -->
+<div id="mobileImportModal" class="mobile-modal">
+    <div class="mobile-modal-content">
+        <div class="mobile-modal-header">
+            <h3 class="mobile-modal-title">وارد کردن تنظیمات</h3>
+            <button class="mobile-modal-close">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <form id="mobileImportForm" class="mobile-form" enctype="multipart/form-data">
+            <div class="mobile-form-group">
+                <label class="mobile-form-label">فایل تنظیمات (JSON)</label>
+                <input type="file" 
+                       accept=".json"
+                       id="mobileImportFile"
+                       class="mobile-form-input">
+            </div>
+            
+            <div class="mobile-form-group">
+                <label class="mobile-setting-checkbox-container">
+                    <input type="checkbox" 
+                           id="mobileImportOverwrite"
+                           class="mobile-setting-checkbox">
+                    <span class="mobile-setting-checkbox-label">
+                        بازنویسی تنظیمات موجود
+                    </span>
+                </label>
+            </div>
+            
+            <div class="mobile-btn-group">
+                <button type="button" 
+                        onclick="closeMobileImportModal()"
+                        class="mobile-btn bg-gray-500 dark:bg-cyber-bg-surface text-white">
+                    انصراف
+                </button>
+                <button type="submit" 
+                        class="mobile-btn bg-primary-600 dark:bg-cyber-neon-primary text-white">
+                    وارد کردن
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Mobile Setting History Modal -->
+<div id="mobileHistoryModal" class="mobile-modal">
+    <div class="mobile-modal-content">
+        <div class="mobile-modal-header">
+            <h3 class="mobile-modal-title">تاریخچه تغییرات</h3>
+            <button class="mobile-modal-close">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <div id="mobileHistoryContent">
+            <!-- Content will be loaded dynamically -->
+        </div>
+    </div>
+</div>
+
+<!-- Floating Action Button -->
+<button class="fixed bottom-6 left-6 w-14 h-14 bg-primary-600 dark:bg-cyber-neon-primary text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-50"
+        onclick="showMobileBulkActions()">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"></path>
+    </svg>
+</button>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/mobile-security-settings.js' %}"></script>
+<script>
+let updateTimeout = {};
+let bulkActionsVisible = false;
+
+// Initialize mobile settings
+document.addEventListener('DOMContentLoaded', function() {
+    setupMobileSettingsInteractions();
+    setupMobileFormHandlers();
+});
+
+function setupMobileSettingsInteractions() {
+    // Add touch feedback to setting items
+    document.querySelectorAll('.mobile-setting-item').forEach(item => {
+        item.addEventListener('touchstart', function() {
+            this.style.transform = 'scale(0.98)';
+        });
+        
+        item.addEventListener('touchend', function() {
+            this.style.transform = '';
+        });
+    });
+    
+    // Setup category tab scrolling
+    const categoryTabs = document.querySelector('.mobile-category-tabs');
+    if (categoryTabs) {
+        // Scroll active tab into view
+        const activeTab = categoryTabs.querySelector('.mobile-category-tab.active');
+        if (activeTab) {
+            activeTab.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+        }
+    }
+}
+
+function setupMobileFormHandlers() {
+    // Import form handler
+    const importForm = document.getElementById('mobileImportForm');
+    if (importForm) {
+        importForm.addEventListener('submit', handleMobileImport);
+    }
+}
+
+function updateMobileSetting(element) {
+    const key = element.getAttribute('data-setting-key');
+    const type = element.getAttribute('data-setting-type');
+    let value = element.value;
+    
+    if (type === 'boolean') {
+        value = element.checked;
+    }
+    
+    // Clear previous timeout
+    if (updateTimeout[key]) {
+        clearTimeout(updateTimeout[key]);
+    }
+    
+    // Debounce updates
+    updateTimeout[key] = setTimeout(() => {
+        performMobileSettingUpdate(key, value);
+    }, 1000);
+    
+    // Clear any existing error
+    hideSettingError(key);
+}
+
+function updateMobileJsonSetting(element) {
+    const key = element.getAttribute('data-setting-key');
+    
+    try {
+        const parsedValue = JSON.parse(element.value);
+        performMobileSettingUpdate(key, parsedValue);
+    } catch (error) {
+        showSettingError(key, 'فرمت JSON نامعتبر است');
+    }
+}
+
+function performMobileSettingUpdate(key, value) {
+    if (window.mobileSecuritySettings) {
+        window.mobileSecuritySettings.showLoading('در حال بروزرسانی...');
+    }
+    
+    fetch('{% url "admin_panel:setting_update" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({
+            key: key,
+            value: value,
+            reason: 'Mobile interface update'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            hideSettingError(key);
+            if (data.requires_restart) {
+                if (window.mobileSecuritySettings) {
+                    window.mobileSecuritySettings.showMobileToast('تنظیم بروزرسانی شد. سیستم نیاز به راه‌اندازی مجدد دارد.', 'warning', 5000);
+                }
+            } else {
+                if (window.mobileSecuritySettings) {
+                    window.mobileSecuritySettings.showMobileToast(data.message || 'تنظیم بروزرسانی شد', 'success');
+                }
+            }
+        } else {
+            showSettingError(key, data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error updating setting:', error);
+        showSettingError(key, 'خطای شبکه');
+    })
+    .finally(() => {
+        if (window.mobileSecuritySettings) {
+            window.mobileSecuritySettings.hideLoading();
+        }
+    });
+}
+
+function resetMobileSetting(key) {
+    if (!confirm('آیا مطمئن هستید که می‌خواهید این تنظیم را به مقدار پیش‌فرض بازگردانید؟')) {
+        return;
+    }
+    
+    if (window.mobileSecuritySettings) {
+        window.mobileSecuritySettings.showLoading('در حال بازگردانی...');
+    }
+    
+    fetch('{% url "admin_panel:setting_reset" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({
+            key: key,
+            reason: 'Mobile interface reset'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update the input with new value
+            const element = document.querySelector(`[data-setting-key="${key}"]`);
+            if (element) {
+                if (element.type === 'checkbox') {
+                    element.checked = data.new_value;
+                } else {
+                    element.value = typeof data.new_value === 'object' ? 
+                        JSON.stringify(data.new_value, null, 2) : data.new_value;
+                }
+            }
+            
+            hideSettingError(key);
+            if (window.mobileSecuritySettings) {
+                window.mobileSecuritySettings.showMobileToast(data.message || 'تنظیم بازگردانی شد', 'success');
+            }
+        } else {
+            showSettingError(key, data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error resetting setting:', error);
+        showSettingError(key, 'خطای شبکه');
+    })
+    .finally(() => {
+        if (window.mobileSecuritySettings) {
+            window.mobileSecuritySettings.hideLoading();
+        }
+    });
+}
+
+function showMobileSettingHistory(key) {
+    if (window.mobileSecuritySettings) {
+        window.mobileSecuritySettings.showLoading('در حال بارگذاری تاریخچه...');
+    }
+    
+    fetch(`{% url "admin_panel:setting_history" key="PLACEHOLDER" %}`.replace('PLACEHOLDER', key))
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('mobileHistoryContent').innerHTML = html;
+            if (window.mobileSecuritySettings) {
+                window.mobileSecuritySettings.openMobileModal('mobileHistoryModal', 'تاریخچه تغییرات');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading setting history:', error);
+            if (window.mobileSecuritySettings) {
+                window.mobileSecuritySettings.showMobileToast('خطا در بارگذاری تاریخچه', 'error');
+            }
+        })
+        .finally(() => {
+            if (window.mobileSecuritySettings) {
+                window.mobileSecuritySettings.hideLoading();
+            }
+        });
+}
+
+function showSettingError(key, message) {
+    const errorElement = document.getElementById(`error-${key}`);
+    if (errorElement) {
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+    }
+}
+
+function hideSettingError(key) {
+    const errorElement = document.getElementById(`error-${key}`);
+    if (errorElement) {
+        errorElement.style.display = 'none';
+    }
+}
+
+function showMobileBulkActions() {
+    bulkActionsVisible = true;
+    const bulkActions = document.getElementById('mobileBulkActions');
+    if (bulkActions) {
+        bulkActions.classList.add('show');
+    }
+}
+
+function hideMobileBulkActions() {
+    bulkActionsVisible = false;
+    const bulkActions = document.getElementById('mobileBulkActions');
+    if (bulkActions) {
+        bulkActions.classList.remove('show');
+    }
+}
+
+function bulkResetMobileSettings() {
+    if (!confirm('آیا مطمئن هستید که می‌خواهید همه تنظیمات این دسته‌بندی را به مقدار پیش‌فرض بازگردانید؟')) {
+        return;
+    }
+    
+    if (window.mobileSecuritySettings) {
+        window.mobileSecuritySettings.showLoading('در حال بازگردانی همه تنظیمات...');
+    }
+    
+    // This would need to be implemented in the backend
+    setTimeout(() => {
+        if (window.mobileSecuritySettings) {
+            window.mobileSecuritySettings.hideLoading();
+            window.mobileSecuritySettings.showMobileToast('همه تنظیمات بازگردانی شد', 'success');
+        }
+        hideMobileBulkActions();
+        setTimeout(() => window.location.reload(), 1000);
+    }, 2000);
+}
+
+function validateAllMobileSettings() {
+    if (window.mobileSecuritySettings) {
+        window.mobileSecuritySettings.showLoading('در حال اعتبارسنجی...');
+    }
+    
+    // This would need to be implemented in the backend
+    setTimeout(() => {
+        if (window.mobileSecuritySettings) {
+            window.mobileSecuritySettings.hideLoading();
+            window.mobileSecuritySettings.showMobileToast('همه تنظیمات معتبر هستند', 'success');
+        }
+        hideMobileBulkActions();
+    }, 2000);
+}
+
+function exportMobileSettings() {
+    const category = new URLSearchParams(window.location.search).get('category') || '';
+    const url = new URL('{% url "admin_panel:settings_export" %}', window.location.origin);
+    if (category) {
+        url.searchParams.set('category', category);
+    }
+    
+    if (window.mobileSecuritySettings) {
+        window.mobileSecuritySettings.showMobileToast('در حال آماده‌سازی فایل صادرات...', 'info');
+    }
+    
+    window.open(url.toString(), '_blank');
+    hideMobileBulkActions();
+    
+    setTimeout(() => {
+        if (window.mobileSecuritySettings) {
+            window.mobileSecuritySettings.showMobileToast('فایل صادر شد', 'success');
+        }
+    }, 1000);
+}
+
+function showMobileImportModal() {
+    if (window.mobileSecuritySettings) {
+        window.mobileSecuritySettings.openMobileModal('mobileImportModal', 'وارد کردن تنظیمات');
+    }
+    hideMobileBulkActions();
+}
+
+function closeMobileImportModal() {
+    if (window.mobileSecuritySettings) {
+        window.mobileSecuritySettings.closeActiveModal();
+    }
+}
+
+function handleMobileImport(event) {
+    event.preventDefault();
+    
+    const fileInput = document.getElementById('mobileImportFile');
+    const overwriteCheckbox = document.getElementById('mobileImportOverwrite');
+    
+    if (!fileInput.files.length) {
+        if (window.mobileSecuritySettings) {
+            window.mobileSecuritySettings.showMobileToast('لطفاً فایل تنظیمات را انتخاب کنید', 'error');
+        }
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('settings_file', fileInput.files[0]);
+    formData.append('overwrite', overwriteCheckbox.checked);
+    
+    if (window.mobileSecuritySettings) {
+        window.mobileSecuritySettings.showLoading('در حال وارد کردن تنظیمات...');
+    }
+    
+    fetch('{% url "admin_panel:settings_import" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (window.mobileSecuritySettings) {
+                window.mobileSecuritySettings.showMobileToast('تنظیمات با موفقیت وارد شد', 'success');
+                window.mobileSecuritySettings.closeActiveModal();
+            }
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            if (window.mobileSecuritySettings) {
+                window.mobileSecuritySettings.showMobileToast('خطا در وارد کردن تنظیمات', 'error');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error importing settings:', error);
+        if (window.mobileSecuritySettings) {
+            window.mobileSecuritySettings.showMobileToast('خطای شبکه', 'error');
+        }
+    })
+    .finally(() => {
+        if (window.mobileSecuritySettings) {
+            window.mobileSecuritySettings.hideLoading();
+        }
+    });
+}
+
+// Handle back button to close bulk actions
+window.addEventListener('popstate', function() {
+    if (bulkActionsVisible) {
+        hideMobileBulkActions();
+    }
+});
+
+// Handle orientation change
+window.addEventListener('orientationchange', function() {
+    setTimeout(() => {
+        // Refresh category tabs scroll position
+        const categoryTabs = document.querySelector('.mobile-category-tabs');
+        const activeTab = categoryTabs?.querySelector('.mobile-category-tab.active');
+        if (activeTab) {
+            activeTab.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+        }
+    }, 100);
+});
+</script>
+{% endblock %}

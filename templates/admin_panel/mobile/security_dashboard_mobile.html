@@ -1,0 +1,709 @@
+{% extends "admin_panel/base_unified.html" %}
+{% load static %}
+
+{% block title %}داشبورد امنیت - پنل مدیریت زرگر{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mobile-responsive-security-settings.css' %}">
+<style>
+    /* Mobile-specific security dashboard styles */
+    .mobile-security-header {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+        backdrop-filter: blur(20px);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .dark .mobile-security-header {
+        background: linear-gradient(135deg, rgba(37, 42, 58, 0.9) 0%, rgba(26, 29, 41, 0.8) 100%);
+        border-color: rgba(0, 212, 255, 0.2);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+    
+    .mobile-threat-indicator {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 4rem;
+        height: 4rem;
+        border-radius: 50%;
+        margin: 0 auto 1rem;
+        animation: pulse 2s infinite;
+    }
+    
+    .threat-critical .mobile-threat-indicator {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+    }
+    
+    .threat-high .mobile-threat-indicator {
+        background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+        box-shadow: 0 0 20px rgba(249, 115, 22, 0.3);
+    }
+    
+    .threat-warning .mobile-threat-indicator {
+        background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+        box-shadow: 0 0 20px rgba(234, 179, 8, 0.3);
+    }
+    
+    .threat-normal .mobile-threat-indicator {
+        background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+        box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+    }
+    
+    .dark .threat-critical .mobile-threat-indicator {
+        background: linear-gradient(135deg, #FF4757 0%, #FF3742 100%);
+        box-shadow: 0 0 20px rgba(255, 71, 87, 0.4);
+    }
+    
+    .dark .threat-high .mobile-threat-indicator {
+        background: linear-gradient(135deg, #FF6B35 0%, #FF5722 100%);
+        box-shadow: 0 0 20px rgba(255, 107, 53, 0.4);
+    }
+    
+    .dark .threat-warning .mobile-threat-indicator {
+        background: linear-gradient(135deg, #FFB800 0%, #FFA000 100%);
+        box-shadow: 0 0 20px rgba(255, 184, 0, 0.4);
+    }
+    
+    .dark .threat-normal .mobile-threat-indicator {
+        background: linear-gradient(135deg, #00FF88 0%, #00E676 100%);
+        box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+    }
+    
+    .mobile-quick-actions {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+        margin-top: 1rem;
+    }
+    
+    .mobile-quick-action {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 0.75rem;
+        padding: 0.75rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        min-height: 60px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
+    }
+    
+    .dark .mobile-quick-action {
+        background: rgba(0, 212, 255, 0.1);
+        border-color: rgba(0, 212, 255, 0.2);
+    }
+    
+    .mobile-quick-action:active {
+        transform: scale(0.98);
+        background: rgba(59, 130, 246, 0.2);
+    }
+    
+    .dark .mobile-quick-action:active {
+        background: rgba(0, 212, 255, 0.3);
+    }
+    
+    .mobile-alert-item {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 0.75rem;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        border-right: 4px solid;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .dark .mobile-alert-item {
+        background: rgba(37, 42, 58, 0.9);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .mobile-alert-item:active {
+        transform: translateX(-4px);
+    }
+    
+    .mobile-alert-critical {
+        border-right-color: #ef4444;
+        background: linear-gradient(90deg, rgba(239, 68, 68, 0.1) 0%, rgba(255, 255, 255, 0.9) 10%);
+    }
+    
+    .dark .mobile-alert-critical {
+        border-right-color: #FF4757;
+        background: linear-gradient(90deg, rgba(255, 71, 87, 0.2) 0%, rgba(37, 42, 58, 0.9) 10%);
+    }
+    
+    .mobile-alert-high {
+        border-right-color: #f97316;
+        background: linear-gradient(90deg, rgba(249, 115, 22, 0.1) 0%, rgba(255, 255, 255, 0.9) 10%);
+    }
+    
+    .dark .mobile-alert-high {
+        border-right-color: #FF6B35;
+        background: linear-gradient(90deg, rgba(255, 107, 53, 0.2) 0%, rgba(37, 42, 58, 0.9) 10%);
+    }
+    
+    .mobile-alert-warning {
+        border-right-color: #eab308;
+        background: linear-gradient(90deg, rgba(234, 179, 8, 0.1) 0%, rgba(255, 255, 255, 0.9) 10%);
+    }
+    
+    .dark .mobile-alert-warning {
+        border-right-color: #FFB800;
+        background: linear-gradient(90deg, rgba(255, 184, 0, 0.2) 0%, rgba(37, 42, 58, 0.9) 10%);
+    }
+    
+    .mobile-refresh-indicator {
+        position: fixed;
+        bottom: 1rem;
+        right: 1rem;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+        border-radius: 50%;
+        width: 3.5rem;
+        height: 3.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        z-index: 100;
+    }
+    
+    .dark .mobile-refresh-indicator {
+        background: rgba(37, 42, 58, 0.9);
+        border-color: rgba(0, 212, 255, 0.2);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    
+    .mobile-refresh-indicator.refreshing {
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-cyber-bg-primary">
+    <!-- Mobile Security Header -->
+    <div class="mobile-security-header threat-{{ security_status.level }}">
+        <div class="text-center">
+            <div class="mobile-threat-indicator">
+                {% if security_status.level == 'critical' %}
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                {% elif security_status.level == 'high' %}
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                {% elif security_status.level == 'warning' %}
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                {% else %}
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                    </svg>
+                {% endif %}
+            </div>
+            
+            <h1 class="mobile-title text-gray-900 dark:text-cyber-text-primary font-bold">
+                وضعیت امنیتی سیستم
+            </h1>
+            <p class="text-2xl font-bold text-gray-900 dark:text-cyber-text-primary persian-numbers mb-2">
+                {{ security_status.text }}
+            </p>
+            <p class="mobile-subtitle text-gray-600 dark:text-cyber-text-secondary">
+                {{ security_status.description }}
+            </p>
+            
+            <!-- Quick Actions -->
+            <div class="mobile-quick-actions">
+                <a href="{% url 'admin_panel:security_events' %}" class="mobile-quick-action">
+                    <svg class="w-5 h-5 text-gray-600 dark:text-cyber-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                    <span class="text-xs font-medium text-gray-700 dark:text-cyber-text-secondary">رویدادهای امنیتی</span>
+                </a>
+                
+                <a href="{% url 'admin_panel:audit_logs' %}" class="mobile-quick-action">
+                    <svg class="w-5 h-5 text-gray-600 dark:text-cyber-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <span class="text-xs font-medium text-gray-700 dark:text-cyber-text-secondary">لاگ‌های حسابرسی</span>
+                </a>
+                
+                <a href="{% url 'admin_panel:rbac_management' %}" class="mobile-quick-action">
+                    <svg class="w-5 h-5 text-gray-600 dark:text-cyber-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1721 9z"></path>
+                    </svg>
+                    <span class="text-xs font-medium text-gray-700 dark:text-cyber-text-secondary">دسترسی</span>
+                </a>
+                
+                <button onclick="refreshSecurityMetrics()" class="mobile-btn mobile-quick-action">
+                    <svg class="w-5 h-5 text-gray-600 dark:text-cyber-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    <span class="text-xs font-medium text-gray-700 dark:text-cyber-text-secondary">بروزرسانی</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Metrics Grid -->
+    <div class="grid grid-cols-2 gap-3 mb-6">
+        <!-- Failed Logins -->
+        <div class="mobile-stat-card">
+            <div class="mobile-stat-icon bg-red-100 dark:bg-cyber-neon-danger/20">
+                <svg class="w-6 h-6 text-red-600 dark:text-cyber-neon-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+            </div>
+            <div class="mobile-stat-number persian-numbers text-gray-900 dark:text-cyber-text-primary" data-metric="failed_logins">
+                {{ security_metrics.failed_logins }}
+            </div>
+            <div class="mobile-stat-label text-gray-600 dark:text-cyber-text-secondary">
+                ورود ناموفق
+            </div>
+        </div>
+
+        <!-- Blocked IPs -->
+        <div class="mobile-stat-card">
+            <div class="mobile-stat-icon bg-orange-100 dark:bg-cyber-neon-tertiary/20">
+                <svg class="w-6 h-6 text-orange-600 dark:text-cyber-neon-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728"></path>
+                </svg>
+            </div>
+            <div class="mobile-stat-number persian-numbers text-gray-900 dark:text-cyber-text-primary" data-metric="blocked_ips">
+                {{ security_metrics.blocked_ips }}
+            </div>
+            <div class="mobile-stat-label text-gray-600 dark:text-cyber-text-secondary">
+                IP مسدود
+            </div>
+        </div>
+
+        <!-- Suspicious Activities -->
+        <div class="mobile-stat-card">
+            <div class="mobile-stat-icon bg-yellow-100 dark:bg-cyber-neon-warning/20">
+                <svg class="w-6 h-6 text-yellow-600 dark:text-cyber-neon-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="mobile-stat-number persian-numbers text-gray-900 dark:text-cyber-text-primary" data-metric="suspicious_activities">
+                {{ security_metrics.suspicious_activities }}
+            </div>
+            <div class="mobile-stat-label text-gray-600 dark:text-cyber-text-secondary">
+                فعالیت مشکوک
+            </div>
+        </div>
+
+        <!-- Critical Events -->
+        <div class="mobile-stat-card">
+            <div class="mobile-stat-icon bg-purple-100 dark:bg-cyber-neon-purple/20">
+                <svg class="w-6 h-6 text-purple-600 dark:text-cyber-neon-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+            </div>
+            <div class="mobile-stat-number persian-numbers text-gray-900 dark:text-cyber-text-primary" data-metric="critical_events">
+                {{ security_metrics.critical_events }}
+            </div>
+            <div class="mobile-stat-label text-gray-600 dark:text-cyber-text-secondary">
+                رویداد بحرانی
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Trends Chart -->
+    <div class="mobile-chart-container mb-6">
+        <h3 class="mobile-chart-title text-gray-900 dark:text-cyber-text-primary">
+            روند امنیتی (۷ روز گذشته)
+        </h3>
+        <div class="mobile-chart">
+            <canvas id="mobileSecurityTrendsChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Active Threats -->
+    {% if active_threats %}
+    <div class="mb-6">
+        <h2 class="text-lg font-bold text-gray-900 dark:text-cyber-text-primary mb-3 px-1">
+            تهدیدات فعال
+        </h2>
+        <div class="space-y-3">
+            {% for threat in active_threats %}
+            <div class="mobile-alert-item mobile-alert-{{ threat.severity }}" 
+                 onclick="openThreatDetails('{{ threat.id }}')">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <h4 class="font-semibold text-gray-900 dark:text-cyber-text-primary text-sm">
+                            {{ threat.get_event_type_display }}
+                        </h4>
+                        <p class="text-xs text-gray-600 dark:text-cyber-text-secondary mt-1">
+                            IP: {{ threat.ip_address }}
+                        </p>
+                        <p class="text-xs text-gray-500 dark:text-cyber-text-muted">
+                            {{ threat.created_at|timesince }} پیش
+                        </p>
+                    </div>
+                    <div class="flex flex-col items-end gap-2">
+                        <span class="px-2 py-1 text-xs font-medium rounded-full
+                                    {% if threat.severity == 'critical' %}bg-red-100 text-red-800 dark:bg-cyber-neon-danger/20 dark:text-cyber-neon-danger
+                                    {% else %}bg-orange-100 text-orange-800 dark:bg-cyber-neon-tertiary/20 dark:text-cyber-neon-tertiary{% endif %}">
+                            {{ threat.get_severity_display }}
+                        </span>
+                        <button onclick="event.stopPropagation(); resolveSecurityEvent('{{ threat.id }}')" 
+                                class="px-2 py-1 text-xs bg-green-600 dark:bg-cyber-neon-secondary text-white rounded hover:bg-green-700 dark:hover:bg-cyber-neon-secondary/80 transition-colors">
+                            حل شده
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Security Events -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between mb-3 px-1 space-x-reverse">
+            <h2 class="text-lg font-bold text-gray-900 dark:text-cyber-text-primary">
+                رویدادهای اخیر
+            </h2>
+            <a href="{% url 'admin_panel:security_events' %}" 
+               class="text-sm text-blue-600 dark:text-cyber-neon-primary font-medium">
+                مشاهده همه
+            </a>
+        </div>
+        
+        <!-- Mobile Card Table -->
+        <div class="mobile-card-table">
+            {% for event in recent_events %}
+            <div class="table-card" onclick="openEventDetails('{{ event.id }}')">
+                <div class="table-card-header">
+                    {{ event.get_event_type_display }}
+                    <span class="float-left px-2 py-1 text-xs font-medium rounded-full
+                                {% if event.severity == 'critical' %}bg-red-100 text-red-800 dark:bg-cyber-neon-danger/20 dark:text-cyber-neon-danger
+                                {% elif event.severity == 'high' %}bg-orange-100 text-orange-800 dark:bg-cyber-neon-tertiary/20 dark:text-cyber-neon-tertiary
+                                {% elif event.severity == 'medium' %}bg-yellow-100 text-yellow-800 dark:bg-cyber-neon-warning/20 dark:text-cyber-neon-warning
+                                {% else %}bg-green-100 text-green-800 dark:bg-cyber-neon-secondary/20 dark:text-cyber-neon-secondary{% endif %}">
+                        {{ event.get_severity_display }}
+                    </span>
+                </div>
+                
+                <div class="table-card-row">
+                    <span class="table-card-label">آدرس IP:</span>
+                    <span class="table-card-value">{{ event.ip_address }}</span>
+                </div>
+                
+                <div class="table-card-row">
+                    <span class="table-card-label">زمان:</span>
+                    <span class="table-card-value persian-numbers">{{ event.created_at|timesince }} پیش</span>
+                </div>
+                
+                <div class="table-card-row">
+                    <span class="table-card-label">وضعیت:</span>
+                    <span class="table-card-value">
+                        {% if event.is_resolved %}
+                            <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 dark:bg-cyber-neon-secondary/20 dark:text-cyber-neon-secondary rounded-full">
+                                حل شده
+                            </span>
+                        {% else %}
+                            <span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 dark:bg-cyber-neon-danger/20 dark:text-cyber-neon-danger rounded-full">
+                                فعال
+                            </span>
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-8">
+                <svg class="w-12 h-12 text-gray-400 dark:text-cyber-text-muted mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                </svg>
+                <p class="text-gray-500 dark:text-cyber-text-muted">
+                    رویداد امنیتی در ۲۴ ساعت گذشته ثبت نشده است
+                </p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Auto-refresh indicator -->
+    <div class="mobile-refresh-indicator" id="mobileRefreshIndicator">
+        <svg class="w-5 h-5 text-gray-600 dark:text-cyber-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+    </div>
+</div>
+
+<!-- Mobile Navigation Items (Hidden, used by JS) -->
+<div style="display: none;" id="mobileNavItems">
+    <div class="mobile-nav-item" data-href="/super-panel/">داشبورد اصلی</div>
+    <div class="mobile-nav-item" data-href="/super-panel/security/dashboard/">داشبورد امنیت</div>
+    <div class="mobile-nav-item" data-href="/super-panel/security/audit-logs/">لاگ‌های حسابرسی</div>
+    <div class="mobile-nav-item" data-href="/super-panel/security/security-events/">رویدادهای امنیتی</div>
+    <div class="mobile-nav-item" data-href="/super-panel/security/access-control/">کنترل دسترسی</div>
+    <div class="mobile-nav-item" data-href="/super-panel/settings/">تنظیمات سیستم</div>
+</div>
+
+<!-- Mobile Event Details Modal -->
+<div id="eventDetailsModal" class="mobile-modal">
+    <div class="mobile-modal-content">
+        <div class="mobile-modal-header">
+            <h3 class="mobile-modal-title">جزئیات رویداد امنیتی</h3>
+            <button class="mobile-modal-close">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <div id="eventDetailsContent">
+            <!-- Content will be loaded dynamically -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/mobile-security-settings.js' %}"></script>
+<script>
+let mobileSecurityTrendsChart = null;
+let refreshInterval;
+let timeLeft = 30;
+
+// Initialize mobile security dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    initializeMobileCharts();
+    startAutoRefresh();
+    setupMobileInteractions();
+});
+
+function initializeMobileCharts() {
+    // Destroy existing chart if it exists
+    if (mobileSecurityTrendsChart) {
+        mobileSecurityTrendsChart.destroy();
+        mobileSecurityTrendsChart = null;
+    }
+    
+    // Mobile Security Trends Chart
+    const trendsCtx = document.getElementById('mobileSecurityTrendsChart');
+    if (trendsCtx) {
+        createMobileSecurityTrendsChart(trendsCtx.getContext('2d'));
+    }
+}
+
+function createMobileSecurityTrendsChart(ctx) {
+    // Fetch trends data
+    fetch('{% url "admin_panel:security_trends_api" %}?days=7')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                mobileSecurityTrendsChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.trends.map(d => d.date_persian),
+                        datasets: [{
+                            label: 'رویدادهای امنیتی',
+                            data: data.trends.map(d => d.events),
+                            borderColor: document.documentElement.classList.contains('dark') ? '#00D4FF' : '#3b82f6',
+                            backgroundColor: document.documentElement.classList.contains('dark') ? 'rgba(0, 212, 255, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false // Hide legend on mobile for space
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: document.documentElement.classList.contains('dark') ? '#B8BCC8' : '#6B7280',
+                                    font: {
+                                        size: 10
+                                    }
+                                },
+                                grid: {
+                                    color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    color: document.documentElement.classList.contains('dark') ? '#B8BCC8' : '#6B7280',
+                                    font: {
+                                        size: 10
+                                    },
+                                    maxRotation: 45
+                                },
+                                grid: {
+                                    color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                                }
+                            }
+                        },
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        }
+                    }
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching trends data:', error);
+        });
+}
+
+function refreshSecurityMetrics() {
+    const indicator = document.getElementById('mobileRefreshIndicator');
+    indicator.classList.add('refreshing');
+    
+    fetch('{% url "admin_panel:security_metrics_api" %}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update metrics using mobile security settings
+                if (window.mobileSecuritySettings) {
+                    window.mobileSecuritySettings.updateSecurityMetrics(data.metrics);
+                }
+                
+                // Refresh charts
+                initializeMobileCharts();
+                
+                // Show success toast
+                if (window.mobileSecuritySettings) {
+                    window.mobileSecuritySettings.showMobileToast('آمار امنیتی بروزرسانی شد', 'success');
+                }
+            } else {
+                console.error('Error refreshing metrics:', data.error);
+                if (window.mobileSecuritySettings) {
+                    window.mobileSecuritySettings.showMobileToast('خطا در بروزرسانی آمار', 'error');
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error connecting to server:', error);
+            if (window.mobileSecuritySettings) {
+                window.mobileSecuritySettings.showMobileToast('خطای اتصال به سرور', 'error');
+            }
+        })
+        .finally(() => {
+            indicator.classList.remove('refreshing');
+        });
+}
+
+function startAutoRefresh() {
+    refreshInterval = setInterval(() => {
+        refreshSecurityMetrics();
+    }, 30000); // Refresh every 30 seconds
+}
+
+function setupMobileInteractions() {
+    // Add touch feedback to interactive elements
+    document.querySelectorAll('.mobile-stat-card, .mobile-alert-item, .table-card').forEach(element => {
+        element.addEventListener('touchstart', function() {
+            this.style.transform = 'scale(0.98)';
+        });
+        
+        element.addEventListener('touchend', function() {
+            this.style.transform = '';
+        });
+    });
+}
+
+function openThreatDetails(threatId) {
+    if (window.mobileSecuritySettings) {
+        window.mobileSecuritySettings.showLoading('در حال بارگذاری جزئیات...');
+    }
+    
+    fetch(`{% url "admin_panel:security_event_detail" 0 %}`.replace('0', threatId))
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('eventDetailsContent').innerHTML = html;
+            if (window.mobileSecuritySettings) {
+                window.mobileSecuritySettings.openMobileModal('eventDetailsModal', 'جزئیات تهدید');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading threat details:', error);
+            if (window.mobileSecuritySettings) {
+                window.mobileSecuritySettings.showMobileToast('خطا در بارگذاری جزئیات', 'error');
+            }
+        })
+        .finally(() => {
+            if (window.mobileSecuritySettings) {
+                window.mobileSecuritySettings.hideLoading();
+            }
+        });
+}
+
+function openEventDetails(eventId) {
+    openThreatDetails(eventId); // Same functionality
+}
+
+function resolveSecurityEvent(eventId) {
+    const notes = prompt('یادداشت حل مسئله (اختیاری):');
+    
+    if (window.mobileSecuritySettings) {
+        window.mobileSecuritySettings.showLoading('در حال حل رویداد...');
+    }
+    
+    fetch('{% url "admin_panel:security_event_resolve" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: `event_id=${eventId}&notes=${encodeURIComponent(notes || '')}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (window.mobileSecuritySettings) {
+                window.mobileSecuritySettings.showMobileToast('رویداد امنیتی حل شد', 'success');
+            }
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            if (window.mobileSecuritySettings) {
+                window.mobileSecuritySettings.showMobileToast('خطا در حل رویداد امنیتی', 'error');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error resolving security event:', error);
+        if (window.mobileSecuritySettings) {
+            window.mobileSecuritySettings.showMobileToast('خطای شبکه', 'error');
+        }
+    })
+    .finally(() => {
+        if (window.mobileSecuritySettings) {
+            window.mobileSecuritySettings.hideLoading();
+        }
+    });
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+    }
+});
+</script>
+{% endblock %}
