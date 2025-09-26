@@ -834,3 +834,171 @@ class NotificationProvider(TenantAwareModel):
                 provider_type=provider_type, 
                 is_active=True
             ).first()
+
+
+class MobileDevice(TenantAwareModel):
+    """
+    Mobile device registration for push notifications.
+    """
+    DEVICE_TYPES = [
+        ('android', _('Android')),
+        ('ios', _('iOS')),
+    ]
+    
+    # Device identification
+    user = models.ForeignKey(
+        'core.User',
+        on_delete=models.CASCADE,
+        related_name='mobile_devices',
+        verbose_name=_('User')
+    )
+    device_id = models.CharField(
+        max_length=100,
+        verbose_name=_('Device ID'),
+        help_text=_('Unique device identifier')
+    )
+    device_token = models.CharField(
+        max_length=500,
+        verbose_name=_('Device Token'),
+        help_text=_('Push notification token')
+    )
+    
+    # Device information
+    device_type = models.CharField(
+        max_length=20,
+        choices=DEVICE_TYPES,
+        default='android',
+        verbose_name=_('Device Type')
+    )
+    device_model = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name=_('Device Model')
+    )
+    os_version = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name=_('OS Version')
+    )
+    app_version = models.CharField(
+        max_length=20,
+        verbose_name=_('App Version')
+    )
+    
+    # Localization settings
+    timezone = models.CharField(
+        max_length=50,
+        default='Asia/Tehran',
+        verbose_name=_('Timezone')
+    )
+    language = models.CharField(
+        max_length=10,
+        default='fa',
+        verbose_name=_('Language')
+    )
+    
+    # Notification preferences
+    enable_push_notifications = models.BooleanField(
+        default=True,
+        verbose_name=_('Enable Push Notifications')
+    )
+    enable_payment_reminders = models.BooleanField(
+        default=True,
+        verbose_name=_('Enable Payment Reminders')
+    )
+    enable_appointment_reminders = models.BooleanField(
+        default=True,
+        verbose_name=_('Enable Appointment Reminders')
+    )
+    enable_promotions = models.BooleanField(
+        default=False,
+        verbose_name=_('Enable Promotions')
+    )
+    enable_system_notifications = models.BooleanField(
+        default=True,
+        verbose_name=_('Enable System Notifications')
+    )
+    
+    # Status and tracking
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name=_('Is Active')
+    )
+    last_active_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name=_('Last Active At')
+    )
+    registered_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_('Registered At')
+    )
+    unregistered_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Unregistered At')
+    )
+    
+    # Statistics
+    notifications_sent = models.PositiveIntegerField(
+        default=0,
+        verbose_name=_('Notifications Sent')
+    )
+    notifications_delivered = models.PositiveIntegerField(
+        default=0,
+        verbose_name=_('Notifications Delivered')
+    )
+    notifications_failed = models.PositiveIntegerField(
+        default=0,
+        verbose_name=_('Notifications Failed')
+    )
+    
+    class Meta:
+        verbose_name = _('Mobile Device')
+        verbose_name_plural = _('Mobile Devices')
+        unique_together = ['user', 'device_id']
+        indexes = [
+            models.Index(fields=['user']),
+            models.Index(fields=['device_id']),
+            models.Index(fields=['device_token']),
+            models.Index(fields=['is_active']),
+            models.Index(fields=['last_active_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.device_model} ({self.device_type})"
+    
+    def update_activity(self):
+        """Update last active timestamp."""
+        self.last_active_at = timezone.now()
+        self.save(update_fields=['last_active_at'])
+    
+    def update_notification_stats(self, sent=0, delivered=0, failed=0):
+        """Update notification statistics."""
+        self.notifications_sent += sent
+        self.notifications_delivered += delivered
+        self.notifications_failed += failed
+        
+        self.save(update_fields=[
+            'notifications_sent', 'notifications_delivered', 'notifications_failed'
+        ])
+    
+    @property
+    def notification_success_rate(self):
+        """Calculate notification delivery success rate."""
+        if self.notifications_sent == 0:
+            return 0
+        return (self.notifications_delivered / self.notifications_sent) * 100
+    
+    def can_receive_notification(self, notification_type):
+        """Check if device can receive specific type of notification."""
+        if not self.is_active or not self.enable_push_notifications:
+            return False
+        
+        type_mapping = {
+            'payment_reminder': self.enable_payment_reminders,
+            'appointment_reminder': self.enable_appointment_reminders,
+            'special_offer': self.enable_promotions,
+            'system': self.enable_system_notifications,
+        }
+        
+        return type_mapping.get(notification_type, True)
