@@ -243,10 +243,41 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
         'zargar.core.permissions.TenantPermission',
     ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'zargar.api.throttling.TenantAPIThrottle',
+        'zargar.api.throttling.TenantBurstThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'tenant_api': '500/hour',
+        'tenant_burst': '60/min',
+        'tenant_anon': '100/hour',
+        'pos_api': '1000/hour',
+        'accounting_api': '300/hour',
+        'reporting_api': '50/hour',
+        'superadmin_api': '2000/hour',
+        'tenant_creation': '10/day',
+        'login_attempts': '10/min',
+        'password_reset': '5/hour',
+        'two_factor': '20/hour',
+        'jewelry_api': '500/hour',
+        'customer_api': '500/hour',
+        'inventory_api': '500/hour',
+        'gold_price_api': '100/hour',
+    },
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.FormParser',
+        'rest_framework.parsers.MultiPartParser',
     ],
 }
 
@@ -269,6 +300,32 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+# Additional CORS settings for API
+CORS_ALLOWED_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'x-tenant-schema',
+    'x-api-version',
+    'x-client-type',
+    'x-device-id',
+    'x-request-id',
+]
+
+CORS_EXPOSE_HEADERS = [
+    'x-tenant-schema',
+    'x-api-version',
+    'x-rate-limit-remaining',
+    'x-rate-limit-limit',
+    'x-rate-limit-reset',
+]
 
 # Celery Configuration
 CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
