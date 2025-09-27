@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - /app/node_modules  # Prevent local node_modules from overriding container's
+    environment:
+      - DEBUG=1
+      - DATABASE_URL=postgresql://zargar:zargar_password@db:5432/zargar_dev
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    command: python manage.py runserver 0.0.0.0:8000
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=zargar_dev
+      - POSTGRES_USER=zargar
+      - POSTGRES_PASSWORD=zargar_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  celery:
+    build: .
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - DEBUG=1
+      - DATABASE_URL=postgresql://zargar:zargar_password@db:5432/zargar_dev
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    command: celery -A zargar worker -l info
+
+  celery-beat:
+    build: .
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - DEBUG=1
+      - DATABASE_URL=postgresql://zargar:zargar_password@db:5432/zargar_dev
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    command: celery -A zargar beat -l info
+
+volumes:
+  postgres_data:
